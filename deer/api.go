@@ -23,7 +23,7 @@ import (
 // independent lifecycle hooks. Handlers must observe their request context.
 type APISpec struct {
 	Service ServiceSpec
-	Routes  func(*server.Hertz) error
+	Routes  func(context.Context, *Deer, *server.Hertz) error
 }
 
 // DeerApi composes exactly one Deer and adds its Hertz HTTP transport.
@@ -68,7 +68,7 @@ func NewDeerApi(ctx context.Context, cfg *configv1.ServiceConfig, spec APISpec) 
 // HTTPAddress returns the actual reserved HTTP listener address.
 func (d *DeerApi) HTTPAddress() string { return d.httpAddress }
 
-func (d *DeerApi) addHTTP(ctx context.Context, routes func(*server.Hertz) error) error {
+func (d *DeerApi) addHTTP(ctx context.Context, routes func(context.Context, *Deer, *server.Hertz) error) error {
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", d.cfg.Http.Address)
 	if err != nil {
 		return fmt.Errorf("listen HTTP: %w", err)
@@ -102,7 +102,7 @@ func (d *DeerApi) addHTTP(ctx context.Context, routes func(*server.Hertz) error)
 		request.Next(bounded)
 	})
 	if routes != nil {
-		if err := routes(hertz); err != nil {
+		if err := routes(ctx, d.Deer, hertz); err != nil {
 			return fmt.Errorf("register HTTP routes: %w", err)
 		}
 	}

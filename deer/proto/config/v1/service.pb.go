@@ -33,6 +33,7 @@ type ServiceConfig struct {
 	Grpc            *Listener              `protobuf:"bytes,6,opt,name=grpc,proto3" json:"grpc,omitempty"`
 	Http            *Listener              `protobuf:"bytes,7,opt,name=http,proto3" json:"http,omitempty"`
 	Logging         *Logging               `protobuf:"bytes,8,opt,name=logging,proto3" json:"logging,omitempty"`
+	Postgres        *Postgres              `protobuf:"bytes,9,opt,name=postgres,proto3" json:"postgres,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -123,6 +124,163 @@ func (x *ServiceConfig) GetLogging() *Logging {
 	return nil
 }
 
+func (x *ServiceConfig) GetPostgres() *Postgres {
+	if x != nil {
+		return x.Postgres
+	}
+	return nil
+}
+
+// Postgres is optional; when present, initialization and readiness require it.
+// password_env names an environment variable rather than storing its value here.
+type Postgres struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Host             string                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	Port             uint32                 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
+	Database         string                 `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
+	Username         string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	PasswordEnv      string                 `protobuf:"bytes,5,opt,name=password_env,json=passwordEnv,proto3" json:"password_env,omitempty"`
+	SslMode          string                 `protobuf:"bytes,6,opt,name=ssl_mode,json=sslMode,proto3" json:"ssl_mode,omitempty"`
+	RootCertFile     string                 `protobuf:"bytes,7,opt,name=root_cert_file,json=rootCertFile,proto3" json:"root_cert_file,omitempty"`
+	Schema           string                 `protobuf:"bytes,8,opt,name=schema,proto3" json:"schema,omitempty"`
+	MaxOpenConns     int32                  `protobuf:"varint,9,opt,name=max_open_conns,json=maxOpenConns,proto3" json:"max_open_conns,omitempty"`
+	MaxIdleConns     int32                  `protobuf:"varint,10,opt,name=max_idle_conns,json=maxIdleConns,proto3" json:"max_idle_conns,omitempty"`
+	MaxLifetime      *durationpb.Duration   `protobuf:"bytes,11,opt,name=max_lifetime,json=maxLifetime,proto3" json:"max_lifetime,omitempty"`
+	MaxIdleTime      *durationpb.Duration   `protobuf:"bytes,12,opt,name=max_idle_time,json=maxIdleTime,proto3" json:"max_idle_time,omitempty"`
+	ConnectTimeout   *durationpb.Duration   `protobuf:"bytes,13,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
+	StatementTimeout *durationpb.Duration   `protobuf:"bytes,14,opt,name=statement_timeout,json=statementTimeout,proto3" json:"statement_timeout,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *Postgres) Reset() {
+	*x = Postgres{}
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Postgres) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Postgres) ProtoMessage() {}
+
+func (x *Postgres) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Postgres.ProtoReflect.Descriptor instead.
+func (*Postgres) Descriptor() ([]byte, []int) {
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Postgres) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *Postgres) GetPort() uint32 {
+	if x != nil {
+		return x.Port
+	}
+	return 0
+}
+
+func (x *Postgres) GetDatabase() string {
+	if x != nil {
+		return x.Database
+	}
+	return ""
+}
+
+func (x *Postgres) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *Postgres) GetPasswordEnv() string {
+	if x != nil {
+		return x.PasswordEnv
+	}
+	return ""
+}
+
+func (x *Postgres) GetSslMode() string {
+	if x != nil {
+		return x.SslMode
+	}
+	return ""
+}
+
+func (x *Postgres) GetRootCertFile() string {
+	if x != nil {
+		return x.RootCertFile
+	}
+	return ""
+}
+
+func (x *Postgres) GetSchema() string {
+	if x != nil {
+		return x.Schema
+	}
+	return ""
+}
+
+func (x *Postgres) GetMaxOpenConns() int32 {
+	if x != nil {
+		return x.MaxOpenConns
+	}
+	return 0
+}
+
+func (x *Postgres) GetMaxIdleConns() int32 {
+	if x != nil {
+		return x.MaxIdleConns
+	}
+	return 0
+}
+
+func (x *Postgres) GetMaxLifetime() *durationpb.Duration {
+	if x != nil {
+		return x.MaxLifetime
+	}
+	return nil
+}
+
+func (x *Postgres) GetMaxIdleTime() *durationpb.Duration {
+	if x != nil {
+		return x.MaxIdleTime
+	}
+	return nil
+}
+
+func (x *Postgres) GetConnectTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.ConnectTimeout
+	}
+	return nil
+}
+
+func (x *Postgres) GetStatementTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.StatementTimeout
+	}
+	return nil
+}
+
 // Logging is immutable after construction; omitted logging defaults to stdout INFO.
 type Logging struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -135,7 +293,7 @@ type Logging struct {
 
 func (x *Logging) Reset() {
 	*x = Logging{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -147,7 +305,7 @@ func (x *Logging) String() string {
 func (*Logging) ProtoMessage() {}
 
 func (x *Logging) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -160,7 +318,7 @@ func (x *Logging) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Logging.ProtoReflect.Descriptor instead.
 func (*Logging) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{1}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Logging) GetLevel() string {
@@ -198,7 +356,7 @@ type LogFile struct {
 
 func (x *LogFile) Reset() {
 	*x = LogFile{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -210,7 +368,7 @@ func (x *LogFile) String() string {
 func (*LogFile) ProtoMessage() {}
 
 func (x *LogFile) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -223,7 +381,7 @@ func (x *LogFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogFile.ProtoReflect.Descriptor instead.
 func (*LogFile) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{2}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *LogFile) GetFilename() string {
@@ -273,7 +431,7 @@ type Listener struct {
 
 func (x *Listener) Reset() {
 	*x = Listener{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -285,7 +443,7 @@ func (x *Listener) String() string {
 func (*Listener) ProtoMessage() {}
 
 func (x *Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -298,7 +456,7 @@ func (x *Listener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Listener.ProtoReflect.Descriptor instead.
 func (*Listener) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{3}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Listener) GetAddress() string {
@@ -319,7 +477,7 @@ var File_deer_proto_config_v1_service_proto protoreflect.FileDescriptor
 
 const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\x83\x03\n" +
+	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xbd\x03\n" +
 	"\rServiceConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -329,7 +487,24 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\x10shutdown_timeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0fshutdownTimeout\x120\n" +
 	"\x04grpc\x18\x06 \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04grpc\x120\n" +
 	"\x04http\x18\a \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04http\x125\n" +
-	"\alogging\x18\b \x01(\v2\x1b.muskdeer.config.v1.LoggingR\alogging\"h\n" +
+	"\alogging\x18\b \x01(\v2\x1b.muskdeer.config.v1.LoggingR\alogging\x128\n" +
+	"\bpostgres\x18\t \x01(\v2\x1c.muskdeer.config.v1.PostgresR\bpostgres\"\xbb\x04\n" +
+	"\bPostgres\x12\x12\n" +
+	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
+	"\x04port\x18\x02 \x01(\rR\x04port\x12\x1a\n" +
+	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12\x1a\n" +
+	"\busername\x18\x04 \x01(\tR\busername\x12!\n" +
+	"\fpassword_env\x18\x05 \x01(\tR\vpasswordEnv\x12\x19\n" +
+	"\bssl_mode\x18\x06 \x01(\tR\asslMode\x12$\n" +
+	"\x0eroot_cert_file\x18\a \x01(\tR\frootCertFile\x12\x16\n" +
+	"\x06schema\x18\b \x01(\tR\x06schema\x12$\n" +
+	"\x0emax_open_conns\x18\t \x01(\x05R\fmaxOpenConns\x12$\n" +
+	"\x0emax_idle_conns\x18\n" +
+	" \x01(\x05R\fmaxIdleConns\x12<\n" +
+	"\fmax_lifetime\x18\v \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12=\n" +
+	"\rmax_idle_time\x18\f \x01(\v2\x19.google.protobuf.DurationR\vmaxIdleTime\x12B\n" +
+	"\x0fconnect_timeout\x18\r \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12F\n" +
+	"\x11statement_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x10statementTimeout\"h\n" +
 	"\aLogging\x12\x14\n" +
 	"\x05level\x18\x01 \x01(\tR\x05level\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\bR\x06stdout\x12/\n" +
@@ -358,27 +533,33 @@ func file_deer_proto_config_v1_service_proto_rawDescGZIP() []byte {
 	return file_deer_proto_config_v1_service_proto_rawDescData
 }
 
-var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_deer_proto_config_v1_service_proto_goTypes = []any{
 	(*ServiceConfig)(nil),       // 0: muskdeer.config.v1.ServiceConfig
-	(*Logging)(nil),             // 1: muskdeer.config.v1.Logging
-	(*LogFile)(nil),             // 2: muskdeer.config.v1.LogFile
-	(*Listener)(nil),            // 3: muskdeer.config.v1.Listener
-	(*durationpb.Duration)(nil), // 4: google.protobuf.Duration
+	(*Postgres)(nil),            // 1: muskdeer.config.v1.Postgres
+	(*Logging)(nil),             // 2: muskdeer.config.v1.Logging
+	(*LogFile)(nil),             // 3: muskdeer.config.v1.LogFile
+	(*Listener)(nil),            // 4: muskdeer.config.v1.Listener
+	(*durationpb.Duration)(nil), // 5: google.protobuf.Duration
 }
 var file_deer_proto_config_v1_service_proto_depIdxs = []int32{
-	4, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	4, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
-	3, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
-	3, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
-	1, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
-	2, // 5: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	4, // 6: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	5,  // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	5,  // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	4,  // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
+	4,  // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
+	2,  // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
+	1,  // 5: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
+	5,  // 6: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
+	5,  // 7: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
+	5,  // 8: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
+	5,  // 9: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
+	3,  // 10: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	5,  // 11: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_config_v1_service_proto_init() }
@@ -392,7 +573,7 @@ func file_deer_proto_config_v1_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_config_v1_service_proto_rawDesc), len(file_deer_proto_config_v1_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

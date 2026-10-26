@@ -13,17 +13,25 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	kratosgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	"google.golang.org/grpc"
+	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/logging"
+	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 )
+
+// ErrPostgresNotConfigured reports a required database missing from service configuration.
+var ErrPostgresNotConfigured = errors.New("postgres is not configured")
+
+// ErrNotReady reports a service that has not started or is stopping.
+var ErrNotReady = errors.New("service is not ready")
 
 // ServiceSpec supplies process-owned dependencies and business RPC registration.
 // Callbacks run synchronously during construction; they must not retain the server
 // for later mutation or start unowned goroutines.
 type ServiceSpec struct {
 	Resources    []Initializer
-	RegisterGRPC func(grpc.ServiceRegistrar) error
+	RegisterGRPC func(context.Context, *Deer, grpc.ServiceRegistrar) error
 	LogOutput    io.Writer // Borrowed stdout override; nil selects os.Stdout.
 }
 
@@ -45,6 +53,7 @@ type Deer struct {
 	stopOnce    sync.Once
 	closeErr    error
 	logger      *logging.Logger
+	database    *postgres.Client
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -59,6 +68,35 @@ func (d *Deer) GRPCAddress() string { return d.grpcAddress }
 // Logger returns this instance's eagerly initialized JSON logger, borrowed by
 // callers. The service owns its lifetime; callers must not close it themselves.
 func (d *Deer) Logger() *logging.Logger { return d.logger }
+
+// DB returns the configured, borrowed GORM handle without opening a connection.
+// Repositories must use WithContext(ctx).Model(&generatedModel{}) for data access.
+func (d *Deer) DB() (*gorm.DB, error) {
+	if d.database == nil {
+		return nil, ErrPostgresNotConfigured
+	}
+	return d.database.GORM(), nil
+}
+
+// CheckReady verifies current listener state and configured dependencies live.
+// Ready alone reports lifecycle state; health endpoints should use CheckReady.
+func (d *Deer) CheckReady(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("readiness context is required")
+	}
+	if !d.Ready() {
+		return ErrNotReady
+	}
+	if d.database != nil {
+		if err := d.database.Ping(ctx); err != nil {
+			return err
+		}
+	}
+	if !d.Ready() {
+		return ErrNotReady
+	}
+	return ctx.Err()
+}
 
 // Ready reports whether all transports have started and shutdown has not begun.
 func (d *Deer) Ready() bool { return d.ready.Load() }
@@ -113,7 +151,8 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	startup, cancel := context.WithTimeout(ctx, cfg.StartupTimeout.AsDuration())
 	defer cancel()
 	var logger *logging.Logger
-	plan := make([]Initializer, 0, len(spec.Resources)+1)
+	var database *postgres.Client
+	plan := make([]Initializer, 0, len(spec.Resources)+2)
 	plan = append(plan, Initializer{
 		Name: "deer.logging",
 		Open: func(ctx context.Context) (Cleanup, error) {
@@ -128,6 +167,19 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			return func(context.Context) error { return logger.Close() }, nil
 		},
 	})
+	if cfg.Postgres != nil {
+		plan = append(plan, Initializer{
+			Name: "deer.postgres",
+			Open: func(ctx context.Context) (Cleanup, error) {
+				var err error
+				database, err = postgres.New(ctx, cfg.Postgres, cfg.Name+"/"+cfg.InstanceId)
+				if err != nil {
+					return nil, err
+				}
+				return func(context.Context) error { return database.Close() }, nil
+			},
+		})
+	}
 	plan = append(plan, spec.Resources...)
 	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
 	if err != nil {
@@ -140,6 +192,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		stopSignal:  make(chan struct{}),
 		done:        make(chan struct{}),
 		logger:      logger,
+		database:    database,
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
@@ -152,7 +205,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	return d, d.cleanup, nil
 }
 
-func (d *Deer) addGRPC(ctx context.Context, register func(grpc.ServiceRegistrar) error) error {
+func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer, grpc.ServiceRegistrar) error) error {
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", d.cfg.Grpc.Address)
 	if err != nil {
 		return fmt.Errorf("listen gRPC: %w", err)
@@ -171,7 +224,7 @@ func (d *Deer) addGRPC(ctx context.Context, register func(grpc.ServiceRegistrar)
 	d.servers = append(d.servers, newManagedTransport(server, accepting, "grpc", d.requestStop))
 	d.grpcAddress = listener.Addr().String()
 	if register != nil {
-		if err := register(server); err != nil {
+		if err := register(ctx, d, server); err != nil {
 			return fmt.Errorf("register gRPC: %w", err)
 		}
 	}
@@ -228,6 +281,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	defer cancel()
 	for _, server := range d.servers {
 		if err := server.waitReady(startup); err != nil {
+			return err
+		}
+	}
+	if d.database != nil {
+		if err := d.database.Ping(startup); err != nil {
 			return err
 		}
 	}

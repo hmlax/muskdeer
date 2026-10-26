@@ -31,7 +31,7 @@ func TestDeerApiSharesDependenciesAndLifecycle(t *testing.T) {
 		Service: ServiceSpec{
 			Resources: []Initializer{resource},
 		},
-		Routes: func(h *server.Hertz) error {
+		Routes: func(_ context.Context, _ *Deer, h *server.Hertz) error {
 			h.GET("/probe", func(ctx context.Context, request *app.RequestContext) {
 				if _, exists := ctx.Deadline(); !exists {
 					t.Error("HTTP handlers must receive a bounded request context")
@@ -93,7 +93,7 @@ func TestDeerApiRouteFailureRollsBackSharedResources(t *testing.T) {
 		Service: ServiceSpec{
 			Resources: []Initializer{countedResource(&released)},
 		},
-		Routes: func(*server.Hertz) error { return failure },
+		Routes: func(context.Context, *Deer, *server.Hertz) error { return failure },
 	})
 	if api != nil || cleanup != nil || !errors.Is(err, failure) || released.Load() != 1 {
 		t.Fatalf("route failure = %v, cleanup nil %v, %v, released %d; want rollback", api, cleanup == nil, err, released.Load())
@@ -119,7 +119,7 @@ func testAPIDrain(t *testing.T, failListener bool) {
 		Service: ServiceSpec{
 			Resources: []Initializer{countedResource(&released)},
 		},
-		Routes: func(h *server.Hertz) error {
+		Routes: func(_ context.Context, _ *Deer, h *server.Hertz) error {
 			h.GET("/drain", func(ctx context.Context, request *app.RequestContext) {
 				close(entered)
 				select {

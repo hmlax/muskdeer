@@ -16,6 +16,26 @@ message ServiceConfig {
   Listener grpc = 6;
   Listener http = 7;
   Logging logging = 8;
+  Postgres postgres = 9;
+}
+
+// Postgres is optional; when present, initialization and readiness require it.
+// password_env names an environment variable rather than storing its value here.
+message Postgres {
+  string host = 1;
+  uint32 port = 2;
+  string database = 3;
+  string username = 4;
+  string password_env = 5;
+  string ssl_mode = 6;
+  string root_cert_file = 7;
+  string schema = 8;
+  int32 max_open_conns = 9;
+  int32 max_idle_conns = 10;
+  google.protobuf.Duration max_lifetime = 11;
+  google.protobuf.Duration max_idle_time = 12;
+  google.protobuf.Duration connect_timeout = 13;
+  google.protobuf.Duration statement_timeout = 14;
 }
 
 // Logging is immutable after construction; omitted logging defaults to stdout INFO.

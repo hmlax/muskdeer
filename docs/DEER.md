@@ -27,7 +27,9 @@ deer.NewDeer(ctx, cfg, deer.ServiceSpec) (*deer.Deer, deer.Cleanup, error)
 deer.NewDeerApi(ctx, cfg, deer.APISpec) (*deer.DeerApi, deer.Cleanup, error)
 ```
 
-ServiceSpec.Resources 声明进程拥有的依赖；RegisterGRPC 接收 grpc.ServiceRegistrar 并返回注册错误。APISpec.Service 复用同一个 ServiceSpec，Routes 同步注册 Hertz 中间件与路由；回调不得自行运行服务、保留 server 后续修改，或追加独立生命周期 hook。正常业务请求 handler 必须遵守上下文。
+ServiceSpec.Resources 声明进程拥有的依赖；RegisterGRPC(ctx, owner, registrar) 接收构造上下文、当前 *Deer 和 grpc.ServiceRegistrar，并返回注册错误。APISpec.Service 复用同一个 ServiceSpec，Routes(ctx, owner, hertz) 同步注册 Hertz 中间件与路由。两种回调在公共依赖初始化后执行，可通过 owner 获取借用的依赖；不得自行运行服务、保留 server 后续修改，或追加独立生命周期 hook。构造上下文只用于装配，正常请求 handler 使用请求自身上下文。
+
+P02.4 在开发中的 Go 装配回调新增 ctx/owner 参数，仓库内调用点同步更新；NewDeer/NewDeerApi 构造函数签名及业务 Proto/RPC 线协议不因此改变。已引用旧回调类型的调用方需按上述签名更新。
 
 ServiceConfig 显式提供 name、instance_id、version、startup_timeout、shutdown_timeout 及可选 grpc/http listener。每个 listener 提供 address 和 request_timeout；请求超时必须不超过停止预算。NewDeer 不接受 HTTP 配置，NewDeerApi 必须配置 HTTP；gRPC 可关闭。构造时复制配置，校验后才获取依赖并预留监听端口；端口占用或回调失败均回滚。
 
@@ -35,9 +37,9 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 调用方构造成功后应立即安排返回的 Cleanup。Run(ctx) 至多调用一次，阻塞到上下文取消、cleanup、进程信号或监听失败；返回前停止两种 transport，再逆序释放资源。上下文取消通过 errors.Is(err, context.Canceled/DeadlineExceeded) 识别；正常 cleanup 停止成功返回 nil。cleanup 可在 Run 前、运行中或返回后调用，重复/并发调用只清理一次。清理使用配置中的独立超时上下文，资源和 handler 必须遵守上下文，不能强制终止不合作的 Go 函数。
 
-Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。当前 readiness 只包含构造依赖和监听状态，后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
+Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；P02.4 在启动就绪前再次检查已配置的 PostgreSQL。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3 已接入日志核心及文件轮转，见下节；Nacos、真实基础设施工厂、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3/P02.4 已接入日志核心及 PostgreSQL，见下节；Nacos、Redis/JetStream、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -47,6 +49,12 @@ P02.1 已实现 Cleanup(ctx) error 与 Initializer{Name, Open}：资源获取前
 ## PostgreSQL/GORM
 连接数、空闲数、最大生命周期、语句超时、连接超时显式配置；context 贯穿；事务由调用方拥有。支持明确事务回调，不通过全局变量切换 DB。空值和 Select 更新语义必须验证；禁止 Updates(struct) 无意忽略 0/false。
 所有数据操作显式以 db.WithContext(ctx).Model(&model.X{}) 绑定生成模型，事务内使用 tx.WithContext(ctx).Model(&model.X{})；禁止任何 DB 变量上的 .Table(...)，公共组件不得提供接收表名的绕过接口。每张表必备 Id 自增主键、createAt/updateAt NOT NULL、deleteAt 可为 NULL，字段映射及生成要求见 PROTO_AND_MODEL.md。
+
+P02.4 实现 deer/postgres.Client：Postgres Proto 显式提供 TCP host/port、database、username、password_env、池参数及四种超时；密码只在构造时从环境变量引用读取，不保存在配置 Proto，运行中不自动重载。ssl_mode 缺省 verify-full，也支持显式 require/disable；root_cert_file 可配置。schema 缺省 public，只接受最多 63 字节的小写 ASCII 标识符，通过连接 search_path 指定，业务数据访问继续使用生成 Model。
+
+max_open_conns 为 1..1024，max_idle_conns 为 0..max_open_conns；max_lifetime、max_idle_time、connect_timeout 必须为正且可精确表示为 Go duration。statement_timeout 必须为 1..2147483647 的整数毫秒；会话固定 UTC。连接池显式 PingContext，GORM 禁用无上下文自动 ping；不自动迁移。GORM 不打印 SQL/参数，查询错误交回调用边界处理。
+
+NewDeer 在日志之后、业务依赖之前创建配置中的 PostgreSQL，停止时逆序释放。DB() 返回借用的 *gorm.DB；未配置时返回 ErrPostgresNotConfigured，注册回调可据此拒绝缺少必要依赖的服务。Client.Ping/Stats 可用于活性检查与指标，Client.Close 幂等，服务拥有池生命周期。连接错误的文本不输出 DSN/密码，原始原因通过 errors.Is/As 保留。证据见 [P02.4](validation/P02-04.md)。
 
 ## Redis / NATS
 Redis 键包含环境、服务、资源类型，TTL 显式。NATS subject 区分环境与事件版本；发布带 event_id；JetStream consumer durable、AckExplicit、重试上限和人工恢复规则有配置。达到 MaxDeliver 的事件要有可观测的隔离/重投流程，不假设自动存在 DLQ。

@@ -59,7 +59,7 @@ func TestDeerRegistersRPCWithImmutableServiceIdentity(t *testing.T) {
 	probe := &identityProbe{observed: make(chan identitySnapshot, 1)}
 	cfg := serviceConfig("identity")
 	service, _, err := NewDeer(t.Context(), cfg, ServiceSpec{
-		RegisterGRPC: func(server grpc.ServiceRegistrar) error {
+		RegisterGRPC: func(_ context.Context, _ *Deer, server grpc.ServiceRegistrar) error {
 			probev1.RegisterArithmeticProbeServer(server, probe)
 			return nil
 		},
@@ -179,7 +179,7 @@ func TestDeerRegistrationFailureReleasesListener(t *testing.T) {
 	var released atomic.Int64
 	_, _, err := NewDeer(t.Context(), serviceConfig("registration-failure"), ServiceSpec{
 		Resources: []Initializer{countedResource(&released)},
-		RegisterGRPC: func(grpc.ServiceRegistrar) error {
+		RegisterGRPC: func(context.Context, *Deer, grpc.ServiceRegistrar) error {
 			return failure
 		},
 	})

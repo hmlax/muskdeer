@@ -24,9 +24,16 @@ def run() -> int:
             'host=127.0.0.1 port=55439 user=muskdeer password=muskdeer_test_only '
             'dbname=muskdeer_p01 sslmode=disable'
         )
-        return subprocess.run([
+        environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
+        result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-count=1', '-v', './internal/persistenceprobe',
+        ], cwd=ROOT, env=environment, check=False)
+        if result.returncode:
+            return result.returncode
+        return subprocess.run([
+            sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
+            '-race', '-count=1', '-v', './internal/infrastructureprobe',
         ], cwd=ROOT, env=environment, check=False).returncode
     finally:
         if started:
