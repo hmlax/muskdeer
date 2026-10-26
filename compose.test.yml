@@ -1,4 +1,16 @@
 services:
+  redis:
+    image: redis:7.2-alpine@sha256:f8548b29a1f1cb358b5fcfec1e0126beab57ad15776c1e87623f865579f16c5a
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "muskdeer_redis_test_only"]
+    ports:
+      - "127.0.0.1:55440:6379"
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "muskdeer_redis_test_only", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
   postgres:
     image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     environment:

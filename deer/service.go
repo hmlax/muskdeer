@@ -18,10 +18,14 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/redis"
 )
 
 // ErrPostgresNotConfigured reports a required database missing from service configuration.
 var ErrPostgresNotConfigured = errors.New("postgres is not configured")
+
+// ErrRedisNotConfigured reports a required cache missing from service configuration.
+var ErrRedisNotConfigured = errors.New("redis is not configured")
 
 // ErrNotReady reports a service that has not started or is stopping.
 var ErrNotReady = errors.New("service is not ready")
@@ -54,6 +58,7 @@ type Deer struct {
 	closeErr    error
 	logger      *logging.Logger
 	database    *postgres.Client
+	cache       *redis.Client
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -78,6 +83,15 @@ func (d *Deer) DB() (*gorm.DB, error) {
 	return d.database.GORM(), nil
 }
 
+// Redis returns the eagerly initialized cache, borrowed by callers. The service
+// owns its lifetime; callers must not close it themselves.
+func (d *Deer) Redis() (*redis.Client, error) {
+	if d.cache == nil {
+		return nil, ErrRedisNotConfigured
+	}
+	return d.cache, nil
+}
+
 // CheckReady verifies current listener state and configured dependencies live.
 // Ready alone reports lifecycle state; health endpoints should use CheckReady.
 func (d *Deer) CheckReady(ctx context.Context) error {
@@ -89,6 +103,11 @@ func (d *Deer) CheckReady(ctx context.Context) error {
 	}
 	if d.database != nil {
 		if err := d.database.Ping(ctx); err != nil {
+			return err
+		}
+	}
+	if d.cache != nil {
+		if err := d.cache.Ping(ctx); err != nil {
 			return err
 		}
 	}
@@ -152,7 +171,8 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	defer cancel()
 	var logger *logging.Logger
 	var database *postgres.Client
-	plan := make([]Initializer, 0, len(spec.Resources)+2)
+	var cache *redis.Client
+	plan := make([]Initializer, 0, len(spec.Resources)+3)
 	plan = append(plan, Initializer{
 		Name: "deer.logging",
 		Open: func(ctx context.Context) (Cleanup, error) {
@@ -180,6 +200,19 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			},
 		})
 	}
+	if cfg.Redis != nil {
+		plan = append(plan, Initializer{
+			Name: "deer.redis",
+			Open: func(ctx context.Context) (Cleanup, error) {
+				var err error
+				cache, err = redis.New(ctx, cfg.Redis, cfg.Name+"/"+cfg.InstanceId)
+				if err != nil {
+					return nil, err
+				}
+				return func(context.Context) error { return cache.Close() }, nil
+			},
+		})
+	}
 	plan = append(plan, spec.Resources...)
 	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
 	if err != nil {
@@ -193,6 +226,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		done:        make(chan struct{}),
 		logger:      logger,
 		database:    database,
+		cache:       cache,
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
@@ -286,6 +320,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	}
 	if d.database != nil {
 		if err := d.database.Ping(startup); err != nil {
+			return err
+		}
+	}
+	if d.cache != nil {
+		if err := d.cache.Ping(startup); err != nil {
 			return err
 		}
 	}

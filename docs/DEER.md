@@ -37,9 +37,9 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 调用方构造成功后应立即安排返回的 Cleanup。Run(ctx) 至多调用一次，阻塞到上下文取消、cleanup、进程信号或监听失败；返回前停止两种 transport，再逆序释放资源。上下文取消通过 errors.Is(err, context.Canceled/DeadlineExceeded) 识别；正常 cleanup 停止成功返回 nil。cleanup 可在 Run 前、运行中或返回后调用，重复/并发调用只清理一次。清理使用配置中的独立超时上下文，资源和 handler 必须遵守上下文，不能强制终止不合作的 Go 函数。
 
-Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；P02.4 在启动就绪前再次检查已配置的 PostgreSQL。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
+Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3/P02.4 已接入日志核心及 PostgreSQL，见下节；Nacos、Redis/JetStream、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.5 已接入日志核心、PostgreSQL 及 Redis，见下节；Nacos、JetStream、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -58,6 +58,14 @@ NewDeer 在日志之后、业务依赖之前创建配置中的 PostgreSQL，停�
 
 ## Redis / NATS
 Redis 键包含环境、服务、资源类型，TTL 显式。NATS subject 区分环境与事件版本；发布带 event_id；JetStream consumer durable、AckExplicit、重试上限和人工恢复规则有配置。达到 MaxDeliver 的事件要有可观测的隔离/重投流程，不假设自动存在 DLQ。
+
+P02.5 实现 deer/redis.Client 作为可重建的 standalone 字符串缓存，不能充当权威账本或执行所有权。Redis Proto 显式配置 address（TCP host:port）、非负 database、可选 username/password_env、key_prefix、pool_size 及五种正 duration。key_prefix 至少含环境和服务两段，例如 `development:market`，只含 ASCII 字母、数字、点、下划线、连字符及分隔冒号；各段非空，总长不超过 128。业务传入 `quote:BTC-USDT` 等带资源类型的相对键，实际键为 `<prefix>:<relative>`；副本共享前缀，禁止将 instance_id 加入共享缓存前缀。
+
+New 在构造时复制配置、解析密码引用并有界 PING。TLS 缺省开启，验证主机名，最低 TLS 1.2，可指定 root_cert_file；仅隔离开发环境显式 tls_enabled=false。pool_size 为 1..1024，同时设置 MaxActiveConns/MaxConcurrentDials；禁用额外 pipeline pool、命令重试、重复 dial 尝试、维护通知和身份协商。connect_timeout、command_timeout、pool_timeout、max_idle_time、max_lifetime 均须为正且能精确表示为 Go duration。
+
+Get/Set/Delete/Ping 接收 context，命令使用调用方与 command_timeout 中较早的 deadline；已取消上下文不会发命令。网络 I/O 中途取消的响应仍受已设置的 socket deadline 约束，不能承诺无 deadline 的取消即时中断。Set 的 TTL 必须为正整数毫秒；值为 string，小数不经浮点转换。Get 缺失返回 ErrNotFound；SET 超时代表结果未知，调用方不能据此认定未写入，本层不重放命令。错误文本隐藏地址/口令，原始原因保留给 errors.Is/As。
+
+Deer 在 PostgreSQL 之后、业务依赖之前初始化 Redis，停止时逆序关闭；Redis() 返回借用客户端，未配置返回 ErrRedisNotConfigured。CheckReady 和启动 readiness 包含实际 PING。Close 幂等且关闭全部池和连接；SDK 失败 dial 的辅助恢复探针可能在 Close 后等待一个连接超时及一秒定时器才退出，不重放业务命令。单连接失败用虚拟时间验证有界退出，未添加 goleak 忽略项；此范围及真实 Redis 证据见 [P02.5](validation/P02-05.md)。Cluster/Sentinel、PubSub、锁和权威数据接口未开放。
 
 ## gRPC / Nacos
 服务名、namespace、group、实例 ID、端口、健康与注销规则统一。gRPC 客户端设置截止时间；只对已定义幂等操作重试。启动注册必须晚于依赖就绪。健康区分进程存活与可服务；租约丢失不应继续报告“可执行交易”。

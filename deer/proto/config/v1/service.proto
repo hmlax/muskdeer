@@ -17,6 +17,24 @@ message ServiceConfig {
   Listener http = 7;
   Logging logging = 8;
   Postgres postgres = 9;
+  Redis redis = 10;
+}
+
+// Redis is a standalone, namespaced cache. Monetary authority remains in PostgreSQL.
+message Redis {
+  string address = 1;
+  int32 database = 2;
+  string username = 3;
+  string password_env = 4;
+  string key_prefix = 5;
+  int32 pool_size = 6;
+  google.protobuf.Duration connect_timeout = 7;
+  google.protobuf.Duration command_timeout = 8;
+  google.protobuf.Duration pool_timeout = 9;
+  google.protobuf.Duration max_idle_time = 10;
+  google.protobuf.Duration max_lifetime = 11;
+  optional bool tls_enabled = 12;
+  string root_cert_file = 13;
 }
 
 // Postgres is optional; when present, initialization and readiness require it.

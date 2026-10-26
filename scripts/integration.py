@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the persistence contract against a dedicated temporary PostgreSQL."""
+"""Run infrastructure contracts against dedicated temporary test services."""
 
 import os
 from pathlib import Path
@@ -19,12 +19,14 @@ def run() -> int:
         started = True
         subprocess.run([*compose, 'up', '-d', '--wait', '--wait-timeout', '45'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'postgres', 'postgres', '--version'], check=True)
+        subprocess.run([*compose, 'exec', '-T', 'redis', 'redis-server', '--version'], check=True)
         environment = os.environ.copy()
         environment['MUSKDEER_TEST_POSTGRES_DSN'] = (
             'host=127.0.0.1 port=55439 user=muskdeer password=muskdeer_test_only '
             'dbname=muskdeer_p01 sslmode=disable'
         )
         environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
+        environment['MUSKDEER_TEST_REDIS_PASSWORD'] = 'muskdeer_redis_test_only'
         result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-count=1', '-v', './internal/persistenceprobe',
@@ -44,5 +46,5 @@ if __name__ == '__main__':
     try:
         sys.exit(run())
     except (OSError, subprocess.CalledProcessError) as error:
-        print(f'Persistence integration failed: {error}', file=sys.stderr)
+        print(f'Infrastructure integration failed: {error}', file=sys.stderr)
         sys.exit(1)
