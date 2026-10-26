@@ -37,7 +37,7 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。当前 readiness 只包含构造依赖和监听状态，后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。Nacos、真实基础设施工厂、日志轮转、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3 已接入日志核心及文件轮转，见下节；Nacos、真实基础设施工厂、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -60,6 +60,12 @@ JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cu
 
 ## 日志
 Kratos log 接口由结构化日志后端适配，lumberjack 实现文件大小轮转。配置 filename、max_size_mb、max_backups、max_age_days、compress、stdout；每节点独立路径。字段包含 service、instance、request_id、strategy_id、operation、error_code；敏感信息脱敏。
+
+P02.3 已实现 deer/logging，并由 NewDeer 在所有业务依赖之前创建、最后关闭；DeerApi 复用该实例。ServiceConfig.logging 缺省 stdout INFO，显式 Logging 需启用 stdout 或提供完整 LogFile。文件配置 filename 为基路径，实际文件为 `<目录>/<service>/<instance>/<文件名>`；独占锁拒绝相同文件的并发写入。ServiceSpec.LogOutput 可覆盖借用的 stdout 输出，实例清理不关闭该输出。
+
+Deer.Logger() 返回借用的日志实例；LogAttrs 返回写错误，Slog() 适配标准 API，Log 实现 Kratos Logger 接口。调用者不得自行关闭服务拥有的 logger。级别支持 debug/info/warn/error；文件大小 1..1024 MiB，max_backups 为正，max_age_days 为 1..36500。配置在构造时复制，运行中不修改。
+
+使用有来源记录的同步 lumberjack 维护版本，保持单 go.mod 和完整 race/goleak 检查；选择原因及同步 I/O 代价见 [ADR 0002](decisions/0002-owned-logging.md)，验证见 [P02.3](validation/P02-03.md)。结构化敏感 key/group 脱敏，decimal 输出 string，任意对象不直接写入日志；固定消息与错误文本仍须由调用者保证不含秘密。自动请求字段注入和各业务进程入口的框架日志桥接仍待接入。
 
 ## 可观测性
 /metrics 与健康端口走内网授权。指标包括行情年龄、报价偏离、gRPC 延迟、订单 UNKNOWN 数、撤单延迟、对冲积压、租约丢失、outbox 年龄。订单/成交 ID 只进日志，不进指标 label。存活检查不因短暂依赖故障反复杀进程；readiness 体现可服务状态。

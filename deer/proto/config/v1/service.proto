@@ -15,6 +15,23 @@ message ServiceConfig {
   google.protobuf.Duration shutdown_timeout = 5;
   Listener grpc = 6;
   Listener http = 7;
+  Logging logging = 8;
+}
+
+// Logging is immutable after construction; omitted logging defaults to stdout INFO.
+message Logging {
+  string level = 1;
+  bool stdout = 2;
+  LogFile file = 3;
+}
+
+// LogFile.filename is a base path; service name and instance ID are appended.
+message LogFile {
+  string filename = 1;
+  int32 max_size_mb = 2;
+  int32 max_backups = 3;
+  int32 max_age_days = 4;
+  bool compress = 5;
 }
 
 // Listener is optional; when present, address and positive timeouts are required.

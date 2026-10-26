@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"sync/atomic"
@@ -13,6 +14,7 @@ import (
 	kratosgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	"google.golang.org/grpc"
 
+	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 )
 
@@ -22,6 +24,7 @@ import (
 type ServiceSpec struct {
 	Resources    []Initializer
 	RegisterGRPC func(grpc.ServiceRegistrar) error
+	LogOutput    io.Writer // Borrowed stdout override; nil selects os.Stdout.
 }
 
 // Deer owns one independent Kratos service, its listeners and dependencies.
@@ -41,6 +44,7 @@ type Deer struct {
 	closed      bool
 	stopOnce    sync.Once
 	closeErr    error
+	logger      *logging.Logger
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -51,6 +55,10 @@ func NewDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec)
 
 // GRPCAddress returns the actual reserved address, or empty if gRPC is disabled.
 func (d *Deer) GRPCAddress() string { return d.grpcAddress }
+
+// Logger returns this instance's eagerly initialized JSON logger, borrowed by
+// callers. The service owns its lifetime; callers must not close it themselves.
+func (d *Deer) Logger() *logging.Logger { return d.logger }
 
 // Ready reports whether all transports have started and shutdown has not begun.
 func (d *Deer) Ready() bool { return d.ready.Load() }
@@ -104,7 +112,24 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	}
 	startup, cancel := context.WithTimeout(ctx, cfg.StartupTimeout.AsDuration())
 	defer cancel()
-	release, err := initializeResources(startup, spec.Resources, cfg.ShutdownTimeout.AsDuration())
+	var logger *logging.Logger
+	plan := make([]Initializer, 0, len(spec.Resources)+1)
+	plan = append(plan, Initializer{
+		Name: "deer.logging",
+		Open: func(ctx context.Context) (Cleanup, error) {
+			var err error
+			logger, err = logging.New(ctx, cfg.Logging, logging.Identity{
+				Service:  cfg.Name,
+				Instance: cfg.InstanceId,
+			}, spec.LogOutput)
+			if err != nil {
+				return nil, err
+			}
+			return func(context.Context) error { return logger.Close() }, nil
+		},
+	})
+	plan = append(plan, spec.Resources...)
+	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -114,6 +139,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		readySignal: make(chan struct{}),
 		stopSignal:  make(chan struct{}),
 		done:        make(chan struct{}),
+		logger:      logger,
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {

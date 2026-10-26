@@ -32,6 +32,7 @@ type ServiceConfig struct {
 	ShutdownTimeout *durationpb.Duration   `protobuf:"bytes,5,opt,name=shutdown_timeout,json=shutdownTimeout,proto3" json:"shutdown_timeout,omitempty"`
 	Grpc            *Listener              `protobuf:"bytes,6,opt,name=grpc,proto3" json:"grpc,omitempty"`
 	Http            *Listener              `protobuf:"bytes,7,opt,name=http,proto3" json:"http,omitempty"`
+	Logging         *Logging               `protobuf:"bytes,8,opt,name=logging,proto3" json:"logging,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -115,6 +116,151 @@ func (x *ServiceConfig) GetHttp() *Listener {
 	return nil
 }
 
+func (x *ServiceConfig) GetLogging() *Logging {
+	if x != nil {
+		return x.Logging
+	}
+	return nil
+}
+
+// Logging is immutable after construction; omitted logging defaults to stdout INFO.
+type Logging struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Level         string                 `protobuf:"bytes,1,opt,name=level,proto3" json:"level,omitempty"`
+	Stdout        bool                   `protobuf:"varint,2,opt,name=stdout,proto3" json:"stdout,omitempty"`
+	File          *LogFile               `protobuf:"bytes,3,opt,name=file,proto3" json:"file,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Logging) Reset() {
+	*x = Logging{}
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Logging) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Logging) ProtoMessage() {}
+
+func (x *Logging) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Logging.ProtoReflect.Descriptor instead.
+func (*Logging) Descriptor() ([]byte, []int) {
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Logging) GetLevel() string {
+	if x != nil {
+		return x.Level
+	}
+	return ""
+}
+
+func (x *Logging) GetStdout() bool {
+	if x != nil {
+		return x.Stdout
+	}
+	return false
+}
+
+func (x *Logging) GetFile() *LogFile {
+	if x != nil {
+		return x.File
+	}
+	return nil
+}
+
+// LogFile.filename is a base path; service name and instance ID are appended.
+type LogFile struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Filename      string                 `protobuf:"bytes,1,opt,name=filename,proto3" json:"filename,omitempty"`
+	MaxSizeMb     int32                  `protobuf:"varint,2,opt,name=max_size_mb,json=maxSizeMb,proto3" json:"max_size_mb,omitempty"`
+	MaxBackups    int32                  `protobuf:"varint,3,opt,name=max_backups,json=maxBackups,proto3" json:"max_backups,omitempty"`
+	MaxAgeDays    int32                  `protobuf:"varint,4,opt,name=max_age_days,json=maxAgeDays,proto3" json:"max_age_days,omitempty"`
+	Compress      bool                   `protobuf:"varint,5,opt,name=compress,proto3" json:"compress,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogFile) Reset() {
+	*x = LogFile{}
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogFile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogFile) ProtoMessage() {}
+
+func (x *LogFile) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogFile.ProtoReflect.Descriptor instead.
+func (*LogFile) Descriptor() ([]byte, []int) {
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *LogFile) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *LogFile) GetMaxSizeMb() int32 {
+	if x != nil {
+		return x.MaxSizeMb
+	}
+	return 0
+}
+
+func (x *LogFile) GetMaxBackups() int32 {
+	if x != nil {
+		return x.MaxBackups
+	}
+	return 0
+}
+
+func (x *LogFile) GetMaxAgeDays() int32 {
+	if x != nil {
+		return x.MaxAgeDays
+	}
+	return 0
+}
+
+func (x *LogFile) GetCompress() bool {
+	if x != nil {
+		return x.Compress
+	}
+	return false
+}
+
 // Listener is optional; when present, address and positive timeouts are required.
 // Port zero is useful for isolated tests. Public deployment requires explicit ports.
 type Listener struct {
@@ -127,7 +273,7 @@ type Listener struct {
 
 func (x *Listener) Reset() {
 	*x = Listener{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -139,7 +285,7 @@ func (x *Listener) String() string {
 func (*Listener) ProtoMessage() {}
 
 func (x *Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -152,7 +298,7 @@ func (x *Listener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Listener.ProtoReflect.Descriptor instead.
 func (*Listener) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{1}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Listener) GetAddress() string {
@@ -173,7 +319,7 @@ var File_deer_proto_config_v1_service_proto protoreflect.FileDescriptor
 
 const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xcc\x02\n" +
+	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\x83\x03\n" +
 	"\rServiceConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -182,7 +328,20 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\x0fstartup_timeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x0estartupTimeout\x12D\n" +
 	"\x10shutdown_timeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0fshutdownTimeout\x120\n" +
 	"\x04grpc\x18\x06 \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04grpc\x120\n" +
-	"\x04http\x18\a \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04http\"h\n" +
+	"\x04http\x18\a \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04http\x125\n" +
+	"\alogging\x18\b \x01(\v2\x1b.muskdeer.config.v1.LoggingR\alogging\"h\n" +
+	"\aLogging\x12\x14\n" +
+	"\x05level\x18\x01 \x01(\tR\x05level\x12\x16\n" +
+	"\x06stdout\x18\x02 \x01(\bR\x06stdout\x12/\n" +
+	"\x04file\x18\x03 \x01(\v2\x1b.muskdeer.config.v1.LogFileR\x04file\"\xa4\x01\n" +
+	"\aLogFile\x12\x1a\n" +
+	"\bfilename\x18\x01 \x01(\tR\bfilename\x12\x1e\n" +
+	"\vmax_size_mb\x18\x02 \x01(\x05R\tmaxSizeMb\x12\x1f\n" +
+	"\vmax_backups\x18\x03 \x01(\x05R\n" +
+	"maxBackups\x12 \n" +
+	"\fmax_age_days\x18\x04 \x01(\x05R\n" +
+	"maxAgeDays\x12\x1a\n" +
+	"\bcompress\x18\x05 \x01(\bR\bcompress\"h\n" +
 	"\bListener\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12B\n" +
 	"\x0frequest_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0erequestTimeoutB9Z7github.com/hmlax/muskdeer/deer/proto/config/v1;configv1b\x06proto3"
@@ -199,23 +358,27 @@ func file_deer_proto_config_v1_service_proto_rawDescGZIP() []byte {
 	return file_deer_proto_config_v1_service_proto_rawDescData
 }
 
-var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_deer_proto_config_v1_service_proto_goTypes = []any{
 	(*ServiceConfig)(nil),       // 0: muskdeer.config.v1.ServiceConfig
-	(*Listener)(nil),            // 1: muskdeer.config.v1.Listener
-	(*durationpb.Duration)(nil), // 2: google.protobuf.Duration
+	(*Logging)(nil),             // 1: muskdeer.config.v1.Logging
+	(*LogFile)(nil),             // 2: muskdeer.config.v1.LogFile
+	(*Listener)(nil),            // 3: muskdeer.config.v1.Listener
+	(*durationpb.Duration)(nil), // 4: google.protobuf.Duration
 }
 var file_deer_proto_config_v1_service_proto_depIdxs = []int32{
-	2, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	2, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
-	1, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
-	1, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
-	2, // 4: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	4, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	3, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
+	3, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
+	1, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
+	2, // 5: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	4, // 6: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_config_v1_service_proto_init() }
@@ -229,7 +392,7 @@ func file_deer_proto_config_v1_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_config_v1_service_proto_rawDesc), len(file_deer_proto_config_v1_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
