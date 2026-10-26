@@ -1,0 +1,16 @@
+---
+description: 所有接口的小数字段使用 string，Go 小数统一使用 decimal
+alwaysApply: true
+---
+
+# 小数类型强制规范
+
+- 所有小数字段在接口中均定义为 string，覆盖 HTTP/OpenAPI、gRPC/Proto、WebSocket、事件、请求、响应、嵌套对象及列表元素。
+- 金额、价格、数量、余额、损益、费率、比例、百分比及其他小数参数全部遵守；数值当前恰好为整数也不改变该字段的 string 类型。
+- Proto 使用 string，不使用 float/double；OpenAPI 使用 type: string；JSON 使用带引号的十进制字符串。
+- Go 小数值的存储、计算和比较统一使用 decimal.Decimal；禁止 float32/float64、浮点字面量初始化及浮点中间转换，测试数据同样遵守。
+- 输入十进制字符串直接解析为 decimal，输出 decimal 直接格式化为十进制字符串；禁止先经浮点数再转换。
+- 校验格式、精度、范围及可选值语义；除法、量化和输出显式约定小数位与舍入规则，不依赖隐式浮点舍入。
+- 数据库小数使用 PostgreSQL numeric/decimal；生成模型与 decimal 的转换须验证无损，不使用 real/double precision。
+- 项目统一 decimal 库，P01 核验并锁定版本；不手写重复 ORM Model 或修改生成文件实现类型转换。
+- 完整契约及验收见 docs/PROTO_AND_MODEL.md、docs/INTERFACES.md、docs/ACCEPTANCE.md 的 A23。

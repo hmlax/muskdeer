@@ -1,0 +1,38 @@
+# deer 公共模块与服务封装规范
+
+## 命名与服务形态（已确认）
+
+公共目录与 Go 包名统一 deer，公共 Proto 位于 deer/proto。所有 Kratos 业务服务分别使用统一的 deer.Deer 封装，由 deer.NewDeer 构造；market、strategy、execution、portfolio、cron 保持各自独立进程与服务身份。用户已明确“各业务服务分别使用统一 Deer 封装”。
+API 服务使用 deer.DeerApi，复用 Deer 公共装配，并承载 Hertz HTTP 入口。名称按用户要求保留 DeerApi 的拼写；本规范配套采用 deer.NewDeerApi 作为构造函数。
+
+## Deer 与 NewDeer
+
+拟定契约：deer.NewDeer(ctx, cfg, serviceSpec) (*deer.Deer, cleanup, error)。Deer 统一装配 Kratos 应用生命周期、按角色启用的 gRPC Server、Nacos 注册发现、日志、健康检查及公共依赖。业务服务通过注册自身 RPC/生命周期任务接入统一封装；cron 通过同一封装托管任务生命周期，继续保持独立进程和幂等要求。
+Deer 按配置提供 DB、Redis、JetStream、Logger、Metrics、Discovery、gRPC ClientFactory、Health；配置通过 deer/proto/config 定义。serviceSpec 声明服务身份及必需/可选能力；每个进程实例拥有自己的运行状态、连接和清理责任，服务名、实例 ID、端口与 Nacos 注册信息分别配置。
+必需初始化失败按逆序释放已建立资源并返回原始错误；cleanup 可重复调用，优雅停止有超时。业务模块接收窄接口，业务持仓、策略调度和交易逻辑由各自模块实现。不得通过 getter 偷偷初始化网络连接。
+
+## DeerApi 与 NewDeerApi
+
+拟定契约：deer.NewDeerApi(ctx, cfg, serviceSpec) (*deer.DeerApi, cleanup, error)。DeerApi 组合并复用一个 Deer，增加 Hertz Server、路由/handler 注册、认证授权、request_id、统一响应与错误映射、OpenAPI 接入；通过 Deer 提供的 gRPC 客户端访问各业务服务。
+Hertz Server 适配后进入所复用 Deer 的 Kratos 生命周期，统一启动、readiness、信号处理、停止接收请求、等待在途请求及依赖清理；API 进程内公共依赖只初始化一次。DeerApi 初始化失败须清理已经成功构造的 Deer 和 HTTP 资源，避免重复关闭或资源泄漏。
+API handler 负责协议边界和调用编排，交易、风控及持仓规则在对应业务服务执行。P02 落实两个构造函数的实际参数/返回类型、服务注册与运行方法，并通过 A02/A26；当前文档契约不代表已存在 Go 实现。
+
+## PostgreSQL/GORM
+连接数、空闲数、最大生命周期、语句超时、连接超时显式配置；context 贯穿；事务由调用方拥有。支持明确事务回调，不通过全局变量切换 DB。空值和 Select 更新语义必须验证；禁止 Updates(struct) 无意忽略 0/false。
+所有数据操作显式以 db.WithContext(ctx).Model(&model.X{}) 绑定生成模型，事务内使用 tx.WithContext(ctx).Model(&model.X{})；禁止任何 DB 变量上的 .Table(...)，公共组件不得提供接收表名的绕过接口。每张表必备 Id 自增主键、createAt/updateAt NOT NULL、deleteAt 可为 NULL，字段映射及生成要求见 PROTO_AND_MODEL.md。
+
+## Redis / NATS
+Redis 键包含环境、服务、资源类型，TTL 显式。NATS subject 区分环境与事件版本；发布带 event_id；JetStream consumer durable、AckExplicit、重试上限和人工恢复规则有配置。达到 MaxDeliver 的事件要有可观测的隔离/重投流程，不假设自动存在 DLQ。
+
+## gRPC / Nacos
+服务名、namespace、group、实例 ID、端口、健康与注销规则统一。gRPC 客户端设置截止时间；只对已定义幂等操作重试。启动注册必须晚于依赖就绪。健康区分进程存活与可服务；租约丢失不应继续报告“可执行交易”。
+
+## API 统一返回
+JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。
+业务错误映射 gRPC status 及 HTTP；内部日志记录根因，前端返回安全信息。request_id 通过 middleware/interceptor 传递；未知传入值校验长度。
+
+## 日志
+Kratos log 接口由结构化日志后端适配，lumberjack 实现文件大小轮转。配置 filename、max_size_mb、max_backups、max_age_days、compress、stdout；每节点独立路径。字段包含 service、instance、request_id、strategy_id、operation、error_code；敏感信息脱敏。
+
+## 可观测性
+/metrics 与健康端口走内网授权。指标包括行情年龄、报价偏离、gRPC 延迟、订单 UNKNOWN 数、撤单延迟、对冲积压、租约丢失、outbox 年龄。订单/成交 ID 只进日志，不进指标 label。存活检查不因短暂依赖故障反复杀进程；readiness 体现可服务状态。

@@ -1,0 +1,16 @@
+---
+description: 所有持久化表的公共字段及 GORM Model 操作规范
+alwaysApply: true
+---
+
+# 数据库强制规范
+
+- 每张表及其持久化 Model 必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL；关联表、Inbox/Outbox、审计表等也必须遵守。
+- Proto/数据库列统一为 id、create_at、update_at、delete_at；对应生成 Go 字段 Id、CreateAt、UpdateAt、DeleteAt。
+- 数据库结构只从 Proto 生成，迁移必须落实主键、自增和空值约束；不手写重复 Model 或修改生成代码。
+- createAt 在插入时设置，updateAt 在插入和更新时设置；deleteAt 未删除时为 SQL NULL，不用零时间代替。
+- 所有 GORM 查询、统计、新增、更新、删除及批量操作显式绑定生成的 Model：db.WithContext(ctx).Model(&model.X{})；事务中使用 tx.WithContext(ctx).Model(&model.X{})。
+- 禁止任何 DB 变量上的 .Table(...)，包括 db.Table("xxx")、tx.Table("xxx") 以及封装后传入表名；适用于业务、公共组件、脚本与测试。
+- 禁止用 Raw/Exec 拼接业务表名绕过 Model；版本化迁移的 DDL SQL 不作为业务数据访问方式。
+- 正确示意：db.WithContext(ctx).Model(&model.StrategyInstance{}).Where("id = ?", id).First(&instance)。model 代表项目生成模型包；这不是已存在的实现。
+- 生成、真实 PostgreSQL 验证及审查门禁见 docs/PROTO_AND_MODEL.md、docs/ACCEPTANCE.md。
