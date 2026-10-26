@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
 func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceConfig, error) {
@@ -34,6 +35,14 @@ func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceCon
 	}
 	if cfg.Nacos.GetRegistration() != nil && cfg.Grpc == nil {
 		return nil, errors.New("nacos publication requires a gRPC listener")
+	}
+	if cfg.GrpcSecurity != nil && cfg.Grpc == nil {
+		return nil, errors.New("gRPC security requires a gRPC listener")
+	}
+	if cfg.Grpc != nil {
+		if err := rpcsecurity.ValidateListener(cfg.Grpc.Address, cfg.Name+grpcServiceSuffix, cfg.GrpcSecurity); err != nil {
+			return nil, err
+		}
 	}
 	for name, listener := range map[string]*configv1.Listener{
 		"grpc": cfg.Grpc,

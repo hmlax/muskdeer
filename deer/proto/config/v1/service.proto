@@ -20,6 +20,20 @@ message ServiceConfig {
   Redis redis = 10;
   JetStream jetstream = 11;
   Nacos nacos = 12;
+  GRPCServerSecurity grpc_security = 13;
+}
+
+// MutualTLS references PEM files provisioned independently of public config.
+message MutualTLS {
+  string certificate_file = 1;
+  string private_key_file = 2;
+  string root_cert_file = 3;
+}
+
+// GRPCServerSecurity authenticates callers by CA-verified service DNS SAN.
+message GRPCServerSecurity {
+  MutualTLS mtls = 1;
+  repeated string allowed_peer_services = 2;
 }
 
 // Nacos scopes naming requests to one explicitly provisioned environment.

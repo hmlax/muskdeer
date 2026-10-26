@@ -80,6 +80,10 @@ Close 先拒绝准入，关闭连接并等待终态回调，重复关闭幂等�
 ## gRPC / Nacos
 服务名、namespace、group、实例 ID、端口、健康与注销规则统一。gRPC 客户端设置截止时间；只对已定义幂等操作重试。启动注册必须晚于依赖就绪。健康区分进程存活与可服务；租约丢失不应继续报告“可执行交易”。
 
+`grpc_security` 为 gRPC server 配置双向 TLS：`mtls.certificate_file/private_key_file/root_cert_file` 引用独立提供的 PEM 文件，`allowed_peer_services` 明确允许的调用方服务 DNS SAN，例如 `api.grpc`。证书必须包含本服务 `<name>.grpc` 的精确 SAN，服务器证书在构造时须处于有效期。使用 TLS 1.3、受信 CA 链及客户端证书，额外匹配许可中的精确 SAN，拒绝通配许可；请求 header/metadata 不能替代证书身份。未配置时仅允许字面量 loopback 监听，非 loopback 必须启用 mTLS；此例外只供隔离本地测试。
+
+`deer/rpcsecurity.Client` 加载调用方的精确服务证书，按受信 CA 与期望被调服务的精确 DNS SAN 验证对端，身份不由 Nacos 返回的 IP 决定。加载的配置为实例独立快照，没有全局证书状态。证书轮换当前需要重建实例，未实现热加载；业务用户权限、最终执行 fencing、运行中证书到期的健康/告警仍须分别接入。过程身份许可不等同于管理用户权限。实连安全边界见 [P02.7.3](validation/P02-07-03.md)。
+
 P02.7.1 实现基于固定 Nacos 2.5.2 OpenAPI 的 deer/nacos.Client，原因见 [ADR 0003](decisions/0003-context-bound-naming.md)。配置显式指定 address（TCP host:port）、私有 namespace_id、group、cluster、username/password_env、两类正 duration 及 max_inflight 1..64；TLS 默认开启，可设根证书，禁止 URL 内嵌身份。客户端不读环境代理、不跟随重定向；认证使用 Bearer header，不将 token 放入 URL，密码只在登录表单。token 缓存至服务端有效期的 80%，之后由下次操作刷新；失效请求返回错误，下一请求再认证，不在失败操作内重放。
 
 Deer 在 JetStream 后初始化，Discovery() 返回借用客户端，缺失配置返回 ErrNacosNotConfigured；getter 不发请求。GetService(ctx, "market.grpc") 每次读实际 API，返回 typed Instance，不保留本地实例快照；过滤不健康/disabled/零权重/其他集群及协议。Nacos 既有数字权重以 json.Number 接收后直接转 decimal.Decimal，仅用于过滤，不进入业务协议或浮点中转。身份重复、无效地址、畸形/超大响应安全拒绝。并发准入和连接受配额限制，响应上限 1 MiB/1024 实例，期限涵盖等待、认证与读取。Close 撤销准入、取消并 join 请求后释放连接，API 装配失败也逆序清理。

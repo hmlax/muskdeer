@@ -2,6 +2,7 @@ package deer
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io"
@@ -21,6 +22,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/redis"
+	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
 // ErrPostgresNotConfigured reports a required database missing from service configuration.
@@ -317,6 +319,14 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 }
 
 func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer, grpc.ServiceRegistrar) error) error {
+	var security *tls.Config
+	if d.cfg.GrpcSecurity != nil {
+		var err error
+		security, err = rpcsecurity.Server(d.cfg.GrpcSecurity, d.cfg.Name+grpcServiceSuffix)
+		if err != nil {
+			return err
+		}
+	}
 	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", d.cfg.Grpc.Address)
 	if err != nil {
 		return fmt.Errorf("listen gRPC: %w", err)
@@ -327,6 +337,7 @@ func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer
 	}
 	server := kratosgrpc.NewServer(
 		kratosgrpc.Listener(accepting),
+		kratosgrpc.TLSConfig(security),
 		kratosgrpc.Timeout(d.cfg.Grpc.RequestTimeout.AsDuration()),
 		kratosgrpc.DisableReflection(),
 		kratosgrpc.Options(grpc.WaitForHandlers(true)),

@@ -22,6 +22,21 @@ func TestDeerRejectsInvalidConfigBeforeSideEffects(t *testing.T) {
 			change: func(*configv1.ServiceConfig) *configv1.ServiceConfig { return nil },
 		},
 		{
+			name: "public plaintext gRPC",
+			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
+				cfg.Grpc.Address = "0.0.0.0:0"
+				return cfg
+			},
+		},
+		{
+			name: "security without gRPC listener",
+			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
+				cfg.Grpc = nil
+				cfg.GrpcSecurity = &configv1.GRPCServerSecurity{}
+				return cfg
+			},
+		},
+		{
 			name: "missing identity",
 			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
 				cfg.InstanceId = ""
