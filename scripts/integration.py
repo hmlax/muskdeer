@@ -2,13 +2,47 @@
 """Run infrastructure contracts against dedicated temporary test services."""
 
 import os
+import json
 from pathlib import Path
 import subprocess
 import sys
 import uuid
+import urllib.parse
+import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def initialize_naming() -> None:
+    """Provision only the fresh, isolated Compose Nacos test server."""
+    base = 'http://127.0.0.1:55442/nacos'
+
+    def post(path: str, values: dict) -> dict:
+        body = urllib.parse.urlencode(values).encode()
+        request = urllib.request.Request(base + path, data=body, method='POST')
+        with urllib.request.urlopen(request, timeout=5) as response:
+            return json.load(response)
+
+    post('/v1/auth/users/admin', {'password': 'muskdeer_nacos_test_only'})
+    login = post('/v1/auth/login', {
+        'username': 'nacos', 'password': 'muskdeer_nacos_test_only',
+    })
+    token = login.get('accessToken')
+    if not isinstance(token, str) or not token:
+        raise ValueError('isolated Nacos login did not return a token')
+    for namespace in ['integration-naming', 'integration-other']:
+        created = post('/v2/console/namespace', {
+            'namespaceId': namespace, 'namespaceName': namespace, 'accessToken': token,
+        })
+        if created.get('code') != 0 or created.get('data') is not True:
+            raise ValueError('isolated Nacos namespace initialization failed')
+    request = urllib.request.Request(base + '/v1/console/server/state', headers={'Authorization': 'Bearer ' + token})
+    with urllib.request.urlopen(request, timeout=5) as response:
+        state = json.load(response)
+    if state.get('version') != '2.5.2':
+        raise ValueError('isolated Nacos server did not report version 2.5.2')
+    print('Nacos server 2.5.2: authenticated test namespaces initialized', flush=True)
 
 
 def run() -> int:
@@ -17,10 +51,11 @@ def run() -> int:
     started = False
     try:
         started = True
-        subprocess.run([*compose, 'up', '-d', '--wait', '--wait-timeout', '45'], check=True)
+        subprocess.run([*compose, 'up', '-d', '--wait', '--wait-timeout', '120'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'postgres', 'postgres', '--version'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'redis', 'redis-server', '--version'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'nats', 'nats-server', '--version'], check=True)
+        initialize_naming()
         environment = os.environ.copy()
         environment['MUSKDEER_TEST_POSTGRES_DSN'] = (
             'host=127.0.0.1 port=55439 user=muskdeer password=muskdeer_test_only '
@@ -29,6 +64,7 @@ def run() -> int:
         environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
         environment['MUSKDEER_TEST_REDIS_PASSWORD'] = 'muskdeer_redis_test_only'
         environment['MUSKDEER_TEST_NATS_TOKEN'] = 'muskdeer_nats_test_only'
+        environment['MUSKDEER_TEST_NACOS_PASSWORD'] = 'muskdeer_nacos_test_only'
         result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-count=1', '-v', './internal/persistenceprobe',
@@ -47,6 +83,6 @@ def run() -> int:
 if __name__ == '__main__':
     try:
         sys.exit(run())
-    except (OSError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
         print(f'Infrastructure integration failed: {error}', file=sys.stderr)
         sys.exit(1)

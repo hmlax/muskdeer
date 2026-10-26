@@ -19,6 +19,22 @@ message ServiceConfig {
   Postgres postgres = 9;
   Redis redis = 10;
   JetStream jetstream = 11;
+  Nacos nacos = 12;
+}
+
+// Nacos scopes naming requests to one explicitly provisioned environment.
+message Nacos {
+  string address = 1;
+  string namespace_id = 2;
+  string group = 3;
+  string cluster = 4;
+  string username = 5;
+  string password_env = 6;
+  google.protobuf.Duration connect_timeout = 7;
+  google.protobuf.Duration command_timeout = 8;
+  optional bool tls_enabled = 9;
+  string root_cert_file = 10;
+  int32 max_inflight = 11;
 }
 
 // JetStream owns a synchronous publisher to a pre-provisioned stream.

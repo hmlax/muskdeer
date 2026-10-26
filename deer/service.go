@@ -17,6 +17,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	"github.com/hmlax/muskdeer/deer/logging"
+	"github.com/hmlax/muskdeer/deer/nacos"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/redis"
@@ -30,6 +31,9 @@ var ErrRedisNotConfigured = errors.New("redis is not configured")
 
 // ErrJetStreamNotConfigured reports a required event publisher missing from configuration.
 var ErrJetStreamNotConfigured = errors.New("jetstream is not configured")
+
+// ErrNacosNotConfigured reports a required naming dependency missing from configuration.
+var ErrNacosNotConfigured = errors.New("nacos is not configured")
 
 // ErrNotReady reports a service that has not started or is stopping.
 var ErrNotReady = errors.New("service is not ready")
@@ -64,6 +68,7 @@ type Deer struct {
 	database    *postgres.Client
 	cache       *redis.Client
 	events      *jetstream.Client
+	discovery   *nacos.Client
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -106,6 +111,15 @@ func (d *Deer) JetStream() (*jetstream.Client, error) {
 	return d.events, nil
 }
 
+// Discovery returns a borrowed, initialized Nacos client for fresh lookups.
+// The service owns its lifetime; callers must not close it themselves.
+func (d *Deer) Discovery() (*nacos.Client, error) {
+	if d.discovery == nil {
+		return nil, ErrNacosNotConfigured
+	}
+	return d.discovery, nil
+}
+
 // CheckReady verifies current listener state and configured dependencies live.
 // Ready alone reports lifecycle state; health endpoints should use CheckReady.
 func (d *Deer) CheckReady(ctx context.Context) error {
@@ -127,6 +141,11 @@ func (d *Deer) CheckReady(ctx context.Context) error {
 	}
 	if d.events != nil {
 		if err := d.events.Ping(ctx); err != nil {
+			return err
+		}
+	}
+	if d.discovery != nil {
+		if err := d.discovery.Ping(ctx); err != nil {
 			return err
 		}
 	}
@@ -192,7 +211,8 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	var database *postgres.Client
 	var cache *redis.Client
 	var events *jetstream.Client
-	plan := make([]Initializer, 0, len(spec.Resources)+4)
+	var discovery *nacos.Client
+	plan := make([]Initializer, 0, len(spec.Resources)+5)
 	plan = append(plan, Initializer{
 		Name: "deer.logging",
 		Open: func(ctx context.Context) (Cleanup, error) {
@@ -246,6 +266,19 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			},
 		})
 	}
+	if cfg.Nacos != nil {
+		plan = append(plan, Initializer{
+			Name: "deer.nacos",
+			Open: func(ctx context.Context) (Cleanup, error) {
+				var err error
+				discovery, err = nacos.New(ctx, cfg.Nacos)
+				if err != nil {
+					return nil, err
+				}
+				return func(context.Context) error { return discovery.Close() }, nil
+			},
+		})
+	}
 	plan = append(plan, spec.Resources...)
 	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
 	if err != nil {
@@ -261,6 +294,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		database:    database,
 		cache:       cache,
 		events:      events,
+		discovery:   discovery,
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
@@ -364,6 +398,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	}
 	if d.events != nil {
 		if err := d.events.Ping(startup); err != nil {
+			return err
+		}
+	}
+	if d.discovery != nil {
+		if err := d.discovery.Ping(startup); err != nil {
 			return err
 		}
 	}

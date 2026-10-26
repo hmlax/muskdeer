@@ -1,4 +1,28 @@
 services:
+  nacos:
+    image: nacos/nacos-server:v2.5.2-slim@sha256:30e86eeb97471fdcce03979eb35211fbab73e845d54fa52262f512e32d7ae270
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_SYSTEM_TYPE: nacos
+      NACOS_AUTH_TOKEN: "bXVza2RlZXJfdGVzdF9vbmx5X3NpZ25pbmdfa2V5XzAwMDAwMDAwMDA="
+      NACOS_AUTH_IDENTITY_KEY: muskdeer_test_identity
+      NACOS_AUTH_IDENTITY_VALUE: muskdeer_test_only
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+    ports:
+      - "127.0.0.1:55442:8848"
+    tmpfs:
+      - /home/nacos/data
+      - /home/nacos/logs
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8848/nacos/v1/console/health/readiness"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
   nats:
     image: nats:2.12-alpine@sha256:b270f5e2428354c0335612694d7dd2fb588148e567a5757fdff325ef9c9332e6
     command: ["-js", "-sd", "/data", "-m", "8222", "--auth", "muskdeer_nats_test_only"]

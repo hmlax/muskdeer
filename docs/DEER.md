@@ -37,9 +37,9 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 调用方构造成功后应立即安排返回的 Cleanup。Run(ctx) 至多调用一次，阻塞到上下文取消、cleanup、进程信号或监听失败；返回前停止两种 transport，再逆序释放资源。上下文取消通过 errors.Is(err, context.Canceled/DeadlineExceeded) 识别；正常 cleanup 停止成功返回 nil。cleanup 可在 Run 前、运行中或返回后调用，重复/并发调用只清理一次。清理使用配置中的独立超时上下文，资源和 handler 必须遵守上下文，不能强制终止不合作的 Go 函数。
 
-Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
+Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream/Nacos。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.6 已接入日志核心、PostgreSQL、Redis 及 JetStream 同步发布，见下节；Nacos、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.1 已接入日志、PostgreSQL/Redis、JetStream 同步发布及 Nacos 查询基础；自动注册/心跳、两节点调用、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -79,6 +79,12 @@ Close 先拒绝准入，关闭连接并等待终态回调，重复关闭幂等�
 
 ## gRPC / Nacos
 服务名、namespace、group、实例 ID、端口、健康与注销规则统一。gRPC 客户端设置截止时间；只对已定义幂等操作重试。启动注册必须晚于依赖就绪。健康区分进程存活与可服务；租约丢失不应继续报告“可执行交易”。
+
+P02.7.1 实现基于固定 Nacos 2.5.2 OpenAPI 的 deer/nacos.Client，原因见 [ADR 0003](decisions/0003-context-bound-naming.md)。配置显式指定 address（TCP host:port）、私有 namespace_id、group、cluster、username/password_env、两类正 duration 及 max_inflight 1..64；TLS 默认开启，可设根证书，禁止 URL 内嵌身份。客户端不读环境代理、不跟随重定向；认证使用 Bearer header，不将 token 放入 URL，密码只在登录表单。token 缓存至服务端有效期的 80%，之后由下次操作刷新；失效请求返回错误，下一请求再认证，不在失败操作内重放。
+
+Deer 在 JetStream 后初始化，Discovery() 返回借用客户端，缺失配置返回 ErrNacosNotConfigured；getter 不发请求。GetService(ctx, "market.grpc") 每次读实际 API，返回 typed Instance，不保留本地实例快照；过滤不健康/disabled/零权重/其他集群及协议。Nacos 既有数字权重以 json.Number 接收后直接转 decimal.Decimal，仅用于过滤，不进入业务协议或浮点中转。身份重复、无效地址、畸形/超大响应安全拒绝。并发准入和连接受配额限制，响应上限 1 MiB/1024 实例，期限涵盖等待、认证与读取。Close 撤销准入、取消并 join 请求后释放连接，API 装配失败也逆序清理。
+
+启动及实时健康会在同一 scope 查询 `deer-readiness.grpc`，账户需有该 READ 权限，不要求存在服务提供者；namespace 由部署方预建。该路径仅完成认证/出站查询，尚不自动发布本服务地址、发送心跳或提供 watch/gRPC ClientFactory；下一小步加入这些生命周期并验证两节点。实际 4 组 Nacos 场景及未验收范围见 [P02.7.1](validation/P02-07-01.md)；测试管理员样例不作为生产 ACL/TLS 或跨版本证据。
 
 ## API 统一返回
 JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。
