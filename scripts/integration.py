@@ -75,6 +75,16 @@ def run() -> int:
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-race', '-count=1', '-v', './internal/infrastructureprobe',
         ], cwd=ROOT, env=environment, check=False).returncode
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        # These are disposable services with explicit test credentials. Capture
+        # only this project's bounded logs before finally removes the evidence.
+        try:
+            diagnostic = subprocess.run([*compose, 'logs', '--no-color', '--tail', '80'], check=False)
+            if diagnostic.returncode:
+                print('Test container diagnostics failed; preserving the original error', file=sys.stderr)
+        except OSError:
+            print('Test container diagnostics unavailable; preserving the original error', file=sys.stderr)
+        raise
     finally:
         if started:
             subprocess.run([*compose, 'down', '--volumes'], check=True)
