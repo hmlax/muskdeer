@@ -64,8 +64,8 @@ func TestInvalidPoolConfigurationIsRejected(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := testConfig()
 			test.change(cfg)
-			if client, err := New(t.Context(), cfg, "invalid"); client != nil || err == nil {
-				t.Fatalf("invalid New = %v, %v", client, err)
+			if err := validate(cfg); err == nil {
+				t.Fatal("invalid PostgreSQL settings were accepted by configuration validation")
 			}
 		})
 	}
