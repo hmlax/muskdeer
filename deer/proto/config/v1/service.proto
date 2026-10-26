@@ -18,6 +18,22 @@ message ServiceConfig {
   Logging logging = 8;
   Postgres postgres = 9;
   Redis redis = 10;
+  JetStream jetstream = 11;
+}
+
+// JetStream owns a synchronous publisher to a pre-provisioned stream.
+// address is TCP host:port, without a URL or embedded credentials.
+message JetStream {
+  string address = 1;
+  string stream = 2;
+  string subject_prefix = 3;
+  string token_env = 4;
+  google.protobuf.Duration connect_timeout = 5;
+  google.protobuf.Duration command_timeout = 6;
+  int32 max_inflight = 7;
+  int32 max_message_bytes = 8;
+  optional bool tls_enabled = 9;
+  string root_cert_file = 10;
 }
 
 // Redis is a standalone, namespaced cache. Monetary authority remains in PostgreSQL.

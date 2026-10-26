@@ -20,6 +20,7 @@ def run() -> int:
         subprocess.run([*compose, 'up', '-d', '--wait', '--wait-timeout', '45'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'postgres', 'postgres', '--version'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'redis', 'redis-server', '--version'], check=True)
+        subprocess.run([*compose, 'exec', '-T', 'nats', 'nats-server', '--version'], check=True)
         environment = os.environ.copy()
         environment['MUSKDEER_TEST_POSTGRES_DSN'] = (
             'host=127.0.0.1 port=55439 user=muskdeer password=muskdeer_test_only '
@@ -27,6 +28,7 @@ def run() -> int:
         )
         environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
         environment['MUSKDEER_TEST_REDIS_PASSWORD'] = 'muskdeer_redis_test_only'
+        environment['MUSKDEER_TEST_NATS_TOKEN'] = 'muskdeer_nats_test_only'
         result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-count=1', '-v', './internal/persistenceprobe',

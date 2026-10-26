@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
+	"github.com/hmlax/muskdeer/deer/jetstream"
 	"github.com/hmlax/muskdeer/deer/logging"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
@@ -26,6 +27,9 @@ var ErrPostgresNotConfigured = errors.New("postgres is not configured")
 
 // ErrRedisNotConfigured reports a required cache missing from service configuration.
 var ErrRedisNotConfigured = errors.New("redis is not configured")
+
+// ErrJetStreamNotConfigured reports a required event publisher missing from configuration.
+var ErrJetStreamNotConfigured = errors.New("jetstream is not configured")
 
 // ErrNotReady reports a service that has not started or is stopping.
 var ErrNotReady = errors.New("service is not ready")
@@ -59,6 +63,7 @@ type Deer struct {
 	logger      *logging.Logger
 	database    *postgres.Client
 	cache       *redis.Client
+	events      *jetstream.Client
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -92,6 +97,15 @@ func (d *Deer) Redis() (*redis.Client, error) {
 	return d.cache, nil
 }
 
+// JetStream returns the initialized synchronous publisher, borrowed by callers.
+// The service owns its lifetime; callers must not close it themselves.
+func (d *Deer) JetStream() (*jetstream.Client, error) {
+	if d.events == nil {
+		return nil, ErrJetStreamNotConfigured
+	}
+	return d.events, nil
+}
+
 // CheckReady verifies current listener state and configured dependencies live.
 // Ready alone reports lifecycle state; health endpoints should use CheckReady.
 func (d *Deer) CheckReady(ctx context.Context) error {
@@ -108,6 +122,11 @@ func (d *Deer) CheckReady(ctx context.Context) error {
 	}
 	if d.cache != nil {
 		if err := d.cache.Ping(ctx); err != nil {
+			return err
+		}
+	}
+	if d.events != nil {
+		if err := d.events.Ping(ctx); err != nil {
 			return err
 		}
 	}
@@ -172,7 +191,8 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	var logger *logging.Logger
 	var database *postgres.Client
 	var cache *redis.Client
-	plan := make([]Initializer, 0, len(spec.Resources)+3)
+	var events *jetstream.Client
+	plan := make([]Initializer, 0, len(spec.Resources)+4)
 	plan = append(plan, Initializer{
 		Name: "deer.logging",
 		Open: func(ctx context.Context) (Cleanup, error) {
@@ -213,6 +233,19 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			},
 		})
 	}
+	if cfg.Jetstream != nil {
+		plan = append(plan, Initializer{
+			Name: "deer.jetstream",
+			Open: func(ctx context.Context) (Cleanup, error) {
+				var err error
+				events, err = jetstream.New(ctx, cfg.Jetstream, cfg.Name+"/"+cfg.InstanceId)
+				if err != nil {
+					return nil, err
+				}
+				return func(context.Context) error { return events.Close() }, nil
+			},
+		})
+	}
 	plan = append(plan, spec.Resources...)
 	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
 	if err != nil {
@@ -227,6 +260,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		logger:      logger,
 		database:    database,
 		cache:       cache,
+		events:      events,
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
@@ -325,6 +359,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	}
 	if d.cache != nil {
 		if err := d.cache.Ping(startup); err != nil {
+			return err
+		}
+	}
+	if d.events != nil {
+		if err := d.events.Ping(startup); err != nil {
 			return err
 		}
 	}

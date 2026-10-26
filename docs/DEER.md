@@ -37,9 +37,9 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 调用方构造成功后应立即安排返回的 Cleanup。Run(ctx) 至多调用一次，阻塞到上下文取消、cleanup、进程信号或监听失败；返回前停止两种 transport，再逆序释放资源。上下文取消通过 errors.Is(err, context.Canceled/DeadlineExceeded) 识别；正常 cleanup 停止成功返回 nil。cleanup 可在 Run 前、运行中或返回后调用，重复/并发调用只清理一次。清理使用配置中的独立超时上下文，资源和 handler 必须遵守上下文，不能强制终止不合作的 Go 函数。
 
-Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
+Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.5 已接入日志核心、PostgreSQL 及 Redis，见下节；Nacos、JetStream、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.6 已接入日志核心、PostgreSQL、Redis 及 JetStream 同步发布，见下节；Nacos、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -66,6 +66,16 @@ New 在构造时复制配置、解析密码引用并有界 PING。TLS 缺省开�
 Get/Set/Delete/Ping 接收 context，命令使用调用方与 command_timeout 中较早的 deadline；已取消上下文不会发命令。网络 I/O 中途取消的响应仍受已设置的 socket deadline 约束，不能承诺无 deadline 的取消即时中断。Set 的 TTL 必须为正整数毫秒；值为 string，小数不经浮点转换。Get 缺失返回 ErrNotFound；SET 超时代表结果未知，调用方不能据此认定未写入，本层不重放命令。错误文本隐藏地址/口令，原始原因保留给 errors.Is/As。
 
 Deer 在 PostgreSQL 之后、业务依赖之前初始化 Redis，停止时逆序关闭；Redis() 返回借用客户端，未配置返回 ErrRedisNotConfigured。CheckReady 和启动 readiness 包含实际 PING。Close 幂等且关闭全部池和连接；SDK 失败 dial 的辅助恢复探针可能在 Close 后等待一个连接超时及一秒定时器才退出，不重放业务命令。单连接失败用虚拟时间验证有界退出，未添加 goleak 忽略项；此范围及真实 Redis 证据见 [P02.5](validation/P02-05.md)。Cluster/Sentinel、PubSub、锁和权威数据接口未开放。
+
+P02.6 实现 deer/jetstream.Client 与借用的 Deer.JetStream()，位于 Redis 之后初始化并逆序关闭；未配置返回 ErrJetStreamNotConfigured。JetStream Proto 指定单一 TCP address、已部署的 stream、`muskdeer.<environment>.<service>` subject_prefix、可选 token_env、connect_timeout/command_timeout、max_inflight（1..1024）、max_message_bytes（1..1048576）及默认开启的 TLS/可选根证书。TLS 验证主机名且最低 1.2；不在配置中存放 token。构造复制配置，TCP/握手共用调用方与 connect_timeout 的较早期限；取消关闭初始 socket，连接完成后移除构造上下文引用。
+
+应用不创建/修改 stream。构造及健康检查读取实际流配置，要求允许 ACK、未 sealed，且 Subjects 明确包含 `<subject_prefix>.>`；共享流应列出各服务的此类前缀，只有祖先通配符的配置会被拒绝。此检查不替代 broker 账户 ACL、持久化副本和容量配置。
+
+Publish(ctx, suffix, eventID, proto.Message) 有界准入、确定性 Protobuf 编码并同步等待存储确认；suffix 如 `order.state.v1`，eventID 为最多 64 字节 ASCII 字母/数字/点/下划线/连字符，须在整个 stream 内稳定且唯一。设置 Nats-Msg-Id/预期 stream，返回 Stream/Sequence/Duplicate；消息借用至调用返回，不能并发修改。当前仅用技术 Probe 验证类型/精确字符串；P03 才定义业务 envelope 和明确 payload，不用通用发布器冒充业务契约。
+
+禁用 SDK 发布重试、重连缓存、自动重连及发现到的其他服务器；首版连接断开后安全拒绝，需重建客户端/重启进程。该恢复监督将在后续服务恢复步骤接入，当前不宣称自动恢复或 HA。命令期限覆盖准入及等待 ACK；超时可能已落盘，重试由持久化 outbox 的所有者决定。Broker 去重只作用于有限窗口，同 ID 不会验证 payload 指纹，不能替代数据库 inbox/成交唯一键；业务持久化指纹、事务及重投在 P03/P04 完成。
+
+Close 先拒绝准入，关闭连接并等待终态回调，重复关闭幂等；已确认发布已落盘，进行中的发布仍可能不确定。未开放 consumer、异步发布或无范围的 SDK 句柄，不调用异步 Drain 来暗示未知发布已获确认。真实 ACK 丢失/去重、命名空间、失败清理等证据见 [P02.6](validation/P02-06.md)；consumer AckExplicit/MaxDeliver、隔离恢复、outbox/inbox 和 broker 集群故障验收尚未完成。
 
 ## gRPC / Nacos
 服务名、namespace、group、实例 ID、端口、健康与注销规则统一。gRPC 客户端设置截止时间；只对已定义幂等操作重试。启动注册必须晚于依赖就绪。健康区分进程存活与可服务；租约丢失不应继续报告“可执行交易”。
