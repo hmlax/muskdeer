@@ -12,6 +12,9 @@ services:
       JVM_XMS: 256m
       JVM_XMX: 256m
       JVM_XMN: 128m
+      # The pinned image's JDK cgroup metrics fail on the Ubuntu runner.
+      # Heap bounds above remain explicit; Docker isolation is unchanged.
+      JAVA_TOOL_OPTIONS: "-XX:-UseContainerSupport"
     ports:
       - "127.0.0.1:55442:8848"
     tmpfs:
