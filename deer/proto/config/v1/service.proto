@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package muskdeer.config.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/config/v1;configv1";
+
+import "google/protobuf/duration.proto";
+
+// ServiceConfig identifies one independently owned service process.
+message ServiceConfig {
+  string name = 1;
+  string instance_id = 2;
+  string version = 3;
+  google.protobuf.Duration startup_timeout = 4;
+  google.protobuf.Duration shutdown_timeout = 5;
+  Listener grpc = 6;
+  Listener http = 7;
+}
+
+// Listener is optional; when present, address and positive timeouts are required.
+// Port zero is useful for isolated tests. Public deployment requires explicit ports.
+message Listener {
+  string address = 1;
+  google.protobuf.Duration request_timeout = 2;
+}

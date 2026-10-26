@@ -7,20 +7,41 @@ API 服务使用 deer.DeerApi，复用 Deer 公共装配，并承载 Hertz HTTP 
 
 ## Deer 与 NewDeer
 
-拟定契约：deer.NewDeer(ctx, cfg, serviceSpec) (*deer.Deer, cleanup, error)。Deer 统一装配 Kratos 应用生命周期、按角色启用的 gRPC Server、Nacos 注册发现、日志、健康检查及公共依赖。业务服务通过注册自身 RPC/生命周期任务接入统一封装；cron 通过同一封装托管任务生命周期，继续保持独立进程和幂等要求。
+目标职责：Deer 统一装配 Kratos 应用生命周期、按角色启用的 gRPC Server、Nacos 注册发现、日志、健康检查及公共依赖。业务服务通过注册自身 RPC/生命周期任务接入统一封装；cron 通过同一封装托管任务生命周期，继续保持独立进程和幂等要求。
 Deer 按配置提供 DB、Redis、JetStream、Logger、Metrics、Discovery、gRPC ClientFactory、Health；配置通过 deer/proto/config 定义。serviceSpec 声明服务身份及必需/可选能力；每个进程实例拥有自己的运行状态、连接和清理责任，服务名、实例 ID、端口与 Nacos 注册信息分别配置。
 必需初始化失败按逆序释放已建立资源并返回原始错误；cleanup 可重复调用，优雅停止有超时。业务模块接收窄接口，业务持仓、策略调度和交易逻辑由各自模块实现。不得通过 getter 偷偷初始化网络连接。
 
 ## DeerApi 与 NewDeerApi
 
-拟定契约：deer.NewDeerApi(ctx, cfg, serviceSpec) (*deer.DeerApi, cleanup, error)。DeerApi 组合并复用一个 Deer，增加 Hertz Server、路由/handler 注册、认证授权、request_id、统一响应与错误映射、OpenAPI 接入；通过 Deer 提供的 gRPC 客户端访问各业务服务。
+目标职责：DeerApi 组合并复用一个 Deer，增加 Hertz Server、路由/handler 注册、认证授权、request_id、统一响应与错误映射、OpenAPI 接入；通过 Deer 提供的 gRPC 客户端访问各业务服务。
 Hertz Server 适配后进入所复用 Deer 的 Kratos 生命周期，统一启动、readiness、信号处理、停止接收请求、等待在途请求及依赖清理；API 进程内公共依赖只初始化一次。DeerApi 初始化失败须清理已经成功构造的 Deer 和 HTTP 资源，避免重复关闭或资源泄漏。
-API handler 负责协议边界和调用编排，交易、风控及持仓规则在对应业务服务执行。P02 落实两个构造函数的实际参数/返回类型、服务注册与运行方法，并通过 A02/A26；当前文档契约不代表已存在 Go 实现。
+API handler 负责协议边界和调用编排，交易、风控及持仓规则在对应业务服务执行。P02 分步落实这些职责，并通过 A02/A26；实际实现范围以下节及验证记录为准。
+
+## 已实现的构造与运行契约
+
+P02.2 已实现以下 Go 接口，配置类型为 deer/proto/config/v1.ServiceConfig：
+
+```go
+deer.NewDeer(ctx, cfg, deer.ServiceSpec) (*deer.Deer, deer.Cleanup, error)
+deer.NewDeerApi(ctx, cfg, deer.APISpec) (*deer.DeerApi, deer.Cleanup, error)
+```
+
+ServiceSpec.Resources 声明进程拥有的依赖；RegisterGRPC 接收 grpc.ServiceRegistrar 并返回注册错误。APISpec.Service 复用同一个 ServiceSpec，Routes 同步注册 Hertz 中间件与路由；回调不得自行运行服务、保留 server 后续修改，或追加独立生命周期 hook。正常业务请求 handler 必须遵守上下文。
+
+ServiceConfig 显式提供 name、instance_id、version、startup_timeout、shutdown_timeout 及可选 grpc/http listener。每个 listener 提供 address 和 request_timeout；请求超时必须不超过停止预算。NewDeer 不接受 HTTP 配置，NewDeerApi 必须配置 HTTP；gRPC 可关闭。构造时复制配置，校验后才获取依赖并预留监听端口；端口占用或回调失败均回滚。
+
+gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch）要求客户端原生 deadline 且不超过配置 request_timeout，否则 InvalidArgument。原生 deadline 可中断阻塞的流读写；只包装 handler 上下文不能保证中断 RecvMsg/SendMsg。
+
+调用方构造成功后应立即安排返回的 Cleanup。Run(ctx) 至多调用一次，阻塞到上下文取消、cleanup、进程信号或监听失败；返回前停止两种 transport，再逆序释放资源。上下文取消通过 errors.Is(err, context.Canceled/DeadlineExceeded) 识别；正常 cleanup 停止成功返回 nil。cleanup 可在 Run 前、运行中或返回后调用，重复/并发调用只清理一次。清理使用配置中的独立超时上下文，资源和 handler 必须遵守上下文，不能强制终止不合作的 Go 函数。
+
+Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。当前 readiness 只包含构造依赖和监听状态，后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
+
+实际证据见 [P02.2](validation/P02-02.md)。Nacos、真实基础设施工厂、日志轮转、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
 P02.1 已实现 Cleanup(ctx) error 与 Initializer{Name, Open}：资源获取前校验计划，失败时逆序释放全部已获取资源，保留原始初始化错误与释放错误；部分初始化失败也须返回 cleanup。清理同步执行，具有独立超时上下文，重复/并发调用只释放一次。资源回调须遵守上下文并负责自己创建的连接或 goroutine。
-两个服务构造函数尚待接入该基础；实际范围和证据见 [P02.1](validation/P02-01.md)，不能据此声称完整服务初始化验收通过。
+两个服务构造函数已在 P02.2 接入该基础；所有权层的原始范围和证据见 [P02.1](validation/P02-01.md)。
 
 ## PostgreSQL/GORM
 连接数、空闲数、最大生命周期、语句超时、连接超时显式配置；context 贯穿；事务由调用方拥有。支持明确事务回调，不通过全局变量切换 DB。空值和 Select 更新语义必须验证；禁止 Updates(struct) 无意忽略 0/false。
