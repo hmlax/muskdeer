@@ -17,6 +17,11 @@ Deer 按配置提供 DB、Redis、JetStream、Logger、Metrics、Discovery、gRP
 Hertz Server 适配后进入所复用 Deer 的 Kratos 生命周期，统一启动、readiness、信号处理、停止接收请求、等待在途请求及依赖清理；API 进程内公共依赖只初始化一次。DeerApi 初始化失败须清理已经成功构造的 Deer 和 HTTP 资源，避免重复关闭或资源泄漏。
 API handler 负责协议边界和调用编排，交易、风控及持仓规则在对应业务服务执行。P02 落实两个构造函数的实际参数/返回类型、服务注册与运行方法，并通过 A02/A26；当前文档契约不代表已存在 Go 实现。
 
+## 已实现的资源所有权基础
+
+P02.1 已实现 Cleanup(ctx) error 与 Initializer{Name, Open}：资源获取前校验计划，失败时逆序释放全部已获取资源，保留原始初始化错误与释放错误；部分初始化失败也须返回 cleanup。清理同步执行，具有独立超时上下文，重复/并发调用只释放一次。资源回调须遵守上下文并负责自己创建的连接或 goroutine。
+两个服务构造函数尚待接入该基础；实际范围和证据见 [P02.1](validation/P02-01.md)，不能据此声称完整服务初始化验收通过。
+
 ## PostgreSQL/GORM
 连接数、空闲数、最大生命周期、语句超时、连接超时显式配置；context 贯穿；事务由调用方拥有。支持明确事务回调，不通过全局变量切换 DB。空值和 Select 更新语义必须验证；禁止 Updates(struct) 无意忽略 0/false。
 所有数据操作显式以 db.WithContext(ctx).Model(&model.X{}) 绑定生成模型，事务内使用 tx.WithContext(ctx).Model(&model.X{})；禁止任何 DB 变量上的 .Table(...)，公共组件不得提供接收表名的绕过接口。每张表必备 Id 自增主键、createAt/updateAt NOT NULL、deleteAt 可为 NULL，字段映射及生成要求见 PROTO_AND_MODEL.md。
