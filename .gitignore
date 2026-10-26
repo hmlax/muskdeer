@@ -2,3 +2,5 @@
 /Muskdeer-preparation/
 /Muskdeer-preparation.zip
 .DS_Store
+/.cache/
+__pycache__/
