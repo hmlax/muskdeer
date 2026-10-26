@@ -1,4 +1,4 @@
-.PHONY: doctor test-tooling tools generate generate-check fmt fmt-check lint test test-race build verify integration
+.PHONY: doctor test-tooling tools generate generate-check hz-check fmt fmt-check lint test test-race build verify integration
 
 doctor:
 	python3 scripts/go.py version
@@ -15,6 +15,9 @@ generate:
 
 generate-check:
 	python3 scripts/generate.py --check
+
+hz-check:
+	python3 scripts/verify-hz.py
 
 fmt:
 	python3 scripts/format.py
@@ -34,7 +37,7 @@ test-race:
 build:
 	python3 scripts/go.py build ./...
 
-verify: doctor generate-check fmt-check lint test-tooling test test-race build
+verify: doctor generate-check hz-check fmt-check lint test-tooling test test-race build
 
 integration:
 	python3 scripts/integration.py

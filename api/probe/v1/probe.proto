@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package muskdeer.probe.v1;
+
+import "hertz/api.proto";
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/api/probe/v1;probev1";
+
+// ArithmeticProbe checks the transport/generator stack before business services.
+service ArithmeticProbe {
+  rpc Multiply(MultiplyRequest) returns (MultiplyReply) {
+    option (api.get) = "/probe/notional";
+  }
+}
+
+message MultiplyRequest {
+  string price = 1 [(api.query) = "price", (tagger.tags) = "query:\"price\""];
+  string quantity = 2 [(api.query) = "quantity", (tagger.tags) = "query:\"quantity\""];
+}
+
+message MultiplyReply {
+  string notional = 1;
+}

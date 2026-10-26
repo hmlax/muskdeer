@@ -8,7 +8,7 @@
 先检查当前目录、就近 AGENTS.md、git 状态、现有代码和远程地址，保留我的已有修改。检查安装器跳过的同名文件是否已合并，不将文档中的预期功能当作已实现。
 公开仓库固定为 https://github.com/hmlax/muskdeer.git，Go module 固定为 github.com/hmlax/muskdeer。核对 origin 和远程分支，保留已有历史；初始空仓库采用 main。
 
-从 P01 开始：Go 版本由用户固定为 1.27.3，核验该官方工具链可获取性及 Hertz/Kratos/gRPC/Nacos、Proto→GORM→PostgreSQL 的兼容性，锁定插件版本；开发、生成、测试、CI 与构建均使用 Go 1.27.3，不重新选版。公共模块包名 deer，各 Kratos 业务服务分别使用 deer.NewDeer 构造的 Deer 封装；API 使用 deer.NewDeerApi 构造的 DeerApi，复用 Deer 并托管 Hertz，保留各业务服务独立进程及身份。按 docs/DEER.md 实现并通过 A02/A26。持久化类型只从 deer/proto 下的 Proto 生成，禁止手写第二份数据库 Model。
+按 PROGRESS 从首个未完成任务继续；若 P01 已完成，复用其验证记录和固定版本。Go 由用户固定为 1.27.3，开发、生成、测试、CI 与构建保持一致，不重新选版。P01 的官方工具链、Hertz/Kratos/gRPC/Nacos SDK 及 Proto→GORM→PostgreSQL 兼容结果见 docs/validation。公共模块包名 deer，各 Kratos 业务服务分别使用 deer.NewDeer 构造的 Deer 封装；API 使用 deer.NewDeerApi 构造的 DeerApi，复用 Deer 并托管 Hertz，保留各业务服务独立进程及身份。按 docs/DEER.md 实现并通过 A02/A26。持久化类型只从 deer/proto 下的 Proto 生成，禁止手写第二份数据库 Model。
 
 每张表必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL，按 docs/PROTO_AND_MODEL.md 统一字段映射并落实到生成模型与迁移。所有 GORM 数据操作显式使用 db.Model(&model.X{})，事务中用 tx.Model(&model.X{})，并贯穿 context；禁止任何 DB 变量上的 .Table(...)，业务、公共组件、脚本和测试均须遵守。通过 A01/A22 后才算完成数据库规范验收。
 

@@ -11,14 +11,14 @@
 ## 开发任务
 | 任务 | 状态 | 证据 |
 |---|---|---|
-| P01 | in_progress | P01.1 工具链已推送 a994a62；P01.2 生成/PostgreSQL 最小验证通过，框架兼容验证待后续步骤 |
-| P02 | todo | 无 Go 骨架、依赖锁定或可运行命令 |
+| P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
+| P02 | todo | 已有固定依赖、生成/验证命令及兼容探针；Deer/DeerApi 与基础设施装配尚未实现 |
 | P03 | todo | 无实际 Proto、迁移或模拟器 |
 | P04–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
 ## 下一步
-核对根目录规范及 origin 后从 P01 开始。每个最小步骤相关测试/检查通过后提交并推送远程，确认同步再继续；若安装器跳过同名文件，先合并文档。不得将准备事项误读成代码或测试已完成。
+P01 已完成，从 P02 的 Deer/DeerApi 与基础设施装配继续。每个最小步骤相关测试/检查通过后提交并推送远程，确认同步再继续；保持模块及工具版本固定，不重复已完成的兼容探针，不将其误读成交易功能完成。
 
 ## 每轮追加模板
 日期/任务 ID：
@@ -103,3 +103,12 @@
 - 远程：本步验证通过后独立提交/推送 main，并核对远程 SHA；前一步为 a994a62。
 - 未运行：业务实体/生产迁移/自动软删除、Hertz/Kratos/Nacos/gRPC/hz 兼容及交易链路；P01 仍为 in_progress。
 - 下一步：P01.3 固定并验证 Hertz、Kratos、gRPC、Nacos 与 RPC/HTTP 生成工具，再开始 P02 的 Deer/DeerApi 实现。
+
+## 2026-10-26：P01.3 框架与生成工具兼容
+
+- 改动：固定 Hertz/Kratos/gRPC/Nacos SDK/registry/hz 版本，增加 string 小数 Probe RPC 与生成 stub、Hertz HTTP 注解、共享 DTO query tag 生成、hz 双次生成及编译检查、Kratos 生命周期/取消/状态码、Hertz 绑定/JSON、Nacos SDK 契约与 goleak 验证；固定支持 Go 1.27 的 Sonic v1.15.4。
+- 验证：make verify、make integration、vet 和文档/差异检查通过；6 项 Go 契约、5 组真实 PostgreSQL、4 项工具链门禁及 hz 生成编译通过。详细矩阵见 docs/validation/P01-03.md。
+- 远程：P01.2 的 65c699c 已推送且 GitHub Actions 40287708423 success；本步骤独立提交/推送 main，核对远程 SHA，新 CI 结果按实际运行记录更新。
+- 状态：P01 的工具链、依赖、Proto/GORM/PostgreSQL 和框架最小兼容验证完成，标 done。
+- 未运行：真实 Nacos 接入、Deer/DeerApi 构造及所有交易业务链路；SDK fake 通过不代表真实注册发现成功。
+- 下一步：P02.1 实现 Deer/DeerApi 公共生命周期和部分初始化失败清理，再分步加入实际基础设施客户端、日志轮转及多实例调用验收。
