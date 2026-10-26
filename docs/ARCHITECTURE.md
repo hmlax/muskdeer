@@ -3,7 +3,7 @@
 ## 服务边界
 | 服务 | 公共封装 | 职责 | 扩容与所有权 |
 |---|---|---|---|
-| api | deer.DeerApi | Hertz 接入、认证、统一响应，gRPC 调业务 | 无状态 |
+| api | deer.DeerApi | 管理前端页面及管理 API、认证、统一响应，gRPC 调业务 | 无状态 |
 | market | deer.Deer | 外部连接、订单簿、行情质量、参考定价 | 按 venue+instrument 分片，热备允许，单个权威流有 epoch |
 | strategy | deer.Deer | 做市/网格实例、目标订单、配置版本 | 每实例唯一有效 owner |
 | execution | deer.Deer | 风控、预算、OMS、本所和对冲执行 | 按 account 分片，保守串行预留，支持多个账户并行 |
@@ -12,6 +12,8 @@
 
 公共模块统一为 deer；market、strategy、execution、portfolio、cron 各自通过 deer.NewDeer 构造独立 Deer，统一 Kratos 应用、gRPC、注册发现、日志、健康与公共依赖。各服务保留独立进程、服务名、实例 ID 和端口。
 api 通过 deer.NewDeerApi 构造 DeerApi，组合复用一个 Deer，增加 Hertz Server、HTTP 路由/中间件及业务 gRPC 客户端；Hertz 适配后由同一 Deer 的 Kratos 生命周期托管。每进程公共依赖只初始化和清理一次，详细契约见 DEER.md。Nacos 只做注册发现。不得假设注册发现会将有状态 RPC 自动路由到 owner。
+
+管理人员在浏览器访问 api 托管的管理前端，前端调用同源 /api/v1 管理接口，再由 api 通过 gRPC 编排业务服务。前端源码规划放 web/admin，构建产物由 api 的 Hertz 托管；这是实施布局约定，前端框架及构建版本待实现时锁定。页面路由刷新与静态资源缓存由 api 处理，/api/v1 的错误响应保留接口语义。策略执行和行情处理继续由各业务服务负责，管理页面范围见 PRD 的 R08。
 
 ## 实时链路
 market → 带 epoch/seq 的行情 → strategy → gRPC 交易意图 → execution 风控与意图落库 → 交易适配器 → 核心撮合清算 → 订单/成交回报 → execution/portfolio → 策略状态反馈。

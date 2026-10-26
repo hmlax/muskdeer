@@ -10,7 +10,7 @@
 - 每个小数字段写明单位、范围、精度、舍入与可选值语义；服务端、调用端、生成合同与模拟器保持一致。细则见 PROTO_AND_MODEL.md，验收见 A23。
 
 ## 管理 API
-由 deer.DeerApi 统一装配 Hertz 路由、认证授权、request_id、响应与错误映射，通过其复用的 Deer 获取业务 gRPC 客户端；接口边界及公共资源生命周期遵守 DEER.md。
+api 同时交付管理前端页面与管理 API，供平台管理人员在浏览器完成 R08 的流程。由 deer.DeerApi 统一装配 Hertz 路由、认证授权、request_id、响应与错误映射，通过其复用的 Deer 获取业务 gRPC 客户端；接口边界及公共资源生命周期遵守 DEER.md。
 统一前缀 /api/v1；create/update 等写请求带幂等标识；变更带 expected_version。
 - GET /instruments、/market/sources、/market/health
 - POST/GET /strategies；GET /strategies/{id}
@@ -20,6 +20,8 @@
 - GET /orders、/fills、/positions、/risk-events、/audit-logs
 - POST /risk/kill-switch（明确 scope 和原因）；解除需要 admin 且检查恢复条件。
 平仓为单独受限操作，不混入 stop；默认模拟环境实现，生产另行授权。
+
+管理前端同源调用这些接口，保留十进制字符串；页面上的角色权限与后端校验一致。参数错误、403、409、503 及 202 异步 operation_id 均有对应页面状态。页面路由的 HTML 回退不得覆盖 /api/v1 的 JSON 错误响应；OpenAPI 与可操作管理页面分别验收。
 
 ## 行情源与实例字段
 

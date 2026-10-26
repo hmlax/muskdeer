@@ -10,6 +10,8 @@
 
 按 PROGRESS 从首个未完成任务继续；若 P01 已完成，复用其验证记录和固定版本。Go 由用户固定为 1.27.3，开发、生成、测试、CI 与构建保持一致，不重新选版。P01 的官方工具链、Hertz/Kratos/gRPC/Nacos SDK 及 Proto→GORM→PostgreSQL 兼容结果见 docs/validation。公共模块包名 deer，各 Kratos 业务服务分别使用 deer.NewDeer 构造的 Deer 封装；API 使用 deer.NewDeerApi 构造的 DeerApi，复用 Deer 并托管 Hertz，保留各业务服务独立进程及身份。按 docs/DEER.md 实现并通过 A02/A26。持久化类型只从 deer/proto 下的 Proto 生成，禁止手写第二份数据库 Model。
 
+api 用作管理界面，用户已确认包含可操作管理前端页面和后端接口。按 R08/P07 实现登录、概览、策略/行情源、订单/成交/持仓、风险与审计及异步结果页面，经 api 的管理接口调用业务服务并通过 A27；页面权限和后端鉴权一致，前端小数保留字符串。前端源码规划 web/admin，构建产物由 api/Hertz 托管；框架和构建版本实施时锁定。现有 DeerApi 生命周期或 OpenAPI 文档不能代替管理页面交付。
+
 每张表必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL，按 docs/PROTO_AND_MODEL.md 统一字段映射并落实到生成模型与迁移。所有 GORM 数据操作显式使用 db.Model(&model.X{})，事务中用 tx.Model(&model.X{})，并贯穿 context；禁止任何 DB 变量上的 .Table(...)，业务、公共组件、脚本和测试均须遵守。通过 A01/A22 后才算完成数据库规范验收。
 
 所有接口的小数字段统一定义为 string，包括请求、响应、嵌套字段和事件；Proto 禁止 float/double，JSON 必须输出十进制字符串。Go 小数统一使用 decimal.Decimal 存储、计算和比较，禁止 float32/float64 及浮点中转；配置、适配器、数据库和测试同样遵守。P01 核验并锁定统一 decimal 库，按 A23 验证精度、舍入和边界转换。

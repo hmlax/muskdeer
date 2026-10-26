@@ -28,4 +28,4 @@ P01 已完成：固定 Go 工具链、Proto/GORM/gRPC 生成、Hertz/Kratos/Naco
 - [Codex 启动指令](docs/CODEX_START.md)
 
 ## 安装范围
-公共路径与包名采用 deer，各 Kratos 业务服务分别使用 deer.NewDeer 构造的 Deer 封装；API 使用 deer.NewDeerApi 构造的 DeerApi，复用 Deer 并托管 Hertz 入口，见 docs/DEER.md。API 管理界面第一版只交付管理 API 和 OpenAPI 文档，不默认追加完整前端。
+公共路径与包名采用 deer，各 Kratos 业务服务分别使用 deer.NewDeer 构造的 Deer 封装；api 用作平台管理界面，包含可操作的管理前端页面和后端接口，使用 deer.NewDeerApi 构造的 DeerApi，复用 Deer 并托管 Hertz 入口，见 docs/DEER.md。管理界面范围与交付验收见 docs/PRD.md 的 R08、docs/ACCEPTANCE.md 的 A27；目前尚未实现管理页面及业务接口。

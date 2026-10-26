@@ -8,6 +8,7 @@
 - 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；API 服务封装为 DeerApi，配套构造函数 deer.NewDeerApi，详见 docs/DEER.md。
 - 外部 HTTP 使用 Hertz，服务生命周期使用 Kratos，内部通信使用 gRPC；注册发现使用 Nacos。禁止替换成 Kitex、Gin 或 Kratos HTTP。
 - 各业务服务分别使用统一 Deer 封装，保持独立进程和服务身份；API 使用复用 Deer 的 DeerApi 托管 Hertz，公共依赖在每个进程内只装配一次，统一管理启动、停止和清理。
+- api 用作平台管理界面，交付可操作的管理前端页面和配套后端接口；通过 DeerApi/Hertz 托管页面入口与管理 API，通过 gRPC 调用业务服务。管理页面、权限与实际操作闭环按 R08/A27 验收。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
 - 每张表及其持久化 Model 必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL；字段映射、生成与迁移要求见 docs/PROTO_AND_MODEL.md。

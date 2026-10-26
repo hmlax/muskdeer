@@ -3,7 +3,7 @@
 ## 命名与服务形态（已确认）
 
 公共目录与 Go 包名统一 deer，公共 Proto 位于 deer/proto。所有 Kratos 业务服务分别使用统一的 deer.Deer 封装，由 deer.NewDeer 构造；market、strategy、execution、portfolio、cron 保持各自独立进程与服务身份。用户已明确“各业务服务分别使用统一 Deer 封装”。
-API 服务使用 deer.DeerApi，复用 Deer 公共装配，并承载 Hertz HTTP 入口。名称按用户要求保留 DeerApi 的拼写；本规范配套采用 deer.NewDeerApi 作为构造函数。
+api 用作平台管理界面，包含可操作的管理前端页面和配套后端接口。API 服务使用 deer.DeerApi，复用 Deer 公共装配，并承载 Hertz HTTP 入口。名称按用户要求保留 DeerApi 的拼写；本规范配套采用 deer.NewDeerApi 作为构造函数。
 
 ## Deer 与 NewDeer
 
@@ -14,6 +14,7 @@ Deer 按配置提供 DB、Redis、JetStream、Logger、Metrics、Discovery、gRP
 ## DeerApi 与 NewDeerApi
 
 目标职责：DeerApi 组合并复用一个 Deer，增加 Hertz Server、路由/handler 注册、认证授权、request_id、统一响应与错误映射、OpenAPI 接入；通过 Deer 提供的 gRPC 客户端访问各业务服务。
+api 服务基于该封装托管管理前端构建产物及 /api/v1 管理接口，页面与接口调用按 R08/A27 交付。DeerApi 负责公共 HTTP 生命周期，具体管理页面和业务路由由 api 服务注册；当前通用封装的启停通过不代表管理界面已实现。
 Hertz Server 适配后进入所复用 Deer 的 Kratos 生命周期，统一启动、readiness、信号处理、停止接收请求、等待在途请求及依赖清理；API 进程内公共依赖只初始化一次。DeerApi 初始化失败须清理已经成功构造的 Deer 和 HTTP 资源，避免重复关闭或资源泄漏。
 API handler 负责协议边界和调用编排，交易、风控及持仓规则在对应业务服务执行。P02 分步落实这些职责，并通过 A02/A26；实际实现范围以下节及验证记录为准。
 
