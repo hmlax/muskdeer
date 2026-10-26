@@ -110,6 +110,18 @@ func TestInvalidConfigurationBeforeIO(t *testing.T) {
 		func(cfg *configv1.Nacos) { cfg.CommandTimeout = nil },
 		func(cfg *configv1.Nacos) { cfg.PasswordEnv = "" },
 		func(cfg *configv1.Nacos) { cfg.Address = "user@127.0.0.1:8848" },
+		func(cfg *configv1.Nacos) {
+			cfg.Registration = &configv1.NacosRegistration{
+				AdvertiseIp:       "0.0.0.0",
+				HeartbeatInterval: durationpb.New(time.Second),
+			}
+		},
+		func(cfg *configv1.Nacos) {
+			cfg.Registration = &configv1.NacosRegistration{
+				AdvertiseIp:       "127.0.0.1",
+				HeartbeatInterval: durationpb.New(10 * time.Second),
+			}
+		},
 	} {
 		cfg := testConfig("127.0.0.1:8848")
 		change(cfg)

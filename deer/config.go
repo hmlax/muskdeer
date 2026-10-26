@@ -32,6 +32,9 @@ func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceCon
 	if api != (cfg.Http != nil) {
 		return nil, errors.New("HTTP listener is required only for NewDeerApi")
 	}
+	if cfg.Nacos.GetRegistration() != nil && cfg.Grpc == nil {
+		return nil, errors.New("nacos publication requires a gRPC listener")
+	}
 	for name, listener := range map[string]*configv1.Listener{
 		"grpc": cfg.Grpc,
 		"http": cfg.Http,

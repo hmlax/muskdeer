@@ -177,22 +177,14 @@ func (c *Client) GetService(ctx context.Context, serviceName string) ([]Instance
 	if !validIdentifier(serviceName) || !strings.HasSuffix(serviceName, ".grpc") {
 		return nil, errors.New("nacos requires a bounded gRPC service name")
 	}
-	token, err := c.authenticate(bounded)
-	if err != nil {
-		return nil, failure(bounded, "authenticate", err)
-	}
-	data, err := c.request(bounded, http.MethodGet, instanceListPath, url.Values{
+	data, err := c.authenticatedRequest(bounded, http.MethodGet, instanceListPath, url.Values{
 		"namespaceId": []string{c.cfg.NamespaceId},
 		"groupName":   []string{c.cfg.Group},
 		"clusterName": []string{c.cfg.Cluster},
 		"serviceName": []string{serviceName},
 		"healthyOnly": []string{"true"},
-	}, token.value)
+	})
 	if err != nil {
-		var apiError *APIError
-		if errors.As(err, &apiError) && (apiError.HTTPStatus == http.StatusUnauthorized || apiError.HTTPStatus == http.StatusForbidden) {
-			c.token.CompareAndSwap(token, nil)
-		}
 		return nil, failure(bounded, "lookup", err)
 	}
 	var response instancesResponse
@@ -215,11 +207,10 @@ func (c *Client) GetService(ctx context.Context, serviceName string) ([]Instance
 			return nil, errors.New("nacos returned an invalid instance weight")
 		}
 		weight, err := decimal.NewFromString(string(host.Weight))
-		if err != nil || !weight.IsPositive() || !host.Healthy || !host.Enabled || host.Cluster != c.cfg.Cluster || host.Metadata.Kind != "grpc" {
+		if err != nil || !weight.IsPositive() || !host.Healthy || !host.Enabled || host.Cluster != c.cfg.Cluster || host.Metadata.Kind != grpcKind {
 			continue
 		}
-		ip := net.ParseIP(host.IP)
-		if ip == nil || ip.IsUnspecified() || host.Port == 0 || host.Port > 65535 || !validIdentifier(host.Metadata.ID) {
+		if !validUnicastIP(host.IP) || host.Port == 0 || host.Port > 65535 || !validIdentifier(host.Metadata.ID) {
 			return nil, errors.New("nacos returned an invalid gRPC endpoint")
 		}
 		if _, exists := identities[host.Metadata.ID]; exists {
@@ -420,6 +411,18 @@ func validate(cfg *configv1.Nacos) error {
 		}
 		if duration.AsDuration() <= 0 || !proto.Equal(durationpb.New(duration.AsDuration()), duration) {
 			return errors.New("nacos " + name + " must be a positive Go duration")
+		}
+	}
+	if registration := cfg.Registration; registration != nil {
+		if !validUnicastIP(registration.AdvertiseIp) {
+			return errors.New("nacos publication requires an advertised unicast IP")
+		}
+		interval := registration.HeartbeatInterval
+		if err := interval.CheckValid(); err != nil || !proto.Equal(durationpb.New(interval.AsDuration()), interval) {
+			return errors.New("nacos heartbeat_interval must be a valid Go duration")
+		}
+		if err := validateInterval(interval.AsDuration()); err != nil {
+			return err
 		}
 	}
 	return nil

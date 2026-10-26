@@ -35,6 +35,13 @@ message Nacos {
   optional bool tls_enabled = 9;
   string root_cert_file = 10;
   int32 max_inflight = 11;
+  NacosRegistration registration = 12;
+}
+
+// NacosRegistration opts a gRPC service into ephemeral instance publication.
+message NacosRegistration {
+  string advertise_ip = 1;
+  google.protobuf.Duration heartbeat_interval = 2;
 }
 
 // JetStream owns a synchronous publisher to a pre-provisioned stream.

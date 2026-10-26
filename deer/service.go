@@ -69,6 +69,7 @@ type Deer struct {
 	cache       *redis.Client
 	events      *jetstream.Client
 	discovery   *nacos.Client
+	publication *nacos.Publication
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -146,6 +147,11 @@ func (d *Deer) CheckReady(ctx context.Context) error {
 	}
 	if d.discovery != nil {
 		if err := d.discovery.Ping(ctx); err != nil {
+			return err
+		}
+	}
+	if d.publication != nil {
+		if err := d.publication.Health(); err != nil {
 			return err
 		}
 	}
@@ -301,6 +307,9 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			return nil, nil, errors.Join(err, d.cleanup(ctx))
 		}
 	}
+	if err := d.configurePublication(); err != nil {
+		return nil, nil, errors.Join(err, d.cleanup(ctx))
+	}
 	if err := startup.Err(); err != nil {
 		return nil, nil, errors.Join(err, d.cleanup(ctx))
 	}
@@ -348,19 +357,27 @@ func (d *Deer) run(ctx context.Context) (error, error) {
 		kratos.Server(servers...),
 		kratos.StopTimeout(d.cfg.ShutdownTimeout.AsDuration()),
 		kratos.AfterStart(d.markReady),
-		kratos.BeforeStop(func(context.Context) error { d.requestStop(); return nil }),
+		kratos.BeforeStop(func(ctx context.Context) error {
+			d.requestStop()
+			return d.stopPublication(ctx)
+		}),
 	)
 	// Run owns this single supervisor and joins it before releasing resources.
 	completed := make(chan error, 1)
 	go func() { completed <- app.Run() }()
 	var runErr error
 	appDone := false
+	var publicationFailures <-chan error
+	if d.publication != nil {
+		publicationFailures = d.publication.Failures()
+	}
 	select {
 	case runErr = <-completed:
 		appDone = true
 	case <-ctx.Done():
 		runErr = ctx.Err()
 	case <-d.stopSignal:
+	case runErr = <-publicationFailures:
 	}
 	d.requestStop()
 	stopErr := app.Stop()
@@ -403,6 +420,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	}
 	if d.discovery != nil {
 		if err := d.discovery.Ping(startup); err != nil {
+			return err
+		}
+	}
+	if d.publication != nil {
+		if err := d.publication.Start(startup); err != nil {
 			return err
 		}
 	}
@@ -455,6 +477,7 @@ func (d *Deer) requestStop() {
 
 func (d *Deer) finish(ctx context.Context, stopErr error) {
 	d.ready.Store(false)
+	stopErr = errors.Join(stopErr, d.stopPublication(ctx))
 	d.closeErr = errors.Join(stopErr, d.release(ctx))
 	close(d.done)
 }

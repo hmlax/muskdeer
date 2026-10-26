@@ -63,6 +63,16 @@ func TestDeerRejectsInvalidConfigBeforeSideEffects(t *testing.T) {
 				return cfg
 			},
 		},
+		{
+			name: "publication requires gRPC listener",
+			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
+				cfg.Grpc = nil
+				cfg.Nacos = &configv1.Nacos{
+					Registration: &configv1.NacosRegistration{},
+				}
+				return cfg
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

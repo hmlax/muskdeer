@@ -39,7 +39,7 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream/Nacos。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.1 已接入日志、PostgreSQL/Redis、JetStream 同步发布及 Nacos 查询基础；自动注册/心跳、两节点调用、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.2 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销，验证两个 Deer 节点的发现调用；gRPC ClientFactory、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -84,7 +84,13 @@ P02.7.1 实现基于固定 Nacos 2.5.2 OpenAPI 的 deer/nacos.Client，原因见
 
 Deer 在 JetStream 后初始化，Discovery() 返回借用客户端，缺失配置返回 ErrNacosNotConfigured；getter 不发请求。GetService(ctx, "market.grpc") 每次读实际 API，返回 typed Instance，不保留本地实例快照；过滤不健康/disabled/零权重/其他集群及协议。Nacos 既有数字权重以 json.Number 接收后直接转 decimal.Decimal，仅用于过滤，不进入业务协议或浮点中转。身份重复、无效地址、畸形/超大响应安全拒绝。并发准入和连接受配额限制，响应上限 1 MiB/1024 实例，期限涵盖等待、认证与读取。Close 撤销准入、取消并 join 请求后释放连接，API 装配失败也逆序清理。
 
-启动及实时健康会在同一 scope 查询 `deer-readiness.grpc`，账户需有该 READ 权限，不要求存在服务提供者；namespace 由部署方预建。该路径仅完成认证/出站查询，尚不自动发布本服务地址、发送心跳或提供 watch/gRPC ClientFactory；下一小步加入这些生命周期并验证两节点。实际 4 组 Nacos 场景及未验收范围见 [P02.7.1](validation/P02-07-01.md)；测试管理员样例不作为生产 ACL/TLS 或跨版本证据。
+启动及实时健康会在同一 scope 查询 `deer-readiness.grpc`，账户需有该 READ 权限，不要求存在服务提供者；namespace 由部署方预建。认证/查询证据见 [P02.7.1](validation/P02-07-01.md)；测试管理员样例不作为生产 ACL/TLS 或跨版本证据。
+
+可选 `nacos.registration` 启用本服务 gRPC 地址发布，必须同时配置 gRPC listener。`advertise_ip` 为明确的单播地址；端口使用实际预留端口，不能把监听通配地址当作发布地址。`heartbeat_interval` 为 50–5000 整毫秒。未配置 registration 的出站消费者保持仅查询能力。服务名为 `<name>.grpc`，metadata 包含 Deer instance_id、version 与协议。
+
+Deer 在 listener 接受连接、公共依赖通过健康检查后注册 ephemeral 实例，成功才就绪；受实例拥有的循环发送 light heartbeat，启动 context 不保留为后台所有权。心跳失败即撤销就绪并终止 Run，保留错误，不自动重试注册或重建丢失记录。Health 检查心跳新鲜度；正常停止先撤销就绪、取消并 join 心跳、注销，再停止 transport/公共依赖。注册超时结果可能未知，启动回滚也尝试注销；未启动的实例不发注销请求。
+
+Nacos HTTP 实例身份是 namespace/group/service/IP/port/cluster，Deer ID 仅为 metadata，不提供条件删除或 fencing。并发 publisher 必须使用不同发布端点，不能把重用端口当作所有权切换协议。注册在线或心跳成功都不授权交易，最终执行仍须验证后续数据库租约/epoch。真实两节点和外部删除测试见 [P02.7.2](validation/P02-07-02.md)，目前是同一测试进程内的独立 Deer 实例；独立业务进程、watch/gRPC ClientFactory、生产 ACL/TLS 与完整故障恢复矩阵仍待后续验证。
 
 ## API 统一返回
 JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。
