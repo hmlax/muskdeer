@@ -1,0 +1,21 @@
+version: "2"
+run:
+  timeout: 5m
+  build-tags:
+    - integration
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - revive
+    - gocritic
+    - gocyclo
+  exclusions:
+    generated: strict
+formatters:
+  enable:
+    - gofmt
+    - goimports

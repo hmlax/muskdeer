@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_USER: muskdeer
+      POSTGRES_PASSWORD: muskdeer_test_only
+      POSTGRES_DB: muskdeer_p01
+    ports:
+      - "127.0.0.1:55439:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U muskdeer -d muskdeer_p01"]
+      interval: 1s
+      timeout: 3s
+      retries: 30

@@ -1,0 +1,32 @@
+{
+  "protoc": "29.3",
+  "golangci_lint": "v2.15.0",
+  "protoc_archives": {
+    "Linux-x86_64": {
+      "filename": "protoc-29.3-linux-x86_64.zip",
+      "sha256": "3e866620c5be27664f3d2fa2d656b5f3e09b5152b42f1bedbf427b333e90021a"
+    },
+    "Linux-aarch64": {
+      "filename": "protoc-29.3-linux-aarch_64.zip",
+      "sha256": "6427349140e01f06e049e707a58709a4f221ae73ab9a0425bc4a00c8d0e1ab32"
+    },
+    "Darwin-arm64": {
+      "filename": "protoc-29.3-osx-aarch_64.zip",
+      "sha256": "2b8a3403cd097f95f3ba656e14b76c732b6b26d7f183330b11e36ef2bc028765"
+    }
+  },
+  "plugins": [
+    {
+      "name": "protoc-gen-go",
+      "module": "google.golang.org/protobuf",
+      "package": "google.golang.org/protobuf/cmd/protoc-gen-go",
+      "version": "v1.36.12"
+    },
+    {
+      "name": "protoc-gen-gotag",
+      "module": "github.com/srikrsna/protoc-gen-gotag",
+      "package": "github.com/srikrsna/protoc-gen-gotag",
+      "version": "v1.0.2"
+    }
+  ]
+}

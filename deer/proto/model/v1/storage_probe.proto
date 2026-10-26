@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// StorageProbe is a P01 compatibility fixture, not a production business entity.
+message StorageProbe {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  // UTC Unix milliseconds; GORM populates both timestamps on insertion.
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  // Absent means SQL NULL. Presence with zero is different from absence.
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string venue = 5 [(tagger.tags) = "gorm:\"column:venue;type:varchar(32);not null;uniqueIndex:uk_storage_probe_market\""];
+  string instrument = 6 [(tagger.tags) = "gorm:\"column:instrument;type:varchar(64);not null;uniqueIndex:uk_storage_probe_market\""];
+  string price = 7 [(tagger.tags) = "gorm:\"column:price;type:numeric(38,18);not null\""];
+  bool enabled = 8 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  int64 revision = 9 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}

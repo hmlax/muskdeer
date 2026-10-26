@@ -4,11 +4,12 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
-当前包含需求、架构、接口、任务与验收规范，以及 Go 1.27.3 的项目级工具链入口。尚无业务服务、Proto 生成工具或可运行部署；未运行任何交易测试。
+当前包含项目规范、固定 Go 工具链、可重复 Proto/GORM 生成及真实隔离 PostgreSQL 兼容探针。尚无业务服务或可运行交易部署；未运行任何交易测试。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。
 运行 make doctor 验证并按需获取固定工具链；Go 命令使用 python3 scripts/go.py，例如 python3 scripts/go.py version。make test-tooling 验证工具链入口的版本检查及失败处理。
+运行 make tools 安装固定版本 protoc 与插件，make generate 生成模型，make verify 执行生成一致性、格式、lint、工具链测试、Go 单元/race 测试与构建。make integration 使用 Docker 启动并清理独立 PostgreSQL 执行真实契约测试，仅绑定 127.0.0.1:55439；本机需 Docker 可用且该端口空闲。
 在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 先检查现有仓库，再从 P01 开始，持续实现至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。
 每个最小步骤完成并通过相关测试/检查后，立即提交并推送到该远程仓库，确认同步后继续下一步。文档步骤验证文档与文件完整性，不宣称业务测试已通过。
 

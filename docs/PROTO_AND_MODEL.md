@@ -33,6 +33,7 @@ GORM 自定义时间字段配置依据：[官方模型文档](https://gorm.io/do
 Model 查询方式参考：[GORM 官方查询文档](https://gorm.io/docs/query.html)。
 
 ## P01 技术验证必须先于大规模业务生成
+P01 已验证的直接生成路线与时间/小数表示见 [ADR 0001](decisions/0001-proto-gorm.md)。公共持久化时间使用 UTC Unix 毫秒：create_at/update_at 为 int64、NOT NULL bigint，delete_at 为 optional int64、nullable bigint；对外时间 DTO 与业务 time.Time 在边界转换。完整业务模型及软删除语义由 P03 继续实现。
 Go 固定为 1.27.3。固定 protoc、protoc-gen-go、protoc-gen-go-grpc、Hertz hz、tag 注入/ORM 插件的精确版本及来源，并在 Go 1.27.3 下验证 GORM v2、PostgreSQL 驱动及生成工具兼容性。区分 protobuf tag 注入工具与 protoc-gen-gorm 专用类型生成，不混用命令或猜测 option 名。
 用最小 Proto 在真实 PostgreSQL 测试：Id 自增主键、createAt/updateAt 的 NOT NULL 与自动赋值/更新、deleteAt 的 NULL/时间往返、联合唯一索引、nullable、0/false 更新、timestamp、numeric(精度,小数位)、反序列化、查询扫描、重复生成。所有数据操作使用 Model；确认 GORM 忽略 protobuf 内部字段。软删除如启用，额外验证删除及过滤行为。
 string 的 gorm:type:numeric 标签本身不提供精确运算能力；生成字段需有验证过的转换/Scanner/Valuer 或仓储边界转换，业务计算用明确 decimal 值对象。
