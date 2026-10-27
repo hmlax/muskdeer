@@ -76,4 +76,14 @@ Tracker.Restore 只允许新处理器在观察数据之前恢复一次同来源/
 
 只允许经过验证的strategy/execution/portfolio/api/cron证书身份读取，拒绝元数据伪造及其他身份；要求最多5秒的原生deadline。未知/candidate来源、无模式、未知字段或过大请求拒绝；不存在所选源或模式明确NotFound，不回退到其他源。返回持久快照前重新核对读取scope，健康及过期逻辑沿用最终发布仓储。
 
-NewReader借用Deer的只读unary factory，每次原生调用使用新发现/mTLS和无隐藏重试的传输。具体Proto响应在转换前检查未知字段/大小/shape/精确小数、产品及来源；客户端重新检查传输后的授权/行情过期，失效清空价格。消费者仍须Selected按实例更严格的时效与配置再次检查。完整验证见 [P05.7](validation/P05-07.md)。默认market业务命令、租约续期、显式回放/实际连接工作器及策略撤旧单继续后续。
+NewReader借用Deer的只读unary factory，每次原生调用使用新发现/mTLS和无隐藏重试的传输。具体Proto响应在转换前检查未知字段/大小/shape/精确小数、产品及来源；客户端重新检查传输后的授权/行情过期，失效清空价格。消费者仍须Selected按实例更严格的时效与配置再次检查。完整验证见 [P05.7](validation/P05-07.md)。
+
+## P05.8 单来源工作器与显式回放
+
+`internal/marketworker` 绑定不可变feed与process incarnation。备用节点只等待数据库租约，不创建数据流；获取后加载持久revision/已接受基准，启动串行发布actor与owned续租任务。续租、提交或数据流异常会退出，取消先等待数据流/续租，再用独立小预算释放；若释放失败保留错误，实际到期仍以数据库为准。未请求的子流cancel算异常，panic传播前也等待续租退出。
+
+新连接同步时清空旧簿generation/seq，随后接受该连接的新簿；只失效当前源。数据库时间/质量可能拒绝本地候选，此时本地处理器重新加载返回的已接受基准，不能让未持久接受的价格污染后续判断。
+
+LIVE 工厂只创建对应固定公开TLS适配；REPLAY 工厂要求显式bid/ask/quantity、更新间隔和callback期限，使用同一订单簿源协议（Binance先锚点再桥接，OKX快照/增量），标记仍为REPLAY。两工厂互相拒绝另一模式，不在实连失败后回放数据。
+
+真实PG两个owner竞争/持续续租/有序取消/接管验证只有一个活动数据流，接管增加epoch并恢复同一基准；检查见 [P05.8](validation/P05-08.md)。默认market命令的配置、Deer装配与独立PID验证继续下一步，策略消费撤旧单继续P06。
