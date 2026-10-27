@@ -13,7 +13,7 @@
 |---|---|---|
 | P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
 | P02 | in_progress | P02.1–P02.11 公共运行层、多进程、持久开发资源、固定构建镜像与本机运行层 E2E 通过；新镜像 Linux CI 待核验 |
-| P03 | todo | 无实际 Proto、迁移或模拟器 |
+| P03 | in_progress | P03.1 纯业务小数/量化/来源值对象通过；持久化 Proto、迁移、交易合同、模拟器与 lease/fencing 待实现 |
 | P04–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
@@ -307,3 +307,11 @@ P01 已完成，从 P02 的 Deer/DeerApi 与基础设施装配继续。每个最
 - 验证：HTTP 状态/body/大小/取消/重定向；make fmt、make verify、完整 integration、make image、image-test 与运行层 make e2e、Python/文档/差异检查通过，race/goleak 保留。实际 arm64 非 root/只读/禁网容器 ready、JSON/SIGTERM 退出 0，临时资源清理；见 [P02.11](validation/P02-11.md)。
 - 远程：fe2005c 已推送 main 并核对 SHA，[CI 40438145450](https://github.com/hmlax/muskdeer/actions/runs/40438145450) success，修复了前次截止错误链失败，并覆盖持久开发测试。新镜像 amd64 CI 在本次推送后核验，当前不提前标 P02 done。
 - 下一步：核验 Linux 镜像与全套 CI，完成 P02 状态，再进入 P03 的 Proto、迁移、适配合同与模拟器。
+
+## 2026-10-27：P03.1 小数与来源业务边界
+
+- 在 P02 本机封装/E2E 已通过、镜像 Linux CI 等待期间，先实现不依赖镜像的纯领域值对象；业务只依赖标准库和用户指定 decimal，框架/数据库/Proto 在外层转换。
+- 改动：显式字段精度/符号/零规则、plain string 小数解析、BUY/SELL 与精确 tick/lot 量化；集中四来源及 bitgit 别名，候选和未知来源分别拒绝，不设默认源。
+- 验证：行为先红后绿，高精度/格式/零/符号/量化边界、来源选择、race、5 秒 594346 次 fuzz、make verify、imports 和文档/差异检查通过；无新依赖，无运行层变化，未重复容器测试。见 [P03.1](validation/P03-01.md) 和 [小数说明](DECIMALS.md)。
+- 远程：196c3c3 已推送 main 并核对 SHA，镜像 CI 40439453258 结果单独核验；本步检查通过后独立提交/推送并核对 SHA。
+- 下一步：生成版本化迁移记录/基础业务 Model 和持久化行为，继而实现交易合同及模拟器/lease。
