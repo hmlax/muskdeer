@@ -553,3 +553,9 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：缺投影、未入账成交、对账后恢复、预算关闭、核心差异、发布失权、来源证据/500ms政策与100ms剩余期限、上下文边界通过；make generate/fmt、完整make verify、完整make integration、文档/差异检查通过，lint 0 issues、race/goleak保留。见 [P06.4](validation/P06-04.md)。
 - 远程：0a06b37 已推送 main 并核对SHA，[CI 40487715315](https://github.com/hmlax/muskdeer/actions/runs/40487715315) success。本步独立提交/推送并核对SHA。
 - 下一步：单笔/交易对/平台及最坏库存的原子限额、Deer拥有的显式风险调度与策略控制器、失效撤单和30分钟模拟。评估库尚未默认启动，P06保持进行。
+
+## 2026-10-27：P06.4a 并行测试发现隔离
+
+- 发现：基础设施与业务集成并行使用同一Nacos分组，market.grpc读到了另一测试CA的business-market-binance；mTLS正确拒绝。业务fixture改为独立MUSKDEER_BUSINESS_TEST，保留身份检查、期限与断言。
+- 验证：最终fmt/lint、完整make integration、文档/差异检查通过，实际进程发现/退出1.99秒，race/goleak保留；同一工作树中的P06.5金额代码另笔提交。见 [P06.4a](validation/P06-04a.md)。
+- 远程：744d365 已推送 main 并核对SHA，[CI 40489792346](https://github.com/hmlax/muskdeer/actions/runs/40489792346) success；本笔独立提交/推送并核对SHA，再交付已验证的金额额度步骤。

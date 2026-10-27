@@ -203,9 +203,11 @@ func businessStream(ctx context.Context, t *testing.T) *configv1.JetStream {
 
 func businessNaming() *configv1.Nacos {
 	return &configv1.Nacos{
-		Address:        os.Getenv("MUSKDEER_TEST_NACOS_ADDRESS"),
-		NamespaceId:    "integration-naming",
-		Group:          "MUSKDEER_TEST",
+		Address:     os.Getenv("MUSKDEER_TEST_NACOS_ADDRESS"),
+		NamespaceId: "integration-naming",
+		// infrastructureprobe runs concurrently with its own test CA and
+		// market.grpc processes. Never discover those unrelated fixtures.
+		Group:          "MUSKDEER_BUSINESS_TEST",
 		Cluster:        "TEST",
 		Username:       "nacos",
 		PasswordEnv:    "MUSKDEER_TEST_NACOS_PASSWORD",
