@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package muskdeer.market.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/market/v1;marketv1";
+
+// MarketData reads the current fenced projection; no baseline or order command
+// is exposed. A reply can explicitly contain unavailable/unreliable quality.
+service MarketData {
+  rpc GetReference(GetReferenceRequest) returns (GetReferenceReply);
+}
+
+message GetReferenceRequest {
+  string source = 1;
+  int64 instrument_id = 2;
+  string mode = 3;
+}
+
+message MarketReference {
+  int64 feed_id = 1;
+  string source = 2;
+  int64 instrument_id = 3;
+  string external_symbol = 4;
+  string mode = 5;
+  int64 source_version = 6;
+  string publisher_owner_id = 7;
+  int64 publisher_epoch = 8;
+  int64 publication_revision = 9;
+  int64 authority_until_ms = 10;
+  int64 connection = 11;
+  int64 generation = 12;
+  int64 sequence = 13;
+  string quality = 14;
+  string reason = 15;
+  string bid_price = 16;
+  string bid_quantity = 17;
+  string ask_price = 18;
+  string ask_quantity = 19;
+  string mid_price = 20;
+  int64 event_time_ms = 21;
+  int64 received_at_ms = 22;
+  int64 evaluated_at_ms = 23;
+  int64 valid_until_ms = 24;
+}
+
+message GetReferenceReply {
+  MarketReference reference = 1;
+}

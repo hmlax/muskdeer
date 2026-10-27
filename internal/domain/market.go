@@ -133,7 +133,7 @@ func ValidMarketQuality(quality MarketQuality, reason MarketReason) bool {
 }
 
 func (r MarketReading) validScope() bool {
-	return r.Source.ValidateSelection() == nil && r.InstrumentID > 0 && len(r.Symbol) > 0 && len(r.Symbol) <= 64 &&
+	return ValidMarketSymbol(r.Source, r.Symbol) && r.InstrumentID > 0 &&
 		(r.Mode == MarketModeLive || r.Mode == MarketModeReplay) && r.SourceVersion == MarketSourceVersion
 }
 

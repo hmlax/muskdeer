@@ -68,4 +68,12 @@ Publish 锁定产品与实际行情租约，基于数据库时间、owner/epoch�
 
 Get 在同一读取事务内锁定发布授权，核对当前owner/epoch/数据库时间和行情时效。即使行内仍为HEALTHY，权限已变/已过期或引用已过期时只返回无价格状态；不会延长旧价格的ValidUntil。更新次数、发布epoch、来源契约版本、连接/簿序列分别保留，不混作一个时钟。
 
-Tracker.Restore 只允许新处理器在观察数据之前恢复一次同来源/产品/模式/契约的已接受基准，拒绝未来时间和无界小数；不恢复健康、样本、所有权或旧簿。重新健康仍需新完整行情和恢复样本。当前还未装配默认market业务命令或typed行情RPC，策略按源保护继续后续。
+Tracker.Restore 只允许新处理器在观察数据之前恢复一次同来源/产品/模式/契约的已接受基准，拒绝未来时间和无界小数；不恢复健康、样本、所有权或旧簿。重新健康仍需新完整行情和恢复样本。
+
+## P05.7 Typed 行情读取
+
+`market.v1.MarketData.GetReference` 精确选择 source/instrument/mode，返回具体Proto的feed、source_version、发布owner/epoch/revision、原生连接/簿/seq、质量/原因、明确UTC毫秒时间及string价格/数量/mid。consumer的MarketReference类型和消息没有baseline，诊断/恢复能力留在发布仓储。
+
+只允许经过验证的strategy/execution/portfolio/api/cron证书身份读取，拒绝元数据伪造及其他身份；要求最多5秒的原生deadline。未知/candidate来源、无模式、未知字段或过大请求拒绝；不存在所选源或模式明确NotFound，不回退到其他源。返回持久快照前重新核对读取scope，健康及过期逻辑沿用最终发布仓储。
+
+NewReader借用Deer的只读unary factory，每次原生调用使用新发现/mTLS和无隐藏重试的传输。具体Proto响应在转换前检查未知字段/大小/shape/精确小数、产品及来源；客户端重新检查传输后的授权/行情过期，失效清空价格。消费者仍须Selected按实例更严格的时效与配置再次检查。完整验证见 [P05.7](validation/P05-07.md)。默认market业务命令、租约续期、显式回放/实际连接工作器及策略撤旧单继续后续。

@@ -121,13 +121,15 @@ func marketPublicationValue(feed domain.MarketFeedDefinition, row *modelv1.Marke
 		return domain.MarketPublication{}, err
 	}
 	return domain.MarketPublication{
-		FeedID:         feed.ID,
-		OwnerID:        row.PublisherOwnerId,
-		OwnerEpoch:     row.PublisherEpoch,
-		AuthorityUntil: marketTime(expiresAt),
-		Revision:       row.Revision,
-		Reading:        reading,
-		Baseline:       baseline,
+		MarketReference: domain.MarketReference{
+			FeedID:         feed.ID,
+			OwnerID:        row.PublisherOwnerId,
+			OwnerEpoch:     row.PublisherEpoch,
+			AuthorityUntil: marketTime(expiresAt),
+			Revision:       row.Revision,
+			Reading:        reading,
+		},
+		Baseline: baseline,
 	}, nil
 }
 

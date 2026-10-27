@@ -32,16 +32,26 @@ type MarketBaseline struct {
 	AcceptedAt    time.Time
 }
 
-// MarketPublication carries persisted publication fencing and a diagnostic
-// baseline separately from the consumer's fresh, selected reading.
-type MarketPublication struct {
+// MarketReference carries publication provenance without a stale baseline.
+type MarketReference struct {
 	FeedID         int64
 	OwnerID        string
 	OwnerEpoch     int64
 	AuthorityUntil time.Time
 	Revision       int64
 	Reading        MarketReading
-	Baseline       MarketBaseline
+}
+
+// MarketPublication keeps the diagnostic baseline separate from consumption.
+type MarketPublication struct {
+	MarketReference
+	Baseline MarketBaseline
+}
+
+// MarketReader selects exactly one explicit source/product/mode, without
+// publication access, baseline recovery capability or source substitution.
+type MarketReader interface {
+	Reference(ctx context.Context, source MarketSource, instrumentID int64, mode MarketMode) (MarketReference, error)
 }
 
 // MarketRepository commits one fenced current snapshot per feed. Publish CAS

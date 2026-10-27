@@ -66,17 +66,26 @@ func (p MarketPolicy) Validate() error {
 // Validate enforces eligible exact source/product/mode before a database call.
 func (f MarketFeedDefinition) Validate() error {
 	if f.Source.ValidateSelection() != nil || f.InstrumentID <= 0 || f.SourceVersion != MarketSourceVersion ||
-		(f.Mode != MarketModeLive && f.Mode != MarketModeReplay) || len(f.Symbol) == 0 || len(f.Symbol) > 64 || strings.ToUpper(f.Symbol) != f.Symbol {
-		return ErrMarketIdentity
-	}
-	for index := range len(f.Symbol) {
-		character := f.Symbol[index]
-		if character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || f.Source == MarketSourceOKX && character == '-' {
-			continue
-		}
+		(f.Mode != MarketModeLive && f.Mode != MarketModeReplay) || !ValidMarketSymbol(f.Source, f.Symbol) {
 		return ErrMarketIdentity
 	}
 	return f.Policy.Validate()
+}
+
+// ValidMarketSymbol checks the supported public spot product spelling only;
+// the persistent binding additionally verifies actual base/quote assets.
+func ValidMarketSymbol(source MarketSource, symbol string) bool {
+	if source.ValidateSelection() != nil || len(symbol) == 0 || len(symbol) > 64 || strings.ToUpper(symbol) != symbol {
+		return false
+	}
+	for index := range len(symbol) {
+		character := symbol[index]
+		if character >= 'A' && character <= 'Z' || character >= '0' && character <= '9' || source == MarketSourceOKX && character == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func validMarketBP(value decimal.Decimal) bool {
