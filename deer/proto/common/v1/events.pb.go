@@ -396,8 +396,10 @@ type FillEvent struct {
 	QuoteNotional      string                 `protobuf:"bytes,11,opt,name=quote_notional,json=quoteNotional,proto3" json:"quote_notional,omitempty"`
 	FeeAmount          string                 `protobuf:"bytes,12,opt,name=fee_amount,json=feeAmount,proto3" json:"fee_amount,omitempty"`
 	FeeAsset           string                 `protobuf:"bytes,13,opt,name=fee_asset,json=feeAsset,proto3" json:"fee_asset,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Stable source journal cursor; not assumed contiguous across accounts.
+	SourceSequence int64 `protobuf:"varint,14,opt,name=source_sequence,json=sourceSequence,proto3" json:"source_sequence,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *FillEvent) Reset() {
@@ -519,6 +521,13 @@ func (x *FillEvent) GetFeeAsset() string {
 		return x.FeeAsset
 	}
 	return ""
+}
+
+func (x *FillEvent) GetSourceSequence() int64 {
+	if x != nil {
+		return x.SourceSequence
+	}
+	return 0
 }
 
 type CancellationEvent struct {
@@ -661,7 +670,7 @@ const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"\fcancel_state\x18\x0f \x01(\x0e2\x1f.muskdeer.common.v1.CancelStateR\vcancelState\x12#\n" +
 	"\rcore_revision\x18\x10 \x01(\x03R\fcoreRevision\x12\x1d\n" +
 	"\n" +
-	"error_code\x18\x11 \x01(\tR\terrorCode\"\xce\x03\n" +
+	"error_code\x18\x11 \x01(\tR\terrorCode\"\xf7\x03\n" +
 	"\tFillEvent\x12\x19\n" +
 	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12'\n" +
 	"\x0fexecution_venue\x18\x02 \x01(\tR\x0eexecutionVenue\x12\"\n" +
@@ -678,7 +687,8 @@ const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"\x0equote_notional\x18\v \x01(\tR\rquoteNotional\x12\x1d\n" +
 	"\n" +
 	"fee_amount\x18\f \x01(\tR\tfeeAmount\x12\x1b\n" +
-	"\tfee_asset\x18\r \x01(\tR\bfeeAsset\"\xca\x02\n" +
+	"\tfee_asset\x18\r \x01(\tR\bfeeAsset\x12'\n" +
+	"\x0fsource_sequence\x18\x0e \x01(\x03R\x0esourceSequence\"\xca\x02\n" +
 	"\x11CancellationEvent\x12'\n" +
 	"\x0fcancellation_id\x18\x01 \x01(\x03R\x0ecancellationId\x12\x1b\n" +
 	"\tintent_id\x18\x02 \x01(\x03R\bintentId\x12\x1d\n" +

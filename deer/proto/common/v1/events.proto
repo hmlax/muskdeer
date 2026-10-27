@@ -57,6 +57,8 @@ message FillEvent {
   string quote_notional = 11;
   string fee_amount = 12;
   string fee_asset = 13;
+  // Stable source journal cursor; not assumed contiguous across accounts.
+  int64 source_sequence = 14;
 }
 
 enum CancellationState {

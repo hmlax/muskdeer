@@ -64,6 +64,29 @@ func ParseDecimal(input string, rule DecimalRule) (decimal.Decimal, error) {
 	return value, nil
 }
 
+// ParseLedgerDecimal reads the exact numeric(76,36) result range used for
+// ledger products and projections. It preserves the smaller ParseDecimal
+// contract for individual price/quantity inputs.
+func ParseLedgerDecimal(input string, allowNegative, allowZero bool) (decimal.Decimal, error) {
+	rule := DecimalRule{
+		IntegerDigits: 40,
+		Scale:         36,
+		AllowNegative: allowNegative,
+		AllowZero:     allowZero,
+	}
+	if !decimalSyntax(input, rule) {
+		return decimal.Zero, ErrInvalidDecimal
+	}
+	value, err := decimal.NewFromString(input)
+	if err != nil {
+		return decimal.Zero, errors.Join(ErrInvalidDecimal, err)
+	}
+	if value.IsZero() && !allowZero {
+		return decimal.Zero, ErrInvalidDecimal
+	}
+	return value, nil
+}
+
 // RoundPrice snaps positive prices down for buys and up for sells using an
 // integer quotient/remainder, independently of decimal.DivisionPrecision.
 // A rounded zero is possible; order validation must recheck positivity and the

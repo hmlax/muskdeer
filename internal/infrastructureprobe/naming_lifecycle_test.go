@@ -235,11 +235,13 @@ func waitNamingCount(t *testing.T, client *nacos.Client, serviceName string, cou
 	defer cancel()
 	ticks := time.NewTicker(20 * time.Millisecond)
 	defer ticks.Stop()
+	lastCount := -1
 	for {
 		instances, err := client.GetService(ctx, serviceName)
 		if err != nil {
-			t.Fatal(err)
+			t.Fatalf("discovery lookup for %s failed: last count=%d want=%d deadline=%v error=%v", serviceName, lastCount, count, errors.Is(err, context.DeadlineExceeded), err)
 		}
+		lastCount = len(instances)
 		if len(instances) == count {
 			return instances
 		}

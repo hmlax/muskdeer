@@ -87,7 +87,10 @@ func startServiceProcess(t *testing.T, ca *testcert.Authority, id string) (int, 
 		}
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	// Cleanup owns SIGTERM and joining, including when the parent test fails.
+	// Keep the original 15s hard process bound without a premature Go-test
+	// cancellation killing the child before its owned cleanup can run.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 15*time.Second)
 	command := exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", "market", "-config", path)
 	command.Stdout = output
 	command.Stderr = diagnostic

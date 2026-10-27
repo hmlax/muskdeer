@@ -208,7 +208,7 @@ func coreFailure(ctx context.Context, err error) error {
 	if err == nil {
 		return nil
 	}
-	for _, known := range []error{domain.ErrInvalidOrder, domain.ErrLeaseLost, domain.ErrInsufficientFunds, domain.ErrIdempotencyConflict, domain.ErrCoreNotFound, domain.ErrSelfTrade, domain.ErrUnsupportedOrder, domain.ErrRiskDenied} {
+	for _, known := range []error{domain.ErrInvalidOrder, domain.ErrLeaseLost, domain.ErrInsufficientFunds, domain.ErrIdempotencyConflict, domain.ErrCoreNotFound, domain.ErrSelfTrade, domain.ErrUnsupportedOrder, domain.ErrRiskDenied, domain.ErrProjectionIncomplete, domain.ErrReconciliationMismatch} {
 		if errors.Is(err, known) {
 			return err
 		}
