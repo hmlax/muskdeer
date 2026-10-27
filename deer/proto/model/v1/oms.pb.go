@@ -259,25 +259,29 @@ func (x *StrategyBudget) GetRevision() int64 {
 
 // RiskSnapshot grants a short-lived, explicit risk admission decision.
 type RiskSnapshot struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Id                 int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
-	CreateAt           int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
-	UpdateAt           int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
-	DeleteAt           *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
-	StrategyInstanceId int64                  `protobuf:"varint,5,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty" gorm:"column:strategy_instance_id;type:bigint;not null;uniqueIndex:uk_risk_snapshot_instance"`
-	AccountId          string                 `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null"`
-	InstrumentId       int64                  `protobuf:"varint,7,opt,name=instrument_id,json=instrumentId,proto3" json:"instrument_id,omitempty" gorm:"column:instrument_id;type:bigint;not null"`
-	ConfigVersion      int64                  `protobuf:"varint,8,opt,name=config_version,json=configVersion,proto3" json:"config_version,omitempty" gorm:"column:config_version;type:bigint;not null"`
-	MarketDataSource   string                 `protobuf:"bytes,9,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty" gorm:"column:market_data_source;type:varchar(32);not null"`
-	MarketEpoch        int64                  `protobuf:"varint,10,opt,name=market_epoch,json=marketEpoch,proto3" json:"market_epoch,omitempty" gorm:"column:market_epoch;type:bigint;not null"`
-	MarketSequence     int64                  `protobuf:"varint,11,opt,name=market_sequence,json=marketSequence,proto3" json:"market_sequence,omitempty" gorm:"column:market_sequence;type:bigint;not null"`
-	ObservedAt         int64                  `protobuf:"varint,12,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty" gorm:"column:observed_at;type:bigint;not null"`
-	ExpiresAt          int64                  `protobuf:"varint,13,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" gorm:"column:expires_at;type:bigint;not null"`
-	Reconciled         bool                   `protobuf:"varint,14,opt,name=reconciled,proto3" json:"reconciled,omitempty" gorm:"column:reconciled;type:boolean;not null"`
-	AllowNewRisk       bool                   `protobuf:"varint,15,opt,name=allow_new_risk,json=allowNewRisk,proto3" json:"allow_new_risk,omitempty" gorm:"column:allow_new_risk;type:boolean;not null"`
-	Revision           int64                  `protobuf:"varint,16,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt            int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt            int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt            *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	StrategyInstanceId  int64                  `protobuf:"varint,5,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty" gorm:"column:strategy_instance_id;type:bigint;not null;uniqueIndex:uk_risk_snapshot_instance"`
+	AccountId           string                 `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null"`
+	InstrumentId        int64                  `protobuf:"varint,7,opt,name=instrument_id,json=instrumentId,proto3" json:"instrument_id,omitempty" gorm:"column:instrument_id;type:bigint;not null"`
+	ConfigVersion       int64                  `protobuf:"varint,8,opt,name=config_version,json=configVersion,proto3" json:"config_version,omitempty" gorm:"column:config_version;type:bigint;not null"`
+	MarketDataSource    string                 `protobuf:"bytes,9,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty" gorm:"column:market_data_source;type:varchar(32);not null"`
+	MarketEpoch         int64                  `protobuf:"varint,10,opt,name=market_epoch,json=marketEpoch,proto3" json:"market_epoch,omitempty" gorm:"column:market_epoch;type:bigint;not null"`
+	MarketSequence      int64                  `protobuf:"varint,11,opt,name=market_sequence,json=marketSequence,proto3" json:"market_sequence,omitempty" gorm:"column:market_sequence;type:bigint;not null"`
+	ObservedAt          int64                  `protobuf:"varint,12,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty" gorm:"column:observed_at;type:bigint;not null"`
+	ExpiresAt           int64                  `protobuf:"varint,13,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" gorm:"column:expires_at;type:bigint;not null"`
+	Reconciled          bool                   `protobuf:"varint,14,opt,name=reconciled,proto3" json:"reconciled,omitempty" gorm:"column:reconciled;type:boolean;not null"`
+	AllowNewRisk        bool                   `protobuf:"varint,15,opt,name=allow_new_risk,json=allowNewRisk,proto3" json:"allow_new_risk,omitempty" gorm:"column:allow_new_risk;type:boolean;not null"`
+	Revision            int64                  `protobuf:"varint,16,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	MarketFeedId        *int64                 `protobuf:"varint,17,opt,name=market_feed_id,json=marketFeedId,proto3,oneof" json:"market_feed_id,omitempty" gorm:"column:market_feed_id;type:bigint"`
+	MarketRevision      int64                  `protobuf:"varint,18,opt,name=market_revision,json=marketRevision,proto3" json:"market_revision,omitempty" gorm:"column:market_revision;type:bigint;not null"`
+	MarketSourceVersion int64                  `protobuf:"varint,19,opt,name=market_source_version,json=marketSourceVersion,proto3" json:"market_source_version,omitempty" gorm:"column:market_source_version;type:bigint;not null"`
+	MarketMaximumAgeMs  int64                  `protobuf:"varint,20,opt,name=market_maximum_age_ms,json=marketMaximumAgeMs,proto3" json:"market_maximum_age_ms,omitempty" gorm:"column:market_maximum_age_ms;type:bigint;not null;default:5000"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *RiskSnapshot) Reset() {
@@ -418,6 +422,34 @@ func (x *RiskSnapshot) GetAllowNewRisk() bool {
 func (x *RiskSnapshot) GetRevision() int64 {
 	if x != nil {
 		return x.Revision
+	}
+	return 0
+}
+
+func (x *RiskSnapshot) GetMarketFeedId() int64 {
+	if x != nil && x.MarketFeedId != nil {
+		return *x.MarketFeedId
+	}
+	return 0
+}
+
+func (x *RiskSnapshot) GetMarketRevision() int64 {
+	if x != nil {
+		return x.MarketRevision
+	}
+	return 0
+}
+
+func (x *RiskSnapshot) GetMarketSourceVersion() int64 {
+	if x != nil {
+		return x.MarketSourceVersion
+	}
+	return 0
+}
+
+func (x *RiskSnapshot) GetMarketMaximumAgeMs() int64 {
+	if x != nil {
+		return x.MarketMaximumAgeMs
 	}
 	return 0
 }
@@ -1095,7 +1127,7 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"\brevision\x18\n" +
 	" \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
 	"\n" +
-	"_delete_at\"\xfd\v\n" +
+	"_delete_at\"\xbe\x0f\n" +
 	"\fRiskSnapshot\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -1118,9 +1150,14 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"reconciled\x18\x0e \x01(\bB3\x9a\x84\x9e\x03.gorm:\"column:reconciled;type:boolean;not null\"R\n" +
 	"reconciled\x12]\n" +
 	"\x0eallow_new_risk\x18\x0f \x01(\bB7\x9a\x84\x9e\x032gorm:\"column:allow_new_risk;type:boolean;not null\"R\fallowNewRisk\x12L\n" +
-	"\brevision\x18\x10 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
+	"\brevision\x18\x10 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevision\x12X\n" +
+	"\x0emarket_feed_id\x18\x11 \x01(\x03B-\x9a\x84\x9e\x03(gorm:\"column:market_feed_id;type:bigint\"H\x01R\fmarketFeedId\x88\x01\x01\x12`\n" +
+	"\x0fmarket_revision\x18\x12 \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:market_revision;type:bigint;not null\"R\x0emarketRevision\x12q\n" +
+	"\x15market_source_version\x18\x13 \x01(\x03B=\x9a\x84\x9e\x038gorm:\"column:market_source_version;type:bigint;not null\"R\x13marketSourceVersion\x12}\n" +
+	"\x15market_maximum_age_ms\x18\x14 \x01(\x03BJ\x9a\x84\x9e\x03Egorm:\"column:market_maximum_age_ms;type:bigint;not null;default:5000\"R\x12marketMaximumAgeMsB\f\n" +
 	"\n" +
-	"_delete_at\"\xda\x17\n" +
+	"_delete_atB\x11\n" +
+	"\x0f_market_feed_id\"\xda\x17\n" +
 	"\vOrderIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +

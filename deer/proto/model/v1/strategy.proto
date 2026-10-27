@@ -45,6 +45,7 @@ message StrategyInstance {
   string market_data_source = 14 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null\""];
   optional int64 active_config_version = 15 [(tagger.tags) = "gorm:\"column:active_config_version;type:bigint\""];
   optional string active_market_data_source = 16 [(tagger.tags) = "gorm:\"column:active_market_data_source;type:varchar(32)\""];
+  string market_mode = 17 [(tagger.tags) = "gorm:\"column:market_mode;type:varchar(16);not null;default:REPLAY\""];
 }
 
 // StrategyConfigVersion stores immutable version/source identity and typed

@@ -179,24 +179,29 @@ func seedAdmissionStrategy(ctx context.Context, t *testing.T, db *gorm.DB, input
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
+	feed, _, _, publication := admissionSelectedMarket(ctx, t, db, input.InstrumentID)
 	var clock struct{ NowMS int64 }
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", input.Authority.StrategyID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Create(&modelv1.RiskSnapshot{
-		StrategyInstanceId: input.Authority.StrategyID,
-		AccountId:          input.AccountID,
-		InstrumentId:       input.InstrumentID,
-		ConfigVersion:      input.Authority.ConfigVersion,
-		MarketDataSource:   string(domain.MarketSourceBinance),
-		MarketEpoch:        1,
-		MarketSequence:     1,
-		ObservedAt:         clock.NowMS,
-		ExpiresAt:          clock.NowMS + domain.MaxRiskSnapshotAge.Milliseconds(),
-		Reconciled:         true,
-		AllowNewRisk:       true,
-		Revision:           1,
+		StrategyInstanceId:  input.Authority.StrategyID,
+		AccountId:           input.AccountID,
+		InstrumentId:        input.InstrumentID,
+		ConfigVersion:       input.Authority.ConfigVersion,
+		MarketDataSource:    string(domain.MarketSourceBinance),
+		MarketEpoch:         publication.OwnerEpoch,
+		MarketSequence:      publication.Reading.Sequence,
+		MarketFeedId:        &feed.ID,
+		MarketRevision:      publication.Revision,
+		MarketSourceVersion: feed.SourceVersion,
+		MarketMaximumAgeMs:  5000,
+		ObservedAt:          clock.NowMS,
+		ExpiresAt:           clock.NowMS + domain.MaxRiskSnapshotAge.Milliseconds(),
+		Reconciled:          true,
+		AllowNewRisk:        true,
+		Revision:            1,
 	}).Error; err != nil {
 		t.Fatal(err)
 	}

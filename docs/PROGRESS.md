@@ -539,3 +539,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 改动：保留兼容报价、剩余数量/部分成交/重复单处理、正常节流及超龄/保护撤单；任何撤单或不确定状态阻止全部补挂，未发送意图保护先红后绿。领域/仓库及typed OrderView加入真实创建时间，避免成交更新重置报价年龄。
 - 验证：make generate/fmt、完整make verify、完整make integration、文档/差异检查通过，race/goleak保留；复杂度门禁发现后拆分校验通过，未降低断言或屏蔽。见 [P06.2](validation/P06-02.md)。
 - 远程：5c80fe0 已推送 main 并核对SHA；本步独立提交/推送并核对SHA。继续风险快照生产/最终行情门禁、策略控制器及失效撤单/30分钟模拟。P06保持进行。
+
+## 2026-10-27：P06.3 当前所选行情准入与最终门禁
+
+- 改动：版本13及生成许可来源证据、实例不可变LIVE/REPLAY模式；准入/Prepare重读实际当前行情及发布授权，独立deferred模拟提交门禁，取消通道保留。升级关闭无来源证据的旧许可，不自动恢复。见 [风险准入](RISK_ADMISSION.md)。
+- 验证：INVALID仍可凭旧flag准入的真实PG反例先红后绿；较新同owner行情可用，失权/旧epoch/未来revision/来源版本/模式/静默年龄拒绝；资金/订单已写后失权整体回滚，旧许可升级关闭。make generate/fmt、完整make verify、最终lint、最终完整make integration、文档/差异检查通过；修正故障helper未覆盖行情租约后重跑全部通过，race/goleak保留。见 [P06.3](validation/P06-03.md)。
+- 远程：86848d5 已推送 main 并核对SHA，[CI 40486173886](https://github.com/hmlax/muskdeer/actions/runs/40486173886) success；此前P05.10/P06.1远程CI亦success。本步独立提交/推送并核对SHA。
+- 下一步：实际风险许可生产与全范围原子限额、策略控制器及失效撤单/30分钟模拟；fixture不是生产器，P06保持进行。

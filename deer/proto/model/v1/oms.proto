@@ -53,6 +53,10 @@ message RiskSnapshot {
   bool reconciled = 14 [(tagger.tags) = "gorm:\"column:reconciled;type:boolean;not null\""];
   bool allow_new_risk = 15 [(tagger.tags) = "gorm:\"column:allow_new_risk;type:boolean;not null\""];
   int64 revision = 16 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  optional int64 market_feed_id = 17 [(tagger.tags) = "gorm:\"column:market_feed_id;type:bigint\""];
+  int64 market_revision = 18 [(tagger.tags) = "gorm:\"column:market_revision;type:bigint;not null\""];
+  int64 market_source_version = 19 [(tagger.tags) = "gorm:\"column:market_source_version;type:bigint;not null\""];
+  int64 market_maximum_age_ms = 20 [(tagger.tags) = "gorm:\"column:market_maximum_age_ms;type:bigint;not null;default:5000\""];
 }
 
 // OrderIntent is durable before any call to the trading gateway.

@@ -98,7 +98,11 @@ func validateRiskSnapshot(ctx context.Context, tx *gorm.DB, strategy *modelv1.St
 		snapshot.ObservedAt > clock.NowMS || snapshot.ExpiresAt <= clock.NowMS || clock.NowMS-snapshot.ObservedAt > domain.MaxRiskSnapshotAge.Milliseconds() {
 		return nil, 0, domain.ErrRiskDenied
 	}
-	return &snapshot, clock.NowMS, nil
+	now, err := validateRiskMarket(ctx, tx, strategy, &snapshot)
+	if err != nil {
+		return nil, 0, err
+	}
+	return &snapshot, now, nil
 }
 
 func lockIntentInstrument(ctx context.Context, tx *gorm.DB, instrumentID int64) (*modelv1.Instrument, error) {

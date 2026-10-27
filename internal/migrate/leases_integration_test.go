@@ -172,13 +172,19 @@ func leaseStrategyFixture(ctx context.Context, t *testing.T, db *gorm.DB) int64 
 
 func expireLeaseFixture(ctx context.Context, t *testing.T, db *gorm.DB, key domain.LeaseKey) {
 	t.Helper()
-	var err error
-	if key.Kind == domain.LeaseKindStrategy {
-		err = db.WithContext(ctx).Model(&modelv1.StrategyLease{}).Where("strategy_instance_id = ?", key.StrategyID).UpdateColumn("expires_at", 0).Error
-	} else {
-		err = db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", key.AccountID).UpdateColumn("expires_at", 0).Error
+	var result *gorm.DB
+	switch key.Kind {
+	case domain.LeaseKindStrategy:
+		result = db.WithContext(ctx).Model(&modelv1.StrategyLease{}).Where("strategy_instance_id = ?", key.StrategyID).UpdateColumn("expires_at", 0)
+	case domain.LeaseKindExecution:
+		result = db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", key.AccountID).UpdateColumn("expires_at", 0)
+	case domain.LeaseKindMarket:
+		result = db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", key.MarketFeedID).UpdateColumn("expires_at", 0)
+	default:
+		t.Fatal("unsupported fixture lease kind")
+		return
 	}
-	if err != nil {
-		t.Fatal(err)
+	if result.Error != nil || result.RowsAffected != 1 {
+		t.Fatalf("lease expiry did not affect exactly one owner: %d, %v", result.RowsAffected, result.Error)
 	}
 }
