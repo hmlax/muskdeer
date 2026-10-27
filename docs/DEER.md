@@ -104,6 +104,8 @@ Nacos HTTP 实例身份是 namespace/group/service/IP/port/cluster，Deer ID 仅
 
 Factory 持有每次调用的连接，返回即关闭；关闭工厂取消并 join 在途请求，再释放 Nacos。mTLS 验证服务 DNS 身份，网络地址只来自已验证 naming 记录；连接不读取环境代理。只接受 typed Proto 消息，限制编码前请求大小和收发字节上限，调用者不能提高上限。禁用业务消息重放的 native gRPC 边界、暂不复用连接/watch 和 unary 范围见 [ADR 0004](decisions/0004-bounded-unary-rpc.md)，行为及实际 Hertz→Nacos→mTLS gRPC 链路见 [P02.7.4](validation/P02-07-04.md)。流调用目前明确返回 Unimplemented，后续按真实流合同实现所有权。
 
+远端返回 DeadlineExceeded/Canceled 可能早于本地 context 计时器发布 Err；工厂保留原始 gRPC status，并补上可供 errors.Is 识别的 context.DeadlineExceeded/context.Canceled。该 cause 表示 RPC 的截止/取消结果，不等于调用方自己的 context 已结束；需要区分时直接检查调用方 ctx.Err()。不会据此自动重试。
+
 ## API 统一返回
 JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。
 业务错误映射 gRPC status 及 HTTP；内部日志记录根因，前端返回安全信息。request_id 通过 middleware/interceptor 传递；未知传入值校验长度。

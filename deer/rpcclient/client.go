@@ -346,6 +346,16 @@ func contextualError(ctx context.Context, err error) error {
 	if ctx != nil && ctx.Err() != nil {
 		return errors.Join(status.FromContextError(ctx.Err()).Err(), ctx.Err(), err)
 	}
+	// A remote deadline/reset may arrive before the local timer publishes Err.
+	// Preserve both the wire status and its canonical context cause. This does
+	// not assert that the caller's own context was canceled; inspect ctx.Err()
+	// when that distinction matters. No operation is retried here.
+	switch status.Code(err) {
+	case codes.DeadlineExceeded:
+		return errors.Join(err, context.DeadlineExceeded)
+	case codes.Canceled:
+		return errors.Join(err, context.Canceled)
+	}
 	if errors.Is(err, context.DeadlineExceeded) {
 		return errors.Join(status.FromContextError(context.DeadlineExceeded).Err(), err)
 	}
