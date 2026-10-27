@@ -23,6 +23,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
+	"github.com/hmlax/muskdeer/internal/eventwire"
 	"github.com/hmlax/muskdeer/internal/outbox"
 	"github.com/hmlax/muskdeer/internal/repository"
 	"github.com/hmlax/muskdeer/internal/usecase"
@@ -172,34 +173,38 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 	}
 }
 
-func consumePortfolioWithRedelivery(ctx context.Context, t *testing.T, consumer natsjs.Consumer, handler *usecase.FillConsumer, count uint64) {
+func consumePortfolioWithRedelivery(ctx context.Context, t *testing.T, consumer *jetstream.Consumer, handler *usecase.FillConsumer, count uint64) {
 	t.Helper()
+	interrupted := false
 	redelivered := false
 	trades := 0
-	for range count + 1 {
-		message, err := consumer.Next(natsjs.FetchContext(ctx))
-		if err != nil {
-			t.Fatal(err)
-		}
+	failure := errors.New("controlled interruption after committed business effects")
+	for received := uint64(0); received < count+1; {
 		var event commonv1.ExecutionEvent
-		if err := proto.Unmarshal(message.Data(), &event); err != nil {
-			t.Fatal(err)
-		}
-		if event.EventType == domain.EventTradeFilled {
-			trades++
-			if err := handler.Apply(ctx, portfolioNotice(ctx, t, &event)); err != nil {
-				t.Fatal(err)
+		worked, err := consumer.ConsumeOne(ctx, &event, func(work context.Context, info jetstream.DeliveryInfo) error {
+			if info.EventID != event.EventId {
+				return eventwire.ErrInvalidEvent
 			}
-			if !redelivered {
-				redelivered = true
-				// Effects are committed but the delivery is deliberately not ACKed.
-				if err := message.Nak(); err != nil {
-					t.Fatal(err)
+			if err := eventwire.Validate(work, &event); err != nil {
+				return err
+			}
+			if event.EventType == domain.EventTradeFilled {
+				trades++
+				if err := handler.Apply(work, portfolioNotice(work, t, &event)); err != nil {
+					return err
 				}
-				continue
+				redelivered = redelivered || info.Attempt > 1
+				if !interrupted {
+					interrupted = true
+					return failure
+				}
 			}
+			return nil
+		})
+		if worked {
+			received++
 		}
-		if err := message.DoubleAck(ctx); err != nil {
+		if err != nil && !errors.Is(err, failure) {
 			t.Fatal(err)
 		}
 	}
@@ -240,7 +245,7 @@ func outboxOwner(t *testing.T) string {
 	return owner
 }
 
-func outboxBrokerFixture(ctx context.Context, t *testing.T) (natsjs.Stream, natsjs.Consumer, outbox.Publisher) {
+func outboxBrokerFixture(ctx context.Context, t *testing.T) (natsjs.Stream, *jetstream.Consumer, outbox.Publisher) {
 	t.Helper()
 	address := os.Getenv("MUSKDEER_TEST_NATS_ADDRESS")
 	token := os.Getenv("MUSKDEER_TEST_NATS_TOKEN")
@@ -273,12 +278,13 @@ func outboxBrokerFixture(ctx context.Context, t *testing.T) (natsjs.Stream, nats
 	if err != nil {
 		t.Fatal(err)
 	}
-	consumer, err := stream.CreateConsumer(ctx, natsjs.ConsumerConfig{
+	_, err = stream.CreateConsumer(ctx, natsjs.ConsumerConfig{
 		Durable:       "portfolio_test",
 		AckPolicy:     natsjs.AckExplicitPolicy,
 		FilterSubject: prefix + "." + outbox.ExecutionSubject,
 		MaxAckPending: 1,
-		AckWait:       time.Minute,
+		MaxWaiting:    16,
+		AckWait:       4 * time.Second,
 		MaxDeliver:    5,
 	})
 	if err != nil {
@@ -304,6 +310,10 @@ func outboxBrokerFixture(ctx context.Context, t *testing.T) (natsjs.Stream, nats
 		}
 	})
 	publisher, err := outbox.NewPublisher(client)
+	if err != nil {
+		t.Fatal(err)
+	}
+	consumer, err := client.OpenConsumer(ctx, "portfolio_test", outbox.ExecutionSubject)
 	if err != nil {
 		t.Fatal(err)
 	}

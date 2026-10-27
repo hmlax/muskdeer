@@ -1,5 +1,5 @@
-// Package jetstream owns a bounded synchronous protobuf publisher. It does not
-// replace a transactional outbox, inbox or application-level idempotency.
+// Package jetstream owns bounded protobuf publication and durable consumption.
+// It does not replace an outbox, inbox or application-level idempotency.
 package jetstream
 
 import (
@@ -26,8 +26,8 @@ import (
 // ErrClosed reports terminal client closure, including blocked admission.
 var ErrClosed = errors.New("jetstream client is closed")
 
-// Client owns one standalone connection and synchronous publisher. No unscoped
-// connection, provisioning, consumer or async publication handle is exposed.
+// Client owns one standalone connection. Publication and consumer handles are
+// scoped; no raw connection, provisioning or async publication handle is exposed.
 type Client struct {
 	conn     *nats.Conn
 	js       natsjs.JetStream

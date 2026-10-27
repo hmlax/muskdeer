@@ -65,3 +65,9 @@ L1 模拟核心成交在同一事务写余额/冻结、订单、不可变 Simula
 真实 PG/JetStream 故障窗口测试已改用核心自动生产的成交事件，覆盖存储后完成失败、提交后 NAK、最终订单预算归零。独立注入成交 outbox 写入失败，验证余额、冻结、核心订单、成交事实和风险变化整体回滚；另验证持仓已提交而 OMS 尚未完成时的重投。
 
 这些组件尚未作为独立 execution/portfolio 进程后台工作启动。真实外部核心不能借用本模拟事务回滚能力，必须按真实合同使用可靠回报或带补偿扫描的采集；该能力继续 P11 独立验收。
+
+## P04.7 受控 durable 消费客户端
+
+Deer JetStream 客户端已支持只绑定已有 durable 的 `OpenConsumer` 和同步 `ConsumeOne`，配置/期限/取消边界见 [公共封装](DEER.md)。调用者使用具体 ExecutionEvent，核对 broker message ID 与 envelope ID、严格变体，再执行 FillConsumer；控制类事件只在校验成功后确认。客户端仅在处理成功后发送确认 ACK，业务失败时保留原 broker delivery，等待 AckWait 重投。
+
+真实成交闭环测试已使用该公共客户端，注入业务效果提交后的错误；broker 超时重投后观察到 attempt>1，最终仍只有2条事实/2条inbox、预算0。另验证缺少 durable 不创建、运行中过滤范围变化拒绝、坏 Proto 不进入 handler/不 ACK、处理与等待准入均响应取消。没有新增后台任务，工作器装配与业务 RPC 继续下一步。

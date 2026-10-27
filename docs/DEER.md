@@ -77,6 +77,10 @@ P02.6 实现 deer/jetstream.Client 与借用的 Deer.JetStream()，位于 Redis 
 
 Publish(ctx, suffix, eventID, proto.Message) 有界准入、确定性 Protobuf 编码并同步等待存储确认；suffix 如 `order.state.v1`，eventID 为最多 128 字节 ASCII 字母/数字/点/下划线/连字符/冒号，须在整个 stream 内稳定且唯一。拒绝空白和换行，支持 `intent:<id>:<revision>` 等稳定业务键。设置 Nats-Msg-Id/预期 stream，返回 Stream/Sequence/Duplicate；消息借用至调用返回，不能并发修改。业务 envelope、变体及小数校验由 [OMS outbox](OMS.md) 完成。
 
+`OpenConsumer(ctx, durable, suffix)` 仅绑定已有 pull durable；要求相同 stream、明确单 subject、DeliverAll/ReplayInstant、AckExplicit、2秒至5分钟 AckWait、1..100 MaxDeliver、1..1024 MaxAckPending、1..64 MaxWaiting，拒绝自动过期与覆盖 AckWait 的 BackOff。每次拉取前重新检查实际范围/配置；AckWait 改变须重新构造句柄。不会创建、更新或删除 broker 资源。
+
+`Consumer.ConsumeOne` 要求 native deadline，每个句柄最多1个处理中消息，处理总期限进一步限制为 AckWait 的一半。校验 metadata、唯一安全 message ID、Content-Type、大小和有界 Proto 解析后才调用借用的 typed handler；handler 成功后执行确认 ACK。取消、坏消息、handler错误或 ACK 不确定都返回错误，本次不重试、不自动丢弃、不提前 ACK。空拉取返回 false,nil。`DeliveryError` 保留 stream/durable/sequence/attempt/hash 和 cause，文本不包含原始 payload。达到 MaxDeliver 的消息不会自动进入 DLQ，人工隔离/恢复继续 P09。
+
 禁用 SDK 发布重试、重连缓存、自动重连及发现到的其他服务器；首版连接断开后安全拒绝，需重建客户端/重启进程。该恢复监督将在后续服务恢复步骤接入，当前不宣称自动恢复或 HA。命令期限覆盖准入及等待 ACK；超时可能已落盘，重试由持久化 outbox 的所有者决定。Broker 去重只作用于有限窗口，同 ID 不会验证 payload 指纹，不能替代数据库 inbox/成交唯一键；业务持久化指纹、事务及重投在 P03/P04 完成。
 
 Close 先拒绝准入，关闭连接并等待终态回调，重复关闭幂等；已确认发布已落盘，进行中的发布仍可能不确定。未开放 consumer、异步发布或无范围的 SDK 句柄，不调用异步 Drain 来暗示未知发布已获确认。真实 ACK 丢失/去重、命名空间、失败清理等证据见 [P02.6](validation/P02-06.md)；consumer AckExplicit/MaxDeliver、隔离恢复、outbox/inbox 和 broker 集群故障验收尚未完成。
