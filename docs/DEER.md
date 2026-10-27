@@ -43,7 +43,7 @@ Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未�
 
 标准 gRPC Health Check/List/Watch 同样调用 CheckReady，支持空 service 聚合名及 `<name>.grpc` 逻辑名；未知 Check 返回 NotFound，未知 Watch 报 SERVICE_UNKNOWN。List 对两个已知名字给出同一快照。Watch 每 250ms 检查一次，仅发送状态变化，检查本身受流 context 限制；最多四条并发 Watch，额外请求 ResourceExhausted，不排队。原有强制 native deadline 继续生效，ticker/准入随 handler 退出释放，无额外后台循环。完整证据见 [P02.8.2](validation/P02-08-02.md)。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.4 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销、mTLS unary gRPC 调用工厂，验证 Hertz API 发现并调用两个 Deer 节点；后续 P02.8–P02.10.1 已接入配置、健康、指标、请求关联、六个角色的独立进程入口和进程框架日志桥接；API 鉴权/统一响应/OpenAPI 及实际交易业务仍待后续任务。不将完整 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.4 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销、mTLS unary gRPC 调用工厂，验证 Hertz API 发现并调用两个 Deer 节点；P02.8–P02.11 已接入配置、健康、指标、请求关联、六角色独立进程、框架日志、持久开发资源及固定 Go 镜像。公共运行层 A02/A26 和 Linux CI 已通过，P02 完成；API 鉴权/统一响应/OpenAPI 与交易业务按后续任务实现。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 

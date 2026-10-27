@@ -4,7 +4,7 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
-P01 已完成。P02 已实现 Deer/DeerApi 的配置、独立实例启停、失败回滚、JSON 日志/文件轮转、PostgreSQL/Redis、JetStream 同步发布、Nacos 认证/查询/注册/心跳/注销、mTLS unary gRPC 调用工厂、健康和指标。六种角色已有独立进程入口及框架日志桥接；当前入口提供运行基础，交易业务及管理页面仍按后续任务实现。进度及限制见 docs/PROGRESS.md。
+P01/P02 公共运行层已完成，含 Deer/DeerApi、配置、独立进程启停与回滚、日志/轮转、PostgreSQL/Redis/JetStream、Nacos、mTLS gRPC 工厂、健康/指标及固定 Go 镜像；本机 arm64 和 Linux CI amd64 验证通过。P03 已开始业务值对象与持久化基础，交易业务及管理页面按后续任务实现。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。
