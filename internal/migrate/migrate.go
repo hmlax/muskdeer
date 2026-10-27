@@ -1,5 +1,5 @@
 // Package migrate applies embedded, checksummed PostgreSQL schema upgrades.
-// Services never invoke it automatically; the operator command owns execution.
+// Services only validate with CheckCurrent; the operator command owns execution.
 package migrate
 
 import (

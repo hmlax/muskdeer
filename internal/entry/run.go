@@ -7,9 +7,13 @@ import (
 	"io"
 	"log/slog"
 
+	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
+
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/internal/business"
 	"github.com/hmlax/muskdeer/internal/processlog"
 )
 
@@ -49,6 +53,10 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 	if ctx == nil || cfg == nil {
 		return errors.New("service entry requires context and configuration")
 	}
+	cfg = proto.CloneOf(cfg)
+	if err := business.ValidateConfig(cfg); err != nil {
+		return err
+	}
 	if _, err := ParseRole(string(role)); err != nil {
 		return err
 	}
@@ -78,6 +86,20 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 				},
 			},
 		},
+	}
+	if cfg.GetBusiness().GetEnabled() {
+		var runtime *business.Runtime
+		spec.Workers = func(ctx context.Context, owner *deer.Deer) ([]deer.Worker, error) {
+			var err error
+			runtime, err = business.New(ctx, cfg, owner)
+			if err != nil {
+				return nil, err
+			}
+			return runtime.Workers(), nil
+		}
+		spec.RegisterGRPC = func(_ context.Context, _ *deer.Deer, registrar grpc.ServiceRegistrar) error {
+			return runtime.RegisterGRPC(registrar)
+		}
 	}
 	var (
 		owner       *deer.Deer

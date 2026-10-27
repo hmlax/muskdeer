@@ -64,8 +64,13 @@ type IntentExecutionRepository interface {
 	Reject(ctx context.Context, current IntentSnapshot, code string) (IntentSnapshot, error)
 }
 
-// IntentService never replays an uncertain submission without querying first.
-type IntentService interface {
-	Submit(ctx context.Context, input OrderInput, execution LeaseToken) (IntentSnapshot, error)
+// IntentRecovery observes a durable intent without submitting a new order.
+type IntentRecovery interface {
 	Recover(ctx context.Context, accountID string, intentID int64) (IntentSnapshot, error)
+}
+
+// IntentService adds submission to the observation-only recovery contract.
+type IntentService interface {
+	IntentRecovery
+	Submit(ctx context.Context, input OrderInput, execution LeaseToken) (IntentSnapshot, error)
 }

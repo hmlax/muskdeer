@@ -14,12 +14,13 @@
 | P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
 | P02 | done | P02.1–P02.11 及 Linux CI 40439453258 success；六角色、多进程发现/mTLS、持久开发、固定 Go 镜像与运行层 E2E 通过 |
 | P03 | done | P03.1–P03.10 值/生成模型/迁移、typed 合同、数据库租约、最终原子 fencing、模拟现货及提交后响应丢失/延迟通过；后续 OMS/节点恢复按各阶段验收 |
-| P04 | in_progress | P04.1–P04.9 持久OMS/预算/撤单、成交inbox/损益、自动事件及真实发布/有界消费/重投、typed RPC/mTLS/分页读取、Deer工作器托管通过；默认命令的独立业务进程装配待实现 |
-| P05–P10 | todo | 尚未实现和运行 |
+| P04 | done | P04.1–P04.10 持久OMS/原子预算/撤单、成交inbox/损益、自动事件与真实发布/重投、typed RPC/mTLS、Deer工作器及实际独立业务命令进程闭环通过 |
+| P05 | in_progress | 下一步实现 Binance/OKX 协议、独立订单簿、质量与来源隔离；实连证据单列 |
+| P06–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
 ## 下一步
-P01–P03 基础与模拟合同已完成，从 P04 的 OMS、预算原子预留、事务 outbox/inbox 与成交投影继续。每个最小步骤相关测试/检查通过后提交并推送远程，确认同步再继续；保持模块及工具版本固定，不重复已完成的兼容探针，不将直接模拟 adapter 误读成完整交易或管理页面完成。
+P01–P04 公共运行层、模拟交易合同与 OMS/消息/投影后端闭环已完成，继续 P05 的 Binance/OKX 双行情及后续策略/管理/对冲/恢复/运维。每个最小步骤相关测试/检查通过后提交并推送远程，确认同步再继续；完整 L1 尚未完成，真实交易合同与测试环境继续单列 P11。
 
 ## 每轮追加模板
 日期/任务 ID：
@@ -448,3 +449,10 @@ P01–P03 基础与模拟合同已完成，从 P04 的 OMS、预算原子预留�
 - 验证：停止顺序/失败兄弟退出/未运行清理/坏计划回滚/启动Check失败先红后绿；真实Nacos任务异常后退出并注销。make verify、最终lint/Deer race、完整 make integration、文档/差异检查通过，goleak与隔离清理保留。见 [P04.9](validation/P04-09.md)。
 - 远程：0334ade 已补齐上一笔RPC集成用例并推送 main，远程SHA已核对；本步通过后独立提交/推送并核对 SHA。
 - 下一步：实际 execution/portfolio 工作器、业务配置和默认命令装配；P04保持进行。
+
+## 2026-10-27：P04.10 实际独立业务进程
+
+- 改动：显式业务 Proto/doctor/入口、只读完整历史检查、execution RPC/outbox和portfolio消费/RPC回查 owned 工作器；严格typed观察解码不制造执行凭证，增加reduce_only响应及窄恢复接口。
+- 验证：配置/观察解码先红后绿；空库检查不建表、改写历史拒绝；真实命令双PID经Nacos/mTLS/JetStream自动完成2事实/2inbox、持仓10/现金1001.8/费用0.2/预算0及全部outbox。make generate/verify、最终lint、最终完整 make integration、文档/差异检查通过，race/goleak及隔离清理保留。修正校验和负例格式后完整重跑通过。见 [P04.10](validation/P04-10.md)。
+- 远程：7bae910 已推送 main 并核对 SHA，[CI 40462194943](https://github.com/hmlax/muskdeer/actions/runs/40462194943) success。本步通过后独立提交/推送并核对 SHA。
+- 状态：P04 done；完整L1仍待后续。下一步P05双行情协议/订单簿/质量/来源隔离及实连证据。

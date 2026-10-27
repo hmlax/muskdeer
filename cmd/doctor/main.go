@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
+	"github.com/hmlax/muskdeer/internal/business"
 )
 
 const requiredGoVersion = "go1.27.3"
@@ -39,7 +40,11 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if runtime.Version() != requiredGoVersion {
 		return diagnosticExit(diagnostic, "doctor requires Go 1.27.3", 1)
 	}
-	if _, err := deer.LoadConfig(ctx, *path); err != nil {
+	cfg, err := deer.LoadConfig(ctx, *path)
+	if err != nil {
+		return diagnosticExit(diagnostic, err, 1)
+	}
+	if err := business.ValidateConfig(cfg); err != nil {
 		return diagnosticExit(diagnostic, err, 1)
 	}
 	if _, err := fmt.Fprintln(output, "go1.27.3: configuration syntax and limits validated"); err != nil {

@@ -82,6 +82,7 @@ message OrderView {
   google.protobuf.Timestamp updated_at = 18;
   string error_code = 19;
   int64 core_revision = 20;
+  bool reduce_only = 21;
 }
 
 message CancellationView {

@@ -10,11 +10,11 @@ import (
 // order. ACK is allowed only after both portfolio and OMS effects succeed.
 type FillConsumer struct {
 	portfolio domain.PortfolioRepository
-	intents   domain.IntentService
+	intents   domain.IntentRecovery
 }
 
 // NewFillConsumer borrows repositories/services and starts no background work.
-func NewFillConsumer(portfolio domain.PortfolioRepository, intents domain.IntentService) (*FillConsumer, error) {
+func NewFillConsumer(portfolio domain.PortfolioRepository, intents domain.IntentRecovery) (*FillConsumer, error) {
 	if portfolio == nil || intents == nil {
 		return nil, domain.ErrInvalidOrder
 	}

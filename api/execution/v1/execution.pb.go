@@ -421,6 +421,7 @@ type OrderView struct {
 	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ErrorCode          string                 `protobuf:"bytes,19,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
 	CoreRevision       int64                  `protobuf:"varint,20,opt,name=core_revision,json=coreRevision,proto3" json:"core_revision,omitempty"`
+	ReduceOnly         bool                   `protobuf:"varint,21,opt,name=reduce_only,json=reduceOnly,proto3" json:"reduce_only,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -593,6 +594,13 @@ func (x *OrderView) GetCoreRevision() int64 {
 		return x.CoreRevision
 	}
 	return 0
+}
+
+func (x *OrderView) GetReduceOnly() bool {
+	if x != nil {
+		return x.ReduceOnly
+	}
+	return false
 }
 
 type CancellationView struct {
@@ -1418,7 +1426,7 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x12\x1d\n" +
 	"\tintent_id\x18\x02 \x01(\x03H\x00R\bintentId\x12(\n" +
 	"\x0fclient_order_id\x18\x03 \x01(\tH\x00R\rclientOrderIdB\b\n" +
-	"\x06lookup\"\xbe\x06\n" +
+	"\x06lookup\"\xdf\x06\n" +
 	"\tOrderView\x12\x1b\n" +
 	"\tintent_id\x18\x01 \x01(\x03R\bintentId\x12&\n" +
 	"\x0fclient_order_id\x18\x02 \x01(\tR\rclientOrderId\x12\"\n" +
@@ -1443,7 +1451,9 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"updated_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
 	"\n" +
 	"error_code\x18\x13 \x01(\tR\terrorCode\x12#\n" +
-	"\rcore_revision\x18\x14 \x01(\x03R\fcoreRevision\"\xb7\x01\n" +
+	"\rcore_revision\x18\x14 \x01(\x03R\fcoreRevision\x12\x1f\n" +
+	"\vreduce_only\x18\x15 \x01(\bR\n" +
+	"reduceOnly\"\xb7\x01\n" +
 	"\x10CancellationView\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
 	"\tintent_id\x18\x02 \x01(\x03R\bintentId\x12;\n" +

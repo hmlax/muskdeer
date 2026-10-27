@@ -23,6 +23,7 @@ type OrderState string
 
 // Order lifecycle identifiers.
 const (
+	OrderStateUnspecified     OrderState = ""
 	OrderStateIntent          OrderState = "INTENT"
 	OrderStateSubmitting      OrderState = "SUBMITTING"
 	OrderStateLive            OrderState = "LIVE"
@@ -38,12 +39,13 @@ type CancelState string
 
 // Cancellation lifecycle identifiers.
 const (
-	CancelStateNone      CancelState = "NONE"
-	CancelStateRequested CancelState = "REQUESTED"
-	CancelStatePending   CancelState = "PENDING"
-	CancelStateConfirmed CancelState = "CONFIRMED"
-	CancelStateUnknown   CancelState = "UNKNOWN"
-	CancelStateRejected  CancelState = "REJECTED"
+	CancelStateUnspecified CancelState = ""
+	CancelStateNone        CancelState = "NONE"
+	CancelStateRequested   CancelState = "REQUESTED"
+	CancelStatePending     CancelState = "PENDING"
+	CancelStateConfirmed   CancelState = "CONFIRMED"
+	CancelStateUnknown     CancelState = "UNKNOWN"
+	CancelStateRejected    CancelState = "REJECTED"
 )
 
 // Trading boundary limits and stable public messages.

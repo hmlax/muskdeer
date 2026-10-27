@@ -24,6 +24,18 @@ message ServiceConfig {
   GRPCClients grpc_clients = 14;
   // Monitoring is a separate, loopback-only Hertz listener for local probes.
   Listener monitoring = 15;
+  // Explicit L1 business opt-in; omitted configurations remain infrastructure probes.
+  BusinessRuntime business = 16;
+}
+
+// BusinessRuntime configures owned execution/portfolio work without migrating
+// schemas, provisioning broker resources, seeding money or authorizing risk.
+message BusinessRuntime {
+  bool enabled = 1;
+  string execution_venue = 2;
+  google.protobuf.Duration poll_interval = 3;
+  google.protobuf.Duration operation_timeout = 4;
+  string portfolio_consumer = 5;
 }
 
 // GRPCClients bounds outbound unary RPCs, including discovery and connection.

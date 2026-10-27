@@ -81,3 +81,7 @@ Deer JetStream 客户端已支持只绑定已有 durable 的 `OpenConsumer` 和�
 明确 STP 拒绝纳入已确认拒绝分类，意图 REJECTED、预留释放；请求超时或响应丢失仍保留 UNKNOWN 和预算，按原身份查询。CancelOrder/FindCancellation 响应同时提供独立请求状态与核心订单状态，PENDING 不能解释为已撤单。
 
 本步通过 Deer/mTLS 注册真实业务 handler 验证；默认 execution/portfolio 命令的后台/客户端装配继续后续步骤，尚未将直接测试服务等同于六进程业务闭环。
+
+## P04.10 实际业务命令
+
+默认命令现已支持显式 business 模式：execution 托管 RPC/outbox，portfolio 托管 durable 消费并经 Nacos/mTLS 查询 execution，均使用 Deer owned 工作器。只读检查完整迁移历史，不自动创建环境或资金；实际双进程闭环及配置见 [业务运行](BUSINESS_RUNTIME.md)。P04后端基础任务完成，行情/策略/管理/对冲/多节点等完整L1继续 P05–P10。

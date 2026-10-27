@@ -46,6 +46,7 @@ func Order(input domain.IntentSnapshot) (*executionv1.OrderView, error) {
 		ClientOrderId:      input.ClientOrderID,
 		CoreOrderId:        coreID,
 		CoreRevision:       input.CoreRevision,
+		ReduceOnly:         input.Input.ReduceOnly,
 		ExecutionVenue:     domain.ExecutionVenueSimulator,
 		AccountId:          input.Input.AccountID,
 		InstrumentId:       input.Input.InstrumentID,
