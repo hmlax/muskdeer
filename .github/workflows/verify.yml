@@ -23,3 +23,5 @@ jobs:
         run: make verify
       - name: Verify isolated infrastructure contracts
         run: make integration
+      - name: Verify persistent development resources
+        run: make dev-test

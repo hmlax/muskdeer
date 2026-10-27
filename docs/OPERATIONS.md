@@ -19,7 +19,26 @@ SIGTERM/CTRL-C 触发停止：先撤就绪、停止心跳并注销，再 drain t
 框架日志只在新进程入口安装一次，禁止在共享进程的 Deer 构造器中切换 Kratos/Hertz 全局 logger。SDK 日志统一输出 JSON `framework.event`，含级别、框架、函数/行号和参数数量；SDK 原始格式及参数值可能包含敏感请求，因此不输出。可诊断的生命周期事件由应用使用安全结构化字段单独记录。Hertz 的公开恢复 API 以原 default logger 重建 system wrapper，要求安装前没有自定义 system logger。应用结构化日志保留 request_id；框架没有 context 的接口无法自动提供请求编号。
 
 ## 环境与凭据
-开发、仿真、测试、生产分别使用 Nacos namespace、数据库、Redis 前缀、NATS subject 和账户。所有环境默认禁止实盘；测试凭据不提交仓库。外部交易密钥只授权所需交易能力，提现权限不属于策略服务。
+开发、仿真、测试、生产分别使用 Nacos namespace、数据库、Redis 前缀、NATS subject 和账户。所有环境默认禁止实盘；真实凭据不提交仓库，隔离环境明确标记的公开样例口令仅供本地。外部交易密钥只授权所需交易能力，提现权限不属于策略服务。
+
+## 开发资源
+
+`make dev-up` 使用 compose.dev.yml 启动四项固定 digest 的基础设施，Docker 自动分配 loopback 端口。Compose project 由当前工作区绝对路径的 SHA-256 前 12 位派生，不从可编辑 state 文件读取；不同路径拥有独立资源，移动目录会得到新项目。命令有工作区互斥锁，重复 up 复用已有数据，不迁移数据库、不重设既有 Nacos 管理员密码。
+
+实际地址保存在 `.cache/dev/endpoints.json`；`environment.sh` 和 api/market/strategy/execution/portfolio/cron.json 使用可辨识开发口令，不进 git。先在当前 shell 中运行：
+
+```sh
+make dev-up
+source .cache/dev/environment.sh
+make build
+.cache/bin/muskdeer -role market -config .cache/dev/market.json
+```
+
+生成配置启用 PostgreSQL、Redis 和 Nacos，四个业务角色发布各自 gRPC；明文仅供本机。服务端口沿用 local 示例，多节点需单独修改 instance_id/端口。NATS JetStream 提供持久存储，但业务 stream 合同尚未定义，因此不自动创建 stream 或虚假启用 publisher。
+
+`make dev-status` 查询当前项目；`make dev-down` 停止并删除当前项目容器/网络，始终保留 named volumes。启动或初始化失败也不自动删数据；修正问题后重新 up。down 后 endpoints 文件可能是旧地址，以最新 up 输出为准。脚本不管理业务进程，停止资源前先关闭自己启动的业务服务。
+
+`make dev-test` 在随机临时工作区运行相同启动/停止逻辑，验证重复 up、六份配置、真实服务连接 PG/Redis/Nacos 并 ready、Redis 写入跨 down/up 保留及 Nacos 恢复；最终仅删除该随机测试项目的卷，保留用户工作区项目。该测试已加入 CI。
 
 ## 启动顺序
 基础设施 → 经审查的数据库迁移 → execution/portfolio 恢复 → market 就绪 → strategy 恢复 → api 放流量 → cron。服务可并行启动但 readiness 必须体现依赖及恢复状态，策略不能因为进程启动就自动跳过对账。

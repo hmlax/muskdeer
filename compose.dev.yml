@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_USER: muskdeer
+      POSTGRES_PASSWORD: muskdeer_dev_only
+      POSTGRES_DB: muskdeer_dev
+    ports: ["127.0.0.1::5432"]
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U muskdeer -d muskdeer_dev"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7.2-alpine@sha256:f8548b29a1f1cb358b5fcfec1e0126beab57ad15776c1e87623f865579f16c5a
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "muskdeer_redis_dev_only"]
+    ports: ["127.0.0.1::6379"]
+    volumes: ["redis-data:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "muskdeer_redis_dev_only", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  nats:
+    image: nats:2.12-alpine@sha256:b270f5e2428354c0335612694d7dd2fb588148e567a5757fdff325ef9c9332e6
+    command: ["-js", "-sd", "/data", "-m", "8222", "--auth", "muskdeer_nats_dev_only"]
+    ports: ["127.0.0.1::4222"]
+    volumes: ["nats-data:/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8222/healthz"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  nacos:
+    image: nacos/nacos-server:v2.5.2-slim@sha256:30e86eeb97471fdcce03979eb35211fbab73e845d54fa52262f512e32d7ae270
+    environment:
+      MODE: standalone
+      PREFER_HOST_MODE: hostname
+      NACOS_AUTH_ENABLE: "true"
+      NACOS_AUTH_SYSTEM_TYPE: nacos
+      NACOS_AUTH_TOKEN: "bXVza2RlZXJfZGV2X29ubHlfc2lnbmluZ19rZXlfMDAwMDAwMDAwMDA="
+      NACOS_AUTH_IDENTITY_KEY: muskdeer_dev_identity
+      NACOS_AUTH_IDENTITY_VALUE: muskdeer_dev_only
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+      JVM_XMN: 128m
+      JAVA_TOOL_OPTIONS: "-XX:-UseContainerSupport"
+    ports: ["127.0.0.1::8848"]
+    volumes: ["nacos-data:/home/nacos/data"]
+    tmpfs: ["/home/nacos/logs"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8848/nacos/v1/console/health/readiness"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
+volumes:
+  postgres-data:
+  redis-data:
+  nats-data:
+  nacos-data:
