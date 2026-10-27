@@ -140,6 +140,9 @@ func closePool(pool *sql.DB) error {
 	return nil
 }
 
+// Validate checks configuration limits without reading credentials or doing I/O.
+func Validate(cfg *configv1.Postgres) error { return validate(cfg) }
+
 func validate(cfg *configv1.Postgres) error {
 	if cfg == nil {
 		return errors.New("postgres configuration is required")

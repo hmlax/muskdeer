@@ -220,6 +220,9 @@ func failure(ctx context.Context, operation string, err error) error {
 	}
 }
 
+// Validate checks configuration limits without reading credentials or doing I/O.
+func Validate(cfg *configv1.Redis) error { return validate(cfg) }
+
 func validate(cfg *configv1.Redis) error {
 	if cfg == nil {
 		return errors.New("redis configuration is required")

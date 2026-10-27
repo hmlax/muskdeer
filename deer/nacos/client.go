@@ -383,6 +383,9 @@ func failure(ctx context.Context, operation string, err error) error {
 	return wrapped
 }
 
+// Validate checks scope, limits and publication settings without credentials/I/O.
+func Validate(cfg *configv1.Nacos) error { return validate(cfg) }
+
 func validate(cfg *configv1.Nacos) error {
 	if cfg == nil {
 		return errors.New("nacos configuration is required")

@@ -2,6 +2,8 @@
 
 doctor:
 	python3 scripts/go.py version
+	python3 scripts/go.py run ./cmd/doctor -config configs/examples/service.json
+	python3 scripts/go.py run ./cmd/doctor -config configs/examples/api.json
 
 test-tooling:
 	python3 -m unittest discover -s scripts/tests -v

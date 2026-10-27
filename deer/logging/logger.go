@@ -232,6 +232,14 @@ func (w *ownedWriter) openFile(cfg *configv1.LogFile, filename string) error {
 	return nil
 }
 
+// Validate checks outputs and level without creating a writer. Nil uses INFO stdout.
+func Validate(cfg *configv1.Logging) (slog.Level, error) {
+	if cfg == nil {
+		return slog.LevelInfo, nil
+	}
+	return validate(cfg)
+}
+
 func validate(cfg *configv1.Logging) (slog.Level, error) {
 	if !cfg.Stdout && cfg.File == nil {
 		return 0, errors.New("logging requires at least one output")

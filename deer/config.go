@@ -8,7 +8,12 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/hmlax/muskdeer/deer/jetstream"
+	"github.com/hmlax/muskdeer/deer/logging"
+	"github.com/hmlax/muskdeer/deer/nacos"
+	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/redis"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
@@ -73,7 +78,37 @@ func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceCon
 			return nil, fmt.Errorf("%s request timeout must fit within shutdown timeout", name)
 		}
 	}
+	if err := validateInfrastructure(cfg); err != nil {
+		return nil, err
+	}
 	return cfg, nil
+}
+
+func validateInfrastructure(cfg *configv1.ServiceConfig) error {
+	if _, err := logging.Validate(cfg.Logging); err != nil {
+		return err
+	}
+	if cfg.Postgres != nil {
+		if err := postgres.Validate(cfg.Postgres); err != nil {
+			return err
+		}
+	}
+	if cfg.Redis != nil {
+		if err := redis.Validate(cfg.Redis); err != nil {
+			return err
+		}
+	}
+	if cfg.Jetstream != nil {
+		if err := jetstream.Validate(cfg.Jetstream); err != nil {
+			return err
+		}
+	}
+	if cfg.Nacos != nil {
+		if err := nacos.Validate(cfg.Nacos); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func validateDuration(name string, duration *durationpb.Duration) error {
