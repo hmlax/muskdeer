@@ -1,0 +1,13 @@
+# 持久策略动作
+
+P06.12的repository.NewStrategyActions借用Deer根数据库，只做持久编排，不调用网关、不启动任务、不初始化权限或资产。StrategyAction是Proto+gotag生成的持久模型，业务层只依赖domain.StrategyActions及decimal值。
+
+Plan在当前策略租约下，以实例/decision_key永久绑定账户、产品、配置版本、方向、价格数量、TIF、reduce_only或明确取消目标。稳定RPC键由实例及决策键派生，不含进程nonce和请求期限；同键同内容返回原记录，改变内容拒绝。每实例最多256个活动动作；存在任何未完成动作时不能创建新提交键。同一取消目标只允许一个活动取消动作，受控取消可以处理已有不明提交之外的已知订单。
+
+状态流为PENDING→DISPATCHING→WAITING/UNKNOWN→OBSERVED；PENDING也可直接DISCARDED。Attempt以revision CAS及数据库租约记录原截止时间后才返回可供发送的动作，重复Attempt不会再派发。已尝试的截止时间、业务身份及已确定的远端ID不可改写，历史不能删除。只有PENDING可丢弃；同决策键返回DISCARDED也不会复活。
+
+Observe只按原RPC键读取持久OMS/撤单记录，不发送请求。找不到记录保持UNKNOWN，不能据此换新键。已知提交INTENT/SUBMITTING或撤单REQUESTED/SUBMITTING/PENDING保留WAITING；远端不明保留UNKNOWN；提交已知订单结果或取消确认/明确拒绝才完成动作。取消确认还须订单已终态，部分成交事实继续保留。调用执行查询同步核心事实后再Observe，动作记录不能制造核心成交、撤单或资金释放。
+
+每次写先锁策略/当前租约，再锁动作并验证revision；事务末尾独立deferred约束以数据库当前时间重新fencing。旧owner失权不能写状态，新owner可沿原键观察已完成的在途请求。Go参数先限制decimal指数/精度，包含取消负载中的异常零指数；数据库仅使用显式生成Model。活动读取完整且有界，数量超限拒绝。
+
+此组件尚未接入独立strategy循环；控制器仍须获取完整订单观察、保护时先丢弃未发目标/撤旧单、确认终态，再生成下一动作。它不代替execution全部原子预算、真实冻结、所选行情门禁和最终fencing。

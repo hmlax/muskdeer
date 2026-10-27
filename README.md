@@ -17,7 +17,7 @@ make build 生成 `.cache/bin/muskdeer`；例如 `.cache/bin/muskdeer -role mark
 
 可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费和market工作器/行情RPC；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令进程和双来源market进程的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
 `make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前运行层 integration 与 image-test；后续交易和管理浏览器 E2E 将随业务接入，不将当前命令等同于完整业务验收。
-数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本 17 含交易对/实例/配置来源身份、typed 做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS 意图/预算/撤单/outbox、成交 inbox/持仓、来源/产品/模式/质量政策绑定及有发布授权的行情快照/定价基准、最终所选行情门禁及跨账户平台/交易对额度，交易表继续增加，见 [迁移说明](docs/MIGRATIONS.md) 和 [参数说明](docs/STRATEGY_PARAMETERS.md)。
+数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本 18 含交易对/实例/配置来源身份、typed 做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS 意图/预算/撤单/outbox、成交 inbox/持仓、来源/产品/模式/质量政策绑定及有发布授权的行情快照/定价基准、最终所选行情门禁、跨账户平台/交易对额度和持久策略动作，交易表继续增加，见 [迁移说明](docs/MIGRATIONS.md) 和 [参数说明](docs/STRATEGY_PARAMETERS.md)。
 `make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。
 在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 检查现有实现与 PROGRESS，从首个未完成任务持续推进至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。
 每个最小步骤完成并通过相关测试/检查后，立即提交并推送到该远程仓库，确认同步后继续下一步。文档步骤验证文档与文件完整性，不宣称业务测试已通过。

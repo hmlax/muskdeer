@@ -621,3 +621,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：先红后绿的writer目标/不明不重发/原键/精确小数/坏观察测试，真实market/execution风险和模拟任务经Nacos/mTLS完成客户端下单→查询/冻结观察→撤单终态，预算0、资金复原且核心单仅1个，2.11秒。最终完整make verify、完整make integration、文档/差异检查通过，原六进程、lint/race/goleak保留；见 [P06.11](validation/P06-11.md)。
 - 远程：df469f1已推送main并核对SHA；本步独立提交/推送并核对SHA。
 - 下一步：持久动作日志/策略所有者与差分循环、行情失效撤单和30分钟实际模拟；P06保持进行，完整L1仍待P07–P10。
+
+## 2026-10-27：P06.12 持久策略动作
+
+- 改动：生成StrategyAction/迁移18，PENDING先落库、派发前租约/revision CAS，稳定键永久绑定业务内容；WAITING与UNKNOWN均阻止新提交，重复派发/丢弃已尝试动作拒绝。只读原键OMS观察，当前owner可接管观察；独立提交末尾fence、业务身份/截止时间/状态约束和每实例256活动上限保留，未自动开权限/发单。
+- 验证：先红后绿的真实PG去重/未知不重发/旧owner拒绝与原键接管、撤单期间成交/终态、未发丢弃/不复活、已写派发失权整体回滚及边界指数。完整make verify、完整make integration、文档/差异检查通过，21生成文件、25模型四字段、原六进程、lint/race/goleak保留；见 [P06.12](validation/P06-12.md) 和 [动作说明](STRATEGY_ACTIONS.md)。
+- 远程：b4690cf已推送main并核对SHA，[CI 40504554295](https://github.com/hmlax/muskdeer/actions/runs/40504554295) success；本步独立提交/推送并核对SHA。
+- 下一步：策略所有者/恢复与目标差分循环、行情失效撤单和30分钟实际模拟；P06保持进行，P07–P10尚待完成。

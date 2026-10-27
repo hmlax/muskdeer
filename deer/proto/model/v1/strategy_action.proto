@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// StrategyAction journals a proposed operation before any execution RPC.
+message StrategyAction {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 strategy_instance_id = 5 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;uniqueIndex:uk_strategy_action_decision\""];
+  string decision_key = 6 [(tagger.tags) = "gorm:\"column:decision_key;type:varchar(128);not null;uniqueIndex:uk_strategy_action_decision\""];
+  string account_id = 7 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_strategy_action_rpc_key\""];
+  int64 instrument_id = 8 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null\""];
+  int64 config_version = 9 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null\""];
+  string kind = 10 [(tagger.tags) = "gorm:\"column:kind;type:varchar(16);not null\""];
+  optional string side = 11 [(tagger.tags) = "gorm:\"column:side;type:varchar(8)\""];
+  optional string price = 12 [(tagger.tags) = "gorm:\"column:price;type:numeric(38,18)\""];
+  optional string quantity = 13 [(tagger.tags) = "gorm:\"column:quantity;type:numeric(38,18)\""];
+  optional string time_in_force = 14 [(tagger.tags) = "gorm:\"column:time_in_force;type:varchar(16)\""];
+  bool reduce_only = 15 [(tagger.tags) = "gorm:\"column:reduce_only;type:boolean;not null\""];
+  string idempotency_key = 16 [(tagger.tags) = "gorm:\"column:idempotency_key;type:varchar(128);not null;uniqueIndex:uk_strategy_action_rpc_key\""];
+  string client_order_id = 17 [(tagger.tags) = "gorm:\"column:client_order_id;type:varchar(64);not null\""];
+  string state = 18 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+  int64 deadline_at = 19 [(tagger.tags) = "gorm:\"column:deadline_at;type:bigint;not null\""];
+  optional int64 intent_id = 20 [(tagger.tags) = "gorm:\"column:intent_id;type:bigint\""];
+  optional int64 cancellation_id = 21 [(tagger.tags) = "gorm:\"column:cancellation_id;type:bigint\""];
+  string observed_order_state = 22 [(tagger.tags) = "gorm:\"column:observed_order_state;type:varchar(32);not null\""];
+  string observed_cancellation_state = 23 [(tagger.tags) = "gorm:\"column:observed_cancellation_state;type:varchar(16);not null\""];
+  string owner_id = 24 [(tagger.tags) = "gorm:\"column:owner_id;type:varchar(128);not null\""];
+  int64 owner_epoch = 25 [(tagger.tags) = "gorm:\"column:owner_epoch;type:bigint;not null\""];
+  int64 revision = 26 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
