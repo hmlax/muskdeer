@@ -25,3 +25,18 @@ func TestOwnerIncarnationsChangeOnRestartAndRespectCancellation(t *testing.T) {
 		t.Fatal("unsafe owner prefix accepted")
 	}
 }
+
+func TestInstanceUsesValidatedIncarnationAndLastSeparator(t *testing.T) {
+	owner, err := New(t.Context(), "execution.node.a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if instance, valid := Instance(owner); !valid || instance != "execution.node.a" {
+		t.Fatal("dotted instance prefix was changed")
+	}
+	for _, value := range []string{"", "execution.node.a", "node.not-a-nonce", ".01234567890123456789012345678901", "bad/node.01234567890123456789012345678901"} {
+		if instance, valid := Instance(value); valid || instance != "" {
+			t.Fatal("unvalidated incarnation became a routing target")
+		}
+	}
+}

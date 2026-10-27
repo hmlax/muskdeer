@@ -64,6 +64,16 @@ func Valid(value string) bool {
 	return true
 }
 
+// Instance extracts a validated process instance name. It neither authenticates
+// the process nor proves current ownership; callers must read its live lease.
+func Instance(value string) (string, bool) {
+	if !Valid(value) {
+		return "", false
+	}
+	prefix, _, _ := split(value)
+	return prefix, true
+}
+
 func split(value string) (string, string, bool) {
 	index := strings.LastIndexByte(value, '.')
 	if index < 0 {

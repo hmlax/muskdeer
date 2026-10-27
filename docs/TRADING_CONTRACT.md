@@ -16,4 +16,6 @@ FindOrder 使用 typed oneof 的 intent_id/client_order_id，查询原核心身�
 
 方法权限只依据已验证 mTLS 证书的准确服务 DNS SAN：strategy.grpc/cron.grpc 可执行写操作，api.grpc/portfolio.grpc 仅可读取及查询恢复。metadata 不能提升权限。调用必须有 native deadline，最长一分钟；Submit/Cancel 消息 deadline 进一步收紧。响应不包含 owner incarnation。此服务层信任已认证业务进程；管理用户/角色与账户范围由 P07 管理入口校验。
 
+P06.10增加客户端路由依据 `repository.NewExecutionRouting(...).ExecutionInstance`：每次按准确账户读取数据库当前未删除、正epoch且未过期的ExecutionShardLease，使用数据库时间；从经ownerid.Valid校验的incarnation解析完整实例名（支持名字中的点）。缺失、过期、退役或畸形owner返回ErrLeaseLost，不读取Nacos来推定所有者、不创建租约或缓存旧路由。它仅给出待选实例；发送端仍须用Deer factory的明确InstanceID目标，所选执行端取得/验证自身租约并在最终效果重新fencing。实际策略客户端接入随后交付，不能将此读取器等同于已运行的策略路由闭环。
+
 模拟器和真实网关必须分别确认幂等/查询、部分成交、撤单竞态、STP、失联撤单、fencing 能力，见 [接入合同](EXCHANGE_CONTRACT.md)。当前合同不代表本所真实接口已实现。[验证](validation/P03-06.md) 覆盖类型、精度及输入期限。

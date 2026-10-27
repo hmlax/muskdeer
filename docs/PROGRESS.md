@@ -601,3 +601,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：真实PG+mTLS反例先红后绿，首次服务端ID不保留且旧租约失效后，128字符原键可恢复PENDING及CONFIRMED/CANCELED；核心取消始终1次。选择器/长度/账户范围、完整make verify、完整make integration、文档/差异检查通过，race/goleak保留；见 [P06.9](validation/P06-09.md)。
 - 远程：4a9a7d9已推送main并核对SHA；P06.7 [CI 40498399184](https://github.com/hmlax/muskdeer/actions/runs/40498399184) success。本步独立提交/推送并核对SHA。
 - 下一步：策略执行客户端与当前owner路由、策略所有者/持久动作及差分循环、行情失效撤单和30分钟实际模拟；P06保持进行。
+
+## 2026-10-27：P06.10 当前执行owner路由依据
+
+- 改动：只读ExecutionRouting按账户及数据库当前有效租约解析经校验的完整实例名，不创建授权、不缓存旧路由；缺失、过期、退役及畸形owner关闭。此依据随后供策略客户端选择明确Deer目标，不能代替最终fencing。
+- 验证：owner解析/真实PG隔离与过期/接管/畸形/退役测试先写后实现；两个独立execution命令中，B上线不改变A所有权，A退出经实际3秒TTL后B升epoch并更新路由，4.93秒通过。完整make verify、完整make integration、文档/差异检查通过，race/goleak保留；见 [P06.10](validation/P06-10.md)。
+- 远程：07ed67f已推送main并核对SHA；P06.8 [CI 40499361180](https://github.com/hmlax/muskdeer/actions/runs/40499361180) success。本步独立提交/推送并核对SHA。
+- 下一步：策略typed执行客户端接入明确owner、持久动作/所有者与差分循环、行情失效撤单和30分钟实际模拟；P06保持进行。
