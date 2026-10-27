@@ -439,5 +439,5 @@ P01–P03 基础与模拟合同已完成，从 P04 的 OMS、预算原子预留�
 
 - 改动：7个真实 execution RPC、增量取消请求查询/视图与核心版本、严格wire响应、作用域/有界读取、账户同revision快照；mTLS方法权限及执行租约提议，明确STP拒绝释放预留。
 - 验证：高精度响应先红后绿；真实PG/Deer/mTLS下单/去重/改体拒绝/分页/账户隔离/部分成交费用/撤单查询；回包丢失1次Submit后查询恢复；STP拒绝保留原卖单预算101。make generate/verify、最终lint/race、最终完整 make integration、文档/差异检查通过。发现夹具先证明进程ready再计时查询，各3秒/总15秒和停止断言保留，最终通过。见 [P04.8](validation/P04-08.md)。
-- 远程：8b5ef0f 已推送 main 并核对 SHA，[CI 40459706274](https://github.com/hmlax/muskdeer/actions/runs/40459706274) success。本步通过后独立提交/推送并核对 SHA。
+- 远程：647ec44 已推送 main 并核对 SHA；已验证的 execution_rpc_integration_test.go 单独补交并推送。前序 [CI 40459706274](https://github.com/hmlax/muskdeer/actions/runs/40459706274) success。
 - 下一步：默认命令入口的业务工作器/客户端装配和独立进程闭环；P04保持进行。
