@@ -22,6 +22,6 @@ python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json
 
 显式数据库升级使用同一配置中的 PostgreSQL，其他资源不装配；命令、校验和及事务边界见 [迁移说明](MIGRATIONS.md)。
 
-可选 `business` 显式启用 L1 execution/portfolio；doctor 校验支持的角色、明确 simulator、mTLS/依赖及循环参数。启动只读检查完整迁移历史，不执行升级/初始化资金；字段与进程行为见 [业务运行](BUSINESS_RUNTIME.md)。
+可选 `business` 显式启用 L1 market/execution/portfolio；doctor 校验支持的角色、明确 simulator、mTLS/依赖及循环参数。execution可用risk.accountIds及executionLeaseTtl启用账户范围风险刷新。启动只读检查完整迁移历史，不执行升级/初始化资金；字段与进程行为见 [业务运行](BUSINESS_RUNTIME.md)。
 
 make verify 会通过 doctor 检查这些实际示例，并继续生成、格式、lint、单元/race 与构建；隔离依赖实连通过 make integration 单独执行。

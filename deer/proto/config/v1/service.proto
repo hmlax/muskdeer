@@ -37,6 +37,13 @@ message BusinessRuntime {
   google.protobuf.Duration operation_timeout = 4;
   string portfolio_consumer = 5;
   MarketRuntime market = 6;
+  RiskRuntime risk = 7;
+  google.protobuf.Duration execution_lease_ttl = 8;
+}
+
+// RiskRuntime grants no resources; it limits evaluation to existing accounts.
+message RiskRuntime {
+  repeated string account_ids = 1;
 }
 
 // MarketRuntime binds existing immutable feeds; it never provisions products.

@@ -66,7 +66,7 @@ func New(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*R
 		return nil, err
 	}
 	if cfg.Name+".grpc" == rpcsecurity.ServiceExecution {
-		return newExecution(db, events, incarnation, cfg.Business)
+		return newExecution(ctx, db, events, incarnation, cfg.Business)
 	}
 	return newPortfolio(ctx, db, owner, events, cfg.Business)
 }
@@ -86,8 +86,16 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	return nil
 }
 
-func newExecution(db *gorm.DB, events *jetstream.Client, incarnation string, cfg *configv1.BusinessRuntime) (*Runtime, error) {
-	handler, err := executionHandler(db, incarnation)
+func newExecution(ctx context.Context, db *gorm.DB, events *jetstream.Client, incarnation string, cfg *configv1.BusinessRuntime) (*Runtime, error) {
+	leases, err := repository.NewLeases(db)
+	if err != nil {
+		return nil, err
+	}
+	authority, err := usecase.NewExecutionOwner(leases, incarnation, executionLeaseTTL(cfg))
+	if err != nil {
+		return nil, err
+	}
+	handler, err := executionHandler(db, authority)
 	if err != nil {
 		return nil, err
 	}
@@ -103,21 +111,25 @@ func newExecution(db *gorm.DB, events *jetstream.Client, incarnation string, cfg
 	if err != nil {
 		return nil, err
 	}
+	additional, err := newRiskWorkers(ctx, db, authority, cfg)
+	if err != nil {
+		return nil, err
+	}
 	poll, timeout := cfg.PollInterval.AsDuration(), cfg.OperationTimeout.AsDuration()
+	workers := []deer.Worker{
+		{
+			Name: workerExecutionOutbox,
+			Run:  func(ctx context.Context) error { return runLoop(ctx, poll, timeout, worker.RunOne) },
+		},
+	}
+	workers = append(workers, additional...)
 	return &Runtime{
 		execution: handler,
-		workers: []deer.Worker{
-			{
-				Name: workerExecutionOutbox,
-				Run: func(ctx context.Context) error {
-					return runLoop(ctx, poll, timeout, worker.RunOne)
-				},
-			},
-		},
+		workers:   workers,
 	}, nil
 }
 
-func executionHandler(db *gorm.DB, incarnation string) (*executiongrpc.Server, error) {
+func executionHandler(db *gorm.DB, authority *usecase.ExecutionOwner) (*executiongrpc.Server, error) {
 	core, err := repository.NewSimulator(db)
 	if err != nil {
 		return nil, err
@@ -139,14 +151,6 @@ func executionHandler(db *gorm.DB, incarnation string) (*executiongrpc.Server, e
 		return nil, err
 	}
 	queries, err := repository.NewExecutionQueries(db)
-	if err != nil {
-		return nil, err
-	}
-	leases, err := repository.NewLeases(db)
-	if err != nil {
-		return nil, err
-	}
-	authority, err := usecase.NewExecutionOwner(leases, incarnation, domain.MaxLeaseTTL)
 	if err != nil {
 		return nil, err
 	}

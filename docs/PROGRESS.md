@@ -580,3 +580,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：真实PG反例先红后绿，跨策略最低硬限、低限/版本改写拒绝、已写资产/订单超限整体回滚；完整make verify、最终lint、最终完整make integration、文档/差异检查通过，race/goleak保留。旧元数据用例明确验证生效版本不可删除并保留草稿NULL往返后全套通过。见 [P06.6](validation/P06-06.md)。
 - 远程：03258fd 已推送 main 并核对SHA，[CI 40494869892](https://github.com/hmlax/muskdeer/actions/runs/40494869892) success；本步独立提交/推送并核对SHA。
 - 下一步：显式Deer风险/模拟执行任务、策略所有者/持久决策及差分循环、失效撤单与30分钟实际模拟；P06保持进行。
+
+## 2026-10-27：P06.7 Deer拥有的账户风险任务
+
+- 改动：execution可选显式账户risk任务及有界执行租约，与RPC共享owner；启动只读检查已有账户/预算，standby不评估，候选按账户/desired_running过滤、ID排序且最多16个。每轮使用真实事务评估器，错误回到Deer撤销就绪并退出，不自动准备资产/政策。
+- 验证：配置/standby/原始错误传递测试先红后绿；独立market/execution命令取得新epoch和准确500ms行情许可，停止所选market后实际持久关闭且无新订单。完整make verify、完整make integration、文档/差异检查通过，lint 0 issues、race/goleak保留；见 [P06.7](validation/P06-07.md)。
+- 远程：7d0c742已推送main并核对SHA，[CI 40496425681](https://github.com/hmlax/muskdeer/actions/runs/40496425681) success；本步独立提交/推送并核对SHA。
+- 下一步：显式模拟撤单确认、策略所有者/持久决策及差分循环、失效撤单和30分钟实际模拟；P06保持进行。
