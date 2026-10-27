@@ -376,9 +376,9 @@ func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer
 		kratosgrpc.Timeout(d.cfg.Grpc.RequestTimeout.AsDuration()),
 		kratosgrpc.DisableReflection(),
 		kratosgrpc.CustomHealth(),
-		kratosgrpc.UnaryInterceptor(d.measureUnary),
+		kratosgrpc.UnaryInterceptor(d.measureUnary, requestUnaryInterceptor),
 		kratosgrpc.Options(grpc.WaitForHandlers(true)),
-		kratosgrpc.StreamInterceptor(d.measureStream, streamDeadlineInterceptor(d.cfg.Grpc.RequestTimeout.AsDuration())),
+		kratosgrpc.StreamInterceptor(d.measureStream, requestStreamInterceptor, streamDeadlineInterceptor(d.cfg.Grpc.RequestTimeout.AsDuration())),
 	)
 	d.servers = append(d.servers, newManagedTransport(server, accepting, "grpc", d.requestStop))
 	d.grpcAddress = listener.Addr().String()

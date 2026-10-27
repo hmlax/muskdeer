@@ -18,12 +18,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
@@ -178,6 +180,21 @@ func (c *connection) Invoke(ctx context.Context, method string, request, reply a
 	}
 	defer end()
 	defer func() { result = contextualError(bounded, result) }()
+	id := requestid.FromContext(bounded)
+	md, _ := metadata.FromOutgoingContext(bounded)
+	if id.String() == "" {
+		var candidate string
+		if values := md.Get(requestid.Header); len(values) == 1 {
+			candidate = values[0]
+		}
+		id, err = requestid.New(bounded, candidate)
+		if err != nil {
+			return err
+		}
+	}
+	md = md.Copy()
+	md.Set(requestid.Header, id.String())
+	bounded = metadata.NewOutgoingContext(requestid.Bind(bounded, id), md)
 	message, typedRequest := request.(proto.Message)
 	_, typedReply := reply.(proto.Message)
 	if !typedRequest || !typedReply {

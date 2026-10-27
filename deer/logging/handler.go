@@ -4,16 +4,26 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"github.com/shopspring/decimal"
+
+	"github.com/hmlax/muskdeer/deer/requestid"
 )
 
 // identityHandler prevents caller attributes from overriding root identity and
 // standard JSON fields. The underlying handler owns the prebound root identity.
 type identityHandler struct {
 	next    slog.Handler
+	root    slog.Handler
+	ops     []handlerOperation
 	grouped bool
+}
+
+type handlerOperation struct {
+	attrs []slog.Attr
+	group string
 }
 
 var _ slog.Handler = (*identityHandler)(nil)
@@ -30,18 +40,32 @@ func (h *identityHandler) Handle(ctx context.Context, record slog.Record) error 
 		}
 		return true
 	})
-	return h.next.Handle(ctx, filtered)
+	next := h.next
+	if id := requestid.FromContext(ctx); id.String() != "" {
+		// Insert trusted metadata before group operations, keeping it at root.
+		next = h.root.WithAttrs([]slog.Attr{slog.String(requestid.Attribute, id.String())})
+		for _, operation := range h.ops {
+			if operation.group != "" {
+				next = next.WithGroup(operation.group)
+				continue
+			}
+			next = next.WithAttrs(operation.attrs)
+		}
+	}
+	return next.Handle(ctx, filtered)
 }
 
 func (h *identityHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	filtered := make([]slog.Attr, 0, len(attrs))
 	for _, attr := range attrs {
 		if protected, ok := protectAttribute(attr, !h.grouped); ok {
-			filtered = append(filtered, protected)
+			filtered = append(filtered, freezeAttribute(protected))
 		}
 	}
 	return &identityHandler{
 		next:    h.next.WithAttrs(filtered),
+		root:    h.root,
+		ops:     append(slices.Clone(h.ops), handlerOperation{attrs: filtered}),
 		grouped: h.grouped,
 	}
 }
@@ -71,22 +95,44 @@ func (h *identityHandler) WithGroup(name string) slog.Handler {
 		return h
 	}
 	next := h.next
+	ops := slices.Clone(h.ops)
 	if !h.grouped && protectedKey(name) {
 		next = next.WithGroup("attributes")
+		ops = append(ops, handlerOperation{group: "attributes"})
 	}
+	ops = append(ops, handlerOperation{group: name})
 	return &identityHandler{
 		next:    next.WithGroup(name),
+		root:    h.root,
+		ops:     ops,
 		grouped: true,
 	}
 }
 
 func protectedKey(key string) bool {
 	switch strings.ToLower(key) {
-	case "service", "instance", slog.TimeKey, slog.LevelKey, slog.MessageKey:
+	case "service", "instance", slog.TimeKey, slog.LevelKey, slog.MessageKey, requestid.Attribute:
 		return true
 	default:
 		return false
 	}
+}
+
+func freezeAttribute(attr slog.Attr) slog.Attr {
+	attr.Value = attr.Value.Resolve()
+	if attr.Value.Kind() == slog.KindGroup {
+		children := attr.Value.Group()
+		frozen := make([]slog.Attr, len(children))
+		for index, child := range children {
+			frozen[index] = freezeAttribute(child)
+		}
+		attr.Value = slog.GroupValue(frozen...)
+		return attr
+	}
+	if attr.Value.Kind() == slog.KindAny {
+		return redactAttribute(nil, attr)
+	}
+	return attr
 }
 
 func sensitiveKey(key string) bool {

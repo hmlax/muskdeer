@@ -108,6 +108,10 @@ Factory 持有每次调用的连接，返回即关闭；关闭工厂取消并 jo
 JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。
 业务错误映射 gRPC status 及 HTTP；内部日志记录根因，前端返回安全信息。request_id 通过 middleware/interceptor 传递；未知传入值校验长度。
 
+P02.9.2 已接通请求关联：HTTP 与 gRPC 共用 `x-request-id`，单个 1–64 字节安全 ASCII 值可沿用；缺失、非法、多值生成独立 128 位 hex 编号。header 回传，typed context 贯穿 handler、unary 工厂出站和 gRPC，保留 native cancellation/deadline。requestid.FromContext(ctx).String() 供业务 envelope/事件使用；request ID 仅用于关联，不能作为身份/权限、幂等键或执行凭证。
+
+Logger.LogAttrs/Slog.InfoContext 自动将 context ID 写在根 request_id，WithGroup/WithAttrs 保持根字段且不能覆盖。无 context 的 Kratos key/value Log 接口仍可提供显式编号并验证。编号不进入指标 label；实际一致性和 race 证据见 [P02.9.2](validation/P02-09-02.md)。Kratos 应用 Logger 选项会修改全局状态，本封装不在构造/运行时按实例切换它；框架日志的进程入口桥接仍待交付。
+
 ## 日志
 Kratos log 接口由结构化日志后端适配，lumberjack 实现文件大小轮转。配置 filename、max_size_mb、max_backups、max_age_days、compress、stdout；每节点独立路径。字段包含 service、instance、request_id、strategy_id、operation、error_code；敏感信息脱敏。
 

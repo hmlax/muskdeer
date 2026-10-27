@@ -21,6 +21,7 @@ import (
 	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/internal/testcert"
 )
@@ -80,7 +81,8 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 					return
 				}
 				identity := headers.Get(namingInstanceHeader)
-				if len(identity) != 1 {
+				correlation := headers.Get(requestid.Header)
+				if len(identity) != 1 || len(correlation) != 1 || correlation[0] != requestid.FromContext(ctx).String() {
 					response.Status(http.StatusBadGateway)
 					return
 				}
@@ -182,6 +184,7 @@ func callAPIProbe(t *testing.T, address, instance string, wantStatus int) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	request.Header.Set(requestid.Header, "integration-"+instance)
 	client := &http.Client{Timeout: 2 * time.Second}
 	defer client.CloseIdleConnections()
 	response, err := client.Do(request)
@@ -195,6 +198,9 @@ func callAPIProbe(t *testing.T, address, instance string, wantStatus int) {
 	}()
 	if response.StatusCode != wantStatus {
 		t.Fatalf("API RPC status = %d, want %d", response.StatusCode, wantStatus)
+	}
+	if response.Header.Get(requestid.Header) != "integration-"+instance {
+		t.Fatal("API did not preserve the edge correlation ID")
 	}
 	if wantStatus != http.StatusOK {
 		return

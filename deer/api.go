@@ -16,6 +16,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/requestid"
 )
 
 // APISpec extends the same service assembly with synchronous Hertz route setup.
@@ -128,7 +129,18 @@ func (d *Deer) addHertz(ctx context.Context, listenerConfig *configv1.Listener, 
 		request.Response.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 		bounded, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
-		request.Next(bounded)
+		var candidate string
+		values := request.Request.Header.PeekAll(requestid.Header)
+		if len(values) == 1 && len(values[0]) <= 64 {
+			candidate = string(values[0])
+		}
+		id, err := requestid.New(bounded, candidate)
+		if err != nil {
+			request.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
+		request.Response.Header.Set(requestid.Header, id.String())
+		request.Next(requestid.Bind(bounded, id))
 		completed = true
 	})
 	return hertz, listener.Addr().String(), nil

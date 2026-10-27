@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/third_party/lumberjack"
 )
 
@@ -110,7 +111,10 @@ func New(ctx context.Context, cfg *configv1.Logging, identity Identity, stdout i
 		slog.String("instance", identity.Instance),
 	})
 	return &Logger{
-		handler:  &identityHandler{next: base},
+		handler: &identityHandler{
+			next: base,
+			root: base,
+		},
 		writer:   writer,
 		filename: filename,
 	}, nil
@@ -145,6 +149,7 @@ func (l *Logger) Log(level kratoslog.Level, keyvals ...any) error {
 		return err
 	}
 	var message string
+	var correlation requestid.ID
 	attrs := make([]slog.Attr, 0, len(keyvals)/2)
 	for index := 0; index < len(keyvals); index += 2 {
 		key, ok := keyvals[index].(string)
@@ -158,9 +163,20 @@ func (l *Logger) Log(level kratoslog.Level, keyvals ...any) error {
 			}
 			continue
 		}
+		if strings.EqualFold(key, requestid.Attribute) {
+			value, ok := keyvals[index+1].(string)
+			if !ok {
+				return errors.New("log request ID must be a string")
+			}
+			correlation, err = requestid.New(context.Background(), value)
+			if err != nil {
+				return err
+			}
+			continue
+		}
 		attrs = append(attrs, slog.Any(key, keyvals[index+1]))
 	}
-	return l.LogAttrs(context.Background(), severity, message, attrs...)
+	return l.LogAttrs(requestid.Bind(context.Background(), correlation), severity, message, attrs...)
 }
 
 // Close releases this instance's file/lock and preserves earlier output errors.
