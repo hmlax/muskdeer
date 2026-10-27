@@ -34,6 +34,7 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 		&modelv1.RiskSnapshot{},
 		&modelv1.OrderIntent{},
 		&modelv1.OutboxEvent{},
+		&modelv1.CancellationRequest{},
 	} {
 		columns, err := db.WithContext(ctx).Model(entity).Migrator().ColumnTypes(entity)
 		if err != nil {

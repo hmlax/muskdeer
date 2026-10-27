@@ -14,7 +14,7 @@
 | P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
 | P02 | done | P02.1–P02.11 及 Linux CI 40439453258 success；六角色、多进程发现/mTLS、持久开发、固定 Go 镜像与运行层 E2E 通过 |
 | P03 | done | P03.1–P03.10 值/生成模型/迁移、typed 合同、数据库租约、最终原子 fencing、模拟现货及提交后响应丢失/延迟通过；后续 OMS/节点恢复按各阶段验收 |
-| P04 | in_progress | P04.1–P04.2 原子接收/预算/outbox、持久派发、UNKNOWN 查询恢复与最终风险检查通过；撤单编排、成交投影及投递待实现 |
+| P04 | in_progress | P04.1–P04.3 原子接收/预算/outbox、持久派发/UNKNOWN、最终风险与撤单竞态通过；成交投影/inbox、投递及业务 RPC 待实现 |
 | P05–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
@@ -399,3 +399,10 @@ P01–P03 基础与模拟合同已完成，从 P04 的 OMS、预算原子预留�
 - 验证：真实PG唯一提交/未知查询、缺单不重发、部分/全部成交预留、明确拒绝/最终风险回滚、调用方丢失恢复、旧快照/同版本矛盾及未提交核心事务并发恢复通过；make verify、最终race/lint、vet、完整 make integration、文档/差异检查通过，goleak与隔离清理保留。见 [P04.2](validation/P04-02.md)。
 - 远程：5072be8 已推送 main 并核对 SHA，[CI 40451701533](https://github.com/hmlax/muskdeer/actions/runs/40451701533) success。本步通过后独立提交/推送并核对 SHA。
 - 下一步：OMS撤单、成交去重与持仓投影、发布/inbox和业务RPC；P04保持进行。
+
+## 2026-10-27：P04.3 持久撤单与竞态
+
+- 改动：版本9、独立撤单请求/状态/typed事件、稳定核心命令命名空间、未派发原子取消及已派发的查询/受控撤单；请求未知不覆盖核心事实。
+- 验证：真实PG pending完整预留、部分/全部成交竞态、回包丢失查询恢复、重复/错目标请求及outbox故障整体回滚通过；make verify、vet、完整 make integration、文档/差异检查通过，17类真实模型公共字段、race/goleak及资源清理保留。见 [P04.3](validation/P04-03.md)。
+- 远程：d732906 已推送 main 并核对 SHA，[CI 40453413908](https://github.com/hmlax/muskdeer/actions/runs/40453413908) success。本步通过后独立提交/推送并核对 SHA。
+- 下一步：成交自然键/inbox、持仓与损益投影、事件发布及业务RPC；P04保持进行。

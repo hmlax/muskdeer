@@ -53,9 +53,11 @@ func (s *intentService) Submit(ctx context.Context, input domain.OrderInput, exe
 	}
 	attemptCtx, cancel := context.WithDeadline(ctx, prepared.Input.Deadline)
 	defer cancel()
+	coreInput := prepared.Input
+	coreInput.IdempotencyKey = domain.CoreSubmitKeyPrefix + prepared.ClientOrderID
 	order, err := s.gateway.Submit(attemptCtx, domain.GatewaySubmit{
 		IntentID:           prepared.ID,
-		Input:              prepared.Input,
+		Input:              coreInput,
 		ClientOrderID:      prepared.ClientOrderID,
 		ExecutionAuthority: prepared.ExecutionAuthority,
 	})

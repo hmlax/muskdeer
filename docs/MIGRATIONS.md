@@ -1,6 +1,6 @@
 # 版本化数据库升级
 
-P03.2 提供显式迁移工具，服务启动及 dev-up 都不会自动执行迁移或 AutoMigrate。当前版本 8 包含迁移记录、交易对/实例/配置来源身份、typed 模板参数、两类所有权租约及模拟网关模型；交易表继续按后续版本加入。
+P03.2 提供显式迁移工具，服务启动及 dev-up 都不会自动执行迁移或 AutoMigrate。当前版本 9 包含迁移记录、交易对/实例/配置来源身份、typed 模板参数、两类所有权租约及模拟网关模型；交易表继续按后续版本加入。
 
 ## 使用
 
@@ -13,7 +13,7 @@ make build
 
 本地开发可使用 `make dev-up` 生成的 `.cache/dev/execution.json`，先 source `.cache/dev/environment.sh`。工具只装配配置中的 PostgreSQL，不创建业务进程、日志文件、Redis、Nacos 或消息客户端。Go 固定 1.27.3，整个命令有 30 秒总预算及 SIGTERM 取消；数据库各语句还受配置 statement_timeout 限制。
 
-成功输出 typed JSON `{"status":"applied","version":8}`，包括已经是当前版本的情况；参数错误退出 2，配置/连接/历史/执行/清理错误退出 1。必须显式传 -apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出 SQL、凭据或原始配置，历史不一致有独立安全提示。
+成功输出 typed JSON `{"status":"applied","version":9}`，包括已经是当前版本的情况；参数错误退出 2，配置/连接/历史/执行/清理错误退出 1。必须显式传 -apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出 SQL、凭据或原始配置，历史不一致有独立安全提示。
 
 ## 结构与执行
 
@@ -42,3 +42,5 @@ SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/mi
 版本7加入 OMS 接收、共享预算、短期风险快照和 typed 事务 outbox，实际事务范围见 [OMS 说明](OMS.md)。
 
 版本8加入核心回报版本与OMS命令关联，目标事务重新检查风险/预算及意图身份；状态与预算恢复见 [OMS 派发说明](OMS.md#p042-派发与查询恢复)。
+
+版本9加入独立持久撤单请求及 typed cancellation outbox；未派发原子取消与终态预留语义见 [OMS 撤单说明](OMS.md#p043-持久撤单请求)。

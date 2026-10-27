@@ -21,6 +21,67 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type CancellationState int32
+
+const (
+	CancellationState_CANCELLATION_STATE_UNSPECIFIED CancellationState = 0
+	CancellationState_CANCELLATION_STATE_REQUESTED   CancellationState = 1
+	CancellationState_CANCELLATION_STATE_SUBMITTING  CancellationState = 2
+	CancellationState_CANCELLATION_STATE_PENDING     CancellationState = 3
+	CancellationState_CANCELLATION_STATE_CONFIRMED   CancellationState = 4
+	CancellationState_CANCELLATION_STATE_UNKNOWN     CancellationState = 5
+	CancellationState_CANCELLATION_STATE_REJECTED    CancellationState = 6
+)
+
+// Enum value maps for CancellationState.
+var (
+	CancellationState_name = map[int32]string{
+		0: "CANCELLATION_STATE_UNSPECIFIED",
+		1: "CANCELLATION_STATE_REQUESTED",
+		2: "CANCELLATION_STATE_SUBMITTING",
+		3: "CANCELLATION_STATE_PENDING",
+		4: "CANCELLATION_STATE_CONFIRMED",
+		5: "CANCELLATION_STATE_UNKNOWN",
+		6: "CANCELLATION_STATE_REJECTED",
+	}
+	CancellationState_value = map[string]int32{
+		"CANCELLATION_STATE_UNSPECIFIED": 0,
+		"CANCELLATION_STATE_REQUESTED":   1,
+		"CANCELLATION_STATE_SUBMITTING":  2,
+		"CANCELLATION_STATE_PENDING":     3,
+		"CANCELLATION_STATE_CONFIRMED":   4,
+		"CANCELLATION_STATE_UNKNOWN":     5,
+		"CANCELLATION_STATE_REJECTED":    6,
+	}
+)
+
+func (x CancellationState) Enum() *CancellationState {
+	p := new(CancellationState)
+	*p = x
+	return p
+}
+
+func (x CancellationState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CancellationState) Descriptor() protoreflect.EnumDescriptor {
+	return file_deer_proto_common_v1_events_proto_enumTypes[0].Descriptor()
+}
+
+func (CancellationState) Type() protoreflect.EnumType {
+	return &file_deer_proto_common_v1_events_proto_enumTypes[0]
+}
+
+func (x CancellationState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CancellationState.Descriptor instead.
+func (CancellationState) EnumDescriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_events_proto_rawDescGZIP(), []int{0}
+}
+
 // ExecutionEvent is a versioned, typed transaction-outbox envelope.
 type ExecutionEvent struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
@@ -34,8 +95,9 @@ type ExecutionEvent struct {
 	RequestId        string                 `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	// Exactly one concrete payload must match event_type. Concrete fields also
 	// support the generated model's typed JSONB storage without interface JSON.
-	Intent        *IntentEvent `protobuf:"bytes,10,opt,name=intent,proto3" json:"intent,omitempty"`
-	Fill          *FillEvent   `protobuf:"bytes,11,opt,name=fill,proto3" json:"fill,omitempty"`
+	Intent        *IntentEvent       `protobuf:"bytes,10,opt,name=intent,proto3" json:"intent,omitempty"`
+	Fill          *FillEvent         `protobuf:"bytes,11,opt,name=fill,proto3" json:"fill,omitempty"`
+	Cancellation  *CancellationEvent `protobuf:"bytes,12,opt,name=cancellation,proto3" json:"cancellation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -136,6 +198,13 @@ func (x *ExecutionEvent) GetIntent() *IntentEvent {
 func (x *ExecutionEvent) GetFill() *FillEvent {
 	if x != nil {
 		return x.Fill
+	}
+	return nil
+}
+
+func (x *ExecutionEvent) GetCancellation() *CancellationEvent {
+	if x != nil {
+		return x.Cancellation
 	}
 	return nil
 }
@@ -452,11 +521,111 @@ func (x *FillEvent) GetFeeAsset() string {
 	return ""
 }
 
+type CancellationEvent struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	CancellationId     int64                  `protobuf:"varint,1,opt,name=cancellation_id,json=cancellationId,proto3" json:"cancellation_id,omitempty"`
+	IntentId           int64                  `protobuf:"varint,2,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty"`
+	AccountId          string                 `protobuf:"bytes,3,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	ClientOrderId      string                 `protobuf:"bytes,4,opt,name=client_order_id,json=clientOrderId,proto3" json:"client_order_id,omitempty"`
+	StrategyInstanceId int64                  `protobuf:"varint,5,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
+	State              CancellationState      `protobuf:"varint,6,opt,name=state,proto3,enum=muskdeer.common.v1.CancellationState" json:"state,omitempty"`
+	Revision           int64                  `protobuf:"varint,7,opt,name=revision,proto3" json:"revision,omitempty"`
+	ErrorCode          string                 `protobuf:"bytes,8,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CancellationEvent) Reset() {
+	*x = CancellationEvent{}
+	mi := &file_deer_proto_common_v1_events_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancellationEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancellationEvent) ProtoMessage() {}
+
+func (x *CancellationEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_events_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancellationEvent.ProtoReflect.Descriptor instead.
+func (*CancellationEvent) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_events_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CancellationEvent) GetCancellationId() int64 {
+	if x != nil {
+		return x.CancellationId
+	}
+	return 0
+}
+
+func (x *CancellationEvent) GetIntentId() int64 {
+	if x != nil {
+		return x.IntentId
+	}
+	return 0
+}
+
+func (x *CancellationEvent) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *CancellationEvent) GetClientOrderId() string {
+	if x != nil {
+		return x.ClientOrderId
+	}
+	return ""
+}
+
+func (x *CancellationEvent) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *CancellationEvent) GetState() CancellationState {
+	if x != nil {
+		return x.State
+	}
+	return CancellationState_CANCELLATION_STATE_UNSPECIFIED
+}
+
+func (x *CancellationEvent) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *CancellationEvent) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
 var File_deer_proto_common_v1_events_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"!deer/proto/common/v1/events.proto\x12\x12muskdeer.common.v1\x1a\"deer/proto/common/v1/trading.proto\"\x8e\x03\n" +
+	"!deer/proto/common/v1/events.proto\x12\x12muskdeer.common.v1\x1a\"deer/proto/common/v1/trading.proto\"\xd9\x03\n" +
 	"\x0eExecutionEvent\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1d\n" +
 	"\n" +
@@ -470,7 +639,8 @@ const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"request_id\x18\b \x01(\tR\trequestId\x127\n" +
 	"\x06intent\x18\n" +
 	" \x01(\v2\x1f.muskdeer.common.v1.IntentEventR\x06intent\x121\n" +
-	"\x04fill\x18\v \x01(\v2\x1d.muskdeer.common.v1.FillEventR\x04fill\"\xb3\x05\n" +
+	"\x04fill\x18\v \x01(\v2\x1d.muskdeer.common.v1.FillEventR\x04fill\x12I\n" +
+	"\fcancellation\x18\f \x01(\v2%.muskdeer.common.v1.CancellationEventR\fcancellation\"\xb3\x05\n" +
 	"\vIntentEvent\x12\x1b\n" +
 	"\tintent_id\x18\x01 \x01(\x03R\bintentId\x12&\n" +
 	"\x0fclient_order_id\x18\x02 \x01(\tR\rclientOrderId\x12\x1d\n" +
@@ -508,7 +678,26 @@ const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"\x0equote_notional\x18\v \x01(\tR\rquoteNotional\x12\x1d\n" +
 	"\n" +
 	"fee_amount\x18\f \x01(\tR\tfeeAmount\x12\x1b\n" +
-	"\tfee_asset\x18\r \x01(\tR\bfeeAssetB9Z7github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1b\x06proto3"
+	"\tfee_asset\x18\r \x01(\tR\bfeeAsset\"\xca\x02\n" +
+	"\x11CancellationEvent\x12'\n" +
+	"\x0fcancellation_id\x18\x01 \x01(\x03R\x0ecancellationId\x12\x1b\n" +
+	"\tintent_id\x18\x02 \x01(\x03R\bintentId\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x03 \x01(\tR\taccountId\x12&\n" +
+	"\x0fclient_order_id\x18\x04 \x01(\tR\rclientOrderId\x120\n" +
+	"\x14strategy_instance_id\x18\x05 \x01(\x03R\x12strategyInstanceId\x12;\n" +
+	"\x05state\x18\x06 \x01(\x0e2%.muskdeer.common.v1.CancellationStateR\x05state\x12\x1a\n" +
+	"\brevision\x18\a \x01(\x03R\brevision\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\b \x01(\tR\terrorCode*\xff\x01\n" +
+	"\x11CancellationState\x12\"\n" +
+	"\x1eCANCELLATION_STATE_UNSPECIFIED\x10\x00\x12 \n" +
+	"\x1cCANCELLATION_STATE_REQUESTED\x10\x01\x12!\n" +
+	"\x1dCANCELLATION_STATE_SUBMITTING\x10\x02\x12\x1e\n" +
+	"\x1aCANCELLATION_STATE_PENDING\x10\x03\x12 \n" +
+	"\x1cCANCELLATION_STATE_CONFIRMED\x10\x04\x12\x1e\n" +
+	"\x1aCANCELLATION_STATE_UNKNOWN\x10\x05\x12\x1f\n" +
+	"\x1bCANCELLATION_STATE_REJECTED\x10\x06B9Z7github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1b\x06proto3"
 
 var (
 	file_deer_proto_common_v1_events_proto_rawDescOnce sync.Once
@@ -522,27 +711,32 @@ func file_deer_proto_common_v1_events_proto_rawDescGZIP() []byte {
 	return file_deer_proto_common_v1_events_proto_rawDescData
 }
 
-var file_deer_proto_common_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deer_proto_common_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_deer_proto_common_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_deer_proto_common_v1_events_proto_goTypes = []any{
-	(*ExecutionEvent)(nil), // 0: muskdeer.common.v1.ExecutionEvent
-	(*IntentEvent)(nil),    // 1: muskdeer.common.v1.IntentEvent
-	(*FillEvent)(nil),      // 2: muskdeer.common.v1.FillEvent
-	(OrderSide)(0),         // 3: muskdeer.common.v1.OrderSide
-	(OrderState)(0),        // 4: muskdeer.common.v1.OrderState
-	(CancelState)(0),       // 5: muskdeer.common.v1.CancelState
+	(CancellationState)(0),    // 0: muskdeer.common.v1.CancellationState
+	(*ExecutionEvent)(nil),    // 1: muskdeer.common.v1.ExecutionEvent
+	(*IntentEvent)(nil),       // 2: muskdeer.common.v1.IntentEvent
+	(*FillEvent)(nil),         // 3: muskdeer.common.v1.FillEvent
+	(*CancellationEvent)(nil), // 4: muskdeer.common.v1.CancellationEvent
+	(OrderSide)(0),            // 5: muskdeer.common.v1.OrderSide
+	(OrderState)(0),           // 6: muskdeer.common.v1.OrderState
+	(CancelState)(0),          // 7: muskdeer.common.v1.CancelState
 }
 var file_deer_proto_common_v1_events_proto_depIdxs = []int32{
-	1, // 0: muskdeer.common.v1.ExecutionEvent.intent:type_name -> muskdeer.common.v1.IntentEvent
-	2, // 1: muskdeer.common.v1.ExecutionEvent.fill:type_name -> muskdeer.common.v1.FillEvent
-	3, // 2: muskdeer.common.v1.IntentEvent.side:type_name -> muskdeer.common.v1.OrderSide
-	4, // 3: muskdeer.common.v1.IntentEvent.state:type_name -> muskdeer.common.v1.OrderState
-	5, // 4: muskdeer.common.v1.IntentEvent.cancel_state:type_name -> muskdeer.common.v1.CancelState
-	3, // 5: muskdeer.common.v1.FillEvent.side:type_name -> muskdeer.common.v1.OrderSide
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2, // 0: muskdeer.common.v1.ExecutionEvent.intent:type_name -> muskdeer.common.v1.IntentEvent
+	3, // 1: muskdeer.common.v1.ExecutionEvent.fill:type_name -> muskdeer.common.v1.FillEvent
+	4, // 2: muskdeer.common.v1.ExecutionEvent.cancellation:type_name -> muskdeer.common.v1.CancellationEvent
+	5, // 3: muskdeer.common.v1.IntentEvent.side:type_name -> muskdeer.common.v1.OrderSide
+	6, // 4: muskdeer.common.v1.IntentEvent.state:type_name -> muskdeer.common.v1.OrderState
+	7, // 5: muskdeer.common.v1.IntentEvent.cancel_state:type_name -> muskdeer.common.v1.CancelState
+	5, // 6: muskdeer.common.v1.FillEvent.side:type_name -> muskdeer.common.v1.OrderSide
+	0, // 7: muskdeer.common.v1.CancellationEvent.state:type_name -> muskdeer.common.v1.CancellationState
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_events_proto_init() }
@@ -556,13 +750,14 @@ func file_deer_proto_common_v1_events_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_v1_events_proto_rawDesc), len(file_deer_proto_common_v1_events_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   3,
+			NumEnums:      1,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_deer_proto_common_v1_events_proto_goTypes,
 		DependencyIndexes: file_deer_proto_common_v1_events_proto_depIdxs,
+		EnumInfos:         file_deer_proto_common_v1_events_proto_enumTypes,
 		MessageInfos:      file_deer_proto_common_v1_events_proto_msgTypes,
 	}.Build()
 	File_deer_proto_common_v1_events_proto = out.File

@@ -20,6 +20,7 @@ message ExecutionEvent {
   // support the generated model's typed JSONB storage without interface JSON.
   IntentEvent intent = 10;
   FillEvent fill = 11;
+  CancellationEvent cancellation = 12;
 }
 
 message IntentEvent {
@@ -56,4 +57,25 @@ message FillEvent {
   string quote_notional = 11;
   string fee_amount = 12;
   string fee_asset = 13;
+}
+
+enum CancellationState {
+  CANCELLATION_STATE_UNSPECIFIED = 0;
+  CANCELLATION_STATE_REQUESTED = 1;
+  CANCELLATION_STATE_SUBMITTING = 2;
+  CANCELLATION_STATE_PENDING = 3;
+  CANCELLATION_STATE_CONFIRMED = 4;
+  CANCELLATION_STATE_UNKNOWN = 5;
+  CANCELLATION_STATE_REJECTED = 6;
+}
+
+message CancellationEvent {
+  int64 cancellation_id = 1;
+  int64 intent_id = 2;
+  string account_id = 3;
+  string client_order_id = 4;
+  int64 strategy_instance_id = 5;
+  CancellationState state = 6;
+  int64 revision = 7;
+  string error_code = 8;
 }

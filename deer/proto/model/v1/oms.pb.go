@@ -856,6 +856,211 @@ func (x *OutboxEvent) GetErrorCode() string {
 	return ""
 }
 
+// CancellationRequest tracks a control command independently of core facts.
+type CancellationRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt           int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt           int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt           *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId          string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_cancellation_account_key"`
+	IdempotencyKey     string                 `protobuf:"bytes,6,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty" gorm:"column:idempotency_key;type:varchar(128);not null;uniqueIndex:uk_cancellation_account_key"`
+	IntentId           int64                  `protobuf:"varint,7,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty" gorm:"column:intent_id;type:bigint;not null;index:idx_cancellation_intent"`
+	ClientOrderId      string                 `protobuf:"bytes,8,opt,name=client_order_id,json=clientOrderId,proto3" json:"client_order_id,omitempty" gorm:"column:client_order_id;type:varchar(64);not null"`
+	StrategyInstanceId int64                  `protobuf:"varint,9,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty" gorm:"column:strategy_instance_id;type:bigint;not null"`
+	InstrumentId       int64                  `protobuf:"varint,10,opt,name=instrument_id,json=instrumentId,proto3" json:"instrument_id,omitempty" gorm:"column:instrument_id;type:bigint;not null"`
+	ConfigVersion      int64                  `protobuf:"varint,11,opt,name=config_version,json=configVersion,proto3" json:"config_version,omitempty" gorm:"column:config_version;type:bigint;not null"`
+	OwnerId            string                 `protobuf:"bytes,12,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty" gorm:"column:owner_id;type:varchar(128);not null"`
+	OwnerEpoch         int64                  `protobuf:"varint,13,opt,name=owner_epoch,json=ownerEpoch,proto3" json:"owner_epoch,omitempty" gorm:"column:owner_epoch;type:bigint;not null"`
+	ExecutionOwnerId   string                 `protobuf:"bytes,14,opt,name=execution_owner_id,json=executionOwnerId,proto3" json:"execution_owner_id,omitempty" gorm:"column:execution_owner_id;type:varchar(128);not null"`
+	ExecutionEpoch     int64                  `protobuf:"varint,15,opt,name=execution_epoch,json=executionEpoch,proto3" json:"execution_epoch,omitempty" gorm:"column:execution_epoch;type:bigint;not null"`
+	CoreCommandKey     string                 `protobuf:"bytes,16,opt,name=core_command_key,json=coreCommandKey,proto3" json:"core_command_key,omitempty" gorm:"column:core_command_key;type:varchar(128);not null"`
+	State              string                 `protobuf:"bytes,17,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null"`
+	DeadlineAt         int64                  `protobuf:"varint,18,opt,name=deadline_at,json=deadlineAt,proto3" json:"deadline_at,omitempty" gorm:"column:deadline_at;type:bigint;not null"`
+	Revision           int64                  `protobuf:"varint,19,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	ErrorCode          string                 `protobuf:"bytes,20,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty" gorm:"column:error_code;type:varchar(64);not null"`
+	RequestId          string                 `protobuf:"bytes,21,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty" gorm:"column:request_id;type:varchar(64);not null"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *CancellationRequest) Reset() {
+	*x = CancellationRequest{}
+	mi := &file_deer_proto_model_v1_oms_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancellationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancellationRequest) ProtoMessage() {}
+
+func (x *CancellationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_oms_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancellationRequest.ProtoReflect.Descriptor instead.
+func (*CancellationRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_oms_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CancellationRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetIntentId() int64 {
+	if x != nil {
+		return x.IntentId
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetClientOrderId() string {
+	if x != nil {
+		return x.ClientOrderId
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetInstrumentId() int64 {
+	if x != nil {
+		return x.InstrumentId
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetConfigVersion() int64 {
+	if x != nil {
+		return x.ConfigVersion
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetOwnerId() string {
+	if x != nil {
+		return x.OwnerId
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetOwnerEpoch() int64 {
+	if x != nil {
+		return x.OwnerEpoch
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetExecutionOwnerId() string {
+	if x != nil {
+		return x.ExecutionOwnerId
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetExecutionEpoch() int64 {
+	if x != nil {
+		return x.ExecutionEpoch
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetCoreCommandKey() string {
+	if x != nil {
+		return x.CoreCommandKey
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetDeadlineAt() int64 {
+	if x != nil {
+		return x.DeadlineAt
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *CancellationRequest) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *CancellationRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
 var File_deer_proto_model_v1_oms_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
@@ -978,7 +1183,37 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"error_code\x18\x0f \x01(\tB7\x9a\x84\x9e\x032gorm:\"column:error_code;type:varchar(64);not null\"R\terrorCodeB\f\n" +
 	"\n" +
 	"_delete_atB\x0f\n" +
-	"\r_published_atB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
+	"\r_published_at\"\x98\x10\n" +
+	"\x13CancellationRequest\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12~\n" +
+	"\n" +
+	"account_id\x18\x05 \x01(\tB_\x9a\x84\x9e\x03Zgorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_cancellation_account_key\"R\taccountId\x12\x8e\x01\n" +
+	"\x0fidempotency_key\x18\x06 \x01(\tBe\x9a\x84\x9e\x03`gorm:\"column:idempotency_key;type:varchar(128);not null;uniqueIndex:uk_cancellation_account_key\"R\x0eidempotencyKey\x12l\n" +
+	"\tintent_id\x18\a \x01(\x03BO\x9a\x84\x9e\x03Jgorm:\"column:intent_id;type:bigint;not null;index:idx_cancellation_intent\"R\bintentId\x12d\n" +
+	"\x0fclient_order_id\x18\b \x01(\tB<\x9a\x84\x9e\x037gorm:\"column:client_order_id;type:varchar(64);not null\"R\rclientOrderId\x12n\n" +
+	"\x14strategy_instance_id\x18\t \x01(\x03B<\x9a\x84\x9e\x037gorm:\"column:strategy_instance_id;type:bigint;not null\"R\x12strategyInstanceId\x12Z\n" +
+	"\rinstrument_id\x18\n" +
+	" \x01(\x03B5\x9a\x84\x9e\x030gorm:\"column:instrument_id;type:bigint;not null\"R\finstrumentId\x12]\n" +
+	"\x0econfig_version\x18\v \x01(\x03B6\x9a\x84\x9e\x031gorm:\"column:config_version;type:bigint;not null\"R\rconfigVersion\x12Q\n" +
+	"\bowner_id\x18\f \x01(\tB6\x9a\x84\x9e\x031gorm:\"column:owner_id;type:varchar(128);not null\"R\aownerId\x12T\n" +
+	"\vowner_epoch\x18\r \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:owner_epoch;type:bigint;not null\"R\n" +
+	"ownerEpoch\x12n\n" +
+	"\x12execution_owner_id\x18\x0e \x01(\tB@\x9a\x84\x9e\x03;gorm:\"column:execution_owner_id;type:varchar(128);not null\"R\x10executionOwnerId\x12`\n" +
+	"\x0fexecution_epoch\x18\x0f \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:execution_epoch;type:bigint;not null\"R\x0eexecutionEpoch\x12h\n" +
+	"\x10core_command_key\x18\x10 \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:core_command_key;type:varchar(128);not null\"R\x0ecoreCommandKey\x12H\n" +
+	"\x05state\x18\x11 \x01(\tB2\x9a\x84\x9e\x03-gorm:\"column:state;type:varchar(16);not null\"R\x05state\x12T\n" +
+	"\vdeadline_at\x18\x12 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:deadline_at;type:bigint;not null\"R\n" +
+	"deadlineAt\x12L\n" +
+	"\brevision\x18\x13 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevision\x12V\n" +
+	"\n" +
+	"error_code\x18\x14 \x01(\tB7\x9a\x84\x9e\x032gorm:\"column:error_code;type:varchar(64);not null\"R\terrorCode\x12V\n" +
+	"\n" +
+	"request_id\x18\x15 \x01(\tB7\x9a\x84\x9e\x032gorm:\"column:request_id;type:varchar(64);not null\"R\trequestIdB\f\n" +
+	"\n" +
+	"_delete_atB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
 var (
 	file_deer_proto_model_v1_oms_proto_rawDescOnce sync.Once
@@ -992,17 +1227,18 @@ func file_deer_proto_model_v1_oms_proto_rawDescGZIP() []byte {
 	return file_deer_proto_model_v1_oms_proto_rawDescData
 }
 
-var file_deer_proto_model_v1_oms_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_deer_proto_model_v1_oms_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_deer_proto_model_v1_oms_proto_goTypes = []any{
-	(*AccountBudget)(nil),     // 0: muskdeer.model.v1.AccountBudget
-	(*StrategyBudget)(nil),    // 1: muskdeer.model.v1.StrategyBudget
-	(*RiskSnapshot)(nil),      // 2: muskdeer.model.v1.RiskSnapshot
-	(*OrderIntent)(nil),       // 3: muskdeer.model.v1.OrderIntent
-	(*OutboxEvent)(nil),       // 4: muskdeer.model.v1.OutboxEvent
-	(*v1.ExecutionEvent)(nil), // 5: muskdeer.common.v1.ExecutionEvent
+	(*AccountBudget)(nil),       // 0: muskdeer.model.v1.AccountBudget
+	(*StrategyBudget)(nil),      // 1: muskdeer.model.v1.StrategyBudget
+	(*RiskSnapshot)(nil),        // 2: muskdeer.model.v1.RiskSnapshot
+	(*OrderIntent)(nil),         // 3: muskdeer.model.v1.OrderIntent
+	(*OutboxEvent)(nil),         // 4: muskdeer.model.v1.OutboxEvent
+	(*CancellationRequest)(nil), // 5: muskdeer.model.v1.CancellationRequest
+	(*v1.ExecutionEvent)(nil),   // 6: muskdeer.common.v1.ExecutionEvent
 }
 var file_deer_proto_model_v1_oms_proto_depIdxs = []int32{
-	5, // 0: muskdeer.model.v1.OutboxEvent.event:type_name -> muskdeer.common.v1.ExecutionEvent
+	6, // 0: muskdeer.model.v1.OutboxEvent.event:type_name -> muskdeer.common.v1.ExecutionEvent
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -1020,13 +1256,14 @@ func file_deer_proto_model_v1_oms_proto_init() {
 	file_deer_proto_model_v1_oms_proto_msgTypes[2].OneofWrappers = []any{}
 	file_deer_proto_model_v1_oms_proto_msgTypes[3].OneofWrappers = []any{}
 	file_deer_proto_model_v1_oms_proto_msgTypes[4].OneofWrappers = []any{}
+	file_deer_proto_model_v1_oms_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_model_v1_oms_proto_rawDesc), len(file_deer_proto_model_v1_oms_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

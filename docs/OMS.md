@@ -34,4 +34,14 @@ OMS 调用总是携带持久 intent ID。版本8在模拟目标增加对应外�
 
 锁顺序扩展为策略/租约→交易对→账户预算→策略预算→意图→风险快照；核心交易路径持有交易对及自身账户后，最终按预算→意图→风险快照读取。意图状态更新使用 FOR NO KEY UPDATE，兼容核心命令提前取得的 FK KEY SHARE，避免恢复与提交形成预算/意图反向等待。依据 [PostgreSQL 16 行锁兼容规则](https://www.postgresql.org/docs/16/explicit-locking.html)，实际交错通过受控测试验证。意图身份字段不由状态更新修改。
 
-OMS 撤单编排、成交自然键/inbox、持仓损益、风险重新开放、事件发布及业务 RPC 继续后续步骤；本步不标完整 P04 完成。
+P04.2 的范围不包含撤单编排、成交自然键/inbox、持仓损益、风险重新开放、事件发布及业务 RPC；后续步骤逐项交付。
+
+## P04.3 持久撤单请求
+
+CancellationRequest 与订单最后确认的 core cancel 状态分开，使用独立 REQUESTED/SUBMITTING/PENDING/UNKNOWN/CONFIRMED/REJECTED 状态。取消接收、状态变化与 typed cancellation outbox 同事务写入。账户/idempotency_key 永久绑定原目标，不能复用到另一笔订单；核心 submit:/cancel: 命名空间分离，重试保留同一核心命令键。
+
+未派发 INTENT 可在同一事务转换为 CANCELED、释放两处预留并确认撤单请求；不会发送核心命令。已派发订单先按原 client ID 查询，再持久化 SUBMITTING 后调用核心撤单。此时不要求新风险快照健康，仍必须有当前策略与账户执行授权；暂停或风险关闭不会自行删除撤单通道。
+
+核心只接受请求时记录 PENDING，订单与资金预留继续保留。丢失回包时持久记录 UNKNOWN，不覆盖订单已知的核心状态，也不释放预算；查询到核心 pending/终态后再同步。部分成交及费用由原订单事实继续累计，撤单确认后按实际剩余量释放一次。全部成交先完成时保留 FILLED；请求 CONFIRMED 表示目标已无有效余单，页面/调用方仍须展示订单最终状态，不能解释成原订单一定是 CANCELED。
+
+PENDING/UNKNOWN 的恢复当前只查询、不盲目重发；长期未知/旧 owner 的受控重派发与后台恢复继续 P09。订单、撤单请求及事件均持久可恢复，当前仍未接入业务 RPC、成交投影和消息发布。
