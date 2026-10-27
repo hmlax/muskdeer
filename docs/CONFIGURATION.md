@@ -12,12 +12,14 @@
 
 ## doctor
 
-`make doctor` 核对实际 Go 1.27.3，并用两个 [服务](../configs/examples/service.json)/[API](../configs/examples/api.json) 示例执行本地校验。检查其他文件：
+`make doctor` 核对实际 Go 1.27.3，并用 [服务](../configs/examples/service.json)/[API](../configs/examples/api.json) 示例及六份 local 角色配置执行本地校验。检查其他文件：
 
 ```sh
 python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json
 ```
 
-成功明确输出 `configuration syntax and limits validated`。输入/校验失败退出 1，命令参数错误退出 2；无配置时不输出成功。此检查验证工具链、JSON 和参数范围；实际 PEM、环境变量、网络可达性及完整服务就绪在构造/运行阶段验证。示例仅用于本地框架配置检查，当前业务进程和交易部署尚未交付。
+成功明确输出 `configuration syntax and limits validated`。输入/校验失败退出 1，命令参数错误退出 2；无配置时不输出成功。此检查验证工具链、JSON 和参数范围；实际 PEM、环境变量、网络可达性及完整服务就绪在构造/运行阶段验证。六角色进程入口已交付，交易业务及生产部署仍按后续任务执行。
+
+显式数据库升级使用同一配置中的 PostgreSQL，其他资源不装配；命令、校验和及事务边界见 [迁移说明](MIGRATIONS.md)。
 
 make verify 会通过 doctor 检查这些实际示例，并继续生成、格式、lint、单元/race 与构建；隔离依赖实连通过 make integration 单独执行。

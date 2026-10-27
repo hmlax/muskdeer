@@ -49,7 +49,7 @@ string 的 gorm:type:numeric 标签本身不提供精确运算能力；生成字
 - 验证十进制格式、有效位、小数位、范围及正负限制，拒绝 NaN/Inf/科学记数法等未约定输入；可选字段的缺失、NULL、空字符串与 "0" 明确区分，非法字符串不得静默当作零。
 - 除法、量化与输出必须明确精度和舍入模式；每个字段声明单位、允许的小数位及格式化规则，不能靠浮点格式化或无说明的截断完成金额换算。
 - 数据库小数使用 PostgreSQL numeric/decimal，禁止 real/double precision。生成模型的 string/numeric 与业务 decimal 转换须验证精度及 NULL 语义；类型约束不能仅靠 gorm:type:numeric 标签宣称完成。
-- P01 统一选择并锁定项目 decimal 库及精确版本，验证字符串解析、计算、格式化和数据库往返；此准备包尚无 Go 依赖，不预先宣称已集成。
+- P01 已固定 decimal v1.6.0 并验证字符串计算及 PostgreSQL numeric 往返；P03.1 已实现显式字段规则、plain string 解析与精确 tick/lot 量化，见 [小数边界](DECIMALS.md)。业务字段继续按各自单位/范围/数据库精度选择规则。
 
 ### 其他类型规则
 
@@ -67,3 +67,5 @@ StrategyInstance/StrategyConfigVersion 的模型与接口 Proto 显式定义 mar
 ## 生成与迁移
 make generate：Proto 校验 → Go/gRPC/Hertz 代码 → 经验证的 tag/ORM 生成 → gofmt。make generate-check 在干净临时目录重生成比较，禁止覆盖用户未提交文件后声称无差异。
 数据库迁移按版本执行，有校验和、执行记录及锁；不由所有服务启动时并发迁移。结构性破坏变更单独审查，生成器不会代替迁移设计。仓库必须包含从空库升级及已有库兼容测试。
+
+P03.2 已实现内嵌版本 SQL、生成的 SchemaMigration 记录、事务 advisory lock/回滚及显式 migrate -apply 工具，见 [迁移说明](MIGRATIONS.md)。当前业务实体仍按后续版本加入；此工具不执行启动 AutoMigrate，不改写不一致历史。

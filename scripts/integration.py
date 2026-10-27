@@ -95,7 +95,7 @@ def run() -> int:
             return result.returncode
         return subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
-            '-race', '-count=1', '-v', './internal/infrastructureprobe',
+            '-race', '-count=1', '-v', './internal/infrastructureprobe', './internal/migrate',
         ], cwd=ROOT, env=environment, check=False).returncode
     except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         # These are disposable services with explicit test credentials. Capture

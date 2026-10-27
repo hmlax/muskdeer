@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// SchemaMigration records an immutable, checksummed schema upgrade.
+message SchemaMigration {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 version = 5 [(tagger.tags) = "gorm:\"column:version;type:bigint;not null;uniqueIndex:uk_schema_migration_version\""];
+  string name = 6 [(tagger.tags) = "gorm:\"column:name;type:varchar(128);not null\""];
+  string checksum = 7 [(tagger.tags) = "gorm:\"column:checksum;type:varchar(64);not null\""];
+}

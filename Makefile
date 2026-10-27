@@ -43,6 +43,7 @@ build:
 	python3 scripts/go.py build ./...
 	mkdir -p .cache/bin
 	python3 scripts/go.py build -o .cache/bin/muskdeer ./cmd/muskdeer
+	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 
 verify: doctor generate-check hz-check fmt-check lint test-tooling test test-race build
 
