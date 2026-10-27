@@ -2,8 +2,6 @@ package repository
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 
 	"gorm.io/gorm"
@@ -24,11 +22,10 @@ func NewIntents(db *gorm.DB) (domain.IntentExecutionRepository, error) {
 }
 
 func (s *intentStore) Accept(ctx context.Context, in domain.OrderInput, execution domain.LeaseToken) (domain.IntentSnapshot, error) {
-	if !coreIdentifier(in.AccountID, 64) || !coreIdentifier(in.IdempotencyKey, 128) {
-		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
+	clientID, err := domain.IntentClientOrderID(in.AccountID, in.IdempotencyKey)
+	if err != nil {
+		return domain.IntentSnapshot{}, err
 	}
-	digest := sha256.Sum256([]byte(in.AccountID + "\n" + in.IdempotencyKey))
-	clientID := hex.EncodeToString(digest[:])
 	if err := validateCoreCommand(ctx, in.Authority, execution, in.AccountID, clientID, in.IdempotencyKey, in.InstrumentID, in.Deadline); err != nil {
 		return domain.IntentSnapshot{}, err
 	}

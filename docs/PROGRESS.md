@@ -614,3 +614,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 改动：命令日志以固定cause_kind识别包装后的deadline/canceled，私有cause继续隐藏；新增受控PG策略行锁的200ms风险进程故障用例，普通成功场景使用1秒有界预算、3秒租约，500ms行情/许可限制保持。
 - 验证：首轮原普通场景200ms附近退出，旧通用日志不足以确认cause，未计通过；受控故障明确报告deadline并失败码1退出，风险关闭且revision不变，1.58秒通过；正常流程1.76秒。最终完整make verify、完整make integration、文档/差异检查通过，原六服务进程、lint/race/goleak保留；见 [P06.10a](validation/P06-10a.md)。
 - 远程：cf203bc已推送main并核对SHA，[CI 40501113543](https://github.com/hmlax/muskdeer/actions/runs/40501113543) success；P06.9 [CI 40500269434](https://github.com/hmlax/muskdeer/actions/runs/40500269434) success。本步独立提交/推送并核对SHA，typed客户端另笔提交。
+
+## 2026-10-27：P06.11 Typed策略执行客户端
+
+- 改动：借用Deer factory/当前账户路由，Submit/Cancel绑定明确owner；原键查询/有界订单与资产观察使用无状态读取。无重试循环，已发写RPC失败/坏回包明确带ErrOutcomeUnknown并保留cause；精确typed decimal先限界后String，观察拒绝错scope/枚举/游标/资产重复，不制造授权。意图client ID公式收敛为共享纯函数并保持历史黄金值。
+- 验证：先红后绿的writer目标/不明不重发/原键/精确小数/坏观察测试，真实market/execution风险和模拟任务经Nacos/mTLS完成客户端下单→查询/冻结观察→撤单终态，预算0、资金复原且核心单仅1个，2.11秒。最终完整make verify、完整make integration、文档/差异检查通过，原六进程、lint/race/goleak保留；见 [P06.11](validation/P06-11.md)。
+- 远程：df469f1已推送main并核对SHA；本步独立提交/推送并核对SHA。
+- 下一步：持久动作日志/策略所有者与差分循环、行情失效撤单和30分钟实际模拟；P06保持进行，完整L1仍待P07–P10。
