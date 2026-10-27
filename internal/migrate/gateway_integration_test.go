@@ -152,6 +152,7 @@ func gatewayCommandFixture(ctx context.Context, t *testing.T, db *gorm.DB) *mode
 		t.Fatal(err)
 	}
 	parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
+	parameters.MakerParameters.InventoryHardLimit = "20"
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", strategyID, 1).
 		Select("ParametersSchemaVersion", "Template", "MakerParameters").Updates(parameters).Error; err != nil {
 		t.Fatal(err)

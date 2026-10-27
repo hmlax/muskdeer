@@ -200,7 +200,7 @@ func assertIdentityUpgrade(ctx context.Context, t *testing.T, base *gorm.DB) {
 	if err := base.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).First(&original).Error; err != nil {
 		t.Fatal(err)
 	}
-	if version, err := Apply(ctx, base); err != nil || version != 16 {
+	if version, err := Apply(ctx, base); err != nil || version != 17 {
 		t.Fatalf("v1 upgrade = %d, %v", version, err)
 	}
 	var retained modelv1.SchemaMigration
@@ -228,6 +228,11 @@ func assertRestoredIdentity(ctx context.Context, t *testing.T, db *gorm.DB, make
 	if len(history) != 2 || history[0].MarketDataSource != string(domain.MarketSourceBinance) || history[1].MarketDataSource != string(domain.MarketSourceOKX) {
 		t.Fatalf("source history changed: %v", history)
 	}
+	// The active historical version is retained. Nullable storage semantics
+	// are exercised below on the inactive legacy draft, without retiring the
+	// version that still supplies the instance's actual input.
+	err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("id = ?", history[0].Id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error
+	assertDatabaseCode(t, err, "23514")
 	var storedInstrument modelv1.Instrument
 	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).First(&storedInstrument, instrument.Id).Error; err != nil {
 		t.Fatal(err)
@@ -249,7 +254,7 @@ func assertRestoredIdentity(ctx context.Context, t *testing.T, db *gorm.DB, make
 		},
 		{
 			model: &modelv1.StrategyConfigVersion{},
-			id:    history[0].Id,
+			id:    history[1].Id,
 		},
 	} {
 		assertIdentityCommonColumns(ctx, t, db, record.model, record.id)

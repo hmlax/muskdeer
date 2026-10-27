@@ -135,6 +135,7 @@ func TestCrossAccountOrdersCannotOverReserveInstrumentOrPlatform(t *testing.T) {
 			store, first := admissionFixture(ctx, t, db)
 			peer := first
 			peer.Input.AccountID = "global-other-account"
+			seedGlobalPeerAssets(ctx, t, db, peer.Input.AccountID)
 			if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Create(&modelv1.AccountBudget{
 				AccountId:        peer.Input.AccountID,
 				Asset:            "USDT",
@@ -189,6 +190,39 @@ func TestCrossAccountOrdersCannotOverReserveInstrumentOrPlatform(t *testing.T) {
 				t.Fatalf("%s reservation changed: %v, %v", scope, &row, err)
 			}
 		})
+	}
+}
+
+func seedGlobalPeerAssets(ctx context.Context, t *testing.T, db *gorm.DB, accountID string) {
+	t.Helper()
+	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Create(&modelv1.SimulatorAccount{
+		AccountId:    accountID,
+		SubjectId:    "global-budget-peer-subject",
+		Enabled:      true,
+		QuoteFeeRate: "0.001",
+		Revision:     1,
+	}).Error; err != nil {
+		t.Fatal(err)
+	}
+	for _, balance := range []*modelv1.SimulatorBalance{
+		{
+			AccountId: accountID,
+			Asset:     "BTC",
+			Available: "10",
+			Frozen:    "0",
+			Revision:  1,
+		},
+		{
+			AccountId: accountID,
+			Asset:     "USDT",
+			Available: "1000",
+			Frozen:    "0",
+			Revision:  1,
+		},
+	} {
+		if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Create(balance).Error; err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

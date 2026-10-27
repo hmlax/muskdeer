@@ -221,6 +221,7 @@ func admissionSibling(ctx context.Context, t *testing.T, db *gorm.DB, original d
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
+		parameters.MakerParameters.InventoryHardLimit = "20"
 		parameters.InstanceId = strategy.Id
 		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {

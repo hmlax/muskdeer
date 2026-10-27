@@ -45,3 +45,6 @@ const (
 	RiskScopePlatform   RiskScope = "PLATFORM"
 	RiskScopeInstrument RiskScope = "INSTRUMENT"
 )
+
+// MaxAccountInventoryPolicies bounds account-wide configuration work.
+const MaxAccountInventoryPolicies = 128

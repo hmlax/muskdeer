@@ -573,3 +573,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 修正：新迁移16统一账户/策略预算→意图→全局额度，保留15校验和及金额/身份断言。自有backend+测试schema检查点验证原交错先红后绿，全部SQL/任务有期限和取消/join。
 - 验证：相关race、完整make verify、完整make integration、文档/差异检查通过，受控回归全套0.36秒，lint 0 issues及goleak保留。见 [P06.5a](validation/P06-05a.md)。
 - 远程：b91b908 已推送 main 并核对SHA，[CI 40492051423](https://github.com/hmlax/muskdeer/actions/runs/40492051423) success；本步独立提交/推送并核对SHA。继续最坏库存与策略运行，P06保持进行。
+
+## 2026-10-27：P06.6 最坏库存与共享配置保护
+
+- 改动：版本17、准入/Prepare及模拟最终库存门禁；核心基础币总额+全部未终态买单剩余量，UNKNOWN保留、不用未确认卖单抵消；共享账户取同交易对全部已生效政策最低硬限，最多128个。激活与准入共用账户预算互斥，低限不得越过旧义务，typed/已引用版本不可改写。
+- 验证：真实PG反例先红后绿，跨策略最低硬限、低限/版本改写拒绝、已写资产/订单超限整体回滚；完整make verify、最终lint、最终完整make integration、文档/差异检查通过，race/goleak保留。旧元数据用例明确验证生效版本不可删除并保留草稿NULL往返后全套通过。见 [P06.6](validation/P06-06.md)。
+- 远程：03258fd 已推送 main 并核对SHA，[CI 40494869892](https://github.com/hmlax/muskdeer/actions/runs/40494869892) success；本步独立提交/推送并核对SHA。
+- 下一步：显式Deer风险/模拟执行任务、策略所有者/持久决策及差分循环、失效撤单与30分钟实际模拟；P06保持进行。

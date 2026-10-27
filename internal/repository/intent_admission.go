@@ -29,6 +29,11 @@ func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput,
 	if err := validateOrderMetadata(in, instrument); err != nil {
 		return nil, err
 	}
+	if in.Side == domain.SideBuy {
+		if err := validateWorstInventory(ctx, tx, in.AccountID, instrument, in.Quantity); err != nil {
+			return nil, err
+		}
+	}
 	amount := in.Price.Mul(in.Quantity)
 	if !account.Enabled || !budget.Enabled || account.Asset != instrument.QuoteAsset ||
 		!domain.FixedDecimal(amount, 40, 36, false) {

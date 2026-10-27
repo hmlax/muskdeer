@@ -49,6 +49,11 @@ func (s *intentStore) Prepare(ctx context.Context, current domain.IntentSnapshot
 		if err != nil {
 			return err
 		}
+		if current.Input.Side == domain.SideBuy {
+			if err := validateWorstInventory(ctx, tx, current.Input.AccountID, instrument, decimal.Zero); err != nil {
+				return err
+			}
+		}
 		until := min(deadline.UnixMilli(), risk.ExpiresAt)
 		if until <= now {
 			return domain.ErrRiskDenied
