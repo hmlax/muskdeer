@@ -26,6 +26,8 @@ type Tracker struct {
 	last       marketbook.View
 	connection int64
 	baseline   decimal.Decimal
+	baselineAt time.Time
+	restored   bool
 	candidate  decimal.Decimal
 	samples    int
 	started    time.Time
@@ -109,6 +111,7 @@ func (t *Tracker) Observe(view marketbook.View, connection int64, now time.Time)
 		return t.current, nil
 	}
 	t.baseline = view.Mid
+	t.baselineAt = now.UTC()
 	t.current = reading
 	return reading, nil
 }
@@ -223,5 +226,8 @@ func samePrices(a, b marketbook.View) bool {
 func withoutPrices(reading domain.MarketReading) domain.MarketReading {
 	reading.Bid, reading.Ask, reading.Mid = decimal.Zero, decimal.Zero, decimal.Zero
 	reading.BidQuantity, reading.AskQuantity = decimal.Zero, decimal.Zero
+	if reading.EventTime.IsZero() || reading.ReceivedAt.IsZero() {
+		reading.ValidUntil = time.Time{}
+	}
 	return reading
 }

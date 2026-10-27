@@ -90,10 +90,55 @@ func (r MarketReading) Selected(source MarketSource, instrumentID int64, symbol 
 	return nil
 }
 
+// Validate checks stored/transport shape independently of current freshness.
+// An unhealthy reading must carry zero financial values and a known reason.
+func (r MarketReading) Validate() error {
+	if !r.validScope() || r.Connection < 0 || r.Generation < 0 || r.Sequence < 0 || !ValidMarketQuality(r.Quality, r.Reason) || r.EvaluatedAt.UnixMilli() <= 0 {
+		return ErrUnreliableMarket
+	}
+	if r.Quality == MarketQualityHealthy {
+		if !r.validIdentity() || !r.validNumbers() || r.EventTime.UnixMilli() <= 0 || r.ReceivedAt.UnixMilli() <= 0 || r.ValidUntil.UnixMilli() <= 0 {
+			return ErrUnreliableMarket
+		}
+		return nil
+	}
+	if !r.Bid.IsZero() || !r.Ask.IsZero() || !r.Mid.IsZero() || !r.BidQuantity.IsZero() || !r.AskQuantity.IsZero() {
+		return ErrUnreliableMarket
+	}
+	return nil
+}
+
+// ValidMarketQuality accepts exact normalized quality/reason pairs.
+func ValidMarketQuality(quality MarketQuality, reason MarketReason) bool {
+	switch quality {
+	case MarketQualityHealthy:
+		return reason == MarketReasonNone
+	case MarketQualityUnavailable:
+		return reason == MarketReasonSynchronizing || reason == MarketReasonDisconnected
+	case MarketQualityWarming:
+		return reason == MarketReasonRecovery
+	case MarketQualityInvalid:
+		return reason == MarketReasonSequence || reason == MarketReasonPayload || reason == MarketReasonOverflow
+	case MarketQualityStale:
+		return reason == MarketReasonAge
+	case MarketQualityOutlier:
+		return reason == MarketReasonJump
+	case MarketQualitySpread:
+		return reason == MarketReasonSpread
+	case MarketQualityClock:
+		return reason == MarketReasonFuture || reason == MarketReasonClockReversed
+	default:
+		return false
+	}
+}
+
+func (r MarketReading) validScope() bool {
+	return r.Source.ValidateSelection() == nil && r.InstrumentID > 0 && len(r.Symbol) > 0 && len(r.Symbol) <= 64 &&
+		(r.Mode == MarketModeLive || r.Mode == MarketModeReplay) && r.SourceVersion == MarketSourceVersion
+}
+
 func (r MarketReading) validIdentity() bool {
-	return r.Source.ValidateSelection() == nil && r.InstrumentID > 0 && r.Symbol != "" &&
-		(r.Mode == MarketModeLive || r.Mode == MarketModeReplay) && r.SourceVersion == MarketSourceVersion &&
-		r.Connection > 0 && r.Generation > 0 && r.Sequence >= 0
+	return r.validScope() && r.Connection > 0 && r.Generation > 0 && r.Sequence >= 0
 }
 
 func (r MarketReading) freshAt(now time.Time, maximumAge time.Duration) bool {

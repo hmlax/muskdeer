@@ -32,3 +32,31 @@ message MarketPublisherLease {
   int64 epoch = 7 [(tagger.tags) = "gorm:\"column:epoch;type:bigint;not null\""];
   int64 expires_at = 8 [(tagger.tags) = "gorm:\"column:expires_at;type:bigint;not null\""];
 }
+
+// MarketSnapshot is a current fenced projection; baseline is diagnostic only.
+message MarketSnapshot {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 market_feed_id = 5 [(tagger.tags) = "gorm:\"column:market_feed_id;type:bigint;not null;uniqueIndex:uk_market_snapshot_feed\""];
+  string publisher_owner_id = 6 [(tagger.tags) = "gorm:\"column:publisher_owner_id;type:varchar(128);not null\""];
+  int64 publisher_epoch = 7 [(tagger.tags) = "gorm:\"column:publisher_epoch;type:bigint;not null\""];
+  int64 revision = 8 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  int64 connection = 9 [(tagger.tags) = "gorm:\"column:connection;type:bigint;not null\""];
+  int64 generation = 10 [(tagger.tags) = "gorm:\"column:generation;type:bigint;not null\""];
+  int64 sequence = 11 [(tagger.tags) = "gorm:\"column:sequence;type:bigint;not null\""];
+  string quality = 12 [(tagger.tags) = "gorm:\"column:quality;type:varchar(32);not null\""];
+  string reason = 13 [(tagger.tags) = "gorm:\"column:reason;type:varchar(32);not null\""];
+  string bid_price = 14 [(tagger.tags) = "gorm:\"column:bid_price;type:numeric(38,18);not null\""];
+  string bid_quantity = 15 [(tagger.tags) = "gorm:\"column:bid_quantity;type:numeric(38,18);not null\""];
+  string ask_price = 16 [(tagger.tags) = "gorm:\"column:ask_price;type:numeric(38,18);not null\""];
+  string ask_quantity = 17 [(tagger.tags) = "gorm:\"column:ask_quantity;type:numeric(38,18);not null\""];
+  string mid_price = 18 [(tagger.tags) = "gorm:\"column:mid_price;type:numeric(76,36);not null\""];
+  int64 event_at = 19 [(tagger.tags) = "gorm:\"column:event_at;type:bigint;not null\""];
+  int64 received_at = 20 [(tagger.tags) = "gorm:\"column:received_at;type:bigint;not null\""];
+  int64 evaluated_at = 21 [(tagger.tags) = "gorm:\"column:evaluated_at;type:bigint;not null\""];
+  int64 valid_until = 22 [(tagger.tags) = "gorm:\"column:valid_until;type:bigint;not null\""];
+  string baseline_mid = 23 [(tagger.tags) = "gorm:\"column:baseline_mid;type:numeric(76,36);not null\""];
+  int64 baseline_at = 24 [(tagger.tags) = "gorm:\"column:baseline_at;type:bigint;not null\""];
+}

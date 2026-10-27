@@ -241,6 +241,235 @@ func (x *MarketPublisherLease) GetExpiresAt() int64 {
 	return 0
 }
 
+// MarketSnapshot is a current fenced projection; baseline is diagnostic only.
+type MarketSnapshot struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt         int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt         int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt         *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	MarketFeedId     int64                  `protobuf:"varint,5,opt,name=market_feed_id,json=marketFeedId,proto3" json:"market_feed_id,omitempty" gorm:"column:market_feed_id;type:bigint;not null;uniqueIndex:uk_market_snapshot_feed"`
+	PublisherOwnerId string                 `protobuf:"bytes,6,opt,name=publisher_owner_id,json=publisherOwnerId,proto3" json:"publisher_owner_id,omitempty" gorm:"column:publisher_owner_id;type:varchar(128);not null"`
+	PublisherEpoch   int64                  `protobuf:"varint,7,opt,name=publisher_epoch,json=publisherEpoch,proto3" json:"publisher_epoch,omitempty" gorm:"column:publisher_epoch;type:bigint;not null"`
+	Revision         int64                  `protobuf:"varint,8,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	Connection       int64                  `protobuf:"varint,9,opt,name=connection,proto3" json:"connection,omitempty" gorm:"column:connection;type:bigint;not null"`
+	Generation       int64                  `protobuf:"varint,10,opt,name=generation,proto3" json:"generation,omitempty" gorm:"column:generation;type:bigint;not null"`
+	Sequence         int64                  `protobuf:"varint,11,opt,name=sequence,proto3" json:"sequence,omitempty" gorm:"column:sequence;type:bigint;not null"`
+	Quality          string                 `protobuf:"bytes,12,opt,name=quality,proto3" json:"quality,omitempty" gorm:"column:quality;type:varchar(32);not null"`
+	Reason           string                 `protobuf:"bytes,13,opt,name=reason,proto3" json:"reason,omitempty" gorm:"column:reason;type:varchar(32);not null"`
+	BidPrice         string                 `protobuf:"bytes,14,opt,name=bid_price,json=bidPrice,proto3" json:"bid_price,omitempty" gorm:"column:bid_price;type:numeric(38,18);not null"`
+	BidQuantity      string                 `protobuf:"bytes,15,opt,name=bid_quantity,json=bidQuantity,proto3" json:"bid_quantity,omitempty" gorm:"column:bid_quantity;type:numeric(38,18);not null"`
+	AskPrice         string                 `protobuf:"bytes,16,opt,name=ask_price,json=askPrice,proto3" json:"ask_price,omitempty" gorm:"column:ask_price;type:numeric(38,18);not null"`
+	AskQuantity      string                 `protobuf:"bytes,17,opt,name=ask_quantity,json=askQuantity,proto3" json:"ask_quantity,omitempty" gorm:"column:ask_quantity;type:numeric(38,18);not null"`
+	MidPrice         string                 `protobuf:"bytes,18,opt,name=mid_price,json=midPrice,proto3" json:"mid_price,omitempty" gorm:"column:mid_price;type:numeric(76,36);not null"`
+	EventAt          int64                  `protobuf:"varint,19,opt,name=event_at,json=eventAt,proto3" json:"event_at,omitempty" gorm:"column:event_at;type:bigint;not null"`
+	ReceivedAt       int64                  `protobuf:"varint,20,opt,name=received_at,json=receivedAt,proto3" json:"received_at,omitempty" gorm:"column:received_at;type:bigint;not null"`
+	EvaluatedAt      int64                  `protobuf:"varint,21,opt,name=evaluated_at,json=evaluatedAt,proto3" json:"evaluated_at,omitempty" gorm:"column:evaluated_at;type:bigint;not null"`
+	ValidUntil       int64                  `protobuf:"varint,22,opt,name=valid_until,json=validUntil,proto3" json:"valid_until,omitempty" gorm:"column:valid_until;type:bigint;not null"`
+	BaselineMid      string                 `protobuf:"bytes,23,opt,name=baseline_mid,json=baselineMid,proto3" json:"baseline_mid,omitempty" gorm:"column:baseline_mid;type:numeric(76,36);not null"`
+	BaselineAt       int64                  `protobuf:"varint,24,opt,name=baseline_at,json=baselineAt,proto3" json:"baseline_at,omitempty" gorm:"column:baseline_at;type:bigint;not null"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *MarketSnapshot) Reset() {
+	*x = MarketSnapshot{}
+	mi := &file_deer_proto_model_v1_market_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MarketSnapshot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MarketSnapshot) ProtoMessage() {}
+
+func (x *MarketSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_market_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MarketSnapshot.ProtoReflect.Descriptor instead.
+func (*MarketSnapshot) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_market_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MarketSnapshot) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetMarketFeedId() int64 {
+	if x != nil {
+		return x.MarketFeedId
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetPublisherOwnerId() string {
+	if x != nil {
+		return x.PublisherOwnerId
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetPublisherEpoch() int64 {
+	if x != nil {
+		return x.PublisherEpoch
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetConnection() int64 {
+	if x != nil {
+		return x.Connection
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetGeneration() int64 {
+	if x != nil {
+		return x.Generation
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetSequence() int64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetQuality() string {
+	if x != nil {
+		return x.Quality
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetBidPrice() string {
+	if x != nil {
+		return x.BidPrice
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetBidQuantity() string {
+	if x != nil {
+		return x.BidQuantity
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetAskPrice() string {
+	if x != nil {
+		return x.AskPrice
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetAskQuantity() string {
+	if x != nil {
+		return x.AskQuantity
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetMidPrice() string {
+	if x != nil {
+		return x.MidPrice
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetEventAt() int64 {
+	if x != nil {
+		return x.EventAt
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetReceivedAt() int64 {
+	if x != nil {
+		return x.ReceivedAt
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetEvaluatedAt() int64 {
+	if x != nil {
+		return x.EvaluatedAt
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetValidUntil() int64 {
+	if x != nil {
+		return x.ValidUntil
+	}
+	return 0
+}
+
+func (x *MarketSnapshot) GetBaselineMid() string {
+	if x != nil {
+		return x.BaselineMid
+	}
+	return ""
+}
+
+func (x *MarketSnapshot) GetBaselineAt() int64 {
+	if x != nil {
+		return x.BaselineAt
+	}
+	return 0
+}
+
 var File_deer_proto_model_v1_market_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_market_proto_rawDesc = "" +
@@ -272,6 +501,41 @@ const file_deer_proto_model_v1_market_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\b \x01(\x03B2\x9a\x84\x9e\x03-gorm:\"column:expires_at;type:bigint;not null\"R\texpiresAtB\f\n" +
 	"\n" +
+	"_delete_at\"\x89\x11\n" +
+	"\x0eMarketSnapshot\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12\x80\x01\n" +
+	"\x0emarket_feed_id\x18\x05 \x01(\x03BZ\x9a\x84\x9e\x03Ugorm:\"column:market_feed_id;type:bigint;not null;uniqueIndex:uk_market_snapshot_feed\"R\fmarketFeedId\x12n\n" +
+	"\x12publisher_owner_id\x18\x06 \x01(\tB@\x9a\x84\x9e\x03;gorm:\"column:publisher_owner_id;type:varchar(128);not null\"R\x10publisherOwnerId\x12`\n" +
+	"\x0fpublisher_epoch\x18\a \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:publisher_epoch;type:bigint;not null\"R\x0epublisherEpoch\x12L\n" +
+	"\brevision\x18\b \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevision\x12R\n" +
+	"\n" +
+	"connection\x18\t \x01(\x03B2\x9a\x84\x9e\x03-gorm:\"column:connection;type:bigint;not null\"R\n" +
+	"connection\x12R\n" +
+	"\n" +
+	"generation\x18\n" +
+	" \x01(\x03B2\x9a\x84\x9e\x03-gorm:\"column:generation;type:bigint;not null\"R\n" +
+	"generation\x12L\n" +
+	"\bsequence\x18\v \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:sequence;type:bigint;not null\"R\bsequence\x12N\n" +
+	"\aquality\x18\f \x01(\tB4\x9a\x84\x9e\x03/gorm:\"column:quality;type:varchar(32);not null\"R\aquality\x12K\n" +
+	"\x06reason\x18\r \x01(\tB3\x9a\x84\x9e\x03.gorm:\"column:reason;type:varchar(32);not null\"R\x06reason\x12V\n" +
+	"\tbid_price\x18\x0e \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:bid_price;type:numeric(38,18);not null\"R\bbidPrice\x12_\n" +
+	"\fbid_quantity\x18\x0f \x01(\tB<\x9a\x84\x9e\x037gorm:\"column:bid_quantity;type:numeric(38,18);not null\"R\vbidQuantity\x12V\n" +
+	"\task_price\x18\x10 \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:ask_price;type:numeric(38,18);not null\"R\baskPrice\x12_\n" +
+	"\fask_quantity\x18\x11 \x01(\tB<\x9a\x84\x9e\x037gorm:\"column:ask_quantity;type:numeric(38,18);not null\"R\vaskQuantity\x12V\n" +
+	"\tmid_price\x18\x12 \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:mid_price;type:numeric(76,36);not null\"R\bmidPrice\x12K\n" +
+	"\bevent_at\x18\x13 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:event_at;type:bigint;not null\"R\aeventAt\x12T\n" +
+	"\vreceived_at\x18\x14 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:received_at;type:bigint;not null\"R\n" +
+	"receivedAt\x12W\n" +
+	"\fevaluated_at\x18\x15 \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:evaluated_at;type:bigint;not null\"R\vevaluatedAt\x12T\n" +
+	"\vvalid_until\x18\x16 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:valid_until;type:bigint;not null\"R\n" +
+	"validUntil\x12_\n" +
+	"\fbaseline_mid\x18\x17 \x01(\tB<\x9a\x84\x9e\x037gorm:\"column:baseline_mid;type:numeric(76,36);not null\"R\vbaselineMid\x12T\n" +
+	"\vbaseline_at\x18\x18 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:baseline_at;type:bigint;not null\"R\n" +
+	"baselineAtB\f\n" +
+	"\n" +
 	"_delete_atB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
 var (
@@ -286,14 +550,15 @@ func file_deer_proto_model_v1_market_proto_rawDescGZIP() []byte {
 	return file_deer_proto_model_v1_market_proto_rawDescData
 }
 
-var file_deer_proto_model_v1_market_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_deer_proto_model_v1_market_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_deer_proto_model_v1_market_proto_goTypes = []any{
 	(*MarketFeed)(nil),           // 0: muskdeer.model.v1.MarketFeed
 	(*MarketPublisherLease)(nil), // 1: muskdeer.model.v1.MarketPublisherLease
-	(*v1.MarketPolicy)(nil),      // 2: muskdeer.common.v1.MarketPolicy
+	(*MarketSnapshot)(nil),       // 2: muskdeer.model.v1.MarketSnapshot
+	(*v1.MarketPolicy)(nil),      // 3: muskdeer.common.v1.MarketPolicy
 }
 var file_deer_proto_model_v1_market_proto_depIdxs = []int32{
-	2, // 0: muskdeer.model.v1.MarketFeed.policy:type_name -> muskdeer.common.v1.MarketPolicy
+	3, // 0: muskdeer.model.v1.MarketFeed.policy:type_name -> muskdeer.common.v1.MarketPolicy
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -308,13 +573,14 @@ func file_deer_proto_model_v1_market_proto_init() {
 	}
 	file_deer_proto_model_v1_market_proto_msgTypes[0].OneofWrappers = []any{}
 	file_deer_proto_model_v1_market_proto_msgTypes[1].OneofWrappers = []any{}
+	file_deer_proto_model_v1_market_proto_msgTypes[2].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_model_v1_market_proto_rawDesc), len(file_deer_proto_model_v1_market_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
