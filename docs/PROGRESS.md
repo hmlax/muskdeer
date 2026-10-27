@@ -566,3 +566,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：单笔拒绝无预留、幂等、最终关闭拒绝并释放、两独立账户并发200+200争300仅一成功、计数/身份改写拒绝及历史义务迁移通过；完整make verify、最终lint、最终完整make integration、文档/差异检查通过，race/goleak保留。修正零值测试参数并单独提交发现隔离后全量通过。见 [P06.5](validation/P06-05.md)。
 - 远程：eea5044 已独立推送 main 并核对SHA；本步独立提交/推送并核对SHA。
 - 下一步：最坏库存的最终原子检查、显式Deer风险调度/策略控制器、行情失效撤单和30分钟实际模拟；P06保持进行。
+
+## 2026-10-27：P06.5a 最终global门禁的锁顺序
+
+- 发现：版本15最终global门禁先读意图/全局额度、再由另一门禁取账户预算，可能与另一意图释放形成环。受控真实PG等待点重现deadlock detected；没有将夹具未到达检查点的早期失败当作死锁证据。
+- 修正：新迁移16统一账户/策略预算→意图→全局额度，保留15校验和及金额/身份断言。自有backend+测试schema检查点验证原交错先红后绿，全部SQL/任务有期限和取消/join。
+- 验证：相关race、完整make verify、完整make integration、文档/差异检查通过，受控回归全套0.36秒，lint 0 issues及goleak保留。见 [P06.5a](validation/P06-05a.md)。
+- 远程：b91b908 已推送 main 并核对SHA，[CI 40492051423](https://github.com/hmlax/muskdeer/actions/runs/40492051423) success；本步独立提交/推送并核对SHA。继续最坏库存与策略运行，P06保持进行。
