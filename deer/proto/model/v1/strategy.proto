@@ -3,6 +3,7 @@ syntax = "proto3";
 package muskdeer.model.v1;
 
 import "tagger/tagger.proto";
+import "deer/proto/common/v1/strategy_parameters.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
 
@@ -46,8 +47,9 @@ message StrategyInstance {
   optional string active_market_data_source = 16 [(tagger.tags) = "gorm:\"column:active_market_data_source;type:varchar(32)\""];
 }
 
-// StrategyConfigVersion stores immutable version/source identity. Typed template
-// parameters are introduced in a following migration before control APIs exist.
+// StrategyConfigVersion stores immutable version/source identity and typed
+// template parameters. JSONB is a concrete storage boundary, never an untyped
+// payload. Schema zero identifies legacy metadata-only versions, not runnable.
 message StrategyConfigVersion {
   int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
   int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
@@ -58,4 +60,8 @@ message StrategyConfigVersion {
   string market_data_source = 7 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null\""];
   string code_version = 8 [(tagger.tags) = "gorm:\"column:code_version;type:varchar(64);not null\""];
   string created_by = 9 [(tagger.tags) = "gorm:\"column:created_by;type:varchar(64);not null\""];
+  int64 parameters_schema_version = 10 [(tagger.tags) = "gorm:\"column:parameters_schema_version;type:bigint;not null\""];
+  optional string template = 11 [(tagger.tags) = "gorm:\"column:template;type:varchar(32)\""];
+  muskdeer.common.v1.MakerParameters maker_parameters = 12 [(tagger.tags) = "gorm:\"column:maker_parameters;type:jsonb;serializer:json\""];
+  muskdeer.common.v1.GridParameters grid_parameters = 13 [(tagger.tags) = "gorm:\"column:grid_parameters;type:jsonb;serializer:json\""];
 }

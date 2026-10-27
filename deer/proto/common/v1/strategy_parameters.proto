@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package muskdeer.common.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+
+// StrategyParameters is an explicit typed union for the two initial templates.
+message StrategyParameters {
+  oneof template {
+    MakerParameters market_maker = 1;
+    GridParameters grid = 2;
+  }
+}
+
+// MakerParameters describes spot market-making inputs. Decimal fields accept
+// plain strings: amounts/quantities have at most 20+18 digits, BPS 5+10 digits.
+// Durations are whole milliseconds, bounded to one hour by validation.
+message MakerParameters {
+  int32 quote_levels = 1;
+  string level_spacing_bps = 2;
+  string base_spread_bps = 3;
+  // Quote currency for each order and each side's complete budget.
+  string level_notional = 4;
+  string side_budget = 5;
+  // Base-asset quantities, independent of quoted currency amounts.
+  string inventory_target = 6;
+  string inventory_soft_limit = 7;
+  string inventory_hard_limit = 8;
+  string reprice_bps = 9;
+  int64 min_refresh_interval_ms = 10;
+  int64 max_quote_age_ms = 11;
+  int64 max_market_age_ms = 12;
+  bool hedge_enabled = 13;
+  string hedge_threshold = 14;
+  int64 hedge_max_wait_ms = 15;
+  // Base quantity outstanding in external hedge work.
+  string max_hedge_backlog = 16;
+}
+
+// GridParameters uses quote/base prices, quote budgets and a base inventory cap.
+// All decimal values use at most 20+18 digits. Market age is whole milliseconds.
+message GridParameters {
+  string lower_price = 1;
+  string upper_price = 2;
+  int32 grid_count = 3;
+  string total_budget = 4;
+  string per_order_notional = 5;
+  string inventory_limit = 6;
+  int64 max_market_age_ms = 7;
+}
