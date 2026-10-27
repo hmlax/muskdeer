@@ -14,9 +14,9 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def initialize_naming() -> None:
+def initialize_naming(address: str) -> None:
     """Provision only the fresh, isolated Compose Nacos test server."""
-    base = 'http://127.0.0.1:55442/nacos'
+    base = 'http://' + address + '/nacos'
 
     def post(path: str, values: dict) -> dict:
         body = urllib.parse.urlencode(values).encode()
@@ -45,6 +45,19 @@ def initialize_naming() -> None:
     print('Nacos server 2.5.2: authenticated test namespaces initialized', flush=True)
 
 
+def published_address(compose: list[str], service: str, port: int) -> str:
+    """Read only this isolated project's Docker-assigned loopback binding."""
+    result = subprocess.run(
+        [*compose, 'port', service, str(port)], check=True,
+        capture_output=True, text=True, timeout=10,
+    )
+    address = result.stdout.strip()
+    host, separator, published = address.rpartition(':')
+    if separator != ':' or host != '127.0.0.1' or not published.isascii() or not published.isdigit() or not 1 <= int(published) <= 65535:
+        raise ValueError('isolated service did not return one loopback TCP binding')
+    return address
+
+
 def run() -> int:
     project = 'muskdeer-p01-' + uuid.uuid4().hex[:10]
     compose = ['docker', 'compose', '-p', project, '-f', str(ROOT / 'compose.test.yml')]
@@ -55,16 +68,25 @@ def run() -> int:
         subprocess.run([*compose, 'exec', '-T', 'postgres', 'postgres', '--version'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'redis', 'redis-server', '--version'], check=True)
         subprocess.run([*compose, 'exec', '-T', 'nats', 'nats-server', '--version'], check=True)
-        initialize_naming()
+        postgres_address = published_address(compose, 'postgres', 5432)
+        redis_address = published_address(compose, 'redis', 6379)
+        nats_address = published_address(compose, 'nats', 4222)
+        nacos_address = published_address(compose, 'nacos', 8848)
+        initialize_naming(nacos_address)
         environment = os.environ.copy()
+        postgres_port = postgres_address.rsplit(':', 1)[1]
         environment['MUSKDEER_TEST_POSTGRES_DSN'] = (
-            'host=127.0.0.1 port=55439 user=muskdeer password=muskdeer_test_only '
+            f'host=127.0.0.1 port={postgres_port} user=muskdeer password=muskdeer_test_only '
             'dbname=muskdeer_p01 sslmode=disable'
         )
         environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
+        environment['MUSKDEER_TEST_POSTGRES_PORT'] = postgres_port
         environment['MUSKDEER_TEST_REDIS_PASSWORD'] = 'muskdeer_redis_test_only'
+        environment['MUSKDEER_TEST_REDIS_ADDRESS'] = redis_address
         environment['MUSKDEER_TEST_NATS_TOKEN'] = 'muskdeer_nats_test_only'
+        environment['MUSKDEER_TEST_NATS_ADDRESS'] = nats_address
         environment['MUSKDEER_TEST_NACOS_PASSWORD'] = 'muskdeer_nacos_test_only'
+        environment['MUSKDEER_TEST_NACOS_ADDRESS'] = nacos_address
         result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-count=1', '-v', './internal/persistenceprobe',
@@ -75,7 +97,7 @@ def run() -> int:
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-race', '-count=1', '-v', './internal/infrastructureprobe',
         ], cwd=ROOT, env=environment, check=False).returncode
-    except (OSError, ValueError, subprocess.CalledProcessError):
+    except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         # These are disposable services with explicit test credentials. Capture
         # only this project's bounded logs before finally removes the evidence.
         try:
@@ -93,6 +115,6 @@ def run() -> int:
 if __name__ == '__main__':
     try:
         sys.exit(run())
-    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+    except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         print(f'Infrastructure integration failed: {error}', file=sys.stderr)
         sys.exit(1)

@@ -156,7 +156,7 @@ func testLostNamingNode(t *testing.T) {
 
 func runNamingNode(t *testing.T, serviceName, id string, interval time.Duration) (*deer.Deer, deer.Cleanup, <-chan error) {
 	t.Helper()
-	cfg := serviceConfig(id)
+	cfg := serviceConfig(t, id)
 	cfg.Name = serviceName
 	cfg.Postgres = nil
 	cfg.Nacos = namingConfig()

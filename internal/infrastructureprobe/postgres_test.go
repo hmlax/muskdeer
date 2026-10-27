@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -35,7 +36,7 @@ func TestPostgresInfrastructure(t *testing.T) {
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
-	client := openClient(t, postgresConfig(), "fixture")
+	client := openClient(t, postgresConfig(t), "fixture")
 	pool, err := client.GORM().DB()
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +61,7 @@ func testAuthenticationFailure(t *testing.T) {
 	const invalidPassword = "invalid_test_only_password"
 	const secretReference = "MUSKDEER_TEST_INVALID_POSTGRES_PASSWORD"
 	t.Setenv(secretReference, invalidPassword)
-	cfg := postgresConfig()
+	cfg := postgresConfig(t)
 	cfg.PasswordEnv = secretReference
 	client, err := postgres.New(t.Context(), cfg, "authentication-rejection")
 	var serverError *pgconn.PgError
@@ -73,7 +74,7 @@ func testAuthenticationFailure(t *testing.T) {
 }
 
 func testGeneratedModel(t *testing.T) {
-	client := openClient(t, postgresConfig(), "model-roundtrip")
+	client := openClient(t, postgresConfig(t), "model-roundtrip")
 	row := &modelv1.StorageProbe{
 		Venue:      "binance",
 		Instrument: "p02-roundtrip",
@@ -102,7 +103,7 @@ func testGeneratedModel(t *testing.T) {
 }
 
 func testPoolLimit(t *testing.T) {
-	cfg := postgresConfig()
+	cfg := postgresConfig(t)
 	cfg.MaxOpenConns = 1
 	client := openClient(t, cfg, "pool-limit")
 	pool, err := client.GORM().DB()
@@ -129,7 +130,7 @@ func testPoolLimit(t *testing.T) {
 }
 
 func testStatementTimeout(t *testing.T) {
-	cfg := postgresConfig()
+	cfg := postgresConfig(t)
 	cfg.StatementTimeout = durationpb.New(250 * time.Millisecond)
 	client := openClient(t, cfg, "statement-timeout")
 	db := client.GORM()
@@ -170,7 +171,7 @@ func testStatementTimeout(t *testing.T) {
 }
 
 func testDeerDependencies(t *testing.T) {
-	cfg := serviceConfig("dependency-ready")
+	cfg := serviceConfig(t, "dependency-ready")
 	var registered bool
 	service, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
 		LogOutput: io.Discard,
@@ -234,7 +235,7 @@ func testDeerDependencies(t *testing.T) {
 }
 
 func testAPIRollback(t *testing.T) {
-	cfg := serviceConfig("api-pool-rollback")
+	cfg := serviceConfig(t, "api-pool-rollback")
 	cfg.Http = &configv1.Listener{
 		Address:        "127.0.0.1:0",
 		RequestTimeout: durationpb.New(time.Second),
@@ -279,10 +280,15 @@ func openClient(t *testing.T, cfg *configv1.Postgres, name string) *postgres.Cli
 	return client
 }
 
-func postgresConfig() *configv1.Postgres {
+func postgresConfig(t *testing.T) *configv1.Postgres {
+	t.Helper()
+	port, err := strconv.ParseUint(os.Getenv("MUSKDEER_TEST_POSTGRES_PORT"), 10, 16)
+	if err != nil || port == 0 {
+		t.Fatal("isolated PostgreSQL port is required; run make integration")
+	}
 	return &configv1.Postgres{
 		Host:             "127.0.0.1",
-		Port:             55439,
+		Port:             uint32(port),
 		Database:         "muskdeer_p01",
 		Username:         "muskdeer",
 		PasswordEnv:      "MUSKDEER_TEST_POSTGRES_PASSWORD",
@@ -297,7 +303,8 @@ func postgresConfig() *configv1.Postgres {
 	}
 }
 
-func serviceConfig(id string) *configv1.ServiceConfig {
+func serviceConfig(t *testing.T, id string) *configv1.ServiceConfig {
+	t.Helper()
 	return &configv1.ServiceConfig{
 		Name:            "infrastructure-probe",
 		InstanceId:      id,
@@ -308,6 +315,6 @@ func serviceConfig(id string) *configv1.ServiceConfig {
 			Address:        "127.0.0.1:0",
 			RequestTimeout: durationpb.New(time.Second),
 		},
-		Postgres: proto.CloneOf(postgresConfig()),
+		Postgres: proto.CloneOf(postgresConfig(t)),
 	}
 }

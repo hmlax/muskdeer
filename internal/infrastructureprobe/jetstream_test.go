@@ -169,7 +169,7 @@ func testMissingStream(t *testing.T) {
 }
 
 func testJetStreamReadiness(t *testing.T) {
-	cfg := serviceConfig("jetstream-ready")
+	cfg := serviceConfig(t, "jetstream-ready")
 	cfg.Postgres = nil
 	cfg.Jetstream = jetStreamConfig()
 	cfg.Jetstream.Stream = "MUSKDEER_READY"
@@ -223,7 +223,7 @@ func testMisroutedStream(t *testing.T) {
 }
 
 func testJetStreamAPIRollback(t *testing.T) {
-	cfg := serviceConfig("api-jetstream-rollback")
+	cfg := serviceConfig(t, "api-jetstream-rollback")
 	cfg.Redis = redisConfig()
 	cfg.Jetstream = jetStreamConfig()
 	cfg.Http = &configv1.Listener{
@@ -320,7 +320,7 @@ func jetStreamAdmin(t *testing.T) natsjs.JetStream {
 
 func jetStreamConfig() *configv1.JetStream {
 	return &configv1.JetStream{
-		Address:         "127.0.0.1:55441",
+		Address:         os.Getenv("MUSKDEER_TEST_NATS_ADDRESS"),
 		Stream:          "MUSKDEER_TEST",
 		SubjectPrefix:   "muskdeer.integration.execution",
 		TokenEnv:        "MUSKDEER_TEST_NATS_TOKEN",

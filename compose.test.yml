@@ -16,7 +16,7 @@ services:
       # Heap bounds above remain explicit; Docker isolation is unchanged.
       JAVA_TOOL_OPTIONS: "-XX:-UseContainerSupport"
     ports:
-      - "127.0.0.1:55442:8848"
+      - "127.0.0.1::8848"
     tmpfs:
       - /home/nacos/data
       - /home/nacos/logs
@@ -30,7 +30,7 @@ services:
     image: nats:2.12-alpine@sha256:b270f5e2428354c0335612694d7dd2fb588148e567a5757fdff325ef9c9332e6
     command: ["-js", "-sd", "/data", "-m", "8222", "--auth", "muskdeer_nats_test_only"]
     ports:
-      - "127.0.0.1:55441:4222"
+      - "127.0.0.1::4222"
     tmpfs:
       - /data
     healthcheck:
@@ -42,7 +42,7 @@ services:
     image: redis:7.2-alpine@sha256:f8548b29a1f1cb358b5fcfec1e0126beab57ad15776c1e87623f865579f16c5a
     command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "muskdeer_redis_test_only"]
     ports:
-      - "127.0.0.1:55440:6379"
+      - "127.0.0.1::6379"
     tmpfs:
       - /data
     healthcheck:
@@ -57,7 +57,7 @@ services:
       POSTGRES_PASSWORD: muskdeer_test_only
       POSTGRES_DB: muskdeer_p01
     ports:
-      - "127.0.0.1:55439:5432"
+      - "127.0.0.1::5432"
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:

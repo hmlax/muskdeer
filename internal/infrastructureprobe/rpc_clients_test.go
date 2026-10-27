@@ -32,7 +32,7 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 	secureRPCNode(t, ca, serviceName, "secure-b")
 	observer := namingObserver(t)
 	waitNamingCount(t, observer, serviceName+".grpc", 2)
-	cfg := serviceConfig("api-rpc-probe")
+	cfg := serviceConfig(t, "api-rpc-probe")
 	cfg.Name = "api"
 	cfg.Postgres = nil
 	cfg.Grpc = nil
@@ -154,7 +154,7 @@ func assertMonitoringStatus(t *testing.T, address, path string, wantCode int, wa
 
 func secureRPCNode(t *testing.T, ca *testcert.Authority, serviceName, id string) (*deer.Deer, deer.Cleanup, <-chan error) {
 	t.Helper()
-	cfg := serviceConfig(id)
+	cfg := serviceConfig(t, id)
 	cfg.Name = serviceName
 	cfg.Postgres = nil
 	cfg.Nacos = namingConfig()

@@ -185,7 +185,7 @@ func testCachePoolLimit(t *testing.T) {
 }
 
 func testCacheReadiness(t *testing.T) {
-	cfg := serviceConfig("cache-ready")
+	cfg := serviceConfig(t, "cache-ready")
 	cfg.Postgres = nil
 	cfg.Redis = redisConfig()
 	var cache *redis.Client
@@ -233,7 +233,7 @@ func testCacheReadiness(t *testing.T) {
 }
 
 func testCacheAPIRollback(t *testing.T) {
-	cfg := serviceConfig("api-cache-rollback")
+	cfg := serviceConfig(t, "api-cache-rollback")
 	cfg.Redis = redisConfig()
 	cfg.Http = &configv1.Listener{
 		Address:        "127.0.0.1:0",
@@ -322,7 +322,7 @@ func redisAdmin(t *testing.T) *goredis.Client {
 
 func redisConfig() *configv1.Redis {
 	return &configv1.Redis{
-		Address:        "127.0.0.1:55440",
+		Address:        os.Getenv("MUSKDEER_TEST_REDIS_ADDRESS"),
 		PasswordEnv:    "MUSKDEER_TEST_REDIS_PASSWORD",
 		KeyPrefix:      "integration:cache",
 		PoolSize:       2,

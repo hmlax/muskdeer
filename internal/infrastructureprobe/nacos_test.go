@@ -136,7 +136,7 @@ func testNamingAuthentication(t *testing.T) {
 }
 
 func testNamingReadiness(t *testing.T) {
-	cfg := serviceConfig("naming-ready")
+	cfg := serviceConfig(t, "naming-ready")
 	cfg.Postgres = nil
 	cfg.Nacos = namingConfig()
 	service, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
@@ -179,7 +179,7 @@ func testNamingReadiness(t *testing.T) {
 }
 
 func testNamingAPIRollback(t *testing.T) {
-	cfg := serviceConfig("api-naming-rollback")
+	cfg := serviceConfig(t, "api-naming-rollback")
 	cfg.Postgres = nil
 	cfg.Nacos = namingConfig()
 	cfg.Http = &configv1.Listener{
@@ -237,7 +237,7 @@ func namingAdminRequest(t *testing.T, method, path string, values url.Values) {
 
 func namingFixtureRequest(ctx context.Context, t *testing.T, method, path string, values url.Values, destination any) {
 	t.Helper()
-	request, err := http.NewRequestWithContext(ctx, method, "http://127.0.0.1:55442"+path, strings.NewReader(values.Encode()))
+	request, err := http.NewRequestWithContext(ctx, method, "http://"+os.Getenv("MUSKDEER_TEST_NACOS_ADDRESS")+path, strings.NewReader(values.Encode()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +263,7 @@ func namingFixtureRequest(ctx context.Context, t *testing.T, method, path string
 
 func namingConfig() *configv1.Nacos {
 	return &configv1.Nacos{
-		Address:        "127.0.0.1:55442",
+		Address:        os.Getenv("MUSKDEER_TEST_NACOS_ADDRESS"),
 		NamespaceId:    "integration-naming",
 		Group:          "MUSKDEER_TEST",
 		Cluster:        "TEST",
