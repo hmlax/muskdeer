@@ -35,6 +35,11 @@ message IntentEvent {
   string reserved_quote_notional = 10;
   OrderState state = 11;
   int64 revision = 12;
+  int64 core_order_id = 13;
+  string filled_quantity = 14;
+  CancelState cancel_state = 15;
+  int64 core_revision = 16;
+  string error_code = 17;
 }
 
 message FillEvent {

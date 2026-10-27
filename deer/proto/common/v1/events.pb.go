@@ -154,6 +154,11 @@ type IntentEvent struct {
 	ReservedQuoteNotional string                 `protobuf:"bytes,10,opt,name=reserved_quote_notional,json=reservedQuoteNotional,proto3" json:"reserved_quote_notional,omitempty"`
 	State                 OrderState             `protobuf:"varint,11,opt,name=state,proto3,enum=muskdeer.common.v1.OrderState" json:"state,omitempty"`
 	Revision              int64                  `protobuf:"varint,12,opt,name=revision,proto3" json:"revision,omitempty"`
+	CoreOrderId           int64                  `protobuf:"varint,13,opt,name=core_order_id,json=coreOrderId,proto3" json:"core_order_id,omitempty"`
+	FilledQuantity        string                 `protobuf:"bytes,14,opt,name=filled_quantity,json=filledQuantity,proto3" json:"filled_quantity,omitempty"`
+	CancelState           CancelState            `protobuf:"varint,15,opt,name=cancel_state,json=cancelState,proto3,enum=muskdeer.common.v1.CancelState" json:"cancel_state,omitempty"`
+	CoreRevision          int64                  `protobuf:"varint,16,opt,name=core_revision,json=coreRevision,proto3" json:"core_revision,omitempty"`
+	ErrorCode             string                 `protobuf:"bytes,17,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -270,6 +275,41 @@ func (x *IntentEvent) GetRevision() int64 {
 		return x.Revision
 	}
 	return 0
+}
+
+func (x *IntentEvent) GetCoreOrderId() int64 {
+	if x != nil {
+		return x.CoreOrderId
+	}
+	return 0
+}
+
+func (x *IntentEvent) GetFilledQuantity() string {
+	if x != nil {
+		return x.FilledQuantity
+	}
+	return ""
+}
+
+func (x *IntentEvent) GetCancelState() CancelState {
+	if x != nil {
+		return x.CancelState
+	}
+	return CancelState_CANCEL_STATE_UNSPECIFIED
+}
+
+func (x *IntentEvent) GetCoreRevision() int64 {
+	if x != nil {
+		return x.CoreRevision
+	}
+	return 0
+}
+
+func (x *IntentEvent) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
 }
 
 type FillEvent struct {
@@ -430,7 +470,7 @@ const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"request_id\x18\b \x01(\tR\trequestId\x127\n" +
 	"\x06intent\x18\n" +
 	" \x01(\v2\x1f.muskdeer.common.v1.IntentEventR\x06intent\x121\n" +
-	"\x04fill\x18\v \x01(\v2\x1d.muskdeer.common.v1.FillEventR\x04fill\"\xde\x03\n" +
+	"\x04fill\x18\v \x01(\v2\x1d.muskdeer.common.v1.FillEventR\x04fill\"\xb3\x05\n" +
 	"\vIntentEvent\x12\x1b\n" +
 	"\tintent_id\x18\x01 \x01(\x03R\bintentId\x12&\n" +
 	"\x0fclient_order_id\x18\x02 \x01(\tR\rclientOrderId\x12\x1d\n" +
@@ -445,7 +485,13 @@ const file_deer_proto_common_v1_events_proto_rawDesc = "" +
 	"\x17reserved_quote_notional\x18\n" +
 	" \x01(\tR\x15reservedQuoteNotional\x124\n" +
 	"\x05state\x18\v \x01(\x0e2\x1e.muskdeer.common.v1.OrderStateR\x05state\x12\x1a\n" +
-	"\brevision\x18\f \x01(\x03R\brevision\"\xce\x03\n" +
+	"\brevision\x18\f \x01(\x03R\brevision\x12\"\n" +
+	"\rcore_order_id\x18\r \x01(\x03R\vcoreOrderId\x12'\n" +
+	"\x0ffilled_quantity\x18\x0e \x01(\tR\x0efilledQuantity\x12B\n" +
+	"\fcancel_state\x18\x0f \x01(\x0e2\x1f.muskdeer.common.v1.CancelStateR\vcancelState\x12#\n" +
+	"\rcore_revision\x18\x10 \x01(\x03R\fcoreRevision\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x11 \x01(\tR\terrorCode\"\xce\x03\n" +
 	"\tFillEvent\x12\x19\n" +
 	"\btrade_id\x18\x01 \x01(\tR\atradeId\x12'\n" +
 	"\x0fexecution_venue\x18\x02 \x01(\tR\x0eexecutionVenue\x12\"\n" +
@@ -483,18 +529,20 @@ var file_deer_proto_common_v1_events_proto_goTypes = []any{
 	(*FillEvent)(nil),      // 2: muskdeer.common.v1.FillEvent
 	(OrderSide)(0),         // 3: muskdeer.common.v1.OrderSide
 	(OrderState)(0),        // 4: muskdeer.common.v1.OrderState
+	(CancelState)(0),       // 5: muskdeer.common.v1.CancelState
 }
 var file_deer_proto_common_v1_events_proto_depIdxs = []int32{
 	1, // 0: muskdeer.common.v1.ExecutionEvent.intent:type_name -> muskdeer.common.v1.IntentEvent
 	2, // 1: muskdeer.common.v1.ExecutionEvent.fill:type_name -> muskdeer.common.v1.FillEvent
 	3, // 2: muskdeer.common.v1.IntentEvent.side:type_name -> muskdeer.common.v1.OrderSide
 	4, // 3: muskdeer.common.v1.IntentEvent.state:type_name -> muskdeer.common.v1.OrderState
-	3, // 4: muskdeer.common.v1.FillEvent.side:type_name -> muskdeer.common.v1.OrderSide
-	5, // [5:5] is the sub-list for method output_type
-	5, // [5:5] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	5, // 4: muskdeer.common.v1.IntentEvent.cancel_state:type_name -> muskdeer.common.v1.CancelState
+	3, // 5: muskdeer.common.v1.FillEvent.side:type_name -> muskdeer.common.v1.OrderSide
+	6, // [6:6] is the sub-list for method output_type
+	6, // [6:6] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_events_proto_init() }

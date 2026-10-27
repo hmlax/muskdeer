@@ -26,6 +26,8 @@ message SimulatorCommand {
   int64 instrument_id = 15 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null\""];
   string fingerprint = 16 [(tagger.tags) = "gorm:\"column:fingerprint;type:char(64);not null\""];
   int64 deadline_at = 17 [(tagger.tags) = "gorm:\"column:deadline_at;type:bigint;not null\""];
+  // Set by OMS dispatch; absent only for privileged direct simulator scenarios.
+  optional int64 intent_id = 18 [(tagger.tags) = "gorm:\"column:intent_id;type:bigint\""];
 }
 
 // SimulatorOrder is a core order, distinct from the later OMS projection.

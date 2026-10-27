@@ -86,6 +86,7 @@ message OrderIntent {
   int64 submission_deadline_at = 27 [(tagger.tags) = "gorm:\"column:submission_deadline_at;type:bigint;not null\""];
   int64 revision = 28 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
   string error_code = 29 [(tagger.tags) = "gorm:\"column:error_code;type:varchar(64);not null\""];
+  int64 core_revision = 30 [(tagger.tags) = "gorm:\"column:core_revision;type:bigint;not null\""];
 }
 
 // OutboxEvent is committed with the business write; publishing comes later.

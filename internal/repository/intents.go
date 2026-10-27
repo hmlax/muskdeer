@@ -16,7 +16,7 @@ import (
 type intentStore struct{ db *gorm.DB }
 
 // NewIntents borrows the database and does not call a trading gateway.
-func NewIntents(db *gorm.DB) (domain.IntentRepository, error) {
+func NewIntents(db *gorm.DB) (domain.IntentExecutionRepository, error) {
 	if db == nil {
 		return nil, domain.ErrInvalidOrder
 	}
@@ -47,6 +47,10 @@ func (s *intentStore) Accept(ctx context.Context, in domain.OrderInput, executio
 		if err != nil {
 			return err
 		}
+		instrument, err := lockIntentInstrument(ctx, tx, in.InstrumentID)
+		if err != nil {
+			return err
+		}
 		var account modelv1.AccountBudget
 		if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", in.AccountID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
@@ -64,7 +68,7 @@ func (s *intentStore) Accept(ctx context.Context, in domain.OrderInput, executio
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		row, err := stageAcceptedIntent(ctx, tx, in, execution, strategy, &account, clientID, fingerprint)
+		row, err := stageAcceptedIntent(ctx, tx, in, execution, strategy, instrument, &account, clientID, fingerprint)
 		if err != nil {
 			return err
 		}

@@ -32,6 +32,7 @@ var (
 
 // GatewaySubmit binds stable client identity to two independently owned scopes.
 type GatewaySubmit struct {
+	IntentID           int64
 	Input              OrderInput
 	ClientOrderID      string
 	ExecutionAuthority LeaseToken
@@ -39,6 +40,7 @@ type GatewaySubmit struct {
 
 // GatewayCancel retains the original client order identity across takeover.
 type GatewayCancel struct {
+	IntentID           int64
 	Input              CancelInput
 	ExecutionAuthority LeaseToken
 }

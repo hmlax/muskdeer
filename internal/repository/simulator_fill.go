@@ -132,5 +132,8 @@ func stageCoreFill(ctx context.Context, tx *gorm.DB, rows coreRows, row *modelv1
 	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Create(fill).Error; err != nil {
 		return nil, err
 	}
+	if err := invalidateUnprojectedRisk(ctx, tx, rows.account.AccountId); err != nil {
+		return nil, err
+	}
 	return fill, advanceCoreAccount(ctx, tx, rows.account)
 }

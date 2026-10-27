@@ -454,6 +454,7 @@ type OrderIntent struct {
 	SubmissionDeadlineAt  int64                  `protobuf:"varint,27,opt,name=submission_deadline_at,json=submissionDeadlineAt,proto3" json:"submission_deadline_at,omitempty" gorm:"column:submission_deadline_at;type:bigint;not null"`
 	Revision              int64                  `protobuf:"varint,28,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
 	ErrorCode             string                 `protobuf:"bytes,29,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty" gorm:"column:error_code;type:varchar(64);not null"`
+	CoreRevision          int64                  `protobuf:"varint,30,opt,name=core_revision,json=coreRevision,proto3" json:"core_revision,omitempty" gorm:"column:core_revision;type:bigint;not null"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -691,6 +692,13 @@ func (x *OrderIntent) GetErrorCode() string {
 	return ""
 }
 
+func (x *OrderIntent) GetCoreRevision() int64 {
+	if x != nil {
+		return x.CoreRevision
+	}
+	return 0
+}
+
 // OutboxEvent is committed with the business write; publishing comes later.
 type OutboxEvent struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
@@ -907,7 +915,7 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"\x0eallow_new_risk\x18\x0f \x01(\bB7\x9a\x84\x9e\x032gorm:\"column:allow_new_risk;type:boolean;not null\"R\fallowNewRisk\x12L\n" +
 	"\brevision\x18\x10 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
 	"\n" +
-	"_delete_at\"\xfe\x16\n" +
+	"_delete_at\"\xda\x17\n" +
 	"\vOrderIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -943,7 +951,8 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"\x16submission_deadline_at\x18\x1b \x01(\x03B>\x9a\x84\x9e\x039gorm:\"column:submission_deadline_at;type:bigint;not null\"R\x14submissionDeadlineAt\x12L\n" +
 	"\brevision\x18\x1c \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevision\x12V\n" +
 	"\n" +
-	"error_code\x18\x1d \x01(\tB7\x9a\x84\x9e\x032gorm:\"column:error_code;type:varchar(64);not null\"R\terrorCodeB\f\n" +
+	"error_code\x18\x1d \x01(\tB7\x9a\x84\x9e\x032gorm:\"column:error_code;type:varchar(64);not null\"R\terrorCode\x12Z\n" +
+	"\rcore_revision\x18\x1e \x01(\x03B5\x9a\x84\x9e\x030gorm:\"column:core_revision;type:bigint;not null\"R\fcoreRevisionB\f\n" +
 	"\n" +
 	"_delete_atB\x10\n" +
 	"\x0e_core_order_id\"\xb5\v\n" +

@@ -27,6 +27,9 @@ type submitFingerprint struct {
 }
 
 func (s *simulator) Submit(ctx context.Context, command domain.GatewaySubmit) (domain.CoreOrder, error) {
+	if command.IntentID < 0 {
+		return domain.CoreOrder{}, domain.ErrInvalidOrder
+	}
 	in := command.Input
 	if err := validateCoreCommand(ctx, in.Authority, command.ExecutionAuthority, in.AccountID, command.ClientOrderID, in.IdempotencyKey, in.InstrumentID, in.Deadline); err != nil {
 		return domain.CoreOrder{}, err
@@ -193,6 +196,9 @@ func stageCoreSubmission(ctx context.Context, tx *gorm.DB, command domain.Gatewa
 		return nil, err
 	}
 	record := gatewayCommand(in.Authority, command.ExecutionAuthority, in.AccountID, command.ClientOrderID, in.IdempotencyKey, in.InstrumentID, in.Deadline.UnixMilli(), domain.GatewayActionSubmit, fingerprint)
+	if command.IntentID > 0 {
+		record.IntentId = &command.IntentID
+	}
 	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(record).Error; err != nil {
 		return nil, err
 	}

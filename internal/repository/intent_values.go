@@ -58,6 +58,7 @@ func intentSnapshot(row *modelv1.OrderIntent) (domain.IntentSnapshot, error) {
 		State:                 domain.OrderState(row.State),
 		CancelState:           domain.CancelState(row.CancelState),
 		CoreOrderID:           row.GetCoreOrderId(),
+		CoreRevision:          row.CoreRevision,
 		ReservedQuoteNotional: reserved,
 		FilledQuantity:        filled,
 		Revision:              row.Revision,

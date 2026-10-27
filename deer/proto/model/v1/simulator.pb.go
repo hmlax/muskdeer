@@ -43,8 +43,10 @@ type SimulatorCommand struct {
 	InstrumentId       int64                  `protobuf:"varint,15,opt,name=instrument_id,json=instrumentId,proto3" json:"instrument_id,omitempty" gorm:"column:instrument_id;type:bigint;not null"`
 	Fingerprint        string                 `protobuf:"bytes,16,opt,name=fingerprint,proto3" json:"fingerprint,omitempty" gorm:"column:fingerprint;type:char(64);not null"`
 	DeadlineAt         int64                  `protobuf:"varint,17,opt,name=deadline_at,json=deadlineAt,proto3" json:"deadline_at,omitempty" gorm:"column:deadline_at;type:bigint;not null"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Set by OMS dispatch; absent only for privileged direct simulator scenarios.
+	IntentId      *int64 `protobuf:"varint,18,opt,name=intent_id,json=intentId,proto3,oneof" json:"intent_id,omitempty" gorm:"column:intent_id;type:bigint"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SimulatorCommand) Reset() {
@@ -192,6 +194,13 @@ func (x *SimulatorCommand) GetFingerprint() string {
 func (x *SimulatorCommand) GetDeadlineAt() int64 {
 	if x != nil {
 		return x.DeadlineAt
+	}
+	return 0
+}
+
+func (x *SimulatorCommand) GetIntentId() int64 {
+	if x != nil && x.IntentId != nil {
+		return *x.IntentId
 	}
 	return 0
 }
@@ -773,7 +782,7 @@ var File_deer_proto_model_v1_simulator_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_simulator_proto_rawDesc = "" +
 	"\n" +
-	"#deer/proto/model/v1/simulator.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\x9a\r\n" +
+	"#deer/proto/model/v1/simulator.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\xf4\r\n" +
 	"\x10SimulatorCommand\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -796,9 +805,12 @@ const file_deer_proto_model_v1_simulator_proto_rawDesc = "" +
 	"\rinstrument_id\x18\x0f \x01(\x03B5\x9a\x84\x9e\x030gorm:\"column:instrument_id;type:bigint;not null\"R\finstrumentId\x12W\n" +
 	"\vfingerprint\x18\x10 \x01(\tB5\x9a\x84\x9e\x030gorm:\"column:fingerprint;type:char(64);not null\"R\vfingerprint\x12T\n" +
 	"\vdeadline_at\x18\x11 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:deadline_at;type:bigint;not null\"R\n" +
-	"deadlineAtB\f\n" +
+	"deadlineAt\x12J\n" +
+	"\tintent_id\x18\x12 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:intent_id;type:bigint\"H\x01R\bintentId\x88\x01\x01B\f\n" +
 	"\n" +
-	"_delete_at\"\xb3\x12\n" +
+	"_delete_atB\f\n" +
+	"\n" +
+	"_intent_id\"\xb3\x12\n" +
 	"\x0eSimulatorOrder\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +

@@ -13,6 +13,9 @@ import (
 )
 
 func (s *simulator) Cancel(ctx context.Context, command domain.GatewayCancel) (domain.CoreOrder, error) {
+	if command.IntentID < 0 {
+		return domain.CoreOrder{}, domain.ErrInvalidOrder
+	}
 	in := command.Input
 	if err := validateCoreCommand(ctx, in.Authority, command.ExecutionAuthority, in.AccountID, in.ClientOrderID, in.IdempotencyKey, in.InstrumentID, in.Deadline); err != nil {
 		return domain.CoreOrder{}, err
@@ -45,6 +48,9 @@ func (s *simulator) Cancel(ctx context.Context, command domain.GatewayCancel) (d
 			return err
 		}
 		record := gatewayCommand(in.Authority, command.ExecutionAuthority, in.AccountID, in.ClientOrderID, in.IdempotencyKey, in.InstrumentID, in.Deadline.UnixMilli(), domain.GatewayActionCancel, fingerprint)
+		if command.IntentID > 0 {
+			record.IntentId = &command.IntentID
+		}
 		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(record).Error; err != nil {
 			return err
 		}

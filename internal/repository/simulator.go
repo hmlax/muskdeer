@@ -224,6 +224,12 @@ func coreFailure(ctx context.Context, err error) error {
 				cause:    err,
 			}
 		}
+		if databaseError.ConstraintName == "simulator_intent_risk" {
+			return &corePersistenceError{
+				category: domain.ErrRiskDenied,
+				cause:    err,
+			}
+		}
 		if databaseError.Code == "23505" {
 			return &corePersistenceError{
 				category: domain.ErrIdempotencyConflict,
