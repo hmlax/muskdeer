@@ -200,7 +200,7 @@ func assertIdentityUpgrade(ctx context.Context, t *testing.T, base *gorm.DB) {
 	if err := base.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).First(&original).Error; err != nil {
 		t.Fatal(err)
 	}
-	if version, err := Apply(ctx, base); err != nil || version != 3 {
+	if version, err := Apply(ctx, base); err != nil || version != 4 {
 		t.Fatalf("v1 upgrade = %d, %v", version, err)
 	}
 	var retained modelv1.SchemaMigration
