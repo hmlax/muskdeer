@@ -53,4 +53,47 @@ message SimulatorOrder {
   string frozen_amount = 20 [(tagger.tags) = "gorm:\"column:frozen_amount;type:numeric(76,36);not null\""];
   int64 revision = 21 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
   int64 last_command_id = 22 [(tagger.tags) = "gorm:\"column:last_command_id;type:bigint;not null\""];
+  string quote_fee_rate = 23 [(tagger.tags) = "gorm:\"column:quote_fee_rate;type:numeric(18,18);not null\""];
+}
+
+// SimulatorAccount belongs to a self-trading prevention subject.
+message SimulatorAccount {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_account_key\""];
+  string subject_id = 6 [(tagger.tags) = "gorm:\"column:subject_id;type:varchar(64);not null;index:idx_simulator_account_subject\""];
+  bool enabled = 7 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  string quote_fee_rate = 8 [(tagger.tags) = "gorm:\"column:quote_fee_rate;type:numeric(18,18);not null\""];
+  int64 revision = 9 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
+
+// SimulatorBalance is the simulated core's spot asset ledger, never a cache.
+message SimulatorBalance {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_balance_account_asset\""];
+  string asset = 6 [(tagger.tags) = "gorm:\"column:asset;type:varchar(32);not null;uniqueIndex:uk_simulator_balance_account_asset\""];
+  string available = 7 [(tagger.tags) = "gorm:\"column:available;type:numeric(76,36);not null\""];
+  string frozen = 8 [(tagger.tags) = "gorm:\"column:frozen;type:numeric(76,36);not null\""];
+  int64 revision = 9 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
+
+// SimulatorFill is an immutable externally driven execution fact.
+message SimulatorFill {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string trade_id = 5 [(tagger.tags) = "gorm:\"column:trade_id;type:varchar(128);not null;uniqueIndex:uk_simulator_fill_trade\""];
+  int64 core_order_id = 6 [(tagger.tags) = "gorm:\"column:core_order_id;type:bigint;not null;index:idx_simulator_fill_order\""];
+  string price = 7 [(tagger.tags) = "gorm:\"column:price;type:numeric(38,18);not null\""];
+  string quantity = 8 [(tagger.tags) = "gorm:\"column:quantity;type:numeric(38,18);not null\""];
+  string quote_notional = 9 [(tagger.tags) = "gorm:\"column:quote_notional;type:numeric(76,36);not null\""];
+  string fee_amount = 10 [(tagger.tags) = "gorm:\"column:fee_amount;type:numeric(76,36);not null\""];
+  string fee_asset = 11 [(tagger.tags) = "gorm:\"column:fee_asset;type:varchar(32);not null\""];
+  string counterparty_subject = 12 [(tagger.tags) = "gorm:\"column:counterparty_subject;type:varchar(64);not null\""];
 }

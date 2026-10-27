@@ -222,6 +222,7 @@ type SimulatorOrder struct {
 	FrozenAmount  string `protobuf:"bytes,20,opt,name=frozen_amount,json=frozenAmount,proto3" json:"frozen_amount,omitempty" gorm:"column:frozen_amount;type:numeric(76,36);not null"`
 	Revision      int64  `protobuf:"varint,21,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
 	LastCommandId int64  `protobuf:"varint,22,opt,name=last_command_id,json=lastCommandId,proto3" json:"last_command_id,omitempty" gorm:"column:last_command_id;type:bigint;not null"`
+	QuoteFeeRate  string `protobuf:"bytes,23,opt,name=quote_fee_rate,json=quoteFeeRate,proto3" json:"quote_fee_rate,omitempty" gorm:"column:quote_fee_rate;type:numeric(18,18);not null"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -410,6 +411,364 @@ func (x *SimulatorOrder) GetLastCommandId() int64 {
 	return 0
 }
 
+func (x *SimulatorOrder) GetQuoteFeeRate() string {
+	if x != nil {
+		return x.QuoteFeeRate
+	}
+	return ""
+}
+
+// SimulatorAccount belongs to a self-trading prevention subject.
+type SimulatorAccount struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt      int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt      int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt      *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId     string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_account_key"`
+	SubjectId     string                 `protobuf:"bytes,6,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty" gorm:"column:subject_id;type:varchar(64);not null;index:idx_simulator_account_subject"`
+	Enabled       bool                   `protobuf:"varint,7,opt,name=enabled,proto3" json:"enabled,omitempty" gorm:"column:enabled;type:boolean;not null"`
+	QuoteFeeRate  string                 `protobuf:"bytes,8,opt,name=quote_fee_rate,json=quoteFeeRate,proto3" json:"quote_fee_rate,omitempty" gorm:"column:quote_fee_rate;type:numeric(18,18);not null"`
+	Revision      int64                  `protobuf:"varint,9,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SimulatorAccount) Reset() {
+	*x = SimulatorAccount{}
+	mi := &file_deer_proto_model_v1_simulator_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SimulatorAccount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulatorAccount) ProtoMessage() {}
+
+func (x *SimulatorAccount) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_simulator_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulatorAccount.ProtoReflect.Descriptor instead.
+func (*SimulatorAccount) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_simulator_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *SimulatorAccount) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *SimulatorAccount) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *SimulatorAccount) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *SimulatorAccount) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *SimulatorAccount) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *SimulatorAccount) GetSubjectId() string {
+	if x != nil {
+		return x.SubjectId
+	}
+	return ""
+}
+
+func (x *SimulatorAccount) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *SimulatorAccount) GetQuoteFeeRate() string {
+	if x != nil {
+		return x.QuoteFeeRate
+	}
+	return ""
+}
+
+func (x *SimulatorAccount) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+// SimulatorBalance is the simulated core's spot asset ledger, never a cache.
+type SimulatorBalance struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt      int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt      int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt      *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId     string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_balance_account_asset"`
+	Asset         string                 `protobuf:"bytes,6,opt,name=asset,proto3" json:"asset,omitempty" gorm:"column:asset;type:varchar(32);not null;uniqueIndex:uk_simulator_balance_account_asset"`
+	Available     string                 `protobuf:"bytes,7,opt,name=available,proto3" json:"available,omitempty" gorm:"column:available;type:numeric(76,36);not null"`
+	Frozen        string                 `protobuf:"bytes,8,opt,name=frozen,proto3" json:"frozen,omitempty" gorm:"column:frozen;type:numeric(76,36);not null"`
+	Revision      int64                  `protobuf:"varint,9,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SimulatorBalance) Reset() {
+	*x = SimulatorBalance{}
+	mi := &file_deer_proto_model_v1_simulator_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SimulatorBalance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulatorBalance) ProtoMessage() {}
+
+func (x *SimulatorBalance) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_simulator_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulatorBalance.ProtoReflect.Descriptor instead.
+func (*SimulatorBalance) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_simulator_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *SimulatorBalance) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *SimulatorBalance) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *SimulatorBalance) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *SimulatorBalance) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *SimulatorBalance) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *SimulatorBalance) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *SimulatorBalance) GetAvailable() string {
+	if x != nil {
+		return x.Available
+	}
+	return ""
+}
+
+func (x *SimulatorBalance) GetFrozen() string {
+	if x != nil {
+		return x.Frozen
+	}
+	return ""
+}
+
+func (x *SimulatorBalance) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+// SimulatorFill is an immutable externally driven execution fact.
+type SimulatorFill struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt            int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt            int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt            *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	TradeId             string                 `protobuf:"bytes,5,opt,name=trade_id,json=tradeId,proto3" json:"trade_id,omitempty" gorm:"column:trade_id;type:varchar(128);not null;uniqueIndex:uk_simulator_fill_trade"`
+	CoreOrderId         int64                  `protobuf:"varint,6,opt,name=core_order_id,json=coreOrderId,proto3" json:"core_order_id,omitempty" gorm:"column:core_order_id;type:bigint;not null;index:idx_simulator_fill_order"`
+	Price               string                 `protobuf:"bytes,7,opt,name=price,proto3" json:"price,omitempty" gorm:"column:price;type:numeric(38,18);not null"`
+	Quantity            string                 `protobuf:"bytes,8,opt,name=quantity,proto3" json:"quantity,omitempty" gorm:"column:quantity;type:numeric(38,18);not null"`
+	QuoteNotional       string                 `protobuf:"bytes,9,opt,name=quote_notional,json=quoteNotional,proto3" json:"quote_notional,omitempty" gorm:"column:quote_notional;type:numeric(76,36);not null"`
+	FeeAmount           string                 `protobuf:"bytes,10,opt,name=fee_amount,json=feeAmount,proto3" json:"fee_amount,omitempty" gorm:"column:fee_amount;type:numeric(76,36);not null"`
+	FeeAsset            string                 `protobuf:"bytes,11,opt,name=fee_asset,json=feeAsset,proto3" json:"fee_asset,omitempty" gorm:"column:fee_asset;type:varchar(32);not null"`
+	CounterpartySubject string                 `protobuf:"bytes,12,opt,name=counterparty_subject,json=counterpartySubject,proto3" json:"counterparty_subject,omitempty" gorm:"column:counterparty_subject;type:varchar(64);not null"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *SimulatorFill) Reset() {
+	*x = SimulatorFill{}
+	mi := &file_deer_proto_model_v1_simulator_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SimulatorFill) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SimulatorFill) ProtoMessage() {}
+
+func (x *SimulatorFill) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_simulator_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SimulatorFill.ProtoReflect.Descriptor instead.
+func (*SimulatorFill) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_simulator_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SimulatorFill) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *SimulatorFill) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *SimulatorFill) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *SimulatorFill) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *SimulatorFill) GetTradeId() string {
+	if x != nil {
+		return x.TradeId
+	}
+	return ""
+}
+
+func (x *SimulatorFill) GetCoreOrderId() int64 {
+	if x != nil {
+		return x.CoreOrderId
+	}
+	return 0
+}
+
+func (x *SimulatorFill) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *SimulatorFill) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *SimulatorFill) GetQuoteNotional() string {
+	if x != nil {
+		return x.QuoteNotional
+	}
+	return ""
+}
+
+func (x *SimulatorFill) GetFeeAmount() string {
+	if x != nil {
+		return x.FeeAmount
+	}
+	return ""
+}
+
+func (x *SimulatorFill) GetFeeAsset() string {
+	if x != nil {
+		return x.FeeAsset
+	}
+	return ""
+}
+
+func (x *SimulatorFill) GetCounterpartySubject() string {
+	if x != nil {
+		return x.CounterpartySubject
+	}
+	return ""
+}
+
 var File_deer_proto_model_v1_simulator_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_simulator_proto_rawDesc = "" +
@@ -439,7 +798,7 @@ const file_deer_proto_model_v1_simulator_proto_rawDesc = "" +
 	"\vdeadline_at\x18\x11 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:deadline_at;type:bigint;not null\"R\n" +
 	"deadlineAtB\f\n" +
 	"\n" +
-	"_delete_at\"\xcd\x11\n" +
+	"_delete_at\"\xb3\x12\n" +
 	"\x0eSimulatorOrder\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -465,7 +824,52 @@ const file_deer_proto_model_v1_simulator_proto_rawDesc = "" +
 	"\ffrozen_asset\x18\x13 \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:frozen_asset;type:varchar(32);not null\"R\vfrozenAsset\x12b\n" +
 	"\rfrozen_amount\x18\x14 \x01(\tB=\x9a\x84\x9e\x038gorm:\"column:frozen_amount;type:numeric(76,36);not null\"R\ffrozenAmount\x12L\n" +
 	"\brevision\x18\x15 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevision\x12_\n" +
-	"\x0flast_command_id\x18\x16 \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:last_command_id;type:bigint;not null\"R\rlastCommandIdB\f\n" +
+	"\x0flast_command_id\x18\x16 \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:last_command_id;type:bigint;not null\"R\rlastCommandId\x12d\n" +
+	"\x0equote_fee_rate\x18\x17 \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:quote_fee_rate;type:numeric(18,18);not null\"R\fquoteFeeRateB\f\n" +
+	"\n" +
+	"_delete_at\"\xfb\x06\n" +
+	"\x10SimulatorAccount\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12{\n" +
+	"\n" +
+	"account_id\x18\x05 \x01(\tB\\\x9a\x84\x9e\x03Wgorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_account_key\"R\taccountId\x12z\n" +
+	"\n" +
+	"subject_id\x18\x06 \x01(\tB[\x9a\x84\x9e\x03Vgorm:\"column:subject_id;type:varchar(64);not null;index:idx_simulator_account_subject\"R\tsubjectId\x12J\n" +
+	"\aenabled\x18\a \x01(\bB0\x9a\x84\x9e\x03+gorm:\"column:enabled;type:boolean;not null\"R\aenabled\x12d\n" +
+	"\x0equote_fee_rate\x18\b \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:quote_fee_rate;type:numeric(18,18);not null\"R\fquoteFeeRate\x12L\n" +
+	"\brevision\x18\t \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
+	"\n" +
+	"_delete_at\"\xfa\x06\n" +
+	"\x10SimulatorBalance\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12\x85\x01\n" +
+	"\n" +
+	"account_id\x18\x05 \x01(\tBf\x9a\x84\x9e\x03agorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_balance_account_asset\"R\taccountId\x12w\n" +
+	"\x05asset\x18\x06 \x01(\tBa\x9a\x84\x9e\x03\\gorm:\"column:asset;type:varchar(32);not null;uniqueIndex:uk_simulator_balance_account_asset\"R\x05asset\x12W\n" +
+	"\tavailable\x18\a \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:available;type:numeric(76,36);not null\"R\tavailable\x12N\n" +
+	"\x06frozen\x18\b \x01(\tB6\x9a\x84\x9e\x031gorm:\"column:frozen;type:numeric(76,36);not null\"R\x06frozen\x12L\n" +
+	"\brevision\x18\t \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
+	"\n" +
+	"_delete_at\"\xa0\t\n" +
+	"\rSimulatorFill\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12u\n" +
+	"\btrade_id\x18\x05 \x01(\tBZ\x9a\x84\x9e\x03Ugorm:\"column:trade_id;type:varchar(128);not null;uniqueIndex:uk_simulator_fill_trade\"R\atradeId\x12x\n" +
+	"\rcore_order_id\x18\x06 \x01(\x03BT\x9a\x84\x9e\x03Ogorm:\"column:core_order_id;type:bigint;not null;index:idx_simulator_fill_order\"R\vcoreOrderId\x12K\n" +
+	"\x05price\x18\a \x01(\tB5\x9a\x84\x9e\x030gorm:\"column:price;type:numeric(38,18);not null\"R\x05price\x12T\n" +
+	"\bquantity\x18\b \x01(\tB8\x9a\x84\x9e\x033gorm:\"column:quantity;type:numeric(38,18);not null\"R\bquantity\x12e\n" +
+	"\x0equote_notional\x18\t \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:quote_notional;type:numeric(76,36);not null\"R\rquoteNotional\x12Y\n" +
+	"\n" +
+	"fee_amount\x18\n" +
+	" \x01(\tB:\x9a\x84\x9e\x035gorm:\"column:fee_amount;type:numeric(76,36);not null\"R\tfeeAmount\x12S\n" +
+	"\tfee_asset\x18\v \x01(\tB6\x9a\x84\x9e\x031gorm:\"column:fee_asset;type:varchar(32);not null\"R\bfeeAsset\x12t\n" +
+	"\x14counterparty_subject\x18\f \x01(\tBA\x9a\x84\x9e\x03<gorm:\"column:counterparty_subject;type:varchar(64);not null\"R\x13counterpartySubjectB\f\n" +
 	"\n" +
 	"_delete_atB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
@@ -481,10 +885,13 @@ func file_deer_proto_model_v1_simulator_proto_rawDescGZIP() []byte {
 	return file_deer_proto_model_v1_simulator_proto_rawDescData
 }
 
-var file_deer_proto_model_v1_simulator_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_deer_proto_model_v1_simulator_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_deer_proto_model_v1_simulator_proto_goTypes = []any{
 	(*SimulatorCommand)(nil), // 0: muskdeer.model.v1.SimulatorCommand
 	(*SimulatorOrder)(nil),   // 1: muskdeer.model.v1.SimulatorOrder
+	(*SimulatorAccount)(nil), // 2: muskdeer.model.v1.SimulatorAccount
+	(*SimulatorBalance)(nil), // 3: muskdeer.model.v1.SimulatorBalance
+	(*SimulatorFill)(nil),    // 4: muskdeer.model.v1.SimulatorFill
 }
 var file_deer_proto_model_v1_simulator_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -501,13 +908,16 @@ func file_deer_proto_model_v1_simulator_proto_init() {
 	}
 	file_deer_proto_model_v1_simulator_proto_msgTypes[0].OneofWrappers = []any{}
 	file_deer_proto_model_v1_simulator_proto_msgTypes[1].OneofWrappers = []any{}
+	file_deer_proto_model_v1_simulator_proto_msgTypes[2].OneofWrappers = []any{}
+	file_deer_proto_model_v1_simulator_proto_msgTypes[3].OneofWrappers = []any{}
+	file_deer_proto_model_v1_simulator_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_model_v1_simulator_proto_rawDesc), len(file_deer_proto_model_v1_simulator_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -202,6 +202,14 @@ func runNamingService(t *testing.T, service *deer.Deer, cleanup deer.Cleanup) <-
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 	if err := service.WaitReady(ctx); err != nil {
+		select {
+		case runErr := <-result:
+			t.Logf("service run ended before readiness: %v", runErr)
+			if runErr != nil {
+				failNamingReady(t, runErr)
+			}
+		default:
+		}
 		t.Fatal(err)
 	}
 	return result

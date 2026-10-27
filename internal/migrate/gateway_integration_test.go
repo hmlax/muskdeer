@@ -234,6 +234,7 @@ func stageGatewayOrder(ctx context.Context, tx *gorm.DB, command *modelv1.Simula
 		CancelState:        string(domain.CancelStateNone),
 		FrozenAsset:        "USDT",
 		FrozenAmount:       "19999999999999999999.8246913578024691356",
+		QuoteFeeRate:       "0",
 		Revision:           1,
 	}).Error
 }
