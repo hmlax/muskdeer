@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package muskdeer.execution.v1;
+
+import "deer/proto/common/v1/trading.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/hmlax/muskdeer/api/execution/v1;executionv1";
+
+// Execution accepts durable intents; caller ownership is verified at the final
+// gateway boundary as well as at admission. RPC success is not a fill guarantee.
+service Execution {
+  rpc SubmitIntent(SubmitIntentRequest) returns (OrderReply);
+  rpc CancelOrder(CancelOrderRequest) returns (OrderReply);
+  rpc FindOrder(FindOrderRequest) returns (OrderReply);
+  rpc ListOrders(ListOrdersRequest) returns (ListOrdersReply);
+  rpc ListFills(ListFillsRequest) returns (ListFillsReply);
+  rpc GetAccount(GetAccountRequest) returns (AccountReply);
+}
+
+message StrategyAuthority {
+  int64 strategy_instance_id = 1;
+  int64 config_version = 2;
+  string owner_id = 3;
+  int64 owner_epoch = 4;
+}
+
+message SubmitIntentRequest {
+  string request_id = 1;
+  // Stable across transport retries; independent of request_id and ownership.
+  string idempotency_key = 2;
+  StrategyAuthority authority = 3;
+  string account_id = 4;
+  int64 instrument_id = 5;
+  muskdeer.common.v1.OrderSide side = 6;
+  // Quote/base price and base quantity; positive plain decimal strings (20+18).
+  string price = 7;
+  string quantity = 8;
+  muskdeer.common.v1.TimeInForce time_in_force = 9;
+  bool reduce_only = 10;
+  google.protobuf.Timestamp deadline = 11;
+}
+
+message CancelOrderRequest {
+  string request_id = 1;
+  string idempotency_key = 2;
+  StrategyAuthority authority = 3;
+  string account_id = 4;
+  int64 instrument_id = 5;
+  string client_order_id = 6;
+  google.protobuf.Timestamp deadline = 7;
+}
+
+message FindOrderRequest {
+  string account_id = 1;
+  oneof lookup {
+    int64 intent_id = 2;
+    string client_order_id = 3;
+  }
+}
+
+message OrderView {
+  int64 intent_id = 1;
+  string client_order_id = 2;
+  string core_order_id = 3;
+  string execution_venue = 4;
+  string account_id = 5;
+  int64 instrument_id = 6;
+  int64 strategy_instance_id = 7;
+  int64 config_version = 8;
+  muskdeer.common.v1.OrderSide side = 9;
+  string price = 10;
+  string quantity = 11;
+  string filled_quantity = 12;
+  string notional = 13;
+  muskdeer.common.v1.TimeInForce time_in_force = 14;
+  muskdeer.common.v1.OrderState state = 15;
+  muskdeer.common.v1.CancelState cancel_state = 16;
+  int64 revision = 17;
+  google.protobuf.Timestamp updated_at = 18;
+  string error_code = 19;
+}
+
+message OrderReply { OrderView order = 1; }
+
+message ListOrdersRequest {
+  string account_id = 1;
+  int64 strategy_instance_id = 2;
+  int64 instrument_id = 3;
+  int32 page_size = 4;
+  int64 after_id = 5;
+  bool open_only = 6;
+}
+
+message ListOrdersReply {
+  repeated OrderView orders = 1;
+  int64 next_after_id = 2;
+}
+
+message FillView {
+  int64 id = 1;
+  string trade_id = 2;
+  string client_order_id = 3;
+  string execution_venue = 4;
+  string account_id = 5;
+  int64 instrument_id = 6;
+  int64 strategy_instance_id = 7;
+  muskdeer.common.v1.OrderSide side = 8;
+  string price = 9;
+  string quantity = 10;
+  string quote_notional = 11;
+  string fee_amount = 12;
+  string fee_asset = 13;
+  int64 sequence = 14;
+  google.protobuf.Timestamp occurred_at = 15;
+}
+
+message ListFillsRequest {
+  string account_id = 1;
+  int64 strategy_instance_id = 2;
+  int64 instrument_id = 3;
+  int32 page_size = 4;
+  int64 after_id = 5;
+}
+
+message ListFillsReply {
+  repeated FillView fills = 1;
+  int64 next_after_id = 2;
+}
+
+message GetAccountRequest { string account_id = 1; }
+
+message AssetBalance {
+  string asset = 1;
+  string available = 2;
+  string frozen = 3;
+}
+
+message AccountReply {
+  string account_id = 1;
+  string execution_venue = 2;
+  int64 sequence = 3;
+  google.protobuf.Timestamp observed_at = 4;
+  repeated AssetBalance balances = 5;
+}

@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package muskdeer.common.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+
+enum OrderSide {
+  ORDER_SIDE_UNSPECIFIED = 0;
+  ORDER_SIDE_BUY = 1;
+  ORDER_SIDE_SELL = 2;
+}
+
+enum TimeInForce {
+  TIME_IN_FORCE_UNSPECIFIED = 0;
+  TIME_IN_FORCE_GTC = 1;
+  TIME_IN_FORCE_IOC = 2;
+  TIME_IN_FORCE_POST_ONLY = 3;
+}
+
+enum OrderState {
+  ORDER_STATE_UNSPECIFIED = 0;
+  ORDER_STATE_INTENT = 1;
+  ORDER_STATE_SUBMITTING = 2;
+  ORDER_STATE_LIVE = 3;
+  ORDER_STATE_PARTIALLY_FILLED = 4;
+  ORDER_STATE_FILLED = 5;
+  ORDER_STATE_CANCELED = 6;
+  ORDER_STATE_REJECTED = 7;
+  ORDER_STATE_UNKNOWN = 8;
+}
+
+enum CancelState {
+  CANCEL_STATE_UNSPECIFIED = 0;
+  CANCEL_STATE_NONE = 1;
+  CANCEL_STATE_REQUESTED = 2;
+  CANCEL_STATE_PENDING = 3;
+  CANCEL_STATE_CONFIRMED = 4;
+  CANCEL_STATE_UNKNOWN = 5;
+  CANCEL_STATE_REJECTED = 6;
+}

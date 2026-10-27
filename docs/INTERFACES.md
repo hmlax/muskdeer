@@ -1,6 +1,6 @@
 # 接口、状态与事件约定
 
-本文是概念合同；P03 生成实际 Proto/OpenAPI 后补全精确字段，不将伪接口描述标为已实现。
+本文包含概念管理合同与分步落实的内部合同；P03.6 已生成 [Execution typed Proto](../api/execution/v1/execution.proto) 和 Submit/Cancel 输入边界，见 [交易合同](TRADING_CONTRACT.md)。管理 API/OpenAPI 和实际业务 handler 尚未交付，不将概念接口标为已实现。
 
 ## 小数字段契约（强制）
 
