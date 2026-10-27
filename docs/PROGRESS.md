@@ -14,7 +14,7 @@
 | P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
 | P02 | done | P02.1–P02.11 及 Linux CI 40439453258 success；六角色、多进程发现/mTLS、持久开发、固定 Go 镜像与运行层 E2E 通过 |
 | P03 | done | P03.1–P03.10 值/生成模型/迁移、typed 合同、数据库租约、最终原子 fencing、模拟现货及提交后响应丢失/延迟通过；后续 OMS/节点恢复按各阶段验收 |
-| P04 | in_progress | P04.1–P04.7 原子意图/预算/outbox、派发/UNKNOWN、撤单、成交自然键/inbox、持仓损益、自动事件、真实发布/有界消费/重投和预算释放通过；独立进程业务装配和 RPC 待实现 |
+| P04 | in_progress | P04.1–P04.8 持久OMS/预算/撤单、成交inbox/损益、自动事件及真实发布/有界消费/重投、7个typed RPC/mTLS/分页读取通过；默认命令的独立业务进程装配待实现 |
 | P05–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
@@ -434,3 +434,10 @@ P01–P03 基础与模拟合同已完成，从 P04 的 OMS、预算原子预留�
 - 验证：配置边界先红后绿；真实NATS缺少consumer不创建、过滤器改变拒绝、坏Proto保留未确认、处理/等待取消；真实PG/JetStream自动事件经公共客户端在提交后中断，AckWait重投且attempt>1，业务效果不重复、预算0。make verify、最终lint/race、完整 make integration、文档/差异检查通过，goleak与隔离清理保留。见 [P04.7](validation/P04-07.md)。
 - 远程：81d6681 已推送 main 并核对 SHA；本步通过后独立提交/推送并核对 SHA。
 - 下一步：独立服务业务装配、typed RPC 和实际进程闭环；P04保持进行。
+
+## 2026-10-27：P04.8 Typed RPC 与读取
+
+- 改动：7个真实 execution RPC、增量取消请求查询/视图与核心版本、严格wire响应、作用域/有界读取、账户同revision快照；mTLS方法权限及执行租约提议，明确STP拒绝释放预留。
+- 验证：高精度响应先红后绿；真实PG/Deer/mTLS下单/去重/改体拒绝/分页/账户隔离/部分成交费用/撤单查询；回包丢失1次Submit后查询恢复；STP拒绝保留原卖单预算101。make generate/verify、最终lint/race、最终完整 make integration、文档/差异检查通过。发现夹具先证明进程ready再计时查询，各3秒/总15秒和停止断言保留，最终通过。见 [P04.8](validation/P04-08.md)。
+- 远程：8b5ef0f 已推送 main 并核对 SHA，[CI 40459706274](https://github.com/hmlax/muskdeer/actions/runs/40459706274) success。本步通过后独立提交/推送并核对 SHA。
+- 下一步：默认命令入口的业务工作器/客户端装配和独立进程闭环；P04保持进行。

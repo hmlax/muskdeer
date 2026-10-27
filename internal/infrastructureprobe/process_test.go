@@ -7,9 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -133,7 +135,76 @@ func startServiceProcess(t *testing.T, ca *testcert.Authority, id string) (int, 
 		result = command.Wait()
 		close(completed)
 	}()
+	waitProcessReady(t, output.Name(), completed)
 	return command.Process.Pid, stop
+}
+
+func waitProcessReady(t *testing.T, outputPath string, completed <-chan struct{}) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	client := &http.Client{
+		Transport: &http.Transport{DisableKeepAlives: true},
+		Timeout:   200 * time.Millisecond,
+	}
+	defer client.CloseIdleConnections()
+	ticks := time.NewTicker(20 * time.Millisecond)
+	defer ticks.Stop()
+	var lastErr error
+	for {
+		select {
+		case <-completed:
+			t.Fatal("service process exited before readiness")
+		case <-ctx.Done():
+			t.Fatalf("service process did not become ready within startup budget: %v", lastErr)
+		case <-ticks.C:
+			address, err := processMonitoringAddress(outputPath)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			if address == "" {
+				continue
+			}
+			request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+address+"/readyz", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			response, err := client.Do(request)
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			if err := response.Body.Close(); err != nil {
+				t.Fatal(err)
+			}
+			if response.StatusCode == http.StatusOK {
+				return
+			}
+		}
+	}
+}
+
+func processMonitoringAddress(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(string(data), "\n")
+	// The process may be writing the final line while this snapshot is read.
+	for _, line := range lines[:len(lines)-1] {
+		var record struct {
+			Message string `json:"msg"`
+			Address string `json:"monitoring_address"`
+		}
+		if err := json.Unmarshal([]byte(line), &record); err != nil {
+			return "", err
+		}
+		if record.Message == "service.initialized" {
+			return record.Address, nil
+		}
+	}
+	return "", nil
 }
 
 func assertProcessLogs(t *testing.T, outputPath, diagnosticPath, id string) {

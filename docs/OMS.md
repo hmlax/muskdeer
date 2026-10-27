@@ -71,3 +71,13 @@ L1 模拟核心成交在同一事务写余额/冻结、订单、不可变 Simula
 Deer JetStream 客户端已支持只绑定已有 durable 的 `OpenConsumer` 和同步 `ConsumeOne`，配置/期限/取消边界见 [公共封装](DEER.md)。调用者使用具体 ExecutionEvent，核对 broker message ID 与 envelope ID、严格变体，再执行 FillConsumer；控制类事件只在校验成功后确认。客户端仅在处理成功后发送确认 ACK，业务失败时保留原 broker delivery，等待 AckWait 重投。
 
 真实成交闭环测试已使用该公共客户端，注入业务效果提交后的错误；broker 超时重投后观察到 attempt>1，最终仍只有2条事实/2条inbox、预算0。另验证缺少 durable 不创建、运行中过滤范围变化拒绝、坏 Proto 不进入 handler/不 ACK、处理与等待准入均响应取消。没有新增后台任务，工作器装配与业务 RPC 继续下一步。
+
+## P04.8 Typed execution RPC
+
+`executiongrpc.New` 借用意图/撤单用例、读取仓储与账户执行授权，提供完整 typed RPC。`usecase.ExecutionOwner` 使用同一进程 incarnation，按账户 Acquire/Renew 数据库时间租约；最终执行仍重新 fencing。查询恢复不领取新执行权、不重发订单。
+
+订单、成交和账户查询保持显式账户范围、有界 keyset 分页/资产列表。账户读在账户行 SHARE 锁下取得同一 revision 的余额和数据库观察时间。wire 输出先验证 decimal 范围，乘积、费用、余额均为精确 string；未知枚举/不合法存储值不会被默默转换为成功响应。权限、请求期限和合同字段见 [执行合同](TRADING_CONTRACT.md)。
+
+明确 STP 拒绝纳入已确认拒绝分类，意图 REJECTED、预留释放；请求超时或响应丢失仍保留 UNKNOWN 和预算，按原身份查询。CancelOrder/FindCancellation 响应同时提供独立请求状态与核心订单状态，PENDING 不能解释为已撤单。
+
+本步通过 Deer/mTLS 注册真实业务 handler 验证；默认 execution/portfolio 命令的后台/客户端装配继续后续步骤，尚未将直接测试服务等同于六进程业务闭环。

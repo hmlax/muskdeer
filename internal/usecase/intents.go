@@ -120,5 +120,6 @@ func (s *intentService) keepUnknown(ctx context.Context, current domain.IntentSn
 
 func confirmedRejection(err error) bool {
 	return errors.Is(err, domain.ErrInsufficientFunds) || errors.Is(err, domain.ErrRiskDenied) ||
-		errors.Is(err, domain.ErrLeaseLost) || errors.Is(err, domain.ErrInvalidOrder) || errors.Is(err, domain.ErrUnsupportedOrder)
+		errors.Is(err, domain.ErrLeaseLost) || errors.Is(err, domain.ErrInvalidOrder) ||
+		errors.Is(err, domain.ErrUnsupportedOrder) || errors.Is(err, domain.ErrSelfTrade)
 }

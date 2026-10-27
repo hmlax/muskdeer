@@ -118,7 +118,7 @@ func decodeAuthority(input *executionv1.StrategyAuthority) (domain.StrategyAutho
 }
 
 func decodeDeadline(ctx context.Context, input *timestamppb.Timestamp, now time.Time) (time.Time, error) {
-	if input.CheckValid() != nil {
+	if input.CheckValid() != nil || len(input.ProtoReflect().GetUnknown()) != 0 {
 		return time.Time{}, invalid("deadline")
 	}
 	deadline := input.AsTime()

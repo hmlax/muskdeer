@@ -3,6 +3,7 @@ syntax = "proto3";
 package muskdeer.execution.v1;
 
 import "deer/proto/common/v1/trading.proto";
+import "deer/proto/common/v1/events.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/hmlax/muskdeer/api/execution/v1;executionv1";
@@ -16,6 +17,7 @@ service Execution {
   rpc ListOrders(ListOrdersRequest) returns (ListOrdersReply);
   rpc ListFills(ListFillsRequest) returns (ListFillsReply);
   rpc GetAccount(GetAccountRequest) returns (AccountReply);
+  rpc FindCancellation(FindCancellationRequest) returns (OrderReply);
 }
 
 message StrategyAuthority {
@@ -79,9 +81,27 @@ message OrderView {
   int64 revision = 17;
   google.protobuf.Timestamp updated_at = 18;
   string error_code = 19;
+  int64 core_revision = 20;
 }
 
-message OrderReply { OrderView order = 1; }
+message CancellationView {
+  int64 id = 1;
+  int64 intent_id = 2;
+  muskdeer.common.v1.CancellationState state = 3;
+  int64 revision = 4;
+  string error_code = 5;
+}
+
+message OrderReply {
+  OrderView order = 1;
+  // Request outcome is distinct from the order's last confirmed core state.
+  CancellationView cancellation = 2;
+}
+
+message FindCancellationRequest {
+  string account_id = 1;
+  int64 cancellation_id = 2;
+}
 
 message ListOrdersRequest {
   string account_id = 1;

@@ -19,12 +19,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Execution_SubmitIntent_FullMethodName = "/muskdeer.execution.v1.Execution/SubmitIntent"
-	Execution_CancelOrder_FullMethodName  = "/muskdeer.execution.v1.Execution/CancelOrder"
-	Execution_FindOrder_FullMethodName    = "/muskdeer.execution.v1.Execution/FindOrder"
-	Execution_ListOrders_FullMethodName   = "/muskdeer.execution.v1.Execution/ListOrders"
-	Execution_ListFills_FullMethodName    = "/muskdeer.execution.v1.Execution/ListFills"
-	Execution_GetAccount_FullMethodName   = "/muskdeer.execution.v1.Execution/GetAccount"
+	Execution_SubmitIntent_FullMethodName     = "/muskdeer.execution.v1.Execution/SubmitIntent"
+	Execution_CancelOrder_FullMethodName      = "/muskdeer.execution.v1.Execution/CancelOrder"
+	Execution_FindOrder_FullMethodName        = "/muskdeer.execution.v1.Execution/FindOrder"
+	Execution_ListOrders_FullMethodName       = "/muskdeer.execution.v1.Execution/ListOrders"
+	Execution_ListFills_FullMethodName        = "/muskdeer.execution.v1.Execution/ListFills"
+	Execution_GetAccount_FullMethodName       = "/muskdeer.execution.v1.Execution/GetAccount"
+	Execution_FindCancellation_FullMethodName = "/muskdeer.execution.v1.Execution/FindCancellation"
 )
 
 // ExecutionClient is the client API for Execution service.
@@ -40,6 +41,7 @@ type ExecutionClient interface {
 	ListOrders(ctx context.Context, in *ListOrdersRequest, opts ...grpc.CallOption) (*ListOrdersReply, error)
 	ListFills(ctx context.Context, in *ListFillsRequest, opts ...grpc.CallOption) (*ListFillsReply, error)
 	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*AccountReply, error)
+	FindCancellation(ctx context.Context, in *FindCancellationRequest, opts ...grpc.CallOption) (*OrderReply, error)
 }
 
 type executionClient struct {
@@ -110,6 +112,16 @@ func (c *executionClient) GetAccount(ctx context.Context, in *GetAccountRequest,
 	return out, nil
 }
 
+func (c *executionClient) FindCancellation(ctx context.Context, in *FindCancellationRequest, opts ...grpc.CallOption) (*OrderReply, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OrderReply)
+	err := c.cc.Invoke(ctx, Execution_FindCancellation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExecutionServer is the server API for Execution service.
 // All implementations must embed UnimplementedExecutionServer
 // for forward compatibility.
@@ -123,6 +135,7 @@ type ExecutionServer interface {
 	ListOrders(context.Context, *ListOrdersRequest) (*ListOrdersReply, error)
 	ListFills(context.Context, *ListFillsRequest) (*ListFillsReply, error)
 	GetAccount(context.Context, *GetAccountRequest) (*AccountReply, error)
+	FindCancellation(context.Context, *FindCancellationRequest) (*OrderReply, error)
 	mustEmbedUnimplementedExecutionServer()
 }
 
@@ -150,6 +163,9 @@ func (UnimplementedExecutionServer) ListFills(context.Context, *ListFillsRequest
 }
 func (UnimplementedExecutionServer) GetAccount(context.Context, *GetAccountRequest) (*AccountReply, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAccount not implemented")
+}
+func (UnimplementedExecutionServer) FindCancellation(context.Context, *FindCancellationRequest) (*OrderReply, error) {
+	return nil, status.Error(codes.Unimplemented, "method FindCancellation not implemented")
 }
 func (UnimplementedExecutionServer) mustEmbedUnimplementedExecutionServer() {}
 func (UnimplementedExecutionServer) testEmbeddedByValue()                   {}
@@ -280,6 +296,24 @@ func _Execution_GetAccount_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Execution_FindCancellation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FindCancellationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExecutionServer).FindCancellation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Execution_FindCancellation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExecutionServer).FindCancellation(ctx, req.(*FindCancellationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Execution_ServiceDesc is the grpc.ServiceDesc for Execution service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -310,6 +344,10 @@ var Execution_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAccount",
 			Handler:    _Execution_GetAccount_Handler,
+		},
+		{
+			MethodName: "FindCancellation",
+			Handler:    _Execution_FindCancellation_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

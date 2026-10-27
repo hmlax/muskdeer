@@ -63,5 +63,6 @@ func intentSnapshot(row *modelv1.OrderIntent) (domain.IntentSnapshot, error) {
 		FilledQuantity:        filled,
 		Revision:              row.Revision,
 		ErrorCode:             row.ErrorCode,
+		UpdatedAt:             time.UnixMilli(row.UpdateAt).UTC(),
 	}, nil
 }

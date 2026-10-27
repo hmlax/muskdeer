@@ -420,6 +420,7 @@ type OrderView struct {
 	Revision           int64                  `protobuf:"varint,17,opt,name=revision,proto3" json:"revision,omitempty"`
 	UpdatedAt          *timestamppb.Timestamp `protobuf:"bytes,18,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ErrorCode          string                 `protobuf:"bytes,19,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	CoreRevision       int64                  `protobuf:"varint,20,opt,name=core_revision,json=coreRevision,proto3" json:"core_revision,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -587,16 +588,101 @@ func (x *OrderView) GetErrorCode() string {
 	return ""
 }
 
-type OrderReply struct {
+func (x *OrderView) GetCoreRevision() int64 {
+	if x != nil {
+		return x.CoreRevision
+	}
+	return 0
+}
+
+type CancellationView struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Order         *OrderView             `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	IntentId      int64                  `protobuf:"varint,2,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty"`
+	State         v1.CancellationState   `protobuf:"varint,3,opt,name=state,proto3,enum=muskdeer.common.v1.CancellationState" json:"state,omitempty"`
+	Revision      int64                  `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	ErrorCode     string                 `protobuf:"bytes,5,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancellationView) Reset() {
+	*x = CancellationView{}
+	mi := &file_api_execution_v1_execution_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancellationView) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancellationView) ProtoMessage() {}
+
+func (x *CancellationView) ProtoReflect() protoreflect.Message {
+	mi := &file_api_execution_v1_execution_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancellationView.ProtoReflect.Descriptor instead.
+func (*CancellationView) Descriptor() ([]byte, []int) {
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *CancellationView) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *CancellationView) GetIntentId() int64 {
+	if x != nil {
+		return x.IntentId
+	}
+	return 0
+}
+
+func (x *CancellationView) GetState() v1.CancellationState {
+	if x != nil {
+		return x.State
+	}
+	return v1.CancellationState(0)
+}
+
+func (x *CancellationView) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *CancellationView) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+type OrderReply struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Order *OrderView             `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
+	// Request outcome is distinct from the order's last confirmed core state.
+	Cancellation  *CancellationView `protobuf:"bytes,2,opt,name=cancellation,proto3" json:"cancellation,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *OrderReply) Reset() {
 	*x = OrderReply{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[5]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -608,7 +694,7 @@ func (x *OrderReply) String() string {
 func (*OrderReply) ProtoMessage() {}
 
 func (x *OrderReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[5]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -621,7 +707,7 @@ func (x *OrderReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderReply.ProtoReflect.Descriptor instead.
 func (*OrderReply) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{5}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *OrderReply) GetOrder() *OrderView {
@@ -629,6 +715,65 @@ func (x *OrderReply) GetOrder() *OrderView {
 		return x.Order
 	}
 	return nil
+}
+
+func (x *OrderReply) GetCancellation() *CancellationView {
+	if x != nil {
+		return x.Cancellation
+	}
+	return nil
+}
+
+type FindCancellationRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AccountId      string                 `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	CancellationId int64                  `protobuf:"varint,2,opt,name=cancellation_id,json=cancellationId,proto3" json:"cancellation_id,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *FindCancellationRequest) Reset() {
+	*x = FindCancellationRequest{}
+	mi := &file_api_execution_v1_execution_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FindCancellationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FindCancellationRequest) ProtoMessage() {}
+
+func (x *FindCancellationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_execution_v1_execution_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FindCancellationRequest.ProtoReflect.Descriptor instead.
+func (*FindCancellationRequest) Descriptor() ([]byte, []int) {
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *FindCancellationRequest) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *FindCancellationRequest) GetCancellationId() int64 {
+	if x != nil {
+		return x.CancellationId
+	}
+	return 0
 }
 
 type ListOrdersRequest struct {
@@ -645,7 +790,7 @@ type ListOrdersRequest struct {
 
 func (x *ListOrdersRequest) Reset() {
 	*x = ListOrdersRequest{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[6]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -657,7 +802,7 @@ func (x *ListOrdersRequest) String() string {
 func (*ListOrdersRequest) ProtoMessage() {}
 
 func (x *ListOrdersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[6]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -670,7 +815,7 @@ func (x *ListOrdersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListOrdersRequest.ProtoReflect.Descriptor instead.
 func (*ListOrdersRequest) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{6}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ListOrdersRequest) GetAccountId() string {
@@ -725,7 +870,7 @@ type ListOrdersReply struct {
 
 func (x *ListOrdersReply) Reset() {
 	*x = ListOrdersReply{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[7]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -737,7 +882,7 @@ func (x *ListOrdersReply) String() string {
 func (*ListOrdersReply) ProtoMessage() {}
 
 func (x *ListOrdersReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[7]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +895,7 @@ func (x *ListOrdersReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListOrdersReply.ProtoReflect.Descriptor instead.
 func (*ListOrdersReply) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{7}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListOrdersReply) GetOrders() []*OrderView {
@@ -790,7 +935,7 @@ type FillView struct {
 
 func (x *FillView) Reset() {
 	*x = FillView{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[8]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -802,7 +947,7 @@ func (x *FillView) String() string {
 func (*FillView) ProtoMessage() {}
 
 func (x *FillView) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[8]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -815,7 +960,7 @@ func (x *FillView) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FillView.ProtoReflect.Descriptor instead.
 func (*FillView) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{8}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *FillView) GetId() int64 {
@@ -936,7 +1081,7 @@ type ListFillsRequest struct {
 
 func (x *ListFillsRequest) Reset() {
 	*x = ListFillsRequest{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[9]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -948,7 +1093,7 @@ func (x *ListFillsRequest) String() string {
 func (*ListFillsRequest) ProtoMessage() {}
 
 func (x *ListFillsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[9]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -961,7 +1106,7 @@ func (x *ListFillsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFillsRequest.ProtoReflect.Descriptor instead.
 func (*ListFillsRequest) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{9}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListFillsRequest) GetAccountId() string {
@@ -1009,7 +1154,7 @@ type ListFillsReply struct {
 
 func (x *ListFillsReply) Reset() {
 	*x = ListFillsReply{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[10]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1021,7 +1166,7 @@ func (x *ListFillsReply) String() string {
 func (*ListFillsReply) ProtoMessage() {}
 
 func (x *ListFillsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[10]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1034,7 +1179,7 @@ func (x *ListFillsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListFillsReply.ProtoReflect.Descriptor instead.
 func (*ListFillsReply) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{10}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListFillsReply) GetFills() []*FillView {
@@ -1060,7 +1205,7 @@ type GetAccountRequest struct {
 
 func (x *GetAccountRequest) Reset() {
 	*x = GetAccountRequest{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[11]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1072,7 +1217,7 @@ func (x *GetAccountRequest) String() string {
 func (*GetAccountRequest) ProtoMessage() {}
 
 func (x *GetAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[11]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1085,7 +1230,7 @@ func (x *GetAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAccountRequest.ProtoReflect.Descriptor instead.
 func (*GetAccountRequest) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{11}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetAccountRequest) GetAccountId() string {
@@ -1106,7 +1251,7 @@ type AssetBalance struct {
 
 func (x *AssetBalance) Reset() {
 	*x = AssetBalance{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[12]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1118,7 +1263,7 @@ func (x *AssetBalance) String() string {
 func (*AssetBalance) ProtoMessage() {}
 
 func (x *AssetBalance) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[12]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1131,7 +1276,7 @@ func (x *AssetBalance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssetBalance.ProtoReflect.Descriptor instead.
 func (*AssetBalance) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{12}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AssetBalance) GetAsset() string {
@@ -1168,7 +1313,7 @@ type AccountReply struct {
 
 func (x *AccountReply) Reset() {
 	*x = AccountReply{}
-	mi := &file_api_execution_v1_execution_proto_msgTypes[13]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1180,7 +1325,7 @@ func (x *AccountReply) String() string {
 func (*AccountReply) ProtoMessage() {}
 
 func (x *AccountReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_execution_v1_execution_proto_msgTypes[13]
+	mi := &file_api_execution_v1_execution_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1193,7 +1338,7 @@ func (x *AccountReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountReply.ProtoReflect.Descriptor instead.
 func (*AccountReply) Descriptor() ([]byte, []int) {
-	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{13}
+	return file_api_execution_v1_execution_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *AccountReply) GetAccountId() string {
@@ -1235,7 +1380,7 @@ var File_api_execution_v1_execution_proto protoreflect.FileDescriptor
 
 const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"\n" +
-	" api/execution/v1/execution.proto\x12\x15muskdeer.execution.v1\x1a\"deer/proto/common/v1/trading.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa8\x01\n" +
+	" api/execution/v1/execution.proto\x12\x15muskdeer.execution.v1\x1a\"deer/proto/common/v1/trading.proto\x1a!deer/proto/common/v1/events.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa8\x01\n" +
 	"\x11StrategyAuthority\x120\n" +
 	"\x14strategy_instance_id\x18\x01 \x01(\x03R\x12strategyInstanceId\x12%\n" +
 	"\x0econfig_version\x18\x02 \x01(\x03R\rconfigVersion\x12\x19\n" +
@@ -1273,7 +1418,7 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x12\x1d\n" +
 	"\tintent_id\x18\x02 \x01(\x03H\x00R\bintentId\x12(\n" +
 	"\x0fclient_order_id\x18\x03 \x01(\tH\x00R\rclientOrderIdB\b\n" +
-	"\x06lookup\"\x99\x06\n" +
+	"\x06lookup\"\xbe\x06\n" +
 	"\tOrderView\x12\x1b\n" +
 	"\tintent_id\x18\x01 \x01(\x03R\bintentId\x12&\n" +
 	"\x0fclient_order_id\x18\x02 \x01(\tR\rclientOrderId\x12\"\n" +
@@ -1297,10 +1442,23 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"\n" +
 	"updated_at\x18\x12 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1d\n" +
 	"\n" +
-	"error_code\x18\x13 \x01(\tR\terrorCode\"D\n" +
+	"error_code\x18\x13 \x01(\tR\terrorCode\x12#\n" +
+	"\rcore_revision\x18\x14 \x01(\x03R\fcoreRevision\"\xb7\x01\n" +
+	"\x10CancellationView\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
+	"\tintent_id\x18\x02 \x01(\x03R\bintentId\x12;\n" +
+	"\x05state\x18\x03 \x01(\x0e2%.muskdeer.common.v1.CancellationStateR\x05state\x12\x1a\n" +
+	"\brevision\x18\x04 \x01(\x03R\brevision\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x05 \x01(\tR\terrorCode\"\x91\x01\n" +
 	"\n" +
 	"OrderReply\x126\n" +
-	"\x05order\x18\x01 \x01(\v2 .muskdeer.execution.v1.OrderViewR\x05order\"\xde\x01\n" +
+	"\x05order\x18\x01 \x01(\v2 .muskdeer.execution.v1.OrderViewR\x05order\x12K\n" +
+	"\fcancellation\x18\x02 \x01(\v2'.muskdeer.execution.v1.CancellationViewR\fcancellation\"a\n" +
+	"\x17FindCancellationRequest\x12\x1d\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\tR\taccountId\x12'\n" +
+	"\x0fcancellation_id\x18\x02 \x01(\x03R\x0ecancellationId\"\xde\x01\n" +
 	"\x11ListOrdersRequest\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x120\n" +
@@ -1356,7 +1514,7 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"\bsequence\x18\x03 \x01(\x03R\bsequence\x12;\n" +
 	"\vobserved_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"observedAt\x12?\n" +
-	"\bbalances\x18\x05 \x03(\v2#.muskdeer.execution.v1.AssetBalanceR\bbalances2\xba\x04\n" +
+	"\bbalances\x18\x05 \x03(\v2#.muskdeer.execution.v1.AssetBalanceR\bbalances2\xa1\x05\n" +
 	"\tExecution\x12]\n" +
 	"\fSubmitIntent\x12*.muskdeer.execution.v1.SubmitIntentRequest\x1a!.muskdeer.execution.v1.OrderReply\x12[\n" +
 	"\vCancelOrder\x12).muskdeer.execution.v1.CancelOrderRequest\x1a!.muskdeer.execution.v1.OrderReply\x12W\n" +
@@ -1365,7 +1523,8 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"ListOrders\x12(.muskdeer.execution.v1.ListOrdersRequest\x1a&.muskdeer.execution.v1.ListOrdersReply\x12[\n" +
 	"\tListFills\x12'.muskdeer.execution.v1.ListFillsRequest\x1a%.muskdeer.execution.v1.ListFillsReply\x12[\n" +
 	"\n" +
-	"GetAccount\x12(.muskdeer.execution.v1.GetAccountRequest\x1a#.muskdeer.execution.v1.AccountReplyB8Z6github.com/hmlax/muskdeer/api/execution/v1;executionv1b\x06proto3"
+	"GetAccount\x12(.muskdeer.execution.v1.GetAccountRequest\x1a#.muskdeer.execution.v1.AccountReply\x12e\n" +
+	"\x10FindCancellation\x12..muskdeer.execution.v1.FindCancellationRequest\x1a!.muskdeer.execution.v1.OrderReplyB8Z6github.com/hmlax/muskdeer/api/execution/v1;executionv1b\x06proto3"
 
 var (
 	file_api_execution_v1_execution_proto_rawDescOnce sync.Once
@@ -1379,64 +1538,71 @@ func file_api_execution_v1_execution_proto_rawDescGZIP() []byte {
 	return file_api_execution_v1_execution_proto_rawDescData
 }
 
-var file_api_execution_v1_execution_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_api_execution_v1_execution_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_api_execution_v1_execution_proto_goTypes = []any{
-	(*StrategyAuthority)(nil),     // 0: muskdeer.execution.v1.StrategyAuthority
-	(*SubmitIntentRequest)(nil),   // 1: muskdeer.execution.v1.SubmitIntentRequest
-	(*CancelOrderRequest)(nil),    // 2: muskdeer.execution.v1.CancelOrderRequest
-	(*FindOrderRequest)(nil),      // 3: muskdeer.execution.v1.FindOrderRequest
-	(*OrderView)(nil),             // 4: muskdeer.execution.v1.OrderView
-	(*OrderReply)(nil),            // 5: muskdeer.execution.v1.OrderReply
-	(*ListOrdersRequest)(nil),     // 6: muskdeer.execution.v1.ListOrdersRequest
-	(*ListOrdersReply)(nil),       // 7: muskdeer.execution.v1.ListOrdersReply
-	(*FillView)(nil),              // 8: muskdeer.execution.v1.FillView
-	(*ListFillsRequest)(nil),      // 9: muskdeer.execution.v1.ListFillsRequest
-	(*ListFillsReply)(nil),        // 10: muskdeer.execution.v1.ListFillsReply
-	(*GetAccountRequest)(nil),     // 11: muskdeer.execution.v1.GetAccountRequest
-	(*AssetBalance)(nil),          // 12: muskdeer.execution.v1.AssetBalance
-	(*AccountReply)(nil),          // 13: muskdeer.execution.v1.AccountReply
-	(v1.OrderSide)(0),             // 14: muskdeer.common.v1.OrderSide
-	(v1.TimeInForce)(0),           // 15: muskdeer.common.v1.TimeInForce
-	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
-	(v1.OrderState)(0),            // 17: muskdeer.common.v1.OrderState
-	(v1.CancelState)(0),           // 18: muskdeer.common.v1.CancelState
+	(*StrategyAuthority)(nil),       // 0: muskdeer.execution.v1.StrategyAuthority
+	(*SubmitIntentRequest)(nil),     // 1: muskdeer.execution.v1.SubmitIntentRequest
+	(*CancelOrderRequest)(nil),      // 2: muskdeer.execution.v1.CancelOrderRequest
+	(*FindOrderRequest)(nil),        // 3: muskdeer.execution.v1.FindOrderRequest
+	(*OrderView)(nil),               // 4: muskdeer.execution.v1.OrderView
+	(*CancellationView)(nil),        // 5: muskdeer.execution.v1.CancellationView
+	(*OrderReply)(nil),              // 6: muskdeer.execution.v1.OrderReply
+	(*FindCancellationRequest)(nil), // 7: muskdeer.execution.v1.FindCancellationRequest
+	(*ListOrdersRequest)(nil),       // 8: muskdeer.execution.v1.ListOrdersRequest
+	(*ListOrdersReply)(nil),         // 9: muskdeer.execution.v1.ListOrdersReply
+	(*FillView)(nil),                // 10: muskdeer.execution.v1.FillView
+	(*ListFillsRequest)(nil),        // 11: muskdeer.execution.v1.ListFillsRequest
+	(*ListFillsReply)(nil),          // 12: muskdeer.execution.v1.ListFillsReply
+	(*GetAccountRequest)(nil),       // 13: muskdeer.execution.v1.GetAccountRequest
+	(*AssetBalance)(nil),            // 14: muskdeer.execution.v1.AssetBalance
+	(*AccountReply)(nil),            // 15: muskdeer.execution.v1.AccountReply
+	(v1.OrderSide)(0),               // 16: muskdeer.common.v1.OrderSide
+	(v1.TimeInForce)(0),             // 17: muskdeer.common.v1.TimeInForce
+	(*timestamppb.Timestamp)(nil),   // 18: google.protobuf.Timestamp
+	(v1.OrderState)(0),              // 19: muskdeer.common.v1.OrderState
+	(v1.CancelState)(0),             // 20: muskdeer.common.v1.CancelState
+	(v1.CancellationState)(0),       // 21: muskdeer.common.v1.CancellationState
 }
 var file_api_execution_v1_execution_proto_depIdxs = []int32{
 	0,  // 0: muskdeer.execution.v1.SubmitIntentRequest.authority:type_name -> muskdeer.execution.v1.StrategyAuthority
-	14, // 1: muskdeer.execution.v1.SubmitIntentRequest.side:type_name -> muskdeer.common.v1.OrderSide
-	15, // 2: muskdeer.execution.v1.SubmitIntentRequest.time_in_force:type_name -> muskdeer.common.v1.TimeInForce
-	16, // 3: muskdeer.execution.v1.SubmitIntentRequest.deadline:type_name -> google.protobuf.Timestamp
+	16, // 1: muskdeer.execution.v1.SubmitIntentRequest.side:type_name -> muskdeer.common.v1.OrderSide
+	17, // 2: muskdeer.execution.v1.SubmitIntentRequest.time_in_force:type_name -> muskdeer.common.v1.TimeInForce
+	18, // 3: muskdeer.execution.v1.SubmitIntentRequest.deadline:type_name -> google.protobuf.Timestamp
 	0,  // 4: muskdeer.execution.v1.CancelOrderRequest.authority:type_name -> muskdeer.execution.v1.StrategyAuthority
-	16, // 5: muskdeer.execution.v1.CancelOrderRequest.deadline:type_name -> google.protobuf.Timestamp
-	14, // 6: muskdeer.execution.v1.OrderView.side:type_name -> muskdeer.common.v1.OrderSide
-	15, // 7: muskdeer.execution.v1.OrderView.time_in_force:type_name -> muskdeer.common.v1.TimeInForce
-	17, // 8: muskdeer.execution.v1.OrderView.state:type_name -> muskdeer.common.v1.OrderState
-	18, // 9: muskdeer.execution.v1.OrderView.cancel_state:type_name -> muskdeer.common.v1.CancelState
-	16, // 10: muskdeer.execution.v1.OrderView.updated_at:type_name -> google.protobuf.Timestamp
-	4,  // 11: muskdeer.execution.v1.OrderReply.order:type_name -> muskdeer.execution.v1.OrderView
-	4,  // 12: muskdeer.execution.v1.ListOrdersReply.orders:type_name -> muskdeer.execution.v1.OrderView
-	14, // 13: muskdeer.execution.v1.FillView.side:type_name -> muskdeer.common.v1.OrderSide
-	16, // 14: muskdeer.execution.v1.FillView.occurred_at:type_name -> google.protobuf.Timestamp
-	8,  // 15: muskdeer.execution.v1.ListFillsReply.fills:type_name -> muskdeer.execution.v1.FillView
-	16, // 16: muskdeer.execution.v1.AccountReply.observed_at:type_name -> google.protobuf.Timestamp
-	12, // 17: muskdeer.execution.v1.AccountReply.balances:type_name -> muskdeer.execution.v1.AssetBalance
-	1,  // 18: muskdeer.execution.v1.Execution.SubmitIntent:input_type -> muskdeer.execution.v1.SubmitIntentRequest
-	2,  // 19: muskdeer.execution.v1.Execution.CancelOrder:input_type -> muskdeer.execution.v1.CancelOrderRequest
-	3,  // 20: muskdeer.execution.v1.Execution.FindOrder:input_type -> muskdeer.execution.v1.FindOrderRequest
-	6,  // 21: muskdeer.execution.v1.Execution.ListOrders:input_type -> muskdeer.execution.v1.ListOrdersRequest
-	9,  // 22: muskdeer.execution.v1.Execution.ListFills:input_type -> muskdeer.execution.v1.ListFillsRequest
-	11, // 23: muskdeer.execution.v1.Execution.GetAccount:input_type -> muskdeer.execution.v1.GetAccountRequest
-	5,  // 24: muskdeer.execution.v1.Execution.SubmitIntent:output_type -> muskdeer.execution.v1.OrderReply
-	5,  // 25: muskdeer.execution.v1.Execution.CancelOrder:output_type -> muskdeer.execution.v1.OrderReply
-	5,  // 26: muskdeer.execution.v1.Execution.FindOrder:output_type -> muskdeer.execution.v1.OrderReply
-	7,  // 27: muskdeer.execution.v1.Execution.ListOrders:output_type -> muskdeer.execution.v1.ListOrdersReply
-	10, // 28: muskdeer.execution.v1.Execution.ListFills:output_type -> muskdeer.execution.v1.ListFillsReply
-	13, // 29: muskdeer.execution.v1.Execution.GetAccount:output_type -> muskdeer.execution.v1.AccountReply
-	24, // [24:30] is the sub-list for method output_type
-	18, // [18:24] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	18, // 5: muskdeer.execution.v1.CancelOrderRequest.deadline:type_name -> google.protobuf.Timestamp
+	16, // 6: muskdeer.execution.v1.OrderView.side:type_name -> muskdeer.common.v1.OrderSide
+	17, // 7: muskdeer.execution.v1.OrderView.time_in_force:type_name -> muskdeer.common.v1.TimeInForce
+	19, // 8: muskdeer.execution.v1.OrderView.state:type_name -> muskdeer.common.v1.OrderState
+	20, // 9: muskdeer.execution.v1.OrderView.cancel_state:type_name -> muskdeer.common.v1.CancelState
+	18, // 10: muskdeer.execution.v1.OrderView.updated_at:type_name -> google.protobuf.Timestamp
+	21, // 11: muskdeer.execution.v1.CancellationView.state:type_name -> muskdeer.common.v1.CancellationState
+	4,  // 12: muskdeer.execution.v1.OrderReply.order:type_name -> muskdeer.execution.v1.OrderView
+	5,  // 13: muskdeer.execution.v1.OrderReply.cancellation:type_name -> muskdeer.execution.v1.CancellationView
+	4,  // 14: muskdeer.execution.v1.ListOrdersReply.orders:type_name -> muskdeer.execution.v1.OrderView
+	16, // 15: muskdeer.execution.v1.FillView.side:type_name -> muskdeer.common.v1.OrderSide
+	18, // 16: muskdeer.execution.v1.FillView.occurred_at:type_name -> google.protobuf.Timestamp
+	10, // 17: muskdeer.execution.v1.ListFillsReply.fills:type_name -> muskdeer.execution.v1.FillView
+	18, // 18: muskdeer.execution.v1.AccountReply.observed_at:type_name -> google.protobuf.Timestamp
+	14, // 19: muskdeer.execution.v1.AccountReply.balances:type_name -> muskdeer.execution.v1.AssetBalance
+	1,  // 20: muskdeer.execution.v1.Execution.SubmitIntent:input_type -> muskdeer.execution.v1.SubmitIntentRequest
+	2,  // 21: muskdeer.execution.v1.Execution.CancelOrder:input_type -> muskdeer.execution.v1.CancelOrderRequest
+	3,  // 22: muskdeer.execution.v1.Execution.FindOrder:input_type -> muskdeer.execution.v1.FindOrderRequest
+	8,  // 23: muskdeer.execution.v1.Execution.ListOrders:input_type -> muskdeer.execution.v1.ListOrdersRequest
+	11, // 24: muskdeer.execution.v1.Execution.ListFills:input_type -> muskdeer.execution.v1.ListFillsRequest
+	13, // 25: muskdeer.execution.v1.Execution.GetAccount:input_type -> muskdeer.execution.v1.GetAccountRequest
+	7,  // 26: muskdeer.execution.v1.Execution.FindCancellation:input_type -> muskdeer.execution.v1.FindCancellationRequest
+	6,  // 27: muskdeer.execution.v1.Execution.SubmitIntent:output_type -> muskdeer.execution.v1.OrderReply
+	6,  // 28: muskdeer.execution.v1.Execution.CancelOrder:output_type -> muskdeer.execution.v1.OrderReply
+	6,  // 29: muskdeer.execution.v1.Execution.FindOrder:output_type -> muskdeer.execution.v1.OrderReply
+	9,  // 30: muskdeer.execution.v1.Execution.ListOrders:output_type -> muskdeer.execution.v1.ListOrdersReply
+	12, // 31: muskdeer.execution.v1.Execution.ListFills:output_type -> muskdeer.execution.v1.ListFillsReply
+	15, // 32: muskdeer.execution.v1.Execution.GetAccount:output_type -> muskdeer.execution.v1.AccountReply
+	6,  // 33: muskdeer.execution.v1.Execution.FindCancellation:output_type -> muskdeer.execution.v1.OrderReply
+	27, // [27:34] is the sub-list for method output_type
+	20, // [20:27] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_api_execution_v1_execution_proto_init() }
@@ -1454,7 +1620,7 @@ func file_api_execution_v1_execution_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_execution_v1_execution_proto_rawDesc), len(file_api_execution_v1_execution_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -44,6 +44,7 @@ type IntentSnapshot struct {
 	FilledQuantity        decimal.Decimal
 	Revision              int64
 	ErrorCode             string
+	UpdatedAt             time.Time
 }
 
 // IntentRepository persists an intent, both budget reservations and its typed
