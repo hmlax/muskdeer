@@ -1101,6 +1101,148 @@ func (x *CancellationRequest) GetRequestId() string {
 	return ""
 }
 
+// RiskBudget tracks quote-notional obligations across accounts. Scope is one
+// quote-asset platform or one execution instrument; policies are explicit.
+type RiskBudget struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Id                   int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt             int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt             int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt             *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	ScopeKind            string                 `protobuf:"bytes,5,opt,name=scope_kind,json=scopeKind,proto3" json:"scope_kind,omitempty" gorm:"column:scope_kind;type:varchar(16);not null;uniqueIndex:uk_risk_budget_scope"`
+	ScopeKey             string                 `protobuf:"bytes,6,opt,name=scope_key,json=scopeKey,proto3" json:"scope_key,omitempty" gorm:"column:scope_key;type:varchar(64);not null;uniqueIndex:uk_risk_budget_scope"`
+	InstrumentId         *int64                 `protobuf:"varint,7,opt,name=instrument_id,json=instrumentId,proto3,oneof" json:"instrument_id,omitempty" gorm:"column:instrument_id;type:bigint"`
+	Asset                string                 `protobuf:"bytes,8,opt,name=asset,proto3" json:"asset,omitempty" gorm:"column:asset;type:varchar(32);not null"`
+	LimitNotional        string                 `protobuf:"bytes,9,opt,name=limit_notional,json=limitNotional,proto3" json:"limit_notional,omitempty" gorm:"column:limit_notional;type:numeric(76,36);not null"`
+	ReservedNotional     string                 `protobuf:"bytes,10,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
+	MaximumOrderNotional string                 `protobuf:"bytes,11,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty" gorm:"column:maximum_order_notional;type:numeric(76,36);not null"`
+	Enabled              bool                   `protobuf:"varint,12,opt,name=enabled,proto3" json:"enabled,omitempty" gorm:"column:enabled;type:boolean;not null"`
+	Revision             int64                  `protobuf:"varint,13,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *RiskBudget) Reset() {
+	*x = RiskBudget{}
+	mi := &file_deer_proto_model_v1_oms_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RiskBudget) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RiskBudget) ProtoMessage() {}
+
+func (x *RiskBudget) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_oms_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RiskBudget.ProtoReflect.Descriptor instead.
+func (*RiskBudget) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_oms_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *RiskBudget) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *RiskBudget) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *RiskBudget) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *RiskBudget) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *RiskBudget) GetScopeKind() string {
+	if x != nil {
+		return x.ScopeKind
+	}
+	return ""
+}
+
+func (x *RiskBudget) GetScopeKey() string {
+	if x != nil {
+		return x.ScopeKey
+	}
+	return ""
+}
+
+func (x *RiskBudget) GetInstrumentId() int64 {
+	if x != nil && x.InstrumentId != nil {
+		return *x.InstrumentId
+	}
+	return 0
+}
+
+func (x *RiskBudget) GetAsset() string {
+	if x != nil {
+		return x.Asset
+	}
+	return ""
+}
+
+func (x *RiskBudget) GetLimitNotional() string {
+	if x != nil {
+		return x.LimitNotional
+	}
+	return ""
+}
+
+func (x *RiskBudget) GetReservedNotional() string {
+	if x != nil {
+		return x.ReservedNotional
+	}
+	return ""
+}
+
+func (x *RiskBudget) GetMaximumOrderNotional() string {
+	if x != nil {
+		return x.MaximumOrderNotional
+	}
+	return ""
+}
+
+func (x *RiskBudget) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *RiskBudget) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
 var File_deer_proto_model_v1_oms_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
@@ -1260,7 +1402,28 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"\n" +
 	"request_id\x18\x15 \x01(\tB7\x9a\x84\x9e\x032gorm:\"column:request_id;type:varchar(64);not null\"R\trequestIdB\f\n" +
 	"\n" +
-	"_delete_atB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
+	"_delete_at\"\x8e\n" +
+	"\n" +
+	"\n" +
+	"RiskBudget\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12w\n" +
+	"\n" +
+	"scope_kind\x18\x05 \x01(\tBX\x9a\x84\x9e\x03Sgorm:\"column:scope_kind;type:varchar(16);not null;uniqueIndex:uk_risk_budget_scope\"R\tscopeKind\x12t\n" +
+	"\tscope_key\x18\x06 \x01(\tBW\x9a\x84\x9e\x03Rgorm:\"column:scope_key;type:varchar(64);not null;uniqueIndex:uk_risk_budget_scope\"R\bscopeKey\x12V\n" +
+	"\rinstrument_id\x18\a \x01(\x03B,\x9a\x84\x9e\x03'gorm:\"column:instrument_id;type:bigint\"H\x01R\finstrumentId\x88\x01\x01\x12H\n" +
+	"\x05asset\x18\b \x01(\tB2\x9a\x84\x9e\x03-gorm:\"column:asset;type:varchar(32);not null\"R\x05asset\x12e\n" +
+	"\x0elimit_notional\x18\t \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:limit_notional;type:numeric(76,36);not null\"R\rlimitNotional\x12n\n" +
+	"\x11reserved_notional\x18\n" +
+	" \x01(\tBA\x9a\x84\x9e\x03<gorm:\"column:reserved_notional;type:numeric(76,36);not null\"R\x10reservedNotional\x12|\n" +
+	"\x16maximum_order_notional\x18\v \x01(\tBF\x9a\x84\x9e\x03Agorm:\"column:maximum_order_notional;type:numeric(76,36);not null\"R\x14maximumOrderNotional\x12J\n" +
+	"\aenabled\x18\f \x01(\bB0\x9a\x84\x9e\x03+gorm:\"column:enabled;type:boolean;not null\"R\aenabled\x12L\n" +
+	"\brevision\x18\r \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
+	"\n" +
+	"_delete_atB\x10\n" +
+	"\x0e_instrument_idB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
 var (
 	file_deer_proto_model_v1_oms_proto_rawDescOnce sync.Once
@@ -1274,7 +1437,7 @@ func file_deer_proto_model_v1_oms_proto_rawDescGZIP() []byte {
 	return file_deer_proto_model_v1_oms_proto_rawDescData
 }
 
-var file_deer_proto_model_v1_oms_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_deer_proto_model_v1_oms_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
 var file_deer_proto_model_v1_oms_proto_goTypes = []any{
 	(*AccountBudget)(nil),       // 0: muskdeer.model.v1.AccountBudget
 	(*StrategyBudget)(nil),      // 1: muskdeer.model.v1.StrategyBudget
@@ -1282,10 +1445,11 @@ var file_deer_proto_model_v1_oms_proto_goTypes = []any{
 	(*OrderIntent)(nil),         // 3: muskdeer.model.v1.OrderIntent
 	(*OutboxEvent)(nil),         // 4: muskdeer.model.v1.OutboxEvent
 	(*CancellationRequest)(nil), // 5: muskdeer.model.v1.CancellationRequest
-	(*v1.ExecutionEvent)(nil),   // 6: muskdeer.common.v1.ExecutionEvent
+	(*RiskBudget)(nil),          // 6: muskdeer.model.v1.RiskBudget
+	(*v1.ExecutionEvent)(nil),   // 7: muskdeer.common.v1.ExecutionEvent
 }
 var file_deer_proto_model_v1_oms_proto_depIdxs = []int32{
-	6, // 0: muskdeer.model.v1.OutboxEvent.event:type_name -> muskdeer.common.v1.ExecutionEvent
+	7, // 0: muskdeer.model.v1.OutboxEvent.event:type_name -> muskdeer.common.v1.ExecutionEvent
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -1304,13 +1468,14 @@ func file_deer_proto_model_v1_oms_proto_init() {
 	file_deer_proto_model_v1_oms_proto_msgTypes[3].OneofWrappers = []any{}
 	file_deer_proto_model_v1_oms_proto_msgTypes[4].OneofWrappers = []any{}
 	file_deer_proto_model_v1_oms_proto_msgTypes[5].OneofWrappers = []any{}
+	file_deer_proto_model_v1_oms_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_model_v1_oms_proto_rawDesc), len(file_deer_proto_model_v1_oms_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   7,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

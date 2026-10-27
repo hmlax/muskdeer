@@ -36,3 +36,12 @@ type RiskDecision struct {
 type RiskEvaluator interface {
 	Evaluate(ctx context.Context, strategyID int64) (RiskDecision, error)
 }
+
+// RiskScope identifies cross-account quote-notional budgets.
+type RiskScope string
+
+// Global scopes retain independent units for each quote asset.
+const (
+	RiskScopePlatform   RiskScope = "PLATFORM"
+	RiskScopeInstrument RiskScope = "INSTRUMENT"
+)

@@ -197,7 +197,14 @@ func releaseIntentReservation(ctx context.Context, tx *gorm.DB, rows intentState
 	if err := saveAccountReservation(ctx, tx, rows.account, account); err != nil {
 		return err
 	}
-	return saveStrategyReservation(ctx, tx, rows.strategy, strategy)
+	if err := saveStrategyReservation(ctx, tx, rows.strategy, strategy); err != nil {
+		return err
+	}
+	var instrument modelv1.Instrument
+	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Select("QuoteAsset").First(&instrument, rows.intent.InstrumentId).Error; err != nil {
+		return err
+	}
+	return changeGlobalRiskReservation(ctx, tx, rows.intent.InstrumentId, instrument.QuoteAsset, delta)
 }
 
 func intentClock(ctx context.Context, tx *gorm.DB, id int64) (int64, error) {

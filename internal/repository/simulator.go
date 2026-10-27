@@ -224,7 +224,7 @@ func coreFailure(ctx context.Context, err error) error {
 				cause:    err,
 			}
 		}
-		if databaseError.ConstraintName == "simulator_intent_risk" || databaseError.ConstraintName == "simulator_market_risk" {
+		if databaseError.ConstraintName == "simulator_intent_risk" || databaseError.ConstraintName == "simulator_market_risk" || databaseError.ConstraintName == "oms_global_risk" {
 			return &corePersistenceError{
 				category: domain.ErrRiskDenied,
 				cause:    err,

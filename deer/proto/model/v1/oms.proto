@@ -137,3 +137,21 @@ message CancellationRequest {
   string error_code = 20 [(tagger.tags) = "gorm:\"column:error_code;type:varchar(64);not null\""];
   string request_id = 21 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(64);not null\""];
 }
+
+// RiskBudget tracks quote-notional obligations across accounts. Scope is one
+// quote-asset platform or one execution instrument; policies are explicit.
+message RiskBudget {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string scope_kind = 5 [(tagger.tags) = "gorm:\"column:scope_kind;type:varchar(16);not null;uniqueIndex:uk_risk_budget_scope\""];
+  string scope_key = 6 [(tagger.tags) = "gorm:\"column:scope_key;type:varchar(64);not null;uniqueIndex:uk_risk_budget_scope\""];
+  optional int64 instrument_id = 7 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint\""];
+  string asset = 8 [(tagger.tags) = "gorm:\"column:asset;type:varchar(32);not null\""];
+  string limit_notional = 9 [(tagger.tags) = "gorm:\"column:limit_notional;type:numeric(76,36);not null\""];
+  string reserved_notional = 10 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+  string maximum_order_notional = 11 [(tagger.tags) = "gorm:\"column:maximum_order_notional;type:numeric(76,36);not null\""];
+  bool enabled = 12 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  int64 revision = 13 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}

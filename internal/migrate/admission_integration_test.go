@@ -159,6 +159,7 @@ func admissionFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.In
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
+	seedGlobalRiskBudgets(ctx, t, db, submit.Input.InstrumentID)
 	seedAdmissionStrategy(ctx, t, db, submit.Input)
 	store, err := repository.NewIntents(db)
 	if err != nil {

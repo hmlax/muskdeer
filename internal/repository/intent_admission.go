@@ -42,6 +42,9 @@ func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput,
 	if err != nil {
 		return nil, err
 	}
+	if err := changeGlobalRiskReservation(ctx, tx, instrument.Id, instrument.QuoteAsset, amount); err != nil {
+		return nil, err
+	}
 	if err := saveAccountReservation(ctx, tx, account, accountReserved); err != nil {
 		return nil, err
 	}

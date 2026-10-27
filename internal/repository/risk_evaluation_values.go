@@ -38,6 +38,18 @@ func riskBudgetsEnabled(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 	if _, err := reserveWithinLimit(budget.ReservedNotional, budget.LimitNotional, decimal.Zero); err != nil {
 		return false, err
 	}
+	global, err := globalRiskBudgets(ctx, tx, strategy.InstrumentId, quoteAsset, "SHARE")
+	if errors.Is(err, domain.ErrRiskDenied) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	for _, row := range global {
+		if !row.Enabled {
+			return false, nil
+		}
+	}
 	return true, nil
 }
 
