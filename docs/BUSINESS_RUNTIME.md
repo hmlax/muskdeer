@@ -69,6 +69,19 @@ P06.7增加可选的execution风险任务。显式配置 `business.risk.accountI
 
 启动只读验证这些账户及账户预算已存在，不制造资产或开启政策。每个账户一个Deer-owned任务，与RPC共享同一execution owner；先按数据库时间取得/续期租约，standby不评估。每轮按ID读取该账户desired_running实例，最多16个，逐个执行已有事务评估器并等待pollInterval；超限或数据库错误返回Deer，撤销readiness并停止。省略risk不启动周期风险任务；旧配置仍使用30秒执行租约。风险许可保留原行情的有限期限，最终下单仍逐笔检查实际当前租约/行情/全部额度。进程退出后不再刷新，许可和租约自然到期。
 
+P06.8增加可选的显式L1模拟撤单场景；它只在execution角色接受，不能用作真实交易适配器。与risk相同，要求executionLeaseTtl；例如在上述business内增加：
+
+```json
+{
+  "simulator": {
+    "accountIds": ["sim-maker-one"],
+    "cancelDelay": "0.1s"
+  }
+}
+```
+
+accountIds为1–16个不重复的已有模拟账户，cancelDelay为1ms–5s整数毫秒。一个Deer-owned任务按明确账户逐个取得执行租约，standby跳过；每轮每账户最多确认一个到期PENDING撤单，有积压才继续处理。候选按不可变SimulatorCommand的create_at及数据库当前时间计算，部分成交更新订单不会重置撤单延迟。实际ConfirmCancel允许撤单期间成交，保留已成交数量并仅释放剩余核心冻结。OMS仍须查询实际终态后释放全部风险预留，不把场景确认冒充客户端已观察；省略simulator不自动确认、撮合或制造资产。错误返回Deer停止，不在同一调用内盲重试。
+
 portfolio 的 owned 工作器绑定已有 durable，解码具体 ExecutionEvent，核对 broker ID/envelope ID 和字段，再消费成交。持仓/inbox 提交后，通过 Deer-owned unary factory 新鲜发现 execution.grpc、mTLS 查询原意图，同步 OMS/预算，成功后确认 ACK。客户端只实现观察接口，不持有执行 owner、不提交订单。控制类事件校验后确认；当前 portfolio gRPC 仅有标准健康服务，管理读取业务接口随 P07 接入。
 
 market只读加载绑定并装配按feed命名的owned工作器及真实MarketData RPC。备用不建流，持有者运行固定公开TLS或明确回放、续租/恢复基准/提交授权快照。任一节点都可从数据库返回准确来源的当前快照；读取不依赖它自己拥有该feed，也不把Nacos在线当发布授权。详情见 [行情说明](MARKET_DATA.md)。
@@ -82,5 +95,7 @@ market只读加载绑定并装配按feed命名的owned工作器及真实MarketDa
 market进程用例使用两个不同PID分别发布Binance/OKX的显式REPLAY簿，经Deer unary factory/Nacos/mTLS读取19位mid及独立来源；SIGTERM其中一个后只该源无价格，另一源继续健康，未创建任何账户或订单。真实公开TLS接入另有A25证据，不能把回放当实连。
 
 风险进程用例显式准备模拟资产、投影和额度，启动独立market/execution命令；execution取得新epoch并从实际发布写出含500ms实例年龄上限的READY许可。停止所选market后由工作器持久关闭为MARKET_UNAVAILABLE，不换源、不创建订单。
+
+模拟撤单用例验证延迟/账户范围及部分成交不重置计时；独立execution命令实际确认PENDING，核心解冻后OMS仍保留预算，随后经Nacos/mTLS查询撤单终态才释放风险预留。场景控制只在内部显式L1配置中开放。
 
 P05行情层完成，完整L1、策略失效撤单、管理页面、对冲、多节点全链路与运维验收继续P06–P10；真实交易环境继续P11。

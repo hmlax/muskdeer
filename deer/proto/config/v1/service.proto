@@ -39,6 +39,13 @@ message BusinessRuntime {
   MarketRuntime market = 6;
   RiskRuntime risk = 7;
   google.protobuf.Duration execution_lease_ttl = 8;
+  SimulatorScenarioRuntime simulator = 9;
+}
+
+// SimulatorScenarioRuntime explicitly enables privileged L1 venue responses.
+message SimulatorScenarioRuntime {
+  repeated string account_ids = 1;
+  google.protobuf.Duration cancel_delay = 2;
 }
 
 // RiskRuntime grants no resources; it limits evaluation to existing accounts.

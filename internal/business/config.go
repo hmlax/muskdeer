@@ -35,17 +35,21 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		cfg.Business.OperationTimeout.AsDuration() > cfg.ShutdownTimeout.AsDuration() {
 		return ErrInvalidConfig
 	}
+	return validateBusinessRole(cfg)
+}
+
+func validateBusinessRole(cfg *configv1.ServiceConfig) error {
 	switch cfg.Name + ".grpc" {
 	case rpcsecurity.ServiceExecution:
-		if cfg.Jetstream == nil || cfg.Business.PortfolioConsumer != "" || cfg.Business.Market != nil || validateRiskConfig(cfg.Business) != nil {
+		if cfg.Jetstream == nil || cfg.Business.PortfolioConsumer != "" || cfg.Business.Market != nil || validateRiskConfig(cfg.Business) != nil || validateSimulatorConfig(cfg.Business) != nil {
 			return ErrInvalidConfig
 		}
 	case rpcsecurity.ServicePortfolio:
-		if cfg.Jetstream == nil || cfg.GrpcClients == nil || !consumerName(cfg.Business.PortfolioConsumer) || cfg.Business.Market != nil || cfg.Business.Risk != nil || cfg.Business.ExecutionLeaseTtl != nil {
+		if cfg.Jetstream == nil || cfg.GrpcClients == nil || !consumerName(cfg.Business.PortfolioConsumer) || cfg.Business.Market != nil || cfg.Business.Risk != nil || cfg.Business.ExecutionLeaseTtl != nil || cfg.Business.Simulator != nil {
 			return ErrInvalidConfig
 		}
 	case rpcsecurity.ServiceMarket:
-		if cfg.Business.PortfolioConsumer != "" || validateMarketConfig(cfg.Business) != nil || cfg.Business.Risk != nil || cfg.Business.ExecutionLeaseTtl != nil {
+		if cfg.Business.PortfolioConsumer != "" || validateMarketConfig(cfg.Business) != nil || cfg.Business.Risk != nil || cfg.Business.ExecutionLeaseTtl != nil || cfg.Business.Simulator != nil {
 			return ErrInvalidConfig
 		}
 	default:

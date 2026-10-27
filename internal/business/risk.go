@@ -17,10 +17,7 @@ import (
 	"github.com/hmlax/muskdeer/internal/repository"
 )
 
-const (
-	riskWorkerPrefix       = "execution.risk."
-	maxRiskRuntimeAccounts = 16
-)
+const riskWorkerPrefix = "execution.risk."
 
 type riskExecutionOwner interface {
 	ForAccount(context.Context, string) (domain.LeaseToken, error)
@@ -33,34 +30,10 @@ func validateRiskConfig(cfg *configv1.BusinessRuntime) error {
 	if cfg.Risk == nil {
 		return nil
 	}
-	if cfg.ExecutionLeaseTtl == nil || len(cfg.Risk.AccountIds) == 0 || len(cfg.Risk.AccountIds) > maxRiskRuntimeAccounts {
+	if cfg.ExecutionLeaseTtl == nil || !runtimeAccountsValid(cfg.Risk.AccountIds) {
 		return ErrInvalidConfig
 	}
-	seen := make(map[string]struct{}, len(cfg.Risk.AccountIds))
-	for _, account := range cfg.Risk.AccountIds {
-		if !riskAccountID(account) {
-			return ErrInvalidConfig
-		}
-		if _, duplicate := seen[account]; duplicate {
-			return ErrInvalidConfig
-		}
-		seen[account] = struct{}{}
-	}
 	return nil
-}
-
-func riskAccountID(value string) bool {
-	if len(value) == 0 || len(value) > 64 {
-		return false
-	}
-	for index := range len(value) {
-		c := value[index]
-		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' || c == ':' {
-			continue
-		}
-		return false
-	}
-	return true
 }
 
 func executionLeaseTTL(cfg *configv1.BusinessRuntime) time.Duration {

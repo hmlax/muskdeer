@@ -115,6 +115,10 @@ func newExecution(ctx context.Context, db *gorm.DB, events *jetstream.Client, in
 	if err != nil {
 		return nil, err
 	}
+	scenarios, err := newSimulatorWorkers(ctx, db, authority, cfg)
+	if err != nil {
+		return nil, err
+	}
 	poll, timeout := cfg.PollInterval.AsDuration(), cfg.OperationTimeout.AsDuration()
 	workers := []deer.Worker{
 		{
@@ -123,6 +127,7 @@ func newExecution(ctx context.Context, db *gorm.DB, events *jetstream.Client, in
 		},
 	}
 	workers = append(workers, additional...)
+	workers = append(workers, scenarios...)
 	return &Runtime{
 		execution: handler,
 		workers:   workers,

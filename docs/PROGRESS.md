@@ -587,3 +587,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：配置/standby/原始错误传递测试先红后绿；独立market/execution命令取得新epoch和准确500ms行情许可，停止所选market后实际持久关闭且无新订单。完整make verify、完整make integration、文档/差异检查通过，lint 0 issues、race/goleak保留；见 [P06.7](validation/P06-07.md)。
 - 远程：7d0c742已推送main并核对SHA，[CI 40496425681](https://github.com/hmlax/muskdeer/actions/runs/40496425681) success；本步独立提交/推送并核对SHA。
 - 下一步：显式模拟撤单确认、策略所有者/持久决策及差分循环、失效撤单和30分钟实际模拟；P06保持进行。
+
+## 2026-10-27：P06.8 显式模拟撤单确认
+
+- 改动：execution可选显式模拟账户/cancelDelay，与现有owner共享执行租约，standby不处理；单一Deer-owned任务有界确认到期PENDING。候选使用不可变撤单命令年龄，部分成交不重置计时；核心确认与OMS观察/风险释放继续分开。
+- 验证：真实PG延迟/跨账户/部分成交及剩余资金保留先红后绿；独立execution命令实际确认，再经Nacos/mTLS观察终态才释放风险预算。完整make verify、完整make integration、文档/差异检查通过，lint 0 issues、race/goleak保留；见 [P06.8](validation/P06-08.md)。
+- 远程：e1217ca已推送main并核对SHA；本步独立提交/推送并核对SHA。
+- 下一步：策略执行客户端与稳定键查询、策略所有者/持久决策及差分循环、失效撤单和30分钟实际模拟；P06保持进行。
