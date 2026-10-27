@@ -39,6 +39,10 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream/Nacos。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
+可选 `monitoring` 是独立 Hertz 监听，当前仅允许字面量 loopback TCP 地址，提供 `/livez` 和 `/readyz`；`MonitoringAddress()` 返回实际端口。两者返回 typed JSON status 字符串：存活为 alive，当前就绪为 ready，依赖/生命周期未就绪为 unready（503）。`Live()` 仅判断 Run 是否仍拥有进程，包含启动与 drain，不因依赖短暂失败报死；Ready/CheckReady 则在停止前撤销。健康响应不回显依赖原因或配置。
+
+标准 gRPC Health Check/List/Watch 同样调用 CheckReady，支持空 service 聚合名及 `<name>.grpc` 逻辑名；未知 Check 返回 NotFound，未知 Watch 报 SERVICE_UNKNOWN。List 对两个已知名字给出同一快照。Watch 每 250ms 检查一次，仅发送状态变化，检查本身受流 context 限制；最多四条并发 Watch，额外请求 ResourceExhausted，不排队。原有强制 native deadline 继续生效，ticker/准入随 handler 退出释放，无额外后台循环。完整证据见 [P02.8.2](validation/P02-08-02.md)。
+
 实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.4 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销、mTLS unary gRPC 调用工厂，验证 Hertz API 发现并调用两个 Deer 节点；进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础

@@ -22,6 +22,16 @@ func TestDeerRejectsInvalidConfigBeforeSideEffects(t *testing.T) {
 			change: func(*configv1.ServiceConfig) *configv1.ServiceConfig { return nil },
 		},
 		{
+			name: "public unauthenticated monitoring",
+			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
+				cfg.Monitoring = &configv1.Listener{
+					Address:        "0.0.0.0:0",
+					RequestTimeout: durationpb.New(time.Second),
+				}
+				return cfg
+			},
+		},
+		{
 			name: "outbound RPC requires discovery",
 			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
 				cfg.GrpcClients = &configv1.GRPCClients{}

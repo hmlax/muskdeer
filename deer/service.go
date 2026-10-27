@@ -14,6 +14,7 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 	kratosgrpc "github.com/go-kratos/kratos/v2/transport/grpc"
 	"google.golang.org/grpc"
+	healthv1 "google.golang.org/grpc/health/grpc_health_v1"
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/jetstream"
@@ -57,26 +58,27 @@ type ServiceSpec struct {
 // Construct once, Run at most once, and defer the returned Cleanup immediately.
 // Run also releases all resources before returning.
 type Deer struct {
-	cfg         *configv1.ServiceConfig
-	servers     []*managedTransport
-	release     Cleanup
-	grpcAddress string
-	ready       atomic.Bool
-	readySignal chan struct{}
-	stopSignal  chan struct{}
-	done        chan struct{}
-	mu          sync.Mutex
-	started     bool
-	closed      bool
-	stopOnce    sync.Once
-	closeErr    error
-	logger      *logging.Logger
-	database    *postgres.Client
-	cache       *redis.Client
-	events      *jetstream.Client
-	discovery   *nacos.Client
-	publication *nacos.Publication
-	rpcClients  *rpcclient.Factory
+	cfg               *configv1.ServiceConfig
+	servers           []*managedTransport
+	release           Cleanup
+	grpcAddress       string
+	monitoringAddress string
+	ready             atomic.Bool
+	readySignal       chan struct{}
+	stopSignal        chan struct{}
+	done              chan struct{}
+	mu                sync.Mutex
+	started           bool
+	closed            bool
+	stopOnce          sync.Once
+	closeErr          error
+	logger            *logging.Logger
+	database          *postgres.Client
+	cache             *redis.Client
+	events            *jetstream.Client
+	discovery         *nacos.Client
+	publication       *nacos.Publication
+	rpcClients        *rpcclient.Factory
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -334,6 +336,11 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			return nil, nil, errors.Join(err, d.cleanup(ctx))
 		}
 	}
+	if cfg.Monitoring != nil {
+		if err := d.addMonitoring(startup); err != nil {
+			return nil, nil, errors.Join(err, d.cleanup(ctx))
+		}
+	}
 	if err := d.configurePublication(); err != nil {
 		return nil, nil, errors.Join(err, d.cleanup(ctx))
 	}
@@ -365,11 +372,16 @@ func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer
 		kratosgrpc.TLSConfig(security),
 		kratosgrpc.Timeout(d.cfg.Grpc.RequestTimeout.AsDuration()),
 		kratosgrpc.DisableReflection(),
+		kratosgrpc.CustomHealth(),
 		kratosgrpc.Options(grpc.WaitForHandlers(true)),
 		kratosgrpc.StreamInterceptor(streamDeadlineInterceptor(d.cfg.Grpc.RequestTimeout.AsDuration())),
 	)
 	d.servers = append(d.servers, newManagedTransport(server, accepting, "grpc", d.requestStop))
 	d.grpcAddress = listener.Addr().String()
+	healthv1.RegisterHealthServer(server, &readinessHealth{
+		owner:      d,
+		watchSlots: make(chan struct{}, maximumHealthWatches),
+	})
 	if register != nil {
 		if err := register(ctx, d, server); err != nil {
 			return fmt.Errorf("register gRPC: %w", err)

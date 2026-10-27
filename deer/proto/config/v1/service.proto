@@ -22,6 +22,8 @@ message ServiceConfig {
   Nacos nacos = 12;
   GRPCServerSecurity grpc_security = 13;
   GRPCClients grpc_clients = 14;
+  // Monitoring is a separate, loopback-only Hertz listener for local probes.
+  Listener monitoring = 15;
 }
 
 // GRPCClients bounds outbound unary RPCs, including discovery and connection.

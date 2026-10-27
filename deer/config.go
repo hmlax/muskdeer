@@ -3,6 +3,8 @@ package deer
 import (
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
 	"strings"
 
 	"google.golang.org/protobuf/proto"
@@ -61,9 +63,20 @@ func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceCon
 			return nil, err
 		}
 	}
+	if cfg.Monitoring != nil {
+		host, port, err := net.SplitHostPort(cfg.Monitoring.Address)
+		ip := net.ParseIP(host)
+		if err != nil || ip == nil || !ip.IsLoopback() {
+			return nil, errors.New("monitoring requires a literal loopback TCP address")
+		}
+		if _, err := strconv.ParseUint(port, 10, 16); err != nil {
+			return nil, errors.New("monitoring port must be in 0..65535")
+		}
+	}
 	for name, listener := range map[string]*configv1.Listener{
-		"grpc": cfg.Grpc,
-		"http": cfg.Http,
+		"grpc":       cfg.Grpc,
+		"http":       cfg.Http,
+		"monitoring": cfg.Monitoring,
 	} {
 		if listener == nil {
 			continue

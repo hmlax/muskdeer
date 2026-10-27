@@ -39,8 +39,10 @@ type ServiceConfig struct {
 	Nacos           *Nacos                 `protobuf:"bytes,12,opt,name=nacos,proto3" json:"nacos,omitempty"`
 	GrpcSecurity    *GRPCServerSecurity    `protobuf:"bytes,13,opt,name=grpc_security,json=grpcSecurity,proto3" json:"grpc_security,omitempty"`
 	GrpcClients     *GRPCClients           `protobuf:"bytes,14,opt,name=grpc_clients,json=grpcClients,proto3" json:"grpc_clients,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Monitoring is a separate, loopback-only Hertz listener for local probes.
+	Monitoring    *Listener `protobuf:"bytes,15,opt,name=monitoring,proto3" json:"monitoring,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ServiceConfig) Reset() {
@@ -167,6 +169,13 @@ func (x *ServiceConfig) GetGrpcSecurity() *GRPCServerSecurity {
 func (x *ServiceConfig) GetGrpcClients() *GRPCClients {
 	if x != nil {
 		return x.GrpcClients
+	}
+	return nil
+}
+
+func (x *ServiceConfig) GetMonitoring() *Listener {
+	if x != nil {
+		return x.Monitoring
 	}
 	return nil
 }
@@ -1169,7 +1178,7 @@ var File_deer_proto_config_v1_service_proto protoreflect.FileDescriptor
 
 const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xed\x05\n" +
+	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xab\x06\n" +
 	"\rServiceConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -1186,7 +1195,10 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\tjetstream\x18\v \x01(\v2\x1d.muskdeer.config.v1.JetStreamR\tjetstream\x12/\n" +
 	"\x05nacos\x18\f \x01(\v2\x19.muskdeer.config.v1.NacosR\x05nacos\x12K\n" +
 	"\rgrpc_security\x18\r \x01(\v2&.muskdeer.config.v1.GRPCServerSecurityR\fgrpcSecurity\x12B\n" +
-	"\fgrpc_clients\x18\x0e \x01(\v2\x1f.muskdeer.config.v1.GRPCClientsR\vgrpcClients\"\xf0\x02\n" +
+	"\fgrpc_clients\x18\x0e \x01(\v2\x1f.muskdeer.config.v1.GRPCClientsR\vgrpcClients\x12<\n" +
+	"\n" +
+	"monitoring\x18\x0f \x01(\v2\x1c.muskdeer.config.v1.ListenerR\n" +
+	"monitoring\"\xf0\x02\n" +
 	"\vGRPCClients\x121\n" +
 	"\x04mtls\x18\x01 \x01(\v2\x1d.muskdeer.config.v1.MutualTLSR\x04mtls\x12B\n" +
 	"\x0fconnect_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12B\n" +
@@ -1325,32 +1337,33 @@ var file_deer_proto_config_v1_service_proto_depIdxs = []int32{
 	4,  // 8: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
 	3,  // 9: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
 	1,  // 10: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
-	2,  // 11: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	12, // 12: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
-	12, // 13: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
-	2,  // 14: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	12, // 15: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
-	12, // 16: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
-	5,  // 17: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
-	12, // 18: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
-	12, // 19: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
-	12, // 20: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
-	12, // 21: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
-	12, // 22: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
-	12, // 23: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
-	12, // 24: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
-	12, // 25: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
-	12, // 26: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
-	12, // 27: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
-	12, // 28: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
-	12, // 29: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
-	10, // 30: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	12, // 31: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	32, // [32:32] is the sub-list for method output_type
-	32, // [32:32] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	11, // 11: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
+	2,  // 12: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	12, // 13: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
+	12, // 14: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
+	2,  // 15: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	12, // 16: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
+	12, // 17: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
+	5,  // 18: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	12, // 19: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
+	12, // 20: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
+	12, // 21: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
+	12, // 22: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
+	12, // 23: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
+	12, // 24: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
+	12, // 25: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
+	12, // 26: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
+	12, // 27: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
+	12, // 28: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
+	12, // 29: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
+	12, // 30: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
+	10, // 31: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	12, // 32: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	33, // [33:33] is the sub-list for method output_type
+	33, // [33:33] is the sub-list for method input_type
+	33, // [33:33] is the sub-list for extension type_name
+	33, // [33:33] is the sub-list for extension extendee
+	0,  // [0:33] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_config_v1_service_proto_init() }

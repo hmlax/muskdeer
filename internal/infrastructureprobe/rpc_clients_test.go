@@ -41,6 +41,10 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 		Address:        "127.0.0.1:0",
 		RequestTimeout: durationpb.New(time.Second),
 	}
+	cfg.Monitoring = &configv1.Listener{
+		Address:        "127.0.0.1:0",
+		RequestTimeout: durationpb.New(time.Second),
+	}
 	cfg.GrpcClients = &configv1.GRPCClients{
 		Mtls:             ca.Issue(t, "api.grpc", false),
 		ConnectTimeout:   durationpb.New(500 * time.Millisecond),
@@ -90,6 +94,8 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 		t.Fatal(err)
 	}
 	runNamingService(t, api.Deer, cleanup)
+	assertMonitoringStatus(t, api.MonitoringAddress(), "/livez", http.StatusOK, "alive")
+	assertMonitoringStatus(t, api.MonitoringAddress(), "/readyz", http.StatusOK, "ready")
 	for _, id := range []string{"secure-a", "secure-b"} {
 		callAPIProbe(t, api.HTTPAddress(), id, http.StatusOK)
 	}
@@ -111,6 +117,38 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 	}
 	if err := api.CheckReady(t.Context()); !errors.Is(err, rpcclient.ErrClosed) {
 		t.Fatalf("API readiness ignored a closed RPC dependency: %v", err)
+	}
+	assertMonitoringStatus(t, api.MonitoringAddress(), "/readyz", http.StatusServiceUnavailable, "unready")
+	assertMonitoringStatus(t, api.MonitoringAddress(), "/livez", http.StatusOK, "alive")
+}
+
+func assertMonitoringStatus(t *testing.T, address, path string, wantCode int, wantState string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+address+path, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &http.Client{Timeout: time.Second}
+	defer client.CloseIdleConnections()
+	response, err := client.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := response.Body.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	var body struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if response.StatusCode != wantCode || body.Status != wantState {
+		t.Fatalf("monitoring %s = %d %s", path, response.StatusCode, body.Status)
 	}
 }
 

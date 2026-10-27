@@ -8,6 +8,10 @@
     "address": "127.0.0.1:59001",
     "request_timeout": "2s"
   },
+  "monitoring": {
+    "address": "127.0.0.1:59002",
+    "request_timeout": "1s"
+  },
   "logging": {
     "level": "info",
     "stdout": true

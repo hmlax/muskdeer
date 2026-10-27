@@ -69,15 +69,29 @@ func NewDeerApi(ctx context.Context, cfg *configv1.ServiceConfig, spec APISpec) 
 func (d *DeerApi) HTTPAddress() string { return d.httpAddress }
 
 func (d *DeerApi) addHTTP(ctx context.Context, routes func(context.Context, *Deer, *server.Hertz) error) error {
-	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", d.cfg.Http.Address)
+	hertz, address, err := d.addHertz(ctx, d.cfg.Http, "HTTP")
 	if err != nil {
-		return fmt.Errorf("listen HTTP: %w", err)
+		return err
+	}
+	d.httpAddress = address
+	if routes != nil {
+		if err := routes(ctx, d.Deer, hertz); err != nil {
+			return fmt.Errorf("register HTTP routes: %w", err)
+		}
+	}
+	return nil
+}
+
+func (d *Deer) addHertz(ctx context.Context, listenerConfig *configv1.Listener, label string) (*server.Hertz, string, error) {
+	listener, err := (&net.ListenConfig{}).Listen(ctx, "tcp", listenerConfig.Address)
+	if err != nil {
+		return nil, "", fmt.Errorf("listen %s: %w", label, err)
 	}
 	accepting := &acceptingListener{
 		Listener: listener,
 		ready:    make(chan struct{}),
 	}
-	timeout := d.cfg.Http.RequestTimeout.AsDuration()
+	timeout := listenerConfig.RequestTimeout.AsDuration()
 	owned := &hertzTransport{}
 	hertz := server.New(
 		server.WithListener(accepting),
@@ -93,7 +107,6 @@ func (d *DeerApi) addHTTP(ctx context.Context, routes func(context.Context, *Dee
 	)
 	owned.server = hertz
 	d.servers = append(d.servers, newManagedTransport(owned, accepting, "http", d.requestStop))
-	d.httpAddress = listener.Addr().String()
 	hertz.Use(func(ctx context.Context, request *app.RequestContext) {
 		// Supply Date per response without Hertz's process-global ticker.
 		request.Response.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
@@ -101,12 +114,7 @@ func (d *DeerApi) addHTTP(ctx context.Context, routes func(context.Context, *Dee
 		defer cancel()
 		request.Next(bounded)
 	})
-	if routes != nil {
-		if err := routes(ctx, d.Deer, hertz); err != nil {
-			return fmt.Errorf("register HTTP routes: %w", err)
-		}
-	}
-	return nil
+	return hertz, listener.Addr().String(), nil
 }
 
 func (s *hertzTransport) Start(context.Context) error { return s.server.Run() }
