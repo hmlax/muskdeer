@@ -118,6 +118,10 @@ func OKXDepth(ctx context.Context, data []byte, instrument Instrument, received 
 	if err != nil {
 		return marketbook.Frame{}, err
 	}
+	return okxFrame(ctx, raw, instrument, received)
+}
+
+func okxFrame(ctx context.Context, raw okxDepth, instrument Instrument, received time.Time) (marketbook.Frame, error) {
 	if !validScope(instrument, received) || raw.Argument == nil || raw.Argument.Channel != OKXChannelBooks || raw.Argument.Instrument != instrument.Symbol ||
 		(raw.Action != OKXActionSnapshot && raw.Action != OKXActionUpdate) || len(raw.Data) != 1 {
 		return marketbook.Frame{}, ErrInvalidPayload

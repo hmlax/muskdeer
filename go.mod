@@ -6,6 +6,7 @@ require (
 	github.com/cloudwego/hertz v0.10.6
 	github.com/go-kratos/kratos/contrib/registry/nacos/v2 v2.0.0-20260404020628-f149714c1d54
 	github.com/go-kratos/kratos/v2 v2.9.2
+	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.5
 	github.com/nats-io/nats.go v1.55.0
@@ -14,6 +15,7 @@ require (
 	github.com/shopspring/decimal v1.6.0
 	github.com/srikrsna/protoc-gen-gotag v1.0.2
 	go.uber.org/goleak v1.3.0
+	golang.org/x/net v0.58.0
 	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.12
 	gorm.io/driver/postgres v1.6.3
@@ -81,7 +83,6 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect
 	golang.org/x/crypto v0.57.0 // indirect
-	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
