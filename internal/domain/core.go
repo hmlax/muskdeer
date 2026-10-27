@@ -17,6 +17,7 @@ const (
 	MessageSelfTrade           = "self-trade prevention rejected the operation"
 	MessageUnsupportedOrder    = "order capability is unsupported"
 	MessageCoreUnavailable     = "core persistence operation failed"
+	MessageOutcomeUnknown      = "trading outcome is unknown; query by stable identity"
 )
 
 // Core failures preserve safety without exposing database text.
@@ -26,6 +27,7 @@ var (
 	ErrCoreNotFound        = errors.New(MessageCoreNotFound)
 	ErrSelfTrade           = errors.New(MessageSelfTrade)
 	ErrUnsupportedOrder    = errors.New(MessageUnsupportedOrder)
+	ErrOutcomeUnknown      = errors.New(MessageOutcomeUnknown)
 )
 
 // GatewaySubmit binds stable client identity to two independently owned scopes.
@@ -92,13 +94,18 @@ type CoreFill struct {
 	FeeAsset      string
 }
 
-// Simulator exposes trading plus explicit scenario control. Fill and
-// ConfirmCancel are privileged simulator controls, never management trade APIs.
-type Simulator interface {
+// TradingGateway is the execution adapter's narrow trading boundary.
+type TradingGateway interface {
 	Submit(ctx context.Context, command GatewaySubmit) (CoreOrder, error)
 	Cancel(ctx context.Context, command GatewayCancel) (CoreOrder, error)
 	Find(ctx context.Context, accountID, clientOrderID string) (CoreOrder, error)
 	Balances(ctx context.Context, accountID string) ([]CoreBalance, error)
+}
+
+// Simulator adds privileged scenario control to the trading contract. Fill and
+// ConfirmCancel are never management trade APIs.
+type Simulator interface {
+	TradingGateway
 	Fill(ctx context.Context, request CoreFillRequest) (CoreFill, error)
 	ConfirmCancel(ctx context.Context, accountID, clientOrderID string) (CoreOrder, error)
 }
