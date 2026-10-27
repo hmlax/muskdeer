@@ -125,7 +125,7 @@ func validateCoreCommand(ctx context.Context, authority domain.StrategyAuthority
 	now := time.Now()
 	if !coreIdentifier(accountID, 64) || !coreIdentifier(clientID, 64) || !coreIdentifier(key, 128) ||
 		instrumentID <= 0 || authority.StrategyID <= 0 || authority.ConfigVersion <= 0 || authority.OwnerEpoch <= 0 || !ownerid.Valid(authority.OwnerID) ||
-		execution.Key.Kind != domain.LeaseKindExecution || execution.Key.AccountID != accountID || execution.Key.StrategyID != 0 || execution.Epoch <= 0 || !ownerid.Valid(execution.OwnerID) ||
+		execution.Key.Kind != domain.LeaseKindExecution || execution.Key.AccountID != accountID || execution.Key.StrategyID != 0 || execution.Key.MarketFeedID != 0 || execution.Epoch <= 0 || !ownerid.Valid(execution.OwnerID) ||
 		!deadline.After(now) || deadline.After(limit) || deadline.Sub(now) > domain.MaxIntentLifetime {
 		return domain.ErrInvalidOrder
 	}

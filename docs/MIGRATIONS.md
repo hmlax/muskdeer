@@ -1,6 +1,6 @@
 # 版本化数据库升级
 
-P03.2 提供显式迁移工具，服务启动及 dev-up 都不会自动执行迁移或 AutoMigrate。当前版本 10 包含迁移记录、交易对/实例/配置来源身份、typed 模板参数、两类所有权租约及模拟网关模型；交易表继续按后续版本加入。
+P03.2 提供显式迁移工具，服务启动及 dev-up 都不会自动执行迁移或 AutoMigrate。当前版本 11 包含迁移记录、交易对/实例/配置来源身份、typed 模板参数、策略/执行/行情租约、模拟核心、OMS/持仓及行情产品/模式/政策绑定；后续业务表继续按新版本加入。
 
 ## 使用
 
@@ -13,7 +13,7 @@ make build
 
 本地开发可使用 `make dev-up` 生成的 `.cache/dev/execution.json`，先 source `.cache/dev/environment.sh`。工具只装配配置中的 PostgreSQL，不创建业务进程、日志文件、Redis、Nacos 或消息客户端。Go 固定 1.27.3，整个命令有 30 秒总预算及 SIGTERM 取消；数据库各语句还受配置 statement_timeout 限制。
 
-成功输出 typed JSON `{"status":"applied","version":10}`，包括已经是当前版本的情况；参数错误退出 2，配置/连接/历史/执行/清理错误退出 1。必须显式传 -apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出 SQL、凭据或原始配置，历史不一致有独立安全提示。
+成功输出 typed JSON `{"status":"applied","version":11}`，包括已经是当前版本的情况；参数错误退出 2，配置/连接/历史/执行/清理错误退出 1。必须显式传 -apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出 SQL、凭据或原始配置，历史不一致有独立安全提示。
 
 ## 结构与执行
 
@@ -46,3 +46,5 @@ SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/mi
 版本9加入独立持久撤单请求及 typed cancellation outbox；未派发原子取消与终态预留语义见 [OMS 撤单说明](OMS.md#p043-持久撤单请求)。
 
 版本10加入持仓起点/投影、成交自然键与inbox；范围和重建规则见 [持仓说明](PORTFOLIO.md)。
+
+版本11加入不可变来源/产品/LIVE或REPLAY/typed质量政策绑定，以及保留epoch的行情发布租约。绑定与执行产品实际base/quote资产对应，数据库拒绝静默改绑、删除和改变已绑定底层资产；最终行情发布目标的fencing继续下一版本，见 [行情说明](MARKET_DATA.md)。

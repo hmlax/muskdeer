@@ -160,6 +160,9 @@ func leaseModel(key domain.LeaseKey) leaseRecord {
 	if key.Kind == domain.LeaseKindStrategy {
 		return &modelv1.StrategyLease{StrategyInstanceId: key.StrategyID}
 	}
+	if key.Kind == domain.LeaseKindMarket {
+		return &modelv1.MarketPublisherLease{MarketFeedId: key.MarketFeedID}
+	}
 	return &modelv1.ExecutionShardLease{AccountId: key.AccountID}
 }
 
@@ -168,6 +171,12 @@ func leasePredicate(key domain.LeaseKey) clause.Expression {
 		return clause.Eq{
 			Column: clause.Column{Name: "strategy_instance_id"},
 			Value:  key.StrategyID,
+		}
+	}
+	if key.Kind == domain.LeaseKindMarket {
+		return clause.Eq{
+			Column: clause.Column{Name: "market_feed_id"},
+			Value:  key.MarketFeedID,
 		}
 	}
 	return clause.Eq{
@@ -183,6 +192,10 @@ func setLease(row leaseRecord, owner string, epoch, expiresAt int64) {
 		row.Epoch = epoch
 		row.ExpiresAt = expiresAt
 	case *modelv1.ExecutionShardLease:
+		row.OwnerId = owner
+		row.Epoch = epoch
+		row.ExpiresAt = expiresAt
+	case *modelv1.MarketPublisherLease:
 		row.OwnerId = owner
 		row.Epoch = epoch
 		row.ExpiresAt = expiresAt
@@ -210,11 +223,15 @@ func validateLeaseCall(ctx context.Context, key domain.LeaseKey, owner string, t
 	}
 	switch key.Kind {
 	case domain.LeaseKindStrategy:
-		if key.StrategyID <= 0 || key.AccountID != "" {
+		if key.StrategyID <= 0 || key.AccountID != "" || key.MarketFeedID != 0 {
 			return domain.ErrInvalidLease
 		}
 	case domain.LeaseKindExecution:
-		if key.StrategyID != 0 || key.AccountID == "" || len(key.AccountID) > 64 {
+		if key.StrategyID != 0 || key.AccountID == "" || len(key.AccountID) > 64 || key.MarketFeedID != 0 {
+			return domain.ErrInvalidLease
+		}
+	case domain.LeaseKindMarket:
+		if key.MarketFeedID <= 0 || key.AccountID != "" || key.StrategyID != 0 {
 			return domain.ErrInvalidLease
 		}
 	default:

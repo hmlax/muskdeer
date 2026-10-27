@@ -51,3 +51,11 @@ OKX 使用 `wss://ws.okx.com:8443/ws/v5/public`，显式 typed `books` 订阅；
 初始同步、连接重建、维护generation切换、异常后恢复，至少3个不同序列/簿观察且持续200ms才健康；重复观察不计数。建立后的基准只由健康价格更新，离群价格不替换基准、断线不清除基准；真实价格已大幅跳变时保持保护，后续需要明确的重新定基操作。首次启动尚无已接受基准时，候选序列需连续一致才建立基准，单条初始离群不能直接报价或永久污染候选。
 
 当前质量处理器不拥有网络、数据库、goroutine或发布租约；LIVE/REPLAY 不互相冒充。跨进程恢复基准、持久发布授权及按实例撤旧单仍在后续步骤，不把纯处理器当作完整策略保护。
+
+## P05.5 持久来源绑定与租约
+
+版本11的生成 MarketFeed Model 保存唯一 `(source, instrument_id, mode)`、准确 external_symbol、source_version 和具体 MarketPolicy Proto/JSONB。小数bps始终string，毫秒期限有范围检查后才转换为time.Duration。创建对完全相同的typed值幂等；同范围换产品或政策拒绝，不静默覆盖。LIVE、REPLAY和两家来源各有独立记录。
+
+首版现货明确校验外部产品等于执行产品的相同base/quote资产编码：Binance拼接，OKX以横线连接。不会自动映射另一个产品或资产别名。数据库保留相同约束，并禁止删除/改写绑定或改变已有绑定产品的底层资产；政策变化需要后续明确版本流程，不能直接UPDATE。
+
+独立 MarketPublisherLease 以feed ID为资源，由既有原生context/数据库时间/行锁租约仓储获取和续期；同时竞争只有一个owner，过期即便同一owner也必须递增epoch，旧owner不能续期/释放接管者。租约范围与策略/执行账户严格分开，不能给执行授权额外携带feed范围。当前这一步只建立持久绑定与协调；行情写入目标仍须下一步事务内fencing，不能用独立Acquire替代最终发布校验。

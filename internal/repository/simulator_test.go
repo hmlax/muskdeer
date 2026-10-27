@@ -56,6 +56,7 @@ func TestInvalidCoreBoundaryCannotReachDatabase(t *testing.T) {
 		func(c *domain.GatewaySubmit) { c.Input.Price = decimal.New(1, 1_000_000_000) },
 		func(c *domain.GatewaySubmit) { c.Input.Quantity = decimal.Zero },
 		func(c *domain.GatewaySubmit) { c.ExecutionAuthority.Key.AccountID = "another-account" },
+		func(c *domain.GatewaySubmit) { c.ExecutionAuthority.Key.MarketFeedID = 1 },
 		func(c *domain.GatewaySubmit) { c.Input.Authority.OwnerID = "reused-process-name" },
 		func(c *domain.GatewaySubmit) { c.Input.Deadline = time.Now().Add(time.Minute) },
 	} {

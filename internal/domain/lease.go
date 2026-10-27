@@ -6,13 +6,14 @@ import (
 	"time"
 )
 
-// LeaseKind keeps strategy ownership separate from account execution ownership.
+// LeaseKind separates strategy, account execution and public market ownership.
 type LeaseKind string
 
 // Lease kinds and allowed renewal durations.
 const (
 	LeaseKindStrategy     LeaseKind = "strategy"
 	LeaseKindExecution    LeaseKind = "execution"
+	LeaseKindMarket       LeaseKind = "market"
 	MinLeaseTTL                     = 100 * time.Millisecond
 	MaxLeaseTTL                     = 30 * time.Second
 	MessageLeaseHeld                = "lease is held by another owner"
@@ -29,11 +30,12 @@ var (
 	ErrEpochExhausted = errors.New(MessageEpochExhausted)
 )
 
-// LeaseKey selects exactly one strategy or account resource.
+// LeaseKey selects exactly one strategy, account or market feed resource.
 type LeaseKey struct {
-	Kind       LeaseKind
-	StrategyID int64
-	AccountID  string
+	Kind         LeaseKind
+	StrategyID   int64
+	AccountID    string
+	MarketFeedID int64
 }
 
 // LeaseToken contains a proposed authority epoch. ExpiresAt is informational;

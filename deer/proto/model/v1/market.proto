@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+import "deer/proto/common/v1/market.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// MarketFeed is an immutable source/product/mode and quality-policy binding.
+message MarketFeed {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string source = 5 [(tagger.tags) = "gorm:\"column:source;type:varchar(32);not null;uniqueIndex:uk_market_feed_scope\""];
+  int64 instrument_id = 6 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null;uniqueIndex:uk_market_feed_scope\""];
+  string external_symbol = 7 [(tagger.tags) = "gorm:\"column:external_symbol;type:varchar(64);not null\""];
+  string mode = 8 [(tagger.tags) = "gorm:\"column:mode;type:varchar(16);not null;uniqueIndex:uk_market_feed_scope\""];
+  int64 source_version = 9 [(tagger.tags) = "gorm:\"column:source_version;type:bigint;not null\""];
+  muskdeer.common.v1.MarketPolicy policy = 10 [(tagger.tags) = "gorm:\"column:policy;type:jsonb;serializer:json;not null\""];
+}
+
+// MarketPublisherLease retains the last epoch after release or expiry.
+message MarketPublisherLease {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 market_feed_id = 5 [(tagger.tags) = "gorm:\"column:market_feed_id;type:bigint;not null;uniqueIndex:uk_market_publisher_feed\""];
+  string owner_id = 6 [(tagger.tags) = "gorm:\"column:owner_id;type:varchar(128);not null\""];
+  int64 epoch = 7 [(tagger.tags) = "gorm:\"column:epoch;type:bigint;not null\""];
+  int64 expires_at = 8 [(tagger.tags) = "gorm:\"column:expires_at;type:bigint;not null\""];
+}

@@ -38,6 +38,28 @@ func TestInvalidLeaseRequestsCannotReachDatabase(t *testing.T) {
 	if _, err := store.Acquire(context.WithoutCancel(ctx), key, owner, time.Second); !errors.Is(err, domain.ErrInvalidLease) {
 		t.Fatalf("unbounded lease work was accepted: %v", err)
 	}
+	for _, mixed := range []domain.LeaseKey{
+		{
+			Kind:         domain.LeaseKindMarket,
+			AccountID:    "account-a",
+			MarketFeedID: 1,
+		},
+		{
+			Kind:         domain.LeaseKindExecution,
+			AccountID:    "account-a",
+			MarketFeedID: 1,
+		},
+		{
+			Kind:         domain.LeaseKindStrategy,
+			StrategyID:   1,
+			MarketFeedID: 1,
+		},
+		{Kind: domain.LeaseKindMarket},
+	} {
+		if _, err := store.Acquire(ctx, mixed, owner, time.Second); !errors.Is(err, domain.ErrInvalidLease) {
+			t.Fatal("mixed ownership scopes reached the database")
+		}
+	}
 	cancel()
 	if _, err := store.Acquire(ctx, key, owner, time.Second); !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancellation lost its cause: %v", err)

@@ -13,14 +13,7 @@ import (
 )
 
 // Policy makes units and recovery bounds explicit. BPS values use decimal.
-type Policy struct {
-	MaximumAge      time.Duration
-	MaximumSkew     time.Duration
-	MaximumSpreadBP decimal.Decimal
-	MaximumJumpBP   decimal.Decimal
-	RecoverySamples int
-	RecoveryWindow  time.Duration
-}
+type Policy = domain.MarketPolicy
 
 // Tracker is a single actor. Only accepted prices update an established
 // baseline; outliers and reconnections cannot replace it implicitly.
@@ -57,10 +50,7 @@ func New(source domain.MarketSource, instrument marketwire.Instrument, mode doma
 	if _, err := marketbook.New(source, instrument.ID, instrument.Symbol, marketbook.MaximumLevels); err != nil {
 		return nil, err
 	}
-	if (mode != domain.MarketModeLive && mode != domain.MarketModeReplay) || policy.MaximumAge <= 0 || policy.MaximumAge > 5*time.Second ||
-		policy.MaximumSkew < 0 || policy.MaximumSkew > time.Second || policy.RecoverySamples < 2 || policy.RecoverySamples > 20 ||
-		policy.RecoveryWindow < 0 || policy.RecoveryWindow >= policy.MaximumAge ||
-		!validBP(policy.MaximumSpreadBP) || !validBP(policy.MaximumJumpBP) {
+	if (mode != domain.MarketModeLive && mode != domain.MarketModeReplay) || policy.Validate() != nil {
 		return nil, domain.ErrUnreliableMarket
 	}
 	return &Tracker{
@@ -219,10 +209,6 @@ func (t *Tracker) reject(reading domain.MarketReading, quality domain.MarketQual
 	reading.Quality, reading.Reason = quality, reason
 	t.current = withoutPrices(reading)
 	return t.current
-}
-
-func validBP(value decimal.Decimal) bool {
-	return domain.FixedDecimal(value, 5, 18, false) && value.LessThanOrEqual(decimal.NewFromInt(10000))
 }
 
 func excessiveJump(value, baseline, maximum decimal.Decimal) bool {
