@@ -612,14 +612,15 @@ func (x *OrderView) GetCreatedAt() *timestamppb.Timestamp {
 }
 
 type CancellationView struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	IntentId      int64                  `protobuf:"varint,2,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty"`
-	State         v1.CancellationState   `protobuf:"varint,3,opt,name=state,proto3,enum=muskdeer.common.v1.CancellationState" json:"state,omitempty"`
-	Revision      int64                  `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
-	ErrorCode     string                 `protobuf:"bytes,5,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Id             int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	IntentId       int64                  `protobuf:"varint,2,opt,name=intent_id,json=intentId,proto3" json:"intent_id,omitempty"`
+	State          v1.CancellationState   `protobuf:"varint,3,opt,name=state,proto3,enum=muskdeer.common.v1.CancellationState" json:"state,omitempty"`
+	Revision       int64                  `protobuf:"varint,4,opt,name=revision,proto3" json:"revision,omitempty"`
+	ErrorCode      string                 `protobuf:"bytes,5,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	IdempotencyKey string                 `protobuf:"bytes,6,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *CancellationView) Reset() {
@@ -687,6 +688,13 @@ func (x *CancellationView) GetErrorCode() string {
 	return ""
 }
 
+func (x *CancellationView) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
 type OrderReply struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Order *OrderView             `protobuf:"bytes,1,opt,name=order,proto3" json:"order,omitempty"`
@@ -741,9 +749,12 @@ func (x *OrderReply) GetCancellation() *CancellationView {
 }
 
 type FindCancellationRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	AccountId      string                 `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	CancellationId int64                  `protobuf:"varint,2,opt,name=cancellation_id,json=cancellationId,proto3" json:"cancellation_id,omitempty"`
+	state     protoimpl.MessageState `protogen:"open.v1"`
+	AccountId string                 `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	// Exactly one of cancellation_id and idempotency_key must be supplied.
+	CancellationId int64 `protobuf:"varint,2,opt,name=cancellation_id,json=cancellationId,proto3" json:"cancellation_id,omitempty"`
+	// Recovery after a lost first reply must not require an unobserved server ID.
+	IdempotencyKey string `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -790,6 +801,13 @@ func (x *FindCancellationRequest) GetCancellationId() int64 {
 		return x.CancellationId
 	}
 	return 0
+}
+
+func (x *FindCancellationRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
 }
 
 type ListOrdersRequest struct {
@@ -1463,22 +1481,24 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"\vreduce_only\x18\x15 \x01(\bR\n" +
 	"reduceOnly\x129\n" +
 	"\n" +
-	"created_at\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xb7\x01\n" +
+	"created_at\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xe0\x01\n" +
 	"\x10CancellationView\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
 	"\tintent_id\x18\x02 \x01(\x03R\bintentId\x12;\n" +
 	"\x05state\x18\x03 \x01(\x0e2%.muskdeer.common.v1.CancellationStateR\x05state\x12\x1a\n" +
 	"\brevision\x18\x04 \x01(\x03R\brevision\x12\x1d\n" +
 	"\n" +
-	"error_code\x18\x05 \x01(\tR\terrorCode\"\x91\x01\n" +
+	"error_code\x18\x05 \x01(\tR\terrorCode\x12'\n" +
+	"\x0fidempotency_key\x18\x06 \x01(\tR\x0eidempotencyKey\"\x91\x01\n" +
 	"\n" +
 	"OrderReply\x126\n" +
 	"\x05order\x18\x01 \x01(\v2 .muskdeer.execution.v1.OrderViewR\x05order\x12K\n" +
-	"\fcancellation\x18\x02 \x01(\v2'.muskdeer.execution.v1.CancellationViewR\fcancellation\"a\n" +
+	"\fcancellation\x18\x02 \x01(\v2'.muskdeer.execution.v1.CancellationViewR\fcancellation\"\x8a\x01\n" +
 	"\x17FindCancellationRequest\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x12'\n" +
-	"\x0fcancellation_id\x18\x02 \x01(\x03R\x0ecancellationId\"\xde\x01\n" +
+	"\x0fcancellation_id\x18\x02 \x01(\x03R\x0ecancellationId\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\"\xde\x01\n" +
 	"\x11ListOrdersRequest\x12\x1d\n" +
 	"\n" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x120\n" +

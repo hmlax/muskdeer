@@ -135,10 +135,21 @@ func (s *Server) FindCancellation(ctx context.Context, request *executionv1.Find
 	if err := authorized(ctx, false); err != nil {
 		return nil, err
 	}
-	if !validRequest(request) || !identifier(request.AccountId) || request.CancellationId <= 0 {
+	if !validRequest(request) || !identifier(request.AccountId) {
 		return nil, status.Error(codes.InvalidArgument, MessageInvalidRequest)
 	}
-	result, err := s.deps.Cancellations.Recover(ctx, request.AccountId, request.CancellationId)
+	var (
+		result domain.CancellationResult
+		err    error
+	)
+	switch {
+	case request.CancellationId > 0 && request.IdempotencyKey == "":
+		result, err = s.deps.Cancellations.Recover(ctx, request.AccountId, request.CancellationId)
+	case request.CancellationId == 0 && boundedIdentifier(request.IdempotencyKey, 128):
+		result, err = s.deps.Cancellations.RecoverByKey(ctx, request.AccountId, request.IdempotencyKey)
+	default:
+		return nil, status.Error(codes.InvalidArgument, MessageInvalidRequest)
+	}
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -245,7 +256,11 @@ func validRequest(message proto.Message) bool {
 }
 
 func identifier(value string) bool {
-	if len(value) == 0 || len(value) > 64 {
+	return boundedIdentifier(value, 64)
+}
+
+func boundedIdentifier(value string, maximum int) bool {
+	if len(value) == 0 || len(value) > maximum {
 		return false
 	}
 	for index := range len(value) {

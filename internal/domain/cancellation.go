@@ -45,10 +45,12 @@ type CancellationRepository interface {
 	Prepare(ctx context.Context, current CancellationSnapshot) (CancellationSnapshot, error)
 	Observe(ctx context.Context, current CancellationSnapshot, state CancellationState, code string) (CancellationSnapshot, error)
 	ByID(ctx context.Context, accountID string, id int64) (CancellationSnapshot, error)
+	ByKey(ctx context.Context, accountID, idempotencyKey string) (CancellationSnapshot, error)
 }
 
 // CancellationService queries original order identity before any cancellation.
 type CancellationService interface {
 	Cancel(ctx context.Context, input CancelInput, execution LeaseToken) (CancellationResult, error)
 	Recover(ctx context.Context, accountID string, id int64) (CancellationResult, error)
+	RecoverByKey(ctx context.Context, accountID, idempotencyKey string) (CancellationResult, error)
 }

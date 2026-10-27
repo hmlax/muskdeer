@@ -10,7 +10,7 @@ Submit/Cancel 边界要求原生 context deadline 和消息 deadline，消息截
 
 有效 context request_id 优先进入业务关联，输入中的另一个编号不覆盖可信上下文；该编号不参与账户权限或幂等。撤单有自己的幂等键及明确 client_order_id；CancelState 与 OrderState 分开，接受取消不等于最终撤单/释放资金。UNKNOWN 作为非终态，后续 OMS 按持久意图和稳定 client_order_id 查询恢复。
 
-FindOrder 使用 typed oneof 的 intent_id/client_order_id，查询原核心身份后同步现有意图；不重新提交。FindCancellation 按账户和持久取消请求 ID 查询，响应的 cancellation 与 order 分别展示请求状态及订单事实。接口增量字段保持原编号，客户端/服务器生成物一同更新。
+FindOrder 使用 typed oneof 的 intent_id/client_order_id，查询原核心身份后同步现有意图；不重新提交。FindCancellation在明确账户内按持久请求ID或原idempotency_key查询，两者必须恰好提供一个；键支持与撤单请求一致的1–128字符标识。首次回复丢失、不知道服务端ID时仍能查询原请求，不领取新owner、不再次撤单；未找到返回NotFound，不能将其自行解释为可换新键重试。响应的cancellation（含原业务键）与order分别展示请求状态及订单事实。接口增量字段保持原编号，客户端/服务器生成物一同更新。
 
 订单/成交列表明确账户/策略/instrument、page_size/after_id，采用自增 ID 升序 keyset；默认20，最多100，负游标/非法范围拒绝。open_only 只保留 INTENT/SUBMITTING/LIVE/PARTIALLY_FILLED/UNKNOWN。列表是持久观察值，当前状态通过 FindOrder 同步；不能把列表当作核心执行确认。账户余额在同一核心账户 SHARE 锁下读取 revision、资产和数据库观察时间，最多128种资产。所有 GORM 操作绑定生成 Model。
 

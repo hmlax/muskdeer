@@ -142,6 +142,21 @@ func (s *cancellationStore) ByID(ctx context.Context, accountID string, id int64
 	return cancellationSnapshot(&row), nil
 }
 
+func (s *cancellationStore) ByKey(ctx context.Context, accountID, idempotencyKey string) (domain.CancellationSnapshot, error) {
+	if err := coreContext(ctx); err != nil {
+		return domain.CancellationSnapshot{}, err
+	}
+	if !coreIdentifier(accountID, 64) || !coreIdentifier(idempotencyKey, 128) {
+		return domain.CancellationSnapshot{}, domain.ErrInvalidOrder
+	}
+	var row modelv1.CancellationRequest
+	if err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).
+		Where("account_id = ? AND idempotency_key = ? AND delete_at IS NULL", accountID, idempotencyKey).First(&row).Error; err != nil {
+		return domain.CancellationSnapshot{}, coreFailure(ctx, err)
+	}
+	return cancellationSnapshot(&row), nil
+}
+
 func applyCancellationAuthority(row *modelv1.CancellationRequest, input domain.CancelInput, execution domain.LeaseToken) {
 	row.ConfigVersion = input.Authority.ConfigVersion
 	row.OwnerId, row.OwnerEpoch = input.Authority.OwnerID, input.Authority.OwnerEpoch

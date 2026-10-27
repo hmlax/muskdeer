@@ -92,6 +92,7 @@ message CancellationView {
   muskdeer.common.v1.CancellationState state = 3;
   int64 revision = 4;
   string error_code = 5;
+  string idempotency_key = 6;
 }
 
 message OrderReply {
@@ -102,7 +103,10 @@ message OrderReply {
 
 message FindCancellationRequest {
   string account_id = 1;
+  // Exactly one of cancellation_id and idempotency_key must be supplied.
   int64 cancellation_id = 2;
+  // Recovery after a lost first reply must not require an unobserved server ID.
+  string idempotency_key = 3;
 }
 
 message ListOrdersRequest {

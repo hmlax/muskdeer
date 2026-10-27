@@ -95,7 +95,19 @@ func (s *cancellationService) Recover(ctx context.Context, accountID string, id 
 	if err != nil {
 		return domain.CancellationResult{}, err
 	}
-	parent, err := s.recovery.Recover(ctx, accountID, request.IntentID)
+	return s.recoverRequest(ctx, request)
+}
+
+func (s *cancellationService) RecoverByKey(ctx context.Context, accountID, idempotencyKey string) (domain.CancellationResult, error) {
+	request, err := s.requests.ByKey(ctx, accountID, idempotencyKey)
+	if err != nil {
+		return domain.CancellationResult{}, err
+	}
+	return s.recoverRequest(ctx, request)
+}
+
+func (s *cancellationService) recoverRequest(ctx context.Context, request domain.CancellationSnapshot) (domain.CancellationResult, error) {
+	parent, err := s.recovery.Recover(ctx, request.Input.AccountID, request.IntentID)
 	if err != nil {
 		return domain.CancellationResult{}, err
 	}

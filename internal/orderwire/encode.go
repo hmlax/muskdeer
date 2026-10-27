@@ -91,11 +91,12 @@ func Cancellation(input domain.CancellationSnapshot) (*executionv1.CancellationV
 		return nil, domain.ErrInvalidOrder
 	}
 	return &executionv1.CancellationView{
-		Id:        input.ID,
-		IntentId:  input.IntentID,
-		State:     state,
-		Revision:  input.Revision,
-		ErrorCode: input.ErrorCode,
+		Id:             input.ID,
+		IntentId:       input.IntentID,
+		State:          state,
+		Revision:       input.Revision,
+		ErrorCode:      input.ErrorCode,
+		IdempotencyKey: input.Input.IdempotencyKey,
 	}, nil
 }
 

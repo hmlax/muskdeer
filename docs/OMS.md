@@ -80,6 +80,8 @@ Deer JetStream 客户端已支持只绑定已有 durable 的 `OpenConsumer` 和�
 
 明确 STP 拒绝纳入已确认拒绝分类，意图 REJECTED、预留释放；请求超时或响应丢失仍保留 UNKNOWN 和预算，按原身份查询。CancelOrder/FindCancellation 响应同时提供独立请求状态与核心订单状态，PENDING 不能解释为已撤单。
 
+P06.9为FindCancellation补充账户/idempotency_key选择器，与请求ID恰好二选一；CancellationView回传原业务键。仓储按账户及稳定键读取，复用原核心身份观察/OMS同步，不重新发送取消。首次回复中的ID丢失、原策略和执行租约均已失权时，已认证只读方仍能恢复PENDING及实际终态。不存在/错账户返回NotFound；查询失败不能成为制造新业务键的依据。
+
 本步通过 Deer/mTLS 注册真实业务 handler 验证；默认 execution/portfolio 命令的后台/客户端装配继续后续步骤，尚未将直接测试服务等同于六进程业务闭环。
 
 ## P04.10 实际业务命令
