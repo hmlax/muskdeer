@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// SimulatorCommand is the durable gateway command, committed with its effect.
+// A deferred database trigger validates both owners at transaction completion.
+message SimulatorCommand {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_command_account_key\""];
+  string command_key = 6 [(tagger.tags) = "gorm:\"column:command_key;type:varchar(128);not null;uniqueIndex:uk_simulator_command_account_key\""];
+  string action = 7 [(tagger.tags) = "gorm:\"column:action;type:varchar(16);not null\""];
+  string client_order_id = 8 [(tagger.tags) = "gorm:\"column:client_order_id;type:varchar(64);not null\""];
+  int64 strategy_instance_id = 9 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null\""];
+  int64 config_version = 10 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null\""];
+  string owner_id = 11 [(tagger.tags) = "gorm:\"column:owner_id;type:varchar(128);not null\""];
+  int64 owner_epoch = 12 [(tagger.tags) = "gorm:\"column:owner_epoch;type:bigint;not null\""];
+  string execution_owner_id = 13 [(tagger.tags) = "gorm:\"column:execution_owner_id;type:varchar(128);not null\""];
+  int64 execution_epoch = 14 [(tagger.tags) = "gorm:\"column:execution_epoch;type:bigint;not null\""];
+  int64 instrument_id = 15 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null\""];
+  string fingerprint = 16 [(tagger.tags) = "gorm:\"column:fingerprint;type:char(64);not null\""];
+  int64 deadline_at = 17 [(tagger.tags) = "gorm:\"column:deadline_at;type:bigint;not null\""];
+}
+
+// SimulatorOrder is a core order, distinct from the later OMS projection.
+message SimulatorOrder {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_simulator_order_account_client\""];
+  string client_order_id = 6 [(tagger.tags) = "gorm:\"column:client_order_id;type:varchar(64);not null;uniqueIndex:uk_simulator_order_account_client\""];
+  int64 initial_command_id = 7 [(tagger.tags) = "gorm:\"column:initial_command_id;type:bigint;not null;uniqueIndex:uk_simulator_order_initial_command\""];
+  int64 strategy_instance_id = 8 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;index:idx_simulator_order_strategy\""];
+  int64 config_version = 9 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null\""];
+  int64 instrument_id = 10 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null;index:idx_simulator_order_instrument\""];
+  string side = 11 [(tagger.tags) = "gorm:\"column:side;type:varchar(8);not null\""];
+  string price = 12 [(tagger.tags) = "gorm:\"column:price;type:numeric(38,18);not null\""];
+  string quantity = 13 [(tagger.tags) = "gorm:\"column:quantity;type:numeric(38,18);not null\""];
+  string filled_quantity = 14 [(tagger.tags) = "gorm:\"column:filled_quantity;type:numeric(38,18);not null\""];
+  string time_in_force = 15 [(tagger.tags) = "gorm:\"column:time_in_force;type:varchar(16);not null\""];
+  bool reduce_only = 16 [(tagger.tags) = "gorm:\"column:reduce_only;type:boolean;not null\""];
+  string state = 17 [(tagger.tags) = "gorm:\"column:state;type:varchar(32);not null\""];
+  string cancel_state = 18 [(tagger.tags) = "gorm:\"column:cancel_state;type:varchar(16);not null\""];
+  string frozen_asset = 19 [(tagger.tags) = "gorm:\"column:frozen_asset;type:varchar(32);not null\""];
+  // Exact product of two 38,18 values; never rounded through a float.
+  string frozen_amount = 20 [(tagger.tags) = "gorm:\"column:frozen_amount;type:numeric(76,36);not null\""];
+  int64 revision = 21 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  int64 last_command_id = 22 [(tagger.tags) = "gorm:\"column:last_command_id;type:bigint;not null\""];
+}
