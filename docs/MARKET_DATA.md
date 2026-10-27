@@ -17,3 +17,13 @@ Book 属于单个 actor，调用者串行操作；输入切片不保留，内部
 ## 当前边界
 
 P05.1 仅提供有界 typed Frame 与协议状态机，回放覆盖恢复、重复、删档、来源隔离及精确参考价。尚未把实际 JSON、WebSocket/REST、持久质量或策略选择装配进运行服务。A04 的接入回放、A05/A24 的策略保护和 A25 的真实网络证据继续后续步骤；不以当前单元测试声明两家实连完成。
+
+## P05.2 Typed 行情 JSON
+
+`internal/marketwire` 解码 Binance REST depth、原始 spot depthUpdate 及 OKX books 的具体结构，绑定明确 instrument ID/外部 symbol 和本地 receive time。REST 响应本身没有 symbol/event time，沿原 HTTP 请求身份关联，不伪造交易所时间；增量及 OKX 使用实际协议时间。
+
+价格/数量只接受 JSON string，直接按20位整数/18位小数解析为 decimal。Binance 档位必须2个字段，OKX必须4个字段且订单数为规范非负整数；空增量与0数量有效，快照空侧/0数量拒绝。必需数组和序列的缺失/NULL 与合法0序列明确区分；OKX checksum 只作可选整数元数据接收，不判断其数值有效性。
+
+消息最多1MiB、数组最多5000项、结构深度最多64。先用 UseNumber 的 token 扫描核对具体 Go wire struct 的准确字段/schema，拒绝重复键、大小写别名、未知字段、错误类型和尾随数据，再解码回同一 typed struct；schema map 只保存字段类型，不承载或转换业务值。所有业务 JSON 始终使用显式字段，不经 map/any 转换桥或浮点。
+
+decoder 保留取消 cause，错误文本不输出原始 payload；交易对或 channel/action 不匹配明确拒绝。这些解析器尚未联网，连接/重连、持久质量和实例工作器继续后续步骤。
