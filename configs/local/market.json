@@ -1,0 +1,19 @@
+{
+  "name": "market",
+  "instance_id": "market-local",
+  "version": "local",
+  "startup_timeout": "5s",
+  "shutdown_timeout": "5s",
+  "monitoring": {
+    "address": "127.0.0.1:59101",
+    "request_timeout": "1s"
+  },
+  "logging": {
+    "level": "info",
+    "stdout": true
+  },
+  "grpc": {
+    "address": "127.0.0.1:59001",
+    "request_timeout": "2s"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "execution",
+  "instance_id": "execution-local",
+  "version": "local",
+  "startup_timeout": "5s",
+  "shutdown_timeout": "5s",
+  "monitoring": {
+    "address": "127.0.0.1:59103",
+    "request_timeout": "1s"
+  },
+  "logging": {
+    "level": "info",
+    "stdout": true
+  },
+  "grpc": {
+    "address": "127.0.0.1:59003",
+    "request_timeout": "2s"
+  }
+}

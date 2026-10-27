@@ -4,6 +4,9 @@ doctor:
 	python3 scripts/go.py version
 	python3 scripts/go.py run ./cmd/doctor -config configs/examples/service.json
 	python3 scripts/go.py run ./cmd/doctor -config configs/examples/api.json
+	@for role in api market strategy execution portfolio cron; do \
+		python3 scripts/go.py run ./cmd/doctor -config configs/local/$$role.json || exit $$?; \
+	done
 
 test-tooling:
 	python3 -m unittest discover -s scripts/tests -v
@@ -38,8 +41,10 @@ test-race:
 
 build:
 	python3 scripts/go.py build ./...
+	mkdir -p .cache/bin
+	python3 scripts/go.py build -o .cache/bin/muskdeer ./cmd/muskdeer
 
 verify: doctor generate-check hz-check fmt-check lint test-tooling test test-race build
 
-integration:
+integration: build
 	python3 scripts/integration.py

@@ -1,6 +1,22 @@
 # 运行与故障处理基线
 
-状态：运行手册设计，P10 按实际命令完善；当前没有可运行服务。
+状态：P02 已提供服务进程及公共运维入口；交易恢复、管理业务与 P10 故障处理仍按后续任务完善。
+
+## 本地进程
+
+`make build` 使用固定 Go 1.27.3 生成 `.cache/bin/muskdeer`。每次命令只运行一个角色，例如：
+
+```sh
+.cache/bin/muskdeer -role market -config configs/local/market.json
+```
+
+角色为 api、market、strategy、execution、portfolio、cron；配置 name 必须与角色一致。六份 local 配置仅用于公共运行层，无外部资源、交易能力或自动迁移。api 使用 DeerApi/Hertz，其他角色使用独立 Deer；market/strategy/execution/portfolio 要求 gRPC，cron 可只提供 monitoring。api 管理页面及实际业务接口在 P07 实现。
+
+local 配置的 monitoring 端口依次为 api 59100、market 59101、strategy 59102、execution 59103、portfolio 59104、cron 59105，均只绑定 loopback；api HTTP 为 59000，其余四个业务 gRPC 为 59001–59004。多实例应分别配置 instance_id 和不同端口。`/livez`、`/readyz`、`/metrics` 及指标定义见 [Deer](DEER.md) 和 [指标说明](METRICS.md)。`service.initialized` 仅表示装配完成，必须继续检查 readiness。
+
+SIGTERM/CTRL-C 触发停止：先撤就绪、停止心跳并注销，再 drain transports、逆序释放业务/公共依赖、恢复 SDK 日志、关闭自有日志。正常取消返回 0；配置/初始化/独立清理错误非零，取消不会隐藏同时发生的清理失败。该进程层停止还未包含撤单、对账等后续业务步骤。
+
+框架日志只在新进程入口安装一次，禁止在共享进程的 Deer 构造器中切换 Kratos/Hertz 全局 logger。SDK 日志统一输出 JSON `framework.event`，含级别、框架、函数/行号和参数数量；SDK 原始格式及参数值可能包含敏感请求，因此不输出。可诊断的生命周期事件由应用使用安全结构化字段单独记录。Hertz 的公开恢复 API 以原 default logger 重建 system wrapper，要求安装前没有自定义 system logger。应用结构化日志保留 request_id；框架没有 context 的接口无法自动提供请求编号。
 
 ## 环境与凭据
 开发、仿真、测试、生产分别使用 Nacos namespace、数据库、Redis 前缀、NATS subject 和账户。所有环境默认禁止实盘；测试凭据不提交仓库。外部交易密钥只授权所需交易能力，提现权限不属于策略服务。

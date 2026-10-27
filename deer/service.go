@@ -53,6 +53,9 @@ type ServiceSpec struct {
 	Resources    []Initializer
 	RegisterGRPC func(context.Context, *Deer, grpc.ServiceRegistrar) error
 	LogOutput    io.Writer // Borrowed stdout override; nil selects os.Stdout.
+	// SetupProcessLogging is only for a sole process entry, before SDK use.
+	// Its cleanup runs after dependencies and before the owned logger closes.
+	SetupProcessLogging func(context.Context, *logging.Logger) (Cleanup, error)
 }
 
 // Deer owns one independent Kratos service, its listeners and dependencies.
@@ -235,7 +238,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	var events *jetstream.Client
 	var discovery *nacos.Client
 	var rpcClients *rpcclient.Factory
-	plan := make([]Initializer, 0, len(spec.Resources)+6)
+	plan := make([]Initializer, 0, len(spec.Resources)+7)
 	plan = append(plan, Initializer{
 		Name: "deer.logging",
 		Open: func(ctx context.Context) (Cleanup, error) {
@@ -250,6 +253,14 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			return func(context.Context) error { return logger.Close() }, nil
 		},
 	})
+	if spec.SetupProcessLogging != nil {
+		plan = append(plan, Initializer{
+			Name: "deer.process-logging",
+			Open: func(ctx context.Context) (Cleanup, error) {
+				return spec.SetupProcessLogging(ctx, logger)
+			},
+		})
+	}
 	if cfg.Postgres != nil {
 		plan = append(plan, Initializer{
 			Name: "deer.postgres",
