@@ -14,7 +14,7 @@
 | P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
 | P02 | done | P02.1–P02.11 及 Linux CI 40439453258 success；六角色、多进程发现/mTLS、持久开发、固定 Go 镜像与运行层 E2E 通过 |
 | P03 | done | P03.1–P03.10 值/生成模型/迁移、typed 合同、数据库租约、最终原子 fencing、模拟现货及提交后响应丢失/延迟通过；后续 OMS/节点恢复按各阶段验收 |
-| P04 | in_progress | P04.1–P04.8 持久OMS/预算/撤单、成交inbox/损益、自动事件及真实发布/有界消费/重投、7个typed RPC/mTLS/分页读取通过；默认命令的独立业务进程装配待实现 |
+| P04 | in_progress | P04.1–P04.9 持久OMS/预算/撤单、成交inbox/损益、自动事件及真实发布/有界消费/重投、typed RPC/mTLS/分页读取、Deer工作器托管通过；默认命令的独立业务进程装配待实现 |
 | P05–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
@@ -441,3 +441,10 @@ P01–P03 基础与模拟合同已完成，从 P04 的 OMS、预算原子预留�
 - 验证：高精度响应先红后绿；真实PG/Deer/mTLS下单/去重/改体拒绝/分页/账户隔离/部分成交费用/撤单查询；回包丢失1次Submit后查询恢复；STP拒绝保留原卖单预算101。make generate/verify、最终lint/race、最终完整 make integration、文档/差异检查通过。发现夹具先证明进程ready再计时查询，各3秒/总15秒和停止断言保留，最终通过。见 [P04.8](validation/P04-08.md)。
 - 远程：647ec44 已推送 main 并核对 SHA；已验证的 execution_rpc_integration_test.go 单独补交并推送。前序 [CI 40459706274](https://github.com/hmlax/muskdeer/actions/runs/40459706274) success。
 - 下一步：默认命令入口的业务工作器/客户端装配和独立进程闭环；P04保持进行。
+
+## 2026-10-27：P04.9 Deer 工作器所有权
+
+- 改动：公共依赖后同步装配有界任务计划，Kratos托管启动/取消/join、readiness/实时Check和异常传播，依赖等工作器退出后关闭；各业务仍独立进程。
+- 验证：停止顺序/失败兄弟退出/未运行清理/坏计划回滚/启动Check失败先红后绿；真实Nacos任务异常后退出并注销。make verify、最终lint/Deer race、完整 make integration、文档/差异检查通过，goleak与隔离清理保留。见 [P04.9](validation/P04-09.md)。
+- 远程：0334ade 已补齐上一笔RPC集成用例并推送 main，远程SHA已核对；本步通过后独立提交/推送并核对 SHA。
+- 下一步：实际 execution/portfolio 工作器、业务配置和默认命令装配；P04保持进行。

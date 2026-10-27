@@ -50,6 +50,16 @@ Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未�
 P02.1 已实现 Cleanup(ctx) error 与 Initializer{Name, Open}：资源获取前校验计划，失败时逆序释放全部已获取资源，保留原始初始化错误与释放错误；部分初始化失败也须返回 cleanup。清理同步执行，具有独立超时上下文，重复/并发调用只释放一次。资源回调须遵守上下文并负责自己创建的连接或 goroutine。
 两个服务构造函数已在 P02.2 接入该基础；所有权层的原始范围和证据见 [P02.1](validation/P02-01.md)。
 
+## 业务工作器生命周期
+
+P04.9 的 `ServiceSpec.Workers(ctx, owner)` 在公共依赖初始化后、监听器装配前同步返回工作器计划；不启动任务、不保留构造 context、不自行获取新的资源所有权。通过 Deer getter 借用数据库/消息客户端等依赖，实际 handler 注册仍由 RegisterGRPC/Routes 完成。最多32个工作器，每个有唯一的1..64字节安全名称和阻塞 `Run(ctx) error`，可选只读 `Check(ctx) error`。
+
+Run 随 Kratos 服务启动，Deer 负责取消、等待和失败传播。工作器启动且 Check 成功后才允许 readiness；CheckReady 同时检查当前工作器状态/检查函数。任何任务提前返回（包括返回 nil）视为异常，撤销 readiness、停止同进程其他任务与监听器，并注销已发布实例；不会在同一进程偷偷重启任务或以 Nacos 在线身份授权交易。
+
+正常停止及启动失败均等待已开始的工作器退出，然后才逆序关闭公共依赖。构造成功但从未 Run 时，cleanup 不调用工作器 Run；装配失败同样不启动部分计划。任务必须响应取消并等待自己产生的子工作；如果违反该约定，停止超时会记录错误，依赖仍不会在任务未退出时被提前关闭。此契约与已有 handler drain 一致。
+
+单元/race/goleak 验证停止顺序、异常兄弟取消、启动检查失败及未运行清理；真实 Nacos 验证工作器失败后服务退出并注销，见 [P04.9](validation/P04-09.md)。具体 execution/portfolio 工作器装配继续后续步骤。
+
 ## PostgreSQL/GORM
 连接数、空闲数、最大生命周期、语句超时、连接超时显式配置；context 贯穿；事务由调用方拥有。支持明确事务回调，不通过全局变量切换 DB。空值和 Select 更新语义必须验证；禁止 Updates(struct) 无意忽略 0/false。
 所有数据操作显式以 db.WithContext(ctx).Model(&model.X{}) 绑定生成模型，事务内使用 tx.WithContext(ctx).Model(&model.X{})；禁止任何 DB 变量上的 .Table(...)，公共组件不得提供接收表名的绕过接口。每张表必备 Id 自增主键、createAt/updateAt NOT NULL、deleteAt 可为 NULL，字段映射及生成要求见 PROTO_AND_MODEL.md。

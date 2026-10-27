@@ -52,7 +52,10 @@ var ErrNotReady = errors.New("service is not ready")
 type ServiceSpec struct {
 	Resources    []Initializer
 	RegisterGRPC func(context.Context, *Deer, grpc.ServiceRegistrar) error
-	LogOutput    io.Writer // Borrowed stdout override; nil selects os.Stdout.
+	// Workers configures blocking tasks after dependencies, before listeners.
+	// It must not start tasks or acquire resources outside this owner.
+	Workers   func(context.Context, *Deer) ([]Worker, error)
+	LogOutput io.Writer // Borrowed stdout override; nil selects os.Stdout.
 	// SetupProcessLogging is only for a sole process entry, before SDK use.
 	// Its cleanup runs after dependencies and before the owned logger closes.
 	SetupProcessLogging func(context.Context, *logging.Logger) (Cleanup, error)
@@ -64,6 +67,7 @@ type ServiceSpec struct {
 type Deer struct {
 	cfg               *configv1.ServiceConfig
 	servers           []*managedTransport
+	workers           []*managedWorker
 	release           Cleanup
 	grpcAddress       string
 	monitoringAddress string
@@ -171,6 +175,11 @@ func (d *Deer) CheckReady(ctx context.Context) error {
 	}
 	if d.publication != nil {
 		if err := d.publication.Health(); err != nil {
+			return err
+		}
+	}
+	for _, worker := range d.workers {
+		if err := worker.check(ctx); err != nil {
 			return err
 		}
 	}
@@ -345,6 +354,9 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		rpcClients:  rpcClients,
 		metrics:     metrics.New(),
 	}
+	if err := d.addWorkers(startup, spec.Workers); err != nil {
+		return nil, nil, errors.Join(err, d.cleanup(ctx))
+	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
 			return nil, nil, errors.Join(err, d.cleanup(ctx))
@@ -408,9 +420,12 @@ func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer
 func (d *Deer) run(ctx context.Context) (error, error) {
 	owned, cancel := context.WithCancel(context.WithoutCancel(ctx))
 	defer cancel()
-	servers := make([]transport.Server, len(d.servers))
-	for index, server := range d.servers {
-		servers[index] = server
+	servers := make([]transport.Server, 0, len(d.servers)+len(d.workers))
+	for _, server := range d.servers {
+		servers = append(servers, server)
+	}
+	for _, worker := range d.workers {
+		servers = append(servers, worker)
 	}
 	app := kratos.New(
 		kratos.Context(owned),
@@ -452,9 +467,7 @@ func (d *Deer) run(ctx context.Context) (error, error) {
 	}
 	shutdown, shutdownCancel := context.WithTimeout(context.WithoutCancel(ctx), d.cfg.ShutdownTimeout.AsDuration())
 	defer shutdownCancel()
-	for _, server := range d.servers {
-		stopErr = errors.Join(stopErr, server.Stop(shutdown))
-	}
+	stopErr = errors.Join(stopErr, d.stopOwned(shutdown))
 	return runErr, stopErr
 }
 
@@ -463,6 +476,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	defer cancel()
 	for _, server := range d.servers {
 		if err := server.waitReady(startup); err != nil {
+			return err
+		}
+	}
+	for _, worker := range d.workers {
+		if err := worker.waitReady(startup); err != nil {
 			return err
 		}
 	}
@@ -524,10 +542,7 @@ func (d *Deer) cleanup(ctx context.Context) error {
 	if unused {
 		shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), d.cfg.ShutdownTimeout.AsDuration())
 		defer cancel()
-		var stopErr error
-		for _, server := range d.servers {
-			stopErr = errors.Join(stopErr, server.Stop(shutdown))
-		}
+		stopErr := d.stopOwned(shutdown)
 		d.finish(ctx, stopErr)
 	} else {
 		d.requestStop()
