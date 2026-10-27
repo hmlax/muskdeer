@@ -280,6 +280,7 @@ type RiskSnapshot struct {
 	MarketRevision      int64                  `protobuf:"varint,18,opt,name=market_revision,json=marketRevision,proto3" json:"market_revision,omitempty" gorm:"column:market_revision;type:bigint;not null"`
 	MarketSourceVersion int64                  `protobuf:"varint,19,opt,name=market_source_version,json=marketSourceVersion,proto3" json:"market_source_version,omitempty" gorm:"column:market_source_version;type:bigint;not null"`
 	MarketMaximumAgeMs  int64                  `protobuf:"varint,20,opt,name=market_maximum_age_ms,json=marketMaximumAgeMs,proto3" json:"market_maximum_age_ms,omitempty" gorm:"column:market_maximum_age_ms;type:bigint;not null;default:5000"`
+	ReasonCode          string                 `protobuf:"bytes,21,opt,name=reason_code,json=reasonCode,proto3" json:"reason_code,omitempty" gorm:"column:reason_code;type:varchar(32);not null;default:NOT_EVALUATED"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -452,6 +453,13 @@ func (x *RiskSnapshot) GetMarketMaximumAgeMs() int64 {
 		return x.MarketMaximumAgeMs
 	}
 	return 0
+}
+
+func (x *RiskSnapshot) GetReasonCode() string {
+	if x != nil {
+		return x.ReasonCode
+	}
+	return ""
 }
 
 // OrderIntent is durable before any call to the trading gateway.
@@ -1127,7 +1135,7 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"\brevision\x18\n" +
 	" \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevisionB\f\n" +
 	"\n" +
-	"_delete_at\"\xbe\x0f\n" +
+	"_delete_at\"\xaf\x10\n" +
 	"\fRiskSnapshot\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -1154,7 +1162,9 @@ const file_deer_proto_model_v1_oms_proto_rawDesc = "" +
 	"\x0emarket_feed_id\x18\x11 \x01(\x03B-\x9a\x84\x9e\x03(gorm:\"column:market_feed_id;type:bigint\"H\x01R\fmarketFeedId\x88\x01\x01\x12`\n" +
 	"\x0fmarket_revision\x18\x12 \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:market_revision;type:bigint;not null\"R\x0emarketRevision\x12q\n" +
 	"\x15market_source_version\x18\x13 \x01(\x03B=\x9a\x84\x9e\x038gorm:\"column:market_source_version;type:bigint;not null\"R\x13marketSourceVersion\x12}\n" +
-	"\x15market_maximum_age_ms\x18\x14 \x01(\x03BJ\x9a\x84\x9e\x03Egorm:\"column:market_maximum_age_ms;type:bigint;not null;default:5000\"R\x12marketMaximumAgeMsB\f\n" +
+	"\x15market_maximum_age_ms\x18\x14 \x01(\x03BJ\x9a\x84\x9e\x03Egorm:\"column:market_maximum_age_ms;type:bigint;not null;default:5000\"R\x12marketMaximumAgeMs\x12o\n" +
+	"\vreason_code\x18\x15 \x01(\tBN\x9a\x84\x9e\x03Igorm:\"column:reason_code;type:varchar(32);not null;default:NOT_EVALUATED\"R\n" +
+	"reasonCodeB\f\n" +
 	"\n" +
 	"_delete_atB\x11\n" +
 	"\x0f_market_feed_id\"\xda\x17\n" +

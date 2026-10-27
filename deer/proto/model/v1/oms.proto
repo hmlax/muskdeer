@@ -57,6 +57,7 @@ message RiskSnapshot {
   int64 market_revision = 18 [(tagger.tags) = "gorm:\"column:market_revision;type:bigint;not null\""];
   int64 market_source_version = 19 [(tagger.tags) = "gorm:\"column:market_source_version;type:bigint;not null\""];
   int64 market_maximum_age_ms = 20 [(tagger.tags) = "gorm:\"column:market_maximum_age_ms;type:bigint;not null;default:5000\""];
+  string reason_code = 21 [(tagger.tags) = "gorm:\"column:reason_code;type:varchar(32);not null;default:NOT_EVALUATED\""];
 }
 
 // OrderIntent is durable before any call to the trading gateway.

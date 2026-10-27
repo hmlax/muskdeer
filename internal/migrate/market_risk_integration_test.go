@@ -285,7 +285,7 @@ func TestMarketProvenanceUpgradeClosesLegacyGrants(t *testing.T) {
 		AllowNewRisk:       true,
 		Revision:           1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Omit("MarketFeedId", "MarketRevision", "MarketSourceVersion", "MarketMaximumAgeMs").Create(risk).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Omit("MarketFeedId", "MarketRevision", "MarketSourceVersion", "MarketMaximumAgeMs", "ReasonCode").Create(risk).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Apply(ctx, db); err != nil {
