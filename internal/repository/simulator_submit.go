@@ -110,15 +110,22 @@ func validateInstrument(in domain.OrderInput, rows coreRows) error {
 	if !rows.account.Enabled || rows.instrument.ExecutionVenue != domain.ExecutionVenueSimulator || rows.instrument.Status != domain.InstrumentStatusTrading {
 		return domain.ErrInvalidOrder
 	}
-	tick, err := decimal.NewFromString(rows.instrument.PriceTick)
+	return validateOrderMetadata(in, rows.instrument)
+}
+
+func validateOrderMetadata(in domain.OrderInput, instrument *modelv1.Instrument) error {
+	if instrument.Status != domain.InstrumentStatusTrading {
+		return domain.ErrInvalidOrder
+	}
+	tick, err := decimal.NewFromString(instrument.PriceTick)
 	if err != nil {
 		return err
 	}
-	step, err := decimal.NewFromString(rows.instrument.QuantityStep)
+	step, err := decimal.NewFromString(instrument.QuantityStep)
 	if err != nil {
 		return err
 	}
-	minimum, err := decimal.NewFromString(rows.instrument.MinNotional)
+	minimum, err := decimal.NewFromString(instrument.MinNotional)
 	if err != nil {
 		return err
 	}

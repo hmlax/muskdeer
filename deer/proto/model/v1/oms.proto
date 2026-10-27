@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+import "deer/proto/common/v1/events.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// AccountBudget serializes shared open-notional allocation in one quote asset.
+message AccountBudget {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_account_budget_account\""];
+  string asset = 6 [(tagger.tags) = "gorm:\"column:asset;type:varchar(32);not null\""];
+  string limit_notional = 7 [(tagger.tags) = "gorm:\"column:limit_notional;type:numeric(76,36);not null\""];
+  string reserved_notional = 8 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+  bool enabled = 9 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  int64 revision = 10 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
+
+// StrategyBudget is subordinate to the shared account budget.
+message StrategyBudget {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 strategy_instance_id = 5 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;uniqueIndex:uk_strategy_budget_instance\""];
+  string account_id = 6 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null\""];
+  string limit_notional = 7 [(tagger.tags) = "gorm:\"column:limit_notional;type:numeric(76,36);not null\""];
+  string reserved_notional = 8 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+  bool enabled = 9 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  int64 revision = 10 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
+
+// RiskSnapshot grants a short-lived, explicit risk admission decision.
+message RiskSnapshot {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 strategy_instance_id = 5 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;uniqueIndex:uk_risk_snapshot_instance\""];
+  string account_id = 6 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null\""];
+  int64 instrument_id = 7 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null\""];
+  int64 config_version = 8 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null\""];
+  string market_data_source = 9 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null\""];
+  int64 market_epoch = 10 [(tagger.tags) = "gorm:\"column:market_epoch;type:bigint;not null\""];
+  int64 market_sequence = 11 [(tagger.tags) = "gorm:\"column:market_sequence;type:bigint;not null\""];
+  int64 observed_at = 12 [(tagger.tags) = "gorm:\"column:observed_at;type:bigint;not null\""];
+  int64 expires_at = 13 [(tagger.tags) = "gorm:\"column:expires_at;type:bigint;not null\""];
+  bool reconciled = 14 [(tagger.tags) = "gorm:\"column:reconciled;type:boolean;not null\""];
+  bool allow_new_risk = 15 [(tagger.tags) = "gorm:\"column:allow_new_risk;type:boolean;not null\""];
+  int64 revision = 16 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
+
+// OrderIntent is durable before any call to the trading gateway.
+message OrderIntent {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_order_intent_account_key;uniqueIndex:uk_order_intent_account_client\""];
+  string idempotency_key = 6 [(tagger.tags) = "gorm:\"column:idempotency_key;type:varchar(128);not null;uniqueIndex:uk_order_intent_account_key\""];
+  string client_order_id = 7 [(tagger.tags) = "gorm:\"column:client_order_id;type:varchar(64);not null;uniqueIndex:uk_order_intent_account_client\""];
+  int64 strategy_instance_id = 8 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;index:idx_order_intent_strategy\""];
+  int64 config_version = 9 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null\""];
+  int64 instrument_id = 10 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null\""];
+  string request_id = 11 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(64);not null\""];
+  string fingerprint = 12 [(tagger.tags) = "gorm:\"column:fingerprint;type:char(64);not null\""];
+  string side = 13 [(tagger.tags) = "gorm:\"column:side;type:varchar(8);not null\""];
+  string price = 14 [(tagger.tags) = "gorm:\"column:price;type:numeric(38,18);not null\""];
+  string quantity = 15 [(tagger.tags) = "gorm:\"column:quantity;type:numeric(38,18);not null\""];
+  string filled_quantity = 16 [(tagger.tags) = "gorm:\"column:filled_quantity;type:numeric(38,18);not null\""];
+  string reserved_quote_notional = 17 [(tagger.tags) = "gorm:\"column:reserved_quote_notional;type:numeric(76,36);not null\""];
+  string time_in_force = 18 [(tagger.tags) = "gorm:\"column:time_in_force;type:varchar(16);not null\""];
+  bool reduce_only = 19 [(tagger.tags) = "gorm:\"column:reduce_only;type:boolean;not null\""];
+  string state = 20 [(tagger.tags) = "gorm:\"column:state;type:varchar(32);not null\""];
+  string cancel_state = 21 [(tagger.tags) = "gorm:\"column:cancel_state;type:varchar(16);not null\""];
+  optional int64 core_order_id = 22 [(tagger.tags) = "gorm:\"column:core_order_id;type:bigint\""];
+  string owner_id = 23 [(tagger.tags) = "gorm:\"column:owner_id;type:varchar(128);not null\""];
+  int64 owner_epoch = 24 [(tagger.tags) = "gorm:\"column:owner_epoch;type:bigint;not null\""];
+  string execution_owner_id = 25 [(tagger.tags) = "gorm:\"column:execution_owner_id;type:varchar(128);not null\""];
+  int64 execution_epoch = 26 [(tagger.tags) = "gorm:\"column:execution_epoch;type:bigint;not null\""];
+  int64 submission_deadline_at = 27 [(tagger.tags) = "gorm:\"column:submission_deadline_at;type:bigint;not null\""];
+  int64 revision = 28 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  string error_code = 29 [(tagger.tags) = "gorm:\"column:error_code;type:varchar(64);not null\""];
+}
+
+// OutboxEvent is committed with the business write; publishing comes later.
+message OutboxEvent {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string event_id = 5 [(tagger.tags) = "gorm:\"column:event_id;type:varchar(128);not null;uniqueIndex:uk_outbox_event_id\""];
+  int64 intent_id = 6 [(tagger.tags) = "gorm:\"column:intent_id;type:bigint;not null;index:idx_outbox_intent\""];
+  string event_type = 7 [(tagger.tags) = "gorm:\"column:event_type;type:varchar(64);not null\""];
+  muskdeer.common.v1.ExecutionEvent event = 8 [(tagger.tags) = "gorm:\"column:event;type:jsonb;serializer:json;not null\""];
+  string state = 9 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null;index:idx_outbox_state_id\""];
+  int64 attempts = 10 [(tagger.tags) = "gorm:\"column:attempts;type:bigint;not null\""];
+  int64 next_attempt_at = 11 [(tagger.tags) = "gorm:\"column:next_attempt_at;type:bigint;not null\""];
+  string claimed_by = 12 [(tagger.tags) = "gorm:\"column:claimed_by;type:varchar(128);not null\""];
+  int64 claim_expires_at = 13 [(tagger.tags) = "gorm:\"column:claim_expires_at;type:bigint;not null\""];
+  optional int64 published_at = 14 [(tagger.tags) = "gorm:\"column:published_at;type:bigint\""];
+  string error_code = 15 [(tagger.tags) = "gorm:\"column:error_code;type:varchar(64);not null\""];
+}

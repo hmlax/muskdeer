@@ -29,6 +29,11 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 		&modelv1.SimulatorAccount{},
 		&modelv1.SimulatorBalance{},
 		&modelv1.SimulatorFill{},
+		&modelv1.AccountBudget{},
+		&modelv1.StrategyBudget{},
+		&modelv1.RiskSnapshot{},
+		&modelv1.OrderIntent{},
+		&modelv1.OutboxEvent{},
 	} {
 		columns, err := db.WithContext(ctx).Model(entity).Migrator().ColumnTypes(entity)
 		if err != nil {

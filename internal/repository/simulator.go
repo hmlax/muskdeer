@@ -133,12 +133,19 @@ func validateCoreCommand(ctx context.Context, authority domain.StrategyAuthority
 }
 
 func lockGateway(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority, execution domain.LeaseToken, accountID string, instrumentID int64) (coreRows, error) {
-	var strategy modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "SHARE"}).First(&strategy, authority.StrategyID).Error; err != nil {
+	if _, _, err := lockAuthority(ctx, tx, authority, execution, accountID, instrumentID); err != nil {
 		return coreRows{}, err
 	}
+	return lockCoreRows(ctx, tx, accountID, instrumentID)
+}
+
+func lockAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority, execution domain.LeaseToken, accountID string, instrumentID int64) (*modelv1.StrategyInstance, int64, error) {
+	var strategy modelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "SHARE"}).First(&strategy, authority.StrategyID).Error; err != nil {
+		return nil, 0, err
+	}
 	if strategy.AccountId != accountID || strategy.InstrumentId != instrumentID || strategy.ActiveConfigVersion == nil || *strategy.ActiveConfigVersion != authority.ConfigVersion {
-		return coreRows{}, domain.ErrLeaseLost
+		return nil, 0, domain.ErrLeaseLost
 	}
 	strategyKey := domain.LeaseKey{
 		Kind:       domain.LeaseKindStrategy,
@@ -146,19 +153,19 @@ func lockGateway(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuth
 	}
 	strategyLease, now, err := lockLease(ctx, tx, strategyKey)
 	if err != nil {
-		return coreRows{}, err
+		return nil, 0, err
 	}
 	if strategyLease.GetOwnerId() != authority.OwnerID || strategyLease.GetEpoch() != authority.OwnerEpoch || strategyLease.GetExpiresAt() <= now {
-		return coreRows{}, domain.ErrLeaseLost
+		return nil, 0, domain.ErrLeaseLost
 	}
 	executionLease, now, err := lockLease(ctx, tx, execution.Key)
 	if err != nil {
-		return coreRows{}, err
+		return nil, 0, err
 	}
 	if executionLease.GetOwnerId() != execution.OwnerID || executionLease.GetEpoch() != execution.Epoch || executionLease.GetExpiresAt() <= now {
-		return coreRows{}, domain.ErrLeaseLost
+		return nil, 0, domain.ErrLeaseLost
 	}
-	return lockCoreRows(ctx, tx, accountID, instrumentID)
+	return &strategy, now, nil
 }
 
 func lockCoreRows(ctx context.Context, tx *gorm.DB, accountID string, instrumentID int64) (coreRows, error) {
@@ -201,7 +208,7 @@ func coreFailure(ctx context.Context, err error) error {
 	if err == nil {
 		return nil
 	}
-	for _, known := range []error{domain.ErrInvalidOrder, domain.ErrLeaseLost, domain.ErrInsufficientFunds, domain.ErrIdempotencyConflict, domain.ErrCoreNotFound, domain.ErrSelfTrade, domain.ErrUnsupportedOrder} {
+	for _, known := range []error{domain.ErrInvalidOrder, domain.ErrLeaseLost, domain.ErrInsufficientFunds, domain.ErrIdempotencyConflict, domain.ErrCoreNotFound, domain.ErrSelfTrade, domain.ErrUnsupportedOrder, domain.ErrRiskDenied} {
 		if errors.Is(err, known) {
 			return err
 		}

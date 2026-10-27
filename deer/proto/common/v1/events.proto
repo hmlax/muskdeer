@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package muskdeer.common.v1;
+
+import "deer/proto/common/v1/trading.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+
+// ExecutionEvent is a versioned, typed transaction-outbox envelope.
+message ExecutionEvent {
+  string event_id = 1;
+  string event_type = 2;
+  int64 schema_version = 3;
+  int64 occurred_at_ms = 4;
+  string producer = 5;
+  int64 aggregate_id = 6;
+  int64 aggregate_version = 7;
+  string request_id = 8;
+  // Exactly one concrete payload must match event_type. Concrete fields also
+  // support the generated model's typed JSONB storage without interface JSON.
+  IntentEvent intent = 10;
+  FillEvent fill = 11;
+}
+
+message IntentEvent {
+  int64 intent_id = 1;
+  string client_order_id = 2;
+  string account_id = 3;
+  int64 strategy_instance_id = 4;
+  int64 config_version = 5;
+  int64 instrument_id = 6;
+  OrderSide side = 7;
+  string price = 8;
+  string quantity = 9;
+  string reserved_quote_notional = 10;
+  OrderState state = 11;
+  int64 revision = 12;
+}
+
+message FillEvent {
+  string trade_id = 1;
+  string execution_venue = 2;
+  int64 core_order_id = 3;
+  int64 intent_id = 4;
+  string account_id = 5;
+  int64 strategy_instance_id = 6;
+  int64 instrument_id = 7;
+  OrderSide side = 8;
+  string price = 9;
+  string quantity = 10;
+  string quote_notional = 11;
+  string fee_amount = 12;
+  string fee_asset = 13;
+}
