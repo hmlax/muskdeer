@@ -119,3 +119,5 @@ Deer.Logger() 返回借用的日志实例；LogAttrs 返回写错误，Slog() �
 
 ## 可观测性
 /metrics 与健康端口走内网授权。指标包括行情年龄、报价偏离、gRPC 延迟、订单 UNKNOWN 数、撤单延迟、对冲积压、租约丢失、outbox 年龄。订单/成交 ID 只进日志，不进指标 label。存活检查不因短暂依赖故障反复杀进程；readiness 体现可服务状态。
+
+P02.9.1 已提供实例独立的 Metrics Registry 和 loopback monitoring /metrics，记录 http/grpc/probe 的计数、错误和延迟 histogram，以及 live/lifecycle_ready gauge；scrape 不计自身或查询依赖。所有标签域固定，纳秒直接转 decimal.Decimal，响应按标准 Prometheus 文本输出，不引入 Go 浮点计算。协议、PromQL 与范围见 [指标说明](METRICS.md) 和 [验证记录](validation/P02-09-01.md)。上段业务指标、远程授权抓取、trace/Grafana/告警继续分步实施。

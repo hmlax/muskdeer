@@ -108,11 +108,28 @@ func (d *Deer) addHertz(ctx context.Context, listenerConfig *configv1.Listener, 
 	owned.server = hertz
 	d.servers = append(d.servers, newManagedTransport(owned, accepting, "http", d.requestStop))
 	hertz.Use(func(ctx context.Context, request *app.RequestContext) {
+		started := time.Now()
+		completed := false
+		defer func() {
+			if label != "HTTP" && request.FullPath() == "/metrics" {
+				return // Scraping never changes the samples being scraped.
+			}
+			code := http.StatusInternalServerError
+			if completed {
+				code = request.Response.StatusCode()
+			}
+			if label == "HTTP" {
+				d.metrics.ObserveHTTP(code, time.Since(started))
+				return
+			}
+			d.metrics.ObserveProbe(code, time.Since(started))
+		}()
 		// Supply Date per response without Hertz's process-global ticker.
 		request.Response.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 		bounded, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		request.Next(bounded)
+		completed = true
 	})
 	return hertz, listener.Addr().String(), nil
 }

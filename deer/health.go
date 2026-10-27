@@ -56,6 +56,9 @@ func (d *Deer) addMonitoring(ctx context.Context) error {
 		return err
 	}
 	d.monitoringAddress = address
+	hertz.GET("/metrics", func(_ context.Context, response *app.RequestContext) {
+		response.Data(http.StatusOK, "text/plain; version=0.0.4; charset=utf-8", d.metricsExposition())
+	})
 	hertz.GET("/livez", func(_ context.Context, response *app.RequestContext) {
 		if !d.Live() {
 			response.JSON(http.StatusServiceUnavailable, healthResponse{Status: healthStopped})

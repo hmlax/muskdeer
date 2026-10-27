@@ -12,7 +12,7 @@
 | 任务 | 状态 | 证据 |
 |---|---|---|
 | P01 | done | P01.1–P01.3 工具链、生成/PostgreSQL 与框架兼容验证通过；见 docs/validation/P01-01.md 至 P01-03.md |
-| P02 | in_progress | P02.1–P02.8.2 生命周期、基础设施、Nacos/mTLS unary、配置/doctor、HTTP/gRPC 实时健康通过；日志桥接、指标及业务进程入口待接入 |
+| P02 | in_progress | P02.1–P02.9.1 生命周期、基础设施、Nacos/mTLS unary、配置/doctor、实时健康及固定标签 Prometheus 指标通过；请求关联/框架日志、开发资源及业务进程入口待接入 |
 | P03 | todo | 无实际 Proto、迁移或模拟器 |
 | P04–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
@@ -260,3 +260,12 @@ P01 已完成，从 P02 的 Deer/DeerApi 与基础设施装配继续。每个最
 - compose fixture 改由 Docker 分配 loopback 端口；仅查询当前随机 project，将经过严格验证的实际地址传给当前测试进程和 Nacos fixture。Go integration helper 无固定地址 fallback。
 - 7 项 Python 工具测试、fmt/lint、integration tag vet、完整 make integration 通过，四容器/网络已清理。见 docs/validation/P02-test-port-isolation.md。
 - 单独提交此工具修复；指标代码保留工作区，随后独立交付。前一步 ef0d8cf 已核对 main，[CI 40432295463](https://github.com/hmlax/muskdeer/actions/runs/40432295463) success。
+
+## 2026-10-27：P02.9.1 实例独立 Prometheus 指标
+
+- 改动：Registry/Deer.Metrics()、monitoring /metrics、http/grpc/probe 计数/错误/latency histogram 与 live/lifecycle_ready gauge；固定状态域，无 ID/原路径标签，无全局注册/后台 exporter/队列，scrape 不计自身或探测依赖。
+- 精度：time.Duration 纳秒直接转 decimal.Decimal 秒并累加，以标准 0.0.4 数值文本输出；业务 JSON/Proto string 合同不变。复用已锁定 prometheus/common v0.32.1（Apache-2.0）作官方格式解析门禁，仅调整为测试直接依赖。
+- 验证：纳秒精确 sum、并发快照 count/+Inf 一致、未知状态合并、双 API 隔离、自抓取稳定、gRPC 成功/参数错/无期限流拒绝；make fmt、make verify、integration tag vet、动态端口完整集成、文档/差异检查、race/goleak 全部通过，临时四容器/网络已清理。见 docs/METRICS.md、docs/validation/P02-09-01.md。
+- 远程：4364503 已核对 main SHA；本步独立提交/推送并核对 SHA，CI 按实际运行结果更新。
+- 未完成：request_id/框架日志、trace/exemplar、业务指标、Grafana/告警、生产远程抓取授权、容量及独立业务进程；完整 P02 保持进行。
+- 下一步：请求关联与日志桥接，再完成运行入口/开发资源和多进程验收。

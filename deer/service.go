@@ -19,6 +19,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	"github.com/hmlax/muskdeer/deer/logging"
+	"github.com/hmlax/muskdeer/deer/metrics"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
@@ -79,6 +80,7 @@ type Deer struct {
 	discovery         *nacos.Client
 	publication       *nacos.Publication
 	rpcClients        *rpcclient.Factory
+	metrics           *metrics.Registry
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -330,6 +332,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		events:      events,
 		discovery:   discovery,
 		rpcClients:  rpcClients,
+		metrics:     metrics.New(),
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
@@ -373,8 +376,9 @@ func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer
 		kratosgrpc.Timeout(d.cfg.Grpc.RequestTimeout.AsDuration()),
 		kratosgrpc.DisableReflection(),
 		kratosgrpc.CustomHealth(),
+		kratosgrpc.UnaryInterceptor(d.measureUnary),
 		kratosgrpc.Options(grpc.WaitForHandlers(true)),
-		kratosgrpc.StreamInterceptor(streamDeadlineInterceptor(d.cfg.Grpc.RequestTimeout.AsDuration())),
+		kratosgrpc.StreamInterceptor(d.measureStream, streamDeadlineInterceptor(d.cfg.Grpc.RequestTimeout.AsDuration())),
 	)
 	d.servers = append(d.servers, newManagedTransport(server, accepting, "grpc", d.requestStop))
 	d.grpcAddress = listener.Addr().String()
