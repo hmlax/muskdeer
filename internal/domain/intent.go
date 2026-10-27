@@ -44,6 +44,7 @@ type IntentSnapshot struct {
 	FilledQuantity        decimal.Decimal
 	Revision              int64
 	ErrorCode             string
+	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
 

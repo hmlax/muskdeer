@@ -422,6 +422,7 @@ type OrderView struct {
 	ErrorCode          string                 `protobuf:"bytes,19,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
 	CoreRevision       int64                  `protobuf:"varint,20,opt,name=core_revision,json=coreRevision,proto3" json:"core_revision,omitempty"`
 	ReduceOnly         bool                   `protobuf:"varint,21,opt,name=reduce_only,json=reduceOnly,proto3" json:"reduce_only,omitempty"`
+	CreatedAt          *timestamppb.Timestamp `protobuf:"bytes,22,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -601,6 +602,13 @@ func (x *OrderView) GetReduceOnly() bool {
 		return x.ReduceOnly
 	}
 	return false
+}
+
+func (x *OrderView) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
 }
 
 type CancellationView struct {
@@ -1426,7 +1434,7 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x12\x1d\n" +
 	"\tintent_id\x18\x02 \x01(\x03H\x00R\bintentId\x12(\n" +
 	"\x0fclient_order_id\x18\x03 \x01(\tH\x00R\rclientOrderIdB\b\n" +
-	"\x06lookup\"\xdf\x06\n" +
+	"\x06lookup\"\x9a\a\n" +
 	"\tOrderView\x12\x1b\n" +
 	"\tintent_id\x18\x01 \x01(\x03R\bintentId\x12&\n" +
 	"\x0fclient_order_id\x18\x02 \x01(\tR\rclientOrderId\x12\"\n" +
@@ -1453,7 +1461,9 @@ const file_api_execution_v1_execution_proto_rawDesc = "" +
 	"error_code\x18\x13 \x01(\tR\terrorCode\x12#\n" +
 	"\rcore_revision\x18\x14 \x01(\x03R\fcoreRevision\x12\x1f\n" +
 	"\vreduce_only\x18\x15 \x01(\bR\n" +
-	"reduceOnly\"\xb7\x01\n" +
+	"reduceOnly\x129\n" +
+	"\n" +
+	"created_at\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\xb7\x01\n" +
 	"\x10CancellationView\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1b\n" +
 	"\tintent_id\x18\x02 \x01(\x03R\bintentId\x12;\n" +
@@ -1585,34 +1595,35 @@ var file_api_execution_v1_execution_proto_depIdxs = []int32{
 	19, // 8: muskdeer.execution.v1.OrderView.state:type_name -> muskdeer.common.v1.OrderState
 	20, // 9: muskdeer.execution.v1.OrderView.cancel_state:type_name -> muskdeer.common.v1.CancelState
 	18, // 10: muskdeer.execution.v1.OrderView.updated_at:type_name -> google.protobuf.Timestamp
-	21, // 11: muskdeer.execution.v1.CancellationView.state:type_name -> muskdeer.common.v1.CancellationState
-	4,  // 12: muskdeer.execution.v1.OrderReply.order:type_name -> muskdeer.execution.v1.OrderView
-	5,  // 13: muskdeer.execution.v1.OrderReply.cancellation:type_name -> muskdeer.execution.v1.CancellationView
-	4,  // 14: muskdeer.execution.v1.ListOrdersReply.orders:type_name -> muskdeer.execution.v1.OrderView
-	16, // 15: muskdeer.execution.v1.FillView.side:type_name -> muskdeer.common.v1.OrderSide
-	18, // 16: muskdeer.execution.v1.FillView.occurred_at:type_name -> google.protobuf.Timestamp
-	10, // 17: muskdeer.execution.v1.ListFillsReply.fills:type_name -> muskdeer.execution.v1.FillView
-	18, // 18: muskdeer.execution.v1.AccountReply.observed_at:type_name -> google.protobuf.Timestamp
-	14, // 19: muskdeer.execution.v1.AccountReply.balances:type_name -> muskdeer.execution.v1.AssetBalance
-	1,  // 20: muskdeer.execution.v1.Execution.SubmitIntent:input_type -> muskdeer.execution.v1.SubmitIntentRequest
-	2,  // 21: muskdeer.execution.v1.Execution.CancelOrder:input_type -> muskdeer.execution.v1.CancelOrderRequest
-	3,  // 22: muskdeer.execution.v1.Execution.FindOrder:input_type -> muskdeer.execution.v1.FindOrderRequest
-	8,  // 23: muskdeer.execution.v1.Execution.ListOrders:input_type -> muskdeer.execution.v1.ListOrdersRequest
-	11, // 24: muskdeer.execution.v1.Execution.ListFills:input_type -> muskdeer.execution.v1.ListFillsRequest
-	13, // 25: muskdeer.execution.v1.Execution.GetAccount:input_type -> muskdeer.execution.v1.GetAccountRequest
-	7,  // 26: muskdeer.execution.v1.Execution.FindCancellation:input_type -> muskdeer.execution.v1.FindCancellationRequest
-	6,  // 27: muskdeer.execution.v1.Execution.SubmitIntent:output_type -> muskdeer.execution.v1.OrderReply
-	6,  // 28: muskdeer.execution.v1.Execution.CancelOrder:output_type -> muskdeer.execution.v1.OrderReply
-	6,  // 29: muskdeer.execution.v1.Execution.FindOrder:output_type -> muskdeer.execution.v1.OrderReply
-	9,  // 30: muskdeer.execution.v1.Execution.ListOrders:output_type -> muskdeer.execution.v1.ListOrdersReply
-	12, // 31: muskdeer.execution.v1.Execution.ListFills:output_type -> muskdeer.execution.v1.ListFillsReply
-	15, // 32: muskdeer.execution.v1.Execution.GetAccount:output_type -> muskdeer.execution.v1.AccountReply
-	6,  // 33: muskdeer.execution.v1.Execution.FindCancellation:output_type -> muskdeer.execution.v1.OrderReply
-	27, // [27:34] is the sub-list for method output_type
-	20, // [20:27] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	18, // 11: muskdeer.execution.v1.OrderView.created_at:type_name -> google.protobuf.Timestamp
+	21, // 12: muskdeer.execution.v1.CancellationView.state:type_name -> muskdeer.common.v1.CancellationState
+	4,  // 13: muskdeer.execution.v1.OrderReply.order:type_name -> muskdeer.execution.v1.OrderView
+	5,  // 14: muskdeer.execution.v1.OrderReply.cancellation:type_name -> muskdeer.execution.v1.CancellationView
+	4,  // 15: muskdeer.execution.v1.ListOrdersReply.orders:type_name -> muskdeer.execution.v1.OrderView
+	16, // 16: muskdeer.execution.v1.FillView.side:type_name -> muskdeer.common.v1.OrderSide
+	18, // 17: muskdeer.execution.v1.FillView.occurred_at:type_name -> google.protobuf.Timestamp
+	10, // 18: muskdeer.execution.v1.ListFillsReply.fills:type_name -> muskdeer.execution.v1.FillView
+	18, // 19: muskdeer.execution.v1.AccountReply.observed_at:type_name -> google.protobuf.Timestamp
+	14, // 20: muskdeer.execution.v1.AccountReply.balances:type_name -> muskdeer.execution.v1.AssetBalance
+	1,  // 21: muskdeer.execution.v1.Execution.SubmitIntent:input_type -> muskdeer.execution.v1.SubmitIntentRequest
+	2,  // 22: muskdeer.execution.v1.Execution.CancelOrder:input_type -> muskdeer.execution.v1.CancelOrderRequest
+	3,  // 23: muskdeer.execution.v1.Execution.FindOrder:input_type -> muskdeer.execution.v1.FindOrderRequest
+	8,  // 24: muskdeer.execution.v1.Execution.ListOrders:input_type -> muskdeer.execution.v1.ListOrdersRequest
+	11, // 25: muskdeer.execution.v1.Execution.ListFills:input_type -> muskdeer.execution.v1.ListFillsRequest
+	13, // 26: muskdeer.execution.v1.Execution.GetAccount:input_type -> muskdeer.execution.v1.GetAccountRequest
+	7,  // 27: muskdeer.execution.v1.Execution.FindCancellation:input_type -> muskdeer.execution.v1.FindCancellationRequest
+	6,  // 28: muskdeer.execution.v1.Execution.SubmitIntent:output_type -> muskdeer.execution.v1.OrderReply
+	6,  // 29: muskdeer.execution.v1.Execution.CancelOrder:output_type -> muskdeer.execution.v1.OrderReply
+	6,  // 30: muskdeer.execution.v1.Execution.FindOrder:output_type -> muskdeer.execution.v1.OrderReply
+	9,  // 31: muskdeer.execution.v1.Execution.ListOrders:output_type -> muskdeer.execution.v1.ListOrdersReply
+	12, // 32: muskdeer.execution.v1.Execution.ListFills:output_type -> muskdeer.execution.v1.ListFillsReply
+	15, // 33: muskdeer.execution.v1.Execution.GetAccount:output_type -> muskdeer.execution.v1.AccountReply
+	6,  // 34: muskdeer.execution.v1.Execution.FindCancellation:output_type -> muskdeer.execution.v1.OrderReply
+	28, // [28:35] is the sub-list for method output_type
+	21, // [21:28] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_api_execution_v1_execution_proto_init() }

@@ -33,11 +33,16 @@ func TestOrderViewPreservesExactStringsAndUnknownState(t *testing.T) {
 		State:       domain.OrderStateUnknown,
 		CancelState: domain.CancelStateNone,
 		Revision:    1,
-		UpdatedAt:   time.UnixMilli(1).UTC(),
+		UpdatedAt:   time.UnixMilli(2).UTC(),
+		CreatedAt:   time.UnixMilli(1).UTC(),
 	}
 	view, err := Order(snapshot)
 	if err != nil || view.Price != value.String() || view.Quantity != value.String() || view.Notional != value.Mul(value).String() || view.State != commonv1.OrderState_ORDER_STATE_UNKNOWN || view.CoreOrderId != "" {
 		t.Fatalf("order view lost precision or fabricated an outcome: %v, %v", view, err)
+	}
+	observation, err := Snapshot(view)
+	if err != nil || !observation.CreatedAt.Equal(snapshot.CreatedAt) || !observation.UpdatedAt.Equal(snapshot.UpdatedAt) || observation.CreatedAt.Equal(observation.UpdatedAt) {
+		t.Fatalf("order observation lost immutable creation time: %+v, %v", observation, err)
 	}
 	data, err := protojson.Marshal(view)
 	if err != nil {

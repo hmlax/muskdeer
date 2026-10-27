@@ -31,6 +31,7 @@ func TestObservedSnapshotRequiresConsistentTypedIdentityAndExactMoney(t *testing
 		Notional:           "99.123456789012345678",
 		Revision:           1,
 		UpdatedAt:          timestamppb.New(time.UnixMilli(1)),
+		CreatedAt:          timestamppb.New(time.UnixMilli(1)),
 	}
 	observed, err := Snapshot(view)
 	if err != nil || observed.State != domain.OrderStateUnknown || observed.Input.Authority.OwnerID != "" || observed.CoreOrderID != 0 || observed.Input.Price.String() != view.Price {
@@ -45,6 +46,8 @@ func TestObservedSnapshotRequiresConsistentTypedIdentityAndExactMoney(t *testing
 		func(v *executionv1.OrderView) { v.AccountId = "" },
 		func(v *executionv1.OrderView) { v.FilledQuantity = "2" },
 		func(v *executionv1.OrderView) { v.UpdatedAt = nil },
+		func(v *executionv1.OrderView) { v.CreatedAt = nil },
+		func(v *executionv1.OrderView) { v.CreatedAt = timestamppb.New(time.UnixMilli(2)) },
 		func(v *executionv1.OrderView) { v.ProtoReflect().SetUnknown([]byte{0xa0, 0x06, 0x01}) },
 	} {
 		changed := proto.CloneOf(view)

@@ -34,7 +34,8 @@ func Order(input domain.IntentSnapshot) (*executionv1.OrderView, error) {
 		return nil, err
 	}
 	updated := timestamppb.New(input.UpdatedAt)
-	if updated.CheckValid() != nil {
+	created := timestamppb.New(input.CreatedAt)
+	if updated.CheckValid() != nil || created.CheckValid() != nil || input.CreatedAt.UnixMilli() <= 0 || input.UpdatedAt.Before(input.CreatedAt) {
 		return nil, domain.ErrInvalidOrder
 	}
 	coreID := ""
@@ -62,6 +63,7 @@ func Order(input domain.IntentSnapshot) (*executionv1.OrderView, error) {
 		CancelState:        cancellation,
 		Revision:           input.Revision,
 		UpdatedAt:          updated,
+		CreatedAt:          created,
 		ErrorCode:          input.ErrorCode,
 	}, nil
 }

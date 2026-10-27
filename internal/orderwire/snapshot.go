@@ -12,6 +12,7 @@ import (
 // key. It cannot be reused as an authorized submission command.
 func Snapshot(input *executionv1.OrderView) (domain.IntentSnapshot, error) {
 	if input == nil || len(input.ProtoReflect().GetUnknown()) != 0 || input.UpdatedAt.CheckValid() != nil || len(input.UpdatedAt.ProtoReflect().GetUnknown()) != 0 ||
+		input.CreatedAt.CheckValid() != nil || len(input.CreatedAt.ProtoReflect().GetUnknown()) != 0 || input.CreatedAt.AsTime().UnixMilli() <= 0 || input.UpdatedAt.AsTime().Before(input.CreatedAt.AsTime()) ||
 		input.ExecutionVenue != domain.ExecutionVenueSimulator || input.IntentId <= 0 || input.Revision <= 0 || input.CoreRevision < 0 ||
 		!identifier(input.AccountId, 64) || !identifier(input.ClientOrderId, 64) || input.InstrumentId <= 0 || input.StrategyInstanceId <= 0 || input.ConfigVersion <= 0 {
 		return domain.IntentSnapshot{}, invalid("observation")
@@ -31,6 +32,7 @@ func Snapshot(input *executionv1.OrderView) (domain.IntentSnapshot, error) {
 		Revision:     input.Revision,
 		CoreRevision: input.CoreRevision,
 		UpdatedAt:    input.UpdatedAt.AsTime().UTC(),
+		CreatedAt:    input.CreatedAt.AsTime().UTC(),
 		ErrorCode:    input.ErrorCode,
 	}
 	var err error
