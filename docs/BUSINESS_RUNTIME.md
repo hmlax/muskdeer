@@ -88,6 +88,8 @@ market只读加载绑定并装配按feed命名的owned工作器及真实MarketDa
 
 每次循环操作有独立 native timeout，空队列后才等待 pollInterval；有积压时逐条处理，不创建无界队列。失败返回给 Deer，进程撤销 readiness/注册并停止，未确认消息或未完成领取保留在持久层；本阶段不在同一调用内重放、不偷偷重启工作器。恢复/长期未知/MaxDeliver 人工处理继续 P09。
 
+命令失败日志保留安全的组件错误，包装后的context超时/取消另用固定cause_kind标记deadline_exceeded/canceled，原始私有错误不展开。操作预算与行情/风险许可时效独立；增加操作预算不延长原行情寿命。受控锁测试以200ms验证风险工作器超时退出且不写许可，普通多查询进程测试使用1秒预算、3秒租约和原500ms行情政策。
+
 ## 实际验证范围
 
 `make integration` 在独立临时数据库/JetStream/Nacos 中显式迁移和准备模拟夹具，实际启动两个命令进程，再通过 Nacos/mTLS 下单。核心测试驱动产生真实模拟成交，execution 自动发布、portfolio 自动消费并经 RPC 同步预算。最终持仓10、现金1001.8、费用0.2、预算0，只有2条事实/2条inbox，outbox 全部完成。夹具中的行情/风险许可为明确模拟输入，不作为 Binance/OKX 实连证据。

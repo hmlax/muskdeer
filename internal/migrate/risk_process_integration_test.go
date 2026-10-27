@@ -50,7 +50,9 @@ func TestExecutionProcessRefreshesRiskAndClosesOnSelectedMarketLoss(t *testing.T
 	marketCfg := marketProcessConfig(t, ca, postgres, naming, feed.ID, "risk-source", "99.99", "100.01")
 	marketPID := startBusinessProcess(ctx, t, marketCfg, observer)
 	executionCfg := businessProcessConfig(t, ca, postgres, stream, naming, "execution")
-	executionCfg.Business.OperationTimeout = durationpb.New(200 * time.Millisecond)
+	// This is a successful multi-query process scenario, not a 200 ms latency
+	// target. The separate forced-lock case verifies the short native deadline.
+	executionCfg.Business.OperationTimeout = durationpb.New(time.Second)
 	executionCfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
 	executionCfg.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
 	executionPID := startBusinessProcess(ctx, t, executionCfg, observer)

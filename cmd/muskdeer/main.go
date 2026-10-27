@@ -17,10 +17,16 @@ import (
 )
 
 type commandFailure struct {
-	Level   string `json:"level"`
-	Message string `json:"msg"`
-	Cause   string `json:"cause,omitempty"`
+	Level     string `json:"level"`
+	Message   string `json:"msg"`
+	Cause     string `json:"cause,omitempty"`
+	CauseKind string `json:"cause_kind,omitempty"`
 }
+
+const (
+	commandCauseDeadline = "deadline_exceeded"
+	commandCauseCanceled = "canceled"
+)
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -103,15 +109,22 @@ func onlyCancellation(err error) bool {
 }
 
 func report(output io.Writer, message string, cause error, code int) int {
-	var detail string
+	var detail, kind string
 	if cause != nil {
 		// Library errors mask credentials; config errors mask original input.
 		detail = cause.Error()
+		switch {
+		case errors.Is(cause, context.DeadlineExceeded):
+			kind = commandCauseDeadline
+		case errors.Is(cause, context.Canceled):
+			kind = commandCauseCanceled
+		}
 	}
 	if err := json.NewEncoder(output).Encode(commandFailure{
-		Level:   "ERROR",
-		Message: message,
-		Cause:   detail,
+		Level:     "ERROR",
+		Message:   message,
+		Cause:     detail,
+		CauseKind: kind,
 	}); err != nil {
 		return 1
 	}

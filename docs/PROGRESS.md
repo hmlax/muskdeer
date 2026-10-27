@@ -608,3 +608,9 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：owner解析/真实PG隔离与过期/接管/畸形/退役测试先写后实现；两个独立execution命令中，B上线不改变A所有权，A退出经实际3秒TTL后B升epoch并更新路由，4.93秒通过。完整make verify、完整make integration、文档/差异检查通过，race/goleak保留；见 [P06.10](validation/P06-10.md)。
 - 远程：07ed67f已推送main并核对SHA；P06.8 [CI 40499361180](https://github.com/hmlax/muskdeer/actions/runs/40499361180) success。本步独立提交/推送并核对SHA。
 - 下一步：策略typed执行客户端接入明确owner、持久动作/所有者与差分循环、行情失效撤单和30分钟实际模拟；P06保持进行。
+
+## 2026-10-27：P06.10a 风险操作期限与安全诊断
+
+- 改动：命令日志以固定cause_kind识别包装后的deadline/canceled，私有cause继续隐藏；新增受控PG策略行锁的200ms风险进程故障用例，普通成功场景使用1秒有界预算、3秒租约，500ms行情/许可限制保持。
+- 验证：首轮原普通场景200ms附近退出，旧通用日志不足以确认cause，未计通过；受控故障明确报告deadline并失败码1退出，风险关闭且revision不变，1.58秒通过；正常流程1.76秒。最终完整make verify、完整make integration、文档/差异检查通过，原六服务进程、lint/race/goleak保留；见 [P06.10a](validation/P06-10a.md)。
+- 远程：cf203bc已推送main并核对SHA，[CI 40501113543](https://github.com/hmlax/muskdeer/actions/runs/40501113543) success；P06.9 [CI 40500269434](https://github.com/hmlax/muskdeer/actions/runs/40500269434) success。本步独立提交/推送并核对SHA，typed客户端另笔提交。
