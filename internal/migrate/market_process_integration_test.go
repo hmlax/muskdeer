@@ -137,7 +137,10 @@ func waitProcessReference(ctx context.Context, t *testing.T, reader domain.Marke
 		if err == nil && value.Reading.Quality == quality {
 			return value
 		}
-		if err != nil && status.Code(err) != codes.NotFound && status.Code(err) != codes.Unavailable {
+		// A discovery result can include the endpoint being withdrawn. Its
+		// bounded connect attempt may expire before the next fresh lookup.
+		// Only this read-only test observer polls; the factory never replays.
+		if err != nil && status.Code(err) != codes.NotFound && status.Code(err) != codes.Unavailable && status.Code(err) != codes.DeadlineExceeded {
 			t.Fatalf("selected process reference failed: %v", err)
 		}
 		select {
@@ -146,4 +149,46 @@ func waitProcessReference(ctx context.Context, t *testing.T, reader domain.Marke
 		case <-ticker.C:
 		}
 	}
+}
+
+// Withdrawal may race a fresh discovery result: the selected endpoint can stop
+// before its connection becomes ready. The next independent read must discover
+// again and return the selected source's unavailable snapshot, never old prices.
+func TestProcessReferenceWaitSurvivesWithdrawnTransportDeadline(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	feed := domain.MarketFeedDefinition{
+		Source:       domain.MarketSourceBinance,
+		InstrumentID: 1,
+		Mode:         domain.MarketModeReplay,
+	}
+	reader := &withdrawnMarketReader{feed: feed}
+	value := waitProcessReference(ctx, t, reader, feed, domain.MarketQualityUnavailable)
+	if reader.calls != 2 || value.Reading.Source != feed.Source || !value.Reading.Mid.IsZero() {
+		t.Fatal("withdrawn transport did not recover a fresh, exact-source unavailable reading")
+	}
+}
+
+type withdrawnMarketReader struct {
+	feed  domain.MarketFeedDefinition
+	calls int
+}
+
+func (r *withdrawnMarketReader) Reference(_ context.Context, source domain.MarketSource, instrumentID int64, mode domain.MarketMode) (domain.MarketReference, error) {
+	if source != r.feed.Source || instrumentID != r.feed.InstrumentID || mode != r.feed.Mode {
+		return domain.MarketReference{}, domain.ErrMarketIdentity
+	}
+	r.calls++
+	if r.calls == 1 {
+		return domain.MarketReference{}, status.Error(codes.DeadlineExceeded, "RPC transport did not become ready")
+	}
+	return domain.MarketReference{
+		Reading: domain.MarketReading{
+			Source:       source,
+			InstrumentID: instrumentID,
+			Mode:         mode,
+			Quality:      domain.MarketQualityUnavailable,
+			Reason:       domain.MarketReasonDisconnected,
+		},
+	}, nil
 }
