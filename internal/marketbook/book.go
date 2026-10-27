@@ -90,6 +90,8 @@ type Book struct {
 	asks         map[string]Level
 	lastHash     [32]byte
 	top          View
+	bidFloor     decimal.Decimal
+	askCeiling   decimal.Decimal
 }
 
 // New binds exactly one eligible source and configured external symbol.
@@ -181,6 +183,10 @@ func (b *Book) snapshot(frame Frame) error {
 	if err := b.setDepth(frame, bids, asks); err != nil {
 		return b.invalidate(err)
 	}
+	// REST/WS snapshots may omit deeper unchanged levels. Crossing their known
+	// coverage edge cannot establish the true best price without a new snapshot.
+	b.bidFloor = bestLevel(bids, false).Price
+	b.askCeiling = bestLevel(asks, true).Price
 	b.generation++
 	b.top.Generation = b.generation
 	b.state = StateReady
@@ -197,6 +203,9 @@ func (b *Book) setDepth(frame Frame, bids, asks map[string]Level) error {
 	}
 	bid, ask := bestLevel(bids, true), bestLevel(asks, false)
 	if bid.Price.GreaterThanOrEqual(ask.Price) {
+		return ErrInvalidBook
+	}
+	if !frame.Snapshot && (bid.Price.LessThan(b.bidFloor) || ask.Price.GreaterThan(b.askCeiling)) {
 		return ErrInvalidBook
 	}
 	mid, _ := bid.Price.Add(ask.Price).QuoRem(decimal.NewFromInt(2), 36)

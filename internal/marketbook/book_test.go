@@ -10,6 +10,64 @@ import (
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
+func TestDeletingPastSnapshotCoverageCannotExposeUnknownTop(t *testing.T) {
+	for _, side := range []string{"bid", "ask"} {
+		t.Run(side, func(t *testing.T) {
+			book, err := New(domain.MarketSourceOKX, 1, "BTC-USDT", MaximumLevels)
+			if err != nil {
+				t.Fatal(err)
+			}
+			frame := Frame{
+				Source:       domain.MarketSourceOKX,
+				InstrumentID: 1,
+				Symbol:       "BTC-USDT",
+				Snapshot:     true,
+				Previous:     -1,
+				Sequence:     1,
+				Bids: []Level{{
+					Price:    decimal.RequireFromString("99"),
+					Quantity: decimal.NewFromInt(1),
+				}},
+				Asks: []Level{{
+					Price:    decimal.RequireFromString("101"),
+					Quantity: decimal.NewFromInt(1),
+				}},
+				EventTime:  time.UnixMilli(1000),
+				ReceivedAt: time.UnixMilli(1001),
+			}
+			if err := book.Apply(frame); err != nil {
+				t.Fatal(err)
+			}
+			frame.Snapshot, frame.Previous, frame.Sequence = false, 1, 2
+			frame.Bids, frame.Asks = nil, nil
+			if side == "bid" {
+				frame.Bids = []Level{
+					{Price: decimal.NewFromInt(99)},
+					{
+						Price:    decimal.NewFromInt(97),
+						Quantity: decimal.NewFromInt(1),
+					},
+				}
+			} else {
+				frame.Asks = []Level{
+					{Price: decimal.NewFromInt(101)},
+					{
+						Price:    decimal.NewFromInt(103),
+						Quantity: decimal.NewFromInt(1),
+					},
+				}
+			}
+			// The omitted snapshot depth might contain a better price (98/102).
+			if err := book.Apply(frame); !errors.Is(err, ErrInvalidBook) {
+				t.Fatalf("unknown depth was assumed empty: %v", err)
+			}
+			if _, err := book.Top(); !errors.Is(err, ErrNotReady) {
+				t.Fatal("book exposed a price beyond snapshot coverage")
+			}
+		})
+	}
+}
+
 func TestBinanceBridgesSnapshotIgnoresOldDiffAndInvalidatesGap(t *testing.T) {
 	book := newBookFixture(t, domain.MarketSourceBinance)
 	snapshot := frameFixture(domain.MarketSourceBinance, true, 100, -1, 0)
