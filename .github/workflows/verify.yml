@@ -25,3 +25,5 @@ jobs:
         run: make integration
       - name: Verify persistent development resources
         run: make dev-test
+      - name: Build pinned toolchain image and verify runtime
+        run: make image-test

@@ -34,6 +34,7 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	flags.SetOutput(io.Discard)
 	roleName := flags.String("role", "", "api, market, strategy, execution, portfolio or cron")
 	path := flags.String("config", "", "local protobuf JSON configuration")
+	checkReady := flags.Bool("check-ready", false, "probe the configured local readiness endpoint and exit")
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			flags.SetOutput(output)
@@ -43,11 +44,19 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 		return report(diagnostic, "invalid command arguments", nil, 2)
 	}
 	if *path == "" || flags.NArg() != 0 {
-		return report(diagnostic, "role and config are required", nil, 2)
+		return report(diagnostic, "config is required and positional arguments are not accepted", nil, 2)
 	}
-	role, err := entry.ParseRole(*roleName)
-	if err != nil {
-		return report(diagnostic, "invalid service role", nil, 2)
+	var role entry.Role
+	if *checkReady {
+		if *roleName != "" {
+			return report(diagnostic, "readiness probe does not accept a service role", nil, 2)
+		}
+	} else {
+		var err error
+		role, err = entry.ParseRole(*roleName)
+		if err != nil {
+			return report(diagnostic, "invalid service role", nil, 2)
+		}
 	}
 	if runtime.Version() != "go1.27.3" {
 		return report(diagnostic, "Go 1.27.3 is required", nil, 1)
@@ -55,6 +64,12 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	cfg, err := deer.LoadConfig(ctx, *path)
 	if err != nil {
 		return report(diagnostic, "configuration loading failed", err, 1)
+	}
+	if *checkReady {
+		if err := entry.CheckReady(ctx, cfg.Monitoring); err != nil {
+			return report(diagnostic, "readiness probe failed", err, 1)
+		}
+		return 0
 	}
 	if err := entry.Run(ctx, role, cfg, output); err != nil {
 		if onlyCancellation(err) {

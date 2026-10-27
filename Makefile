@@ -1,4 +1,4 @@
-.PHONY: doctor test-tooling tools generate generate-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test
+.PHONY: doctor test-tooling tools generate generate-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e
 
 doctor:
 	python3 scripts/go.py version
@@ -60,3 +60,11 @@ dev-status:
 
 dev-test: build
 	python3 scripts/dev-smoke.py
+
+image:
+	docker build --target runtime -t muskdeer:local .
+
+image-test: image
+	python3 scripts/image-smoke.py
+
+e2e: integration image-test

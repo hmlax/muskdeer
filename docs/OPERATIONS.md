@@ -40,6 +40,20 @@ make build
 
 `make dev-test` 在随机临时工作区运行相同启动/停止逻辑，验证重复 up、六份配置、真实服务连接 PG/Redis/Nacos 并 ready、Redis 写入跨 down/up 保留及 Nacos 恢复；最终仅删除该随机测试项目的卷，保留用户工作区项目。该测试已加入 CI。
 
+## 镜像与容器探针
+
+`make image` 从固定 `golang:1.27.3-bookworm` manifest digest 构建 `muskdeer:local`，构建阶段检查实际 GOVERSION 精确等于 go1.27.3，禁用工具链自动切换和 CGO。Dockerfile 的 toolchain target 可用 `docker build --target toolchain -t muskdeer:toolchain .` 构建为开发工具镜像；runtime 仅包含静态服务、CA 根证书及所链接模块的顶层许可证文件，使用 UID/GID 65532，无 shell。构建 context 使用白名单，不包含 .cache、git、配置/凭据及本地准备包；依赖通过锁定 go.mod/go.sum 下载。
+
+运行时显式传 `-role` 和只读挂载的 `-config`，配置文件必须允许容器 UID 读取。monitoring 仅绑定容器 loopback，因此应使用 exec 探针，不能把它当成已发布的宿主端口：
+
+```sh
+docker exec <自己的容器名> /muskdeer -check-ready -config /app/service.json
+```
+
+`-check-ready` 不构造 Deer、不创建连接池或日志文件，仅按配置的监控期限 GET 本地 /readyz，检查 200 及 ready body；禁止代理、重定向及非 loopback/零端口，响应有界。成功退出 0，失败输出安全 JSON 并非零退出；不接受同时指定 -role。
+
+`make image-test` 使用独立随机容器、只读根目录、清空 capabilities、禁止提权及禁网，实测 readiness、逐行 JSON 身份和 SIGTERM 后退出码，最后只删除自身容器。`make e2e` 组合当前 integration 和 image-test；现阶段覆盖公共运行层，交易/管理业务的 E2E 按 P03–P10 扩充。镜像测试和持久开发测试均在 CI 中执行，本地构建不自动发布镜像或部署。
+
 ## 启动顺序
 基础设施 → 经审查的数据库迁移 → execution/portfolio 恢复 → market 就绪 → strategy 恢复 → api 放流量 → cron。服务可并行启动但 readiness 必须体现依赖及恢复状态，策略不能因为进程启动就自动跳过对账。
 
