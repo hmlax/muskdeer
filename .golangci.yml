@@ -13,8 +13,34 @@ linters:
     - revive
     - gocritic
     - gocyclo
+    - forbidigo
+  settings:
+    forbidigo:
+      analyze-types: true
+      exclude-godoc-examples: false
+      forbid:
+        - pattern: '^gorm\.DB\.Table$'
+          pkg: '^gorm\.io/gorm$'
+          msg: 'Use a generated Model; string table selection is forbidden.'
+        - pattern: '^gorm\.(DB|Migrator)\.AutoMigrate$'
+          pkg: '^gorm\.io/gorm$'
+          msg: 'Use explicit versioned migrations.'
+        - pattern: '^gorm\.DB\.(Raw|Exec)$'
+          pkg: '^gorm\.io/gorm$'
+          msg: 'Raw SQL is confined to reviewed migration DDL and lock control.'
+        - pattern: '^float(32|64)$'
+          msg: 'Use decimal.Decimal for decimal values.'
+        - pattern: '^decimal\.NewFromFloat.*$'
+          pkg: '^github\.com/shopspring/decimal$'
+          msg: 'Parse decimal strings directly; float intermediates are forbidden.'
+        - pattern: '^strconv\.(ParseFloat|FormatFloat)$'
+          msg: 'Use decimal parsing and formatting.'
   exclusions:
     generated: strict
+    rules:
+      - path: '^internal/migrate/'
+        linters: [forbidigo]
+        text: 'Raw SQL is confined to reviewed migration DDL and lock control'
 formatters:
   enable:
     - gofmt

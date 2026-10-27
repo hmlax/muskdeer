@@ -46,6 +46,7 @@
 - deer 统一基础设施装配，业务代码使用窄接口；禁止全局单例和吞错初始化。
 - 日志禁止密钥、签名、口令及完整敏感请求；每节点独立文件。指标禁止 order_id 等高基数 label。
 - 不提交真实凭据、生产地址和客户资料。配置示例必须能识别为示例。
+- make contract-check 在生成/verify 前检查 Go/Proto 小数和模型四字段；make lint 的类型分析禁止 Table/浮点及非迁移 Raw/Exec，make policy-test 用实际正反样例验证门禁。结构门禁不替代对 WithContext/Model、动态调用、资产精度和 SQL 行为的审查与测试，见 docs/POLICY_CHECKS.md。
 
 ## 可执行能力与完成声明
 命令由 P01/P02 实现后才能宣称可运行：make doctor、generate、generate-check、fmt、lint、test、test-race、integration、e2e、build、verify、dev-up、dev-down。

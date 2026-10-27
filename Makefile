@@ -1,4 +1,4 @@
-.PHONY: doctor test-tooling tools generate generate-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e
+.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e
 
 doctor:
 	python3 scripts/go.py version
@@ -15,10 +15,16 @@ tools:
 	python3 scripts/protoc.py
 	python3 scripts/tools.py --install
 
-generate:
+contract-check:
+	python3 scripts/policy.py
+
+policy-test:
+	python3 scripts/policy-negative.py
+
+generate: contract-check
 	python3 scripts/generate.py
 
-generate-check:
+generate-check: contract-check
 	python3 scripts/generate.py --check
 
 hz-check:
@@ -45,7 +51,7 @@ build:
 	python3 scripts/go.py build -o .cache/bin/muskdeer ./cmd/muskdeer
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 
-verify: doctor generate-check hz-check fmt-check lint test-tooling test test-race build
+verify: doctor contract-check generate-check hz-check fmt-check lint policy-test test-tooling test test-race build
 
 integration: build
 	python3 scripts/integration.py
