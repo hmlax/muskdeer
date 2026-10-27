@@ -25,6 +25,7 @@ import (
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/outbox"
 	"github.com/hmlax/muskdeer/internal/repository"
+	"github.com/hmlax/muskdeer/internal/usecase"
 )
 
 func TestOutboxClaimsExcludePeersAndFenceExpiredOwner(t *testing.T) {
@@ -97,20 +98,7 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 	_, submit := admissionFixture(ctx, t, db)
 	core, intents := executionFixture(t, db)
 	portfolio := portfolioFixture(ctx, t, db, submit)
-	buy, sell := portfolioTrades(ctx, t, core, intents, submit)
-	for _, event := range []*commonv1.ExecutionEvent{buy, sell} {
-		if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Create(&modelv1.OutboxEvent{
-			EventId:       event.EventId,
-			EventType:     event.EventType,
-			IntentId:      event.Fill.IntentId,
-			Event:         event,
-			State:         domain.OutboxStatePending,
-			Attempts:      0,
-			NextAttemptAt: 0,
-		}).Error; err != nil {
-			t.Fatal(err)
-		}
-	}
+	portfolioTrades(ctx, t, core, intents, submit)
 	stream, consumer, publisher := outboxBrokerFixture(ctx, t)
 	store := outboxStoreFixture(t, db)
 	injected := errors.New("controlled completion interruption after broker storage")
@@ -170,7 +158,12 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	consumePortfolioWithRedelivery(ctx, t, consumer, portfolio, info.State.Msgs)
+	handler, err := usecase.NewFillConsumer(portfolio, intentServiceFixture(t, intents, core))
+	if err != nil {
+		t.Fatal(err)
+	}
+	consumePortfolioWithRedelivery(ctx, t, consumer, handler, info.State.Msgs)
+	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 2)
 	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 2)
 	projection, err := portfolio.Get(ctx, submit.Input.AccountID)
@@ -179,7 +172,7 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 	}
 }
 
-func consumePortfolioWithRedelivery(ctx context.Context, t *testing.T, consumer natsjs.Consumer, portfolio domain.PortfolioRepository, count uint64) {
+func consumePortfolioWithRedelivery(ctx context.Context, t *testing.T, consumer natsjs.Consumer, handler *usecase.FillConsumer, count uint64) {
 	t.Helper()
 	redelivered := false
 	trades := 0
@@ -194,7 +187,7 @@ func consumePortfolioWithRedelivery(ctx context.Context, t *testing.T, consumer 
 		}
 		if event.EventType == domain.EventTradeFilled {
 			trades++
-			if _, err := portfolio.Apply(ctx, portfolioNotice(ctx, t, &event)); err != nil {
+			if err := handler.Apply(ctx, portfolioNotice(ctx, t, &event)); err != nil {
 				t.Fatal(err)
 			}
 			if !redelivered {
