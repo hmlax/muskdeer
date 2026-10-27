@@ -340,10 +340,17 @@ func validLabel(value string) bool {
 }
 
 func validID(value string) bool {
-	if value == "" || len(value) > 64 {
+	if value == "" || len(value) > 128 {
 		return false
 	}
-	return validLabel(strings.ReplaceAll(value, ".", "_"))
+	for index := range len(value) {
+		char := value[index]
+		if char >= 'a' && char <= 'z' || char >= 'A' && char <= 'Z' || char >= '0' && char <= '9' || char == '_' || char == '-' || char == '.' || char == ':' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func validSuffix(value string) bool {

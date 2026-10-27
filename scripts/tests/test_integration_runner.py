@@ -71,12 +71,32 @@ class IntegrationFailureTest(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError) as caught:
                 runner.run()
         self.assertIs(caught.exception, failure)
-        self.assertEqual(len(calls), 3)
+        self.assertEqual(len(calls), 4)
         prefix = calls[0][:6]
         self.assertEqual(prefix[:3], ['docker', 'compose', '-p'])
         self.assertTrue(prefix[3].startswith('muskdeer-p01-'))
         self.assertEqual(calls[1], [*prefix, 'logs', '--no-color', '--tail', '80'])
-        self.assertEqual(calls[2], [*prefix, 'down', '--volumes'])
+        self.assertEqual(calls[2][:10], [*prefix, 'exec', '-T', 'nacos', 'tail'])
+        self.assertEqual(calls[-1], [*prefix, 'down', '--volumes'])
+
+    def test_test_failure_keeps_exit_code_and_collects_scoped_evidence(self):
+        for failed_package in ['./internal/persistenceprobe', './internal/migrate']:
+            with self.subTest(package=failed_package):
+                calls = []
+
+                def execute(arguments, **_kwargs):
+                    calls.append(arguments)
+                    return subprocess.CompletedProcess(arguments, 17 if failed_package in arguments else 0)
+
+                with patch.object(runner.subprocess, 'run', side_effect=execute):
+                    with patch.object(runner, 'published_address', return_value='127.0.0.1:60101'):
+                        with patch.object(runner, 'initialize_naming'):
+                            self.assertEqual(runner.run(), 17)
+                prefix = calls[0][:6]
+                self.assertIn([*prefix, 'logs', '--no-color', '--tail', '80'], calls)
+                self.assertEqual(calls[-1], [*prefix, 'down', '--volumes'])
+                if failed_package == './internal/persistenceprobe':
+                    self.assertFalse(any('./internal/migrate' in arguments for arguments in calls))
 
 
 if __name__ == '__main__':

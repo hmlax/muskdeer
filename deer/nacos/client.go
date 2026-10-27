@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -364,7 +365,11 @@ func (c *Client) request(ctx context.Context, method, path string, values url.Va
 	return data, err
 }
 
-func (e *APIError) Error() string { return "nacos " + e.operation + " failed" }
+func (e *APIError) Error() string {
+	return fmt.Sprintf("nacos %s failed (http=%d code=%d deadline=%t canceled=%t)",
+		e.operation, e.HTTPStatus, e.Code,
+		errors.Is(e.cause, context.DeadlineExceeded), errors.Is(e.cause, context.Canceled))
+}
 func (e *APIError) Unwrap() error { return e.cause }
 
 func failure(ctx context.Context, operation string, err error) error {

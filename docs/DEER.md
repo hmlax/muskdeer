@@ -75,7 +75,7 @@ P02.6 实现 deer/jetstream.Client 与借用的 Deer.JetStream()，位于 Redis 
 
 应用不创建/修改 stream。构造及健康检查读取实际流配置，要求允许 ACK、未 sealed，且 Subjects 明确包含 `<subject_prefix>.>`；共享流应列出各服务的此类前缀，只有祖先通配符的配置会被拒绝。此检查不替代 broker 账户 ACL、持久化副本和容量配置。
 
-Publish(ctx, suffix, eventID, proto.Message) 有界准入、确定性 Protobuf 编码并同步等待存储确认；suffix 如 `order.state.v1`，eventID 为最多 64 字节 ASCII 字母/数字/点/下划线/连字符，须在整个 stream 内稳定且唯一。设置 Nats-Msg-Id/预期 stream，返回 Stream/Sequence/Duplicate；消息借用至调用返回，不能并发修改。当前仅用技术 Probe 验证类型/精确字符串；P03 才定义业务 envelope 和明确 payload，不用通用发布器冒充业务契约。
+Publish(ctx, suffix, eventID, proto.Message) 有界准入、确定性 Protobuf 编码并同步等待存储确认；suffix 如 `order.state.v1`，eventID 为最多 128 字节 ASCII 字母/数字/点/下划线/连字符/冒号，须在整个 stream 内稳定且唯一。拒绝空白和换行，支持 `intent:<id>:<revision>` 等稳定业务键。设置 Nats-Msg-Id/预期 stream，返回 Stream/Sequence/Duplicate；消息借用至调用返回，不能并发修改。业务 envelope、变体及小数校验由 [OMS outbox](OMS.md) 完成。
 
 禁用 SDK 发布重试、重连缓存、自动重连及发现到的其他服务器；首版连接断开后安全拒绝，需重建客户端/重启进程。该恢复监督将在后续服务恢复步骤接入，当前不宣称自动恢复或 HA。命令期限覆盖准入及等待 ACK；超时可能已落盘，重试由持久化 outbox 的所有者决定。Broker 去重只作用于有限窗口，同 ID 不会验证 payload 指纹，不能替代数据库 inbox/成交唯一键；业务持久化指纹、事务及重投在 P03/P04 完成。
 

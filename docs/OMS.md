@@ -16,7 +16,7 @@
 
 事件 envelope 包含版本、时间、producer、aggregate ID/revision 和请求关联。IntentEvent/FillEvent 都是具体 Proto 字段，小数为 string；不经过无类型 JSON/map。使用具体可空消息字段并由数据库要求恰好一个匹配 event_type 的 payload，避免把生成 oneof 的 Go interface 直接交给标准 JSON 存储反序列化。Envelope 的 event_id/event_type 与记录列必须一致。
 
-接收事件 ID 为 `intent:<id>:<revision>`，与意图同事务创建，初始 PENDING。当前尚无发布者或消费者，不将写入 outbox 等同于已投递或已产生业务效果。
+接收事件 ID 为 `intent:<id>:<revision>`，与意图同事务创建，初始 PENDING。发布者和消费接入进度见下节；写入 outbox 不等同于已投递或已产生业务效果。
 
 P04.1 仅完成接收与预算基础。后续接入 SUBMITTING/UNKNOWN、查后重试、核心回报/预算释放、成交去重与投影、outbox 发布/inbox、恢复和实际业务 RPC；发送前与最终模拟目标仍须重新检查授权和风险。完整交易闭环及风险层级继续按 P04–P10 验收。
 
@@ -45,3 +45,13 @@ CancellationRequest 与订单最后确认的 core cancel 状态分开，使用�
 核心只接受请求时记录 PENDING，订单与资金预留继续保留。丢失回包时持久记录 UNKNOWN，不覆盖订单已知的核心状态，也不释放预算；查询到核心 pending/终态后再同步。部分成交及费用由原订单事实继续累计，撤单确认后按实际剩余量释放一次。全部成交先完成时保留 FILLED；请求 CONFIRMED 表示目标已无有效余单，页面/调用方仍须展示订单最终状态，不能解释成原订单一定是 CANCELED。
 
 PENDING/UNKNOWN 的恢复当前只查询、不盲目重发；长期未知/旧 owner 的受控重派发与后台恢复继续 P09。订单、撤单请求及事件均持久可恢复，当前仍未接入业务 RPC、成交投影和消息发布。
+
+## P04.5 有界 outbox 发布
+
+`repository.NewOutbox` 使用数据库时钟和 `FOR UPDATE SKIP LOCKED`，每次最多领取一条到期 PENDING 或过期 PUBLISHING。领取事务持久增加 attempts，并绑定进程 incarnation、到期时间。完成、重试或隔离前先锁行，再读取数据库当前时间，校验原 owner/expiry；旧 owner 不能完成后继领取。失败重试时间写入数据库，不依赖进程内计时状态。
+
+`outbox.Worker.RunOne` 要求调用方 deadline，只做一次同步发布。`outbox.NewPublisher` 借用 Deer 的 JetStream 客户端，校验 typed envelope/变体/十进制边界后，将稳定 event ID 作为 Nats-Msg-Id，发布至配置前缀下的 `execution.order.v1`。流必须预先存在，工作器不创建流、消费者或后台任务。调用失败会安排1秒后的重试；明确坏事件进入 FAILED，保留记录供处理。
+
+存储 ACK 成功后才尝试数据库 PUBLISHED。完成失败时保留 PUBLISHING，后继在领取过期后用同一 event ID 重发。JetStream 的去重窗口只减少重复存储；窗口外或消费重投仍依靠事务 inbox 和成交自然键保证业务效果不会重复。真实容器测试覆盖发布存储后完成失败、接管重发，以及持仓事务提交后 NAK 重投/最终确认 ACK。
+
+本步提供可组合发布工作器，尚未启动生产后台循环或消费者。容器测试中的成交 outbox 由夹具显式写入；自动从核心成交产生事件、运行层装配、消费故障隔离和业务 RPC 继续后续步骤，不将测试消费者当作运行服务。

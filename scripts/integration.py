@@ -58,6 +58,23 @@ def published_address(compose: list[str], service: str, port: int) -> str:
     return address
 
 
+def capture_diagnostics(compose: list[str]) -> None:
+    """Preserve bounded evidence before removing only this disposable project."""
+    try:
+        diagnostic = subprocess.run([*compose, 'logs', '--no-color', '--tail', '80'], check=False)
+        if diagnostic.returncode:
+            print('Test container diagnostics failed; preserving the original error', file=sys.stderr)
+        # Nacos writes GC and naming diagnostics to files rather than stdout.
+        # These are fixed paths inside this run's disposable test container.
+        subprocess.run([
+            *compose, 'exec', '-T', 'nacos', 'tail', '-n', '60',
+            '/home/nacos/logs/nacos_gc.log.0.current',
+            '/home/nacos/logs/naming-server.log',
+        ], check=False)
+    except OSError:
+        print('Test container diagnostics unavailable; preserving the original error', file=sys.stderr)
+
+
 def run() -> int:
     project = 'muskdeer-p01-' + uuid.uuid4().hex[:10]
     compose = ['docker', 'compose', '-p', project, '-f', str(ROOT / 'compose.test.yml')]
@@ -92,20 +109,19 @@ def run() -> int:
             '-count=1', '-v', './internal/persistenceprobe',
         ], cwd=ROOT, env=environment, check=False)
         if result.returncode:
+            capture_diagnostics(compose)
             return result.returncode
-        return subprocess.run([
+        result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-race', '-count=1', '-v', './internal/infrastructureprobe', './internal/migrate',
-        ], cwd=ROOT, env=environment, check=False).returncode
+        ], cwd=ROOT, env=environment, check=False)
+        if result.returncode:
+            capture_diagnostics(compose)
+        return result.returncode
     except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         # These are disposable services with explicit test credentials. Capture
         # only this project's bounded logs before finally removes the evidence.
-        try:
-            diagnostic = subprocess.run([*compose, 'logs', '--no-color', '--tail', '80'], check=False)
-            if diagnostic.returncode:
-                print('Test container diagnostics failed; preserving the original error', file=sys.stderr)
-        except OSError:
-            print('Test container diagnostics unavailable; preserving the original error', file=sys.stderr)
+        capture_diagnostics(compose)
         raise
     finally:
         if started:
