@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
+	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	"github.com/hmlax/muskdeer/deer/ownerid"
@@ -16,6 +17,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/delivery/executiongrpc"
+	"github.com/hmlax/muskdeer/internal/delivery/marketgrpc"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/eventwire"
 	"github.com/hmlax/muskdeer/internal/migrate"
@@ -32,6 +34,7 @@ const (
 // Runtime owns only assembled values. Deer owns every connection and task.
 type Runtime struct {
 	execution *executiongrpc.Server
+	market    *marketgrpc.Server
 	workers   []deer.Worker
 }
 
@@ -51,11 +54,14 @@ func New(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*R
 	if err := migrate.CheckCurrent(ctx, db); err != nil {
 		return nil, err
 	}
-	events, err := owner.JetStream()
+	incarnation, err := ownerid.New(ctx, cfg.InstanceId)
 	if err != nil {
 		return nil, err
 	}
-	incarnation, err := ownerid.New(ctx, cfg.InstanceId)
+	if cfg.Name+".grpc" == rpcsecurity.ServiceMarket {
+		return newMarket(ctx, db, incarnation, cfg.Business)
+	}
+	events, err := owner.JetStream()
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +79,9 @@ func (r *Runtime) Workers() []deer.Worker { return slices.Clone(r.workers) }
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	if r.execution != nil {
 		executionv1.RegisterExecutionServer(registrar, r.execution)
+	}
+	if r.market != nil {
+		marketv1.RegisterMarketDataServer(registrar, r.market)
 	}
 	return nil
 }

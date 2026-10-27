@@ -15,12 +15,13 @@
 | P02 | done | P02.1–P02.11 及 Linux CI 40439453258 success；六角色、多进程发现/mTLS、持久开发、固定 Go 镜像与运行层 E2E 通过 |
 | P03 | done | P03.1–P03.10 值/生成模型/迁移、typed 合同、数据库租约、最终原子 fencing、模拟现货及提交后响应丢失/延迟通过；后续 OMS/节点恢复按各阶段验收 |
 | P04 | done | P04.1–P04.10 持久OMS/原子预算/撤单、成交inbox/损益、自动事件与真实发布/重投、typed RPC/mTLS、Deer工作器及实际独立业务命令进程闭环通过 |
-| P05 | in_progress | P05.1–P05.8 独立簿/协议/网络/A25、质量/持久发布/typed读取及owned续租/回放/接管工作器通过；默认market命令与独立PID装配继续 |
-| P06–P10 | todo | 尚未实现和运行 |
+| P05 | done | P05.1–P05.9 双来源独立簿/协议/网络/A25、质量/持久发布/typed读取、owned续租/回放/接管及默认market独立命令进程闭环通过 |
+| P06 | in_progress | 接入做市、目标差分、风险联动、来源失效撤单与30分钟模拟验收 |
+| P07–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
 ## 下一步
-P01–P04 公共运行层、模拟交易合同与 OMS/消息/投影后端闭环已完成，继续 P05 的 Binance/OKX 双行情及后续策略/管理/对冲/恢复/运维。每个最小步骤相关测试/检查通过后提交并推送远程，确认同步再继续；完整 L1 尚未完成，真实交易合同与测试环境继续单列 P11。
+P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX行情层已完成，继续P06做市与行情失效撤单、后续管理/对冲/恢复/运维。每个最小步骤相关测试/检查通过后提交并推送远程，确认同步再继续；完整L1尚未完成，真实交易合同与测试环境继续单列P11。
 
 ## 每轮追加模板
 日期/任务 ID：
@@ -512,3 +513,10 @@ P01–P04 公共运行层、模拟交易合同与 OMS/消息/投影后端闭环�
 - 验证：DB不接受候选价不得污染本地基准、未请求cancel及panic前join先红后绿；精确回放两源、standby/失权/join及19位mid；真实PG两个owner续租/revision/有序接管，活动数据流峰值1、epoch和基准正确。make verify、最终相关race/lint、完整make integration、文档/差异检查通过，goleak与隔离清理保留。见 [P05.8](validation/P05-08.md)。
 - 远程：755ed8e 已推送 main 并核对 SHA，[CI 40478906296](https://github.com/hmlax/muskdeer/actions/runs/40478906296) success。本步通过后独立提交/推送并核对 SHA。
 - 下一步：默认market业务配置/Deer装配及独立命令进程按源读取；随后P06策略/风控/失效撤单闭环。
+
+## 2026-10-27：P05.9 默认 market 独立命令
+
+- 改动：market显式Proto配置/doctor、角色依赖与模式/参数校验、只读绑定与Deer工作器/RPC装配；不创建来源/资金/风险或要求无用broker。
+- 验证：配置/重复ID/小数/期限/回放边界通过；真实双market命令PID经Nacos/mTLS/Deer factory提供准确独立参考价（Binance19位/OKX200），停止一源不影响另一源且未建任何账户/意图。make generate/verify、完整make integration、文档/差异检查通过，race/goleak与隔离清理保留。见 [P05.9](validation/P05-09.md)。
+- 远程：9d5cdba 已推送 main 并核对 SHA；本步通过后独立提交/推送并核对 SHA。
+- 状态：P05 done；P06 in_progress。继续做市目标/差分、风险快照生产及最终行情门禁、失效撤单和30分钟模拟运行，完整L1仍待后续。

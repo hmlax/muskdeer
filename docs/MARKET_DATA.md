@@ -40,7 +40,7 @@ OKX 使用 `wss://ws.okx.com:8443/ws/v5/public`，显式 typed `books` 订阅；
 
 ## 当前边界
 
-协议、网络回放、两家公共行情实连、质量处理及持久发布目标已通过；market 服务装配和策略按源消费继续后续步骤。当前 Book READY 只表示协议同步，必须经过下列质量和风险门禁。A05/A24 的策略保护以及完整 P05/L1 尚未完成。
+协议、网络回放、两家公共行情实连、质量/持久发布、market服务装配及独立进程按源读取已通过，P05行情层完成。Book READY只表示协议同步，必须经过下列质量及后续风险门禁；A05/A24的策略失效保护、撤旧单及完整L1继续P06–P10。
 
 ## P05.4 来源独立质量
 
@@ -86,4 +86,10 @@ NewReader借用Deer的只读unary factory，每次原生调用使用新发现/mT
 
 LIVE 工厂只创建对应固定公开TLS适配；REPLAY 工厂要求显式bid/ask/quantity、更新间隔和callback期限，使用同一订单簿源协议（Binance先锚点再桥接，OKX快照/增量），标记仍为REPLAY。两工厂互相拒绝另一模式，不在实连失败后回放数据。
 
-真实PG两个owner竞争/持续续租/有序取消/接管验证只有一个活动数据流，接管增加epoch并恢复同一基准；检查见 [P05.8](validation/P05-08.md)。默认market命令的配置、Deer装配与独立PID验证继续下一步，策略消费撤旧单继续P06。
+真实PG两个owner竞争/持续续租/有序取消/接管验证只有一个活动数据流，接管增加epoch并恢复同一基准；检查见 [P05.8](validation/P05-08.md)。
+
+## P05.9 默认 market 命令
+
+显式business.market配置加载最多16个已有feed，按库内LIVE/REPLAY模式装配工作器及MarketData RPC；不存在/重复ID、不完整回放、错模式或不安全期限均拒绝。Deer拥有公共连接、监听、注册和工作器启动/取消/join，market不要求无用的JetStream，也不自动迁移/创建绑定/资金。
+
+实际两个market命令PID经Nacos/mTLS提供两来源参考价，客户端使用真正Deer unary factory。停止Binance进程后该源无价格，OKX仍健康且owner epoch保持；没有创建账户/订单。P05行情层验收见 [P05.9](validation/P05-09.md)，策略消费与行情失效撤单按P06继续。

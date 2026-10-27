@@ -28,7 +28,7 @@ message ServiceConfig {
   BusinessRuntime business = 16;
 }
 
-// BusinessRuntime configures owned execution/portfolio work without migrating
+// BusinessRuntime configures owned business work without migrating
 // schemas, provisioning broker resources, seeding money or authorizing risk.
 message BusinessRuntime {
   bool enabled = 1;
@@ -36,6 +36,23 @@ message BusinessRuntime {
   google.protobuf.Duration poll_interval = 3;
   google.protobuf.Duration operation_timeout = 4;
   string portfolio_consumer = 5;
+  MarketRuntime market = 6;
+}
+
+// MarketRuntime binds existing immutable feeds; it never provisions products.
+message MarketRuntime {
+  repeated MarketFeedRuntime feeds = 1;
+  google.protobuf.Duration lease_ttl = 2;
+}
+
+// MarketFeedRuntime requires explicit values only for a REPLAY database binding.
+// A LIVE binding rejects all replay inputs and uses fixed public TLS endpoints.
+message MarketFeedRuntime {
+  int64 feed_id = 1;
+  string replay_bid = 2;
+  string replay_ask = 3;
+  string replay_quantity = 4;
+  google.protobuf.Duration replay_interval = 5;
 }
 
 // GRPCClients bounds outbound unary RPCs, including discovery and connection.
