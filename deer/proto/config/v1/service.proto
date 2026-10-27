@@ -21,6 +21,18 @@ message ServiceConfig {
   JetStream jetstream = 11;
   Nacos nacos = 12;
   GRPCServerSecurity grpc_security = 13;
+  GRPCClients grpc_clients = 14;
+}
+
+// GRPCClients bounds outbound unary RPCs, including discovery and connection.
+message GRPCClients {
+  MutualTLS mtls = 1;
+  google.protobuf.Duration connect_timeout = 2;
+  google.protobuf.Duration request_timeout = 3;
+  int32 max_inflight = 4;
+  int32 max_request_bytes = 5;
+  int32 max_response_bytes = 6;
+  repeated string allowed_services = 7;
 }
 
 // MutualTLS references PEM files provisioned independently of public config.

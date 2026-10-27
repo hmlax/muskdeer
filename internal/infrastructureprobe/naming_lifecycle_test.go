@@ -164,6 +164,11 @@ func runNamingNode(t *testing.T, serviceName, id string, interval time.Duration)
 		AdvertiseIp:       "127.0.0.1",
 		HeartbeatInterval: durationpb.New(interval),
 	}
+	return runNamingConfig(t, cfg, id)
+}
+
+func runNamingConfig(t *testing.T, cfg *configv1.ServiceConfig, id string) (*deer.Deer, deer.Cleanup, <-chan error) {
+	t.Helper()
 	service, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
 		LogOutput: io.Discard,
 		RegisterGRPC: func(_ context.Context, _ *deer.Deer, registrar grpc.ServiceRegistrar) error {
@@ -174,6 +179,11 @@ func runNamingNode(t *testing.T, serviceName, id string, interval time.Duration)
 	if err != nil {
 		t.Fatal(err)
 	}
+	return service, cleanup, runNamingService(t, service, cleanup)
+}
+
+func runNamingService(t *testing.T, service *deer.Deer, cleanup deer.Cleanup) <-chan error {
+	t.Helper()
 	result := make(chan error, 1)
 	runCtx, cancelRun := context.WithCancel(context.WithoutCancel(t.Context()))
 	go func() {
@@ -194,7 +204,7 @@ func runNamingNode(t *testing.T, serviceName, id string, interval time.Duration)
 	if err := service.WaitReady(ctx); err != nil {
 		t.Fatal(err)
 	}
-	return service, cleanup, result
+	return result
 }
 
 func namingObserver(t *testing.T) *nacos.Client {

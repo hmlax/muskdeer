@@ -4,7 +4,7 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
-P01 已完成：固定 Go 工具链、Proto/GORM/gRPC 生成、Hertz/Kratos/Nacos SDK 契约及真实隔离 PostgreSQL 兼容验证通过。P02 已实现 Deer/DeerApi 的配置、独立实例启停、失败回滚、JSON 日志/文件轮转、PostgreSQL/Redis、JetStream 同步发布及 Nacos 认证/实时查询/实例注册/心跳/注销；已验证两个 Deer 节点的发现和 gRPC 调用，业务进程入口尚在进行。当前尚无交易业务服务或可运行交易部署；进度及限制见 docs/PROGRESS.md。
+P01 已完成：固定 Go 工具链、Proto/GORM/gRPC 生成、Hertz/Kratos/Nacos SDK 契约及真实隔离 PostgreSQL 兼容验证通过。P02 已实现 Deer/DeerApi 的配置、独立实例启停、失败回滚、JSON 日志/文件轮转、PostgreSQL/Redis、JetStream 同步发布、Nacos 认证/查询/注册/心跳/注销，以及 mTLS unary gRPC 调用工厂；已验证 Hertz API 经真实发现调用两个 Deer 节点，业务进程入口尚在进行。当前尚无交易业务服务或可运行交易部署；进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。

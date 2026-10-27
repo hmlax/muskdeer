@@ -39,7 +39,7 @@ gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch
 
 Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream/Nacos。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
 
-实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.2 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销，验证两个 Deer 节点的发现调用；gRPC ClientFactory、进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
+实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.4 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销、mTLS unary gRPC 调用工厂，验证 Hertz API 发现并调用两个 Deer 节点；进程入口日志桥接、指标、API 鉴权/统一响应/OpenAPI 及六个业务进程尚未交付；不将完整 A02/A26 或 P02 标完成。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
 
 ## 已实现的资源所有权基础
 
@@ -94,7 +94,11 @@ Deer 在 JetStream 后初始化，Discovery() 返回借用客户端，缺失配�
 
 Deer 在 listener 接受连接、公共依赖通过健康检查后注册 ephemeral 实例，成功才就绪；受实例拥有的循环发送 light heartbeat，启动 context 不保留为后台所有权。心跳失败即撤销就绪并终止 Run，保留错误，不自动重试注册或重建丢失记录。Health 检查心跳新鲜度；正常停止先撤销就绪、取消并 join 心跳、注销，再停止 transport/公共依赖。注册超时结果可能未知，启动回滚也尝试注销；未启动的实例不发注销请求。
 
-Nacos HTTP 实例身份是 namespace/group/service/IP/port/cluster，Deer ID 仅为 metadata，不提供条件删除或 fencing。并发 publisher 必须使用不同发布端点，不能把重用端口当作所有权切换协议。注册在线或心跳成功都不授权交易，最终执行仍须验证后续数据库租约/epoch。真实两节点和外部删除测试见 [P02.7.2](validation/P02-07-02.md)，目前是同一测试进程内的独立 Deer 实例；独立业务进程、watch/gRPC ClientFactory、生产 ACL/TLS 与完整故障恢复矩阵仍待后续验证。
+Nacos HTTP 实例身份是 namespace/group/service/IP/port/cluster，Deer ID 仅为 metadata，不提供条件删除或 fencing。并发 publisher 必须使用不同发布端点，不能把重用端口当作所有权切换协议。注册在线或心跳成功都不授权交易，最终执行仍须验证后续数据库租约/epoch。真实两节点和外部删除测试见 [P02.7.2](validation/P02-07-02.md)，目前是同一测试进程内的独立 Deer 实例；独立业务进程、生产 ACL/TLS 与完整故障恢复矩阵仍待后续验证。
+
+可选 `grpc_clients` 装配 unary 调用工厂，必须同时配置 Nacos；包含独立 mTLS 文件、允许的目标服务、连接/总请求期限、并发及消息字节上限。`GRPCClients()` 返回借用的 Factory；`Client(Target{Service: "execution.grpc", InstanceID: ownerID})` 返回兼容生成 client 的 facade，getter 不连接网络。每个 Invoke 实时发现，只发送到指定实例；InstanceID 为空才允许按无状态服务选择节点。发现失败/目标缺失不使用旧地址或隐式换 owner。总期限包括等待准入/发现/建连/RPC，配置请求预算须在停止预算内。
+
+Factory 持有每次调用的连接，返回即关闭；关闭工厂取消并 join 在途请求，再释放 Nacos。mTLS 验证服务 DNS 身份，网络地址只来自已验证 naming 记录；连接不读取环境代理。只接受 typed Proto 消息，限制编码前请求大小和收发字节上限，调用者不能提高上限。禁用业务消息重放的 native gRPC 边界、暂不复用连接/watch 和 unary 范围见 [ADR 0004](decisions/0004-bounded-unary-rpc.md)，行为及实际 Hertz→Nacos→mTLS gRPC 链路见 [P02.7.4](validation/P02-07-04.md)。流调用目前明确返回 Unimplemented，后续按真实流合同实现所有权。
 
 ## API 统一返回
 JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。

@@ -22,6 +22,13 @@ func TestDeerRejectsInvalidConfigBeforeSideEffects(t *testing.T) {
 			change: func(*configv1.ServiceConfig) *configv1.ServiceConfig { return nil },
 		},
 		{
+			name: "outbound RPC requires discovery",
+			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
+				cfg.GrpcClients = &configv1.GRPCClients{}
+				return cfg
+			},
+		},
+		{
 			name: "public plaintext gRPC",
 			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
 				cfg.Grpc.Address = "0.0.0.0:0"

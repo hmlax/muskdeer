@@ -22,6 +22,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/redis"
+	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
@@ -36,6 +37,9 @@ var ErrJetStreamNotConfigured = errors.New("jetstream is not configured")
 
 // ErrNacosNotConfigured reports a required naming dependency missing from configuration.
 var ErrNacosNotConfigured = errors.New("nacos is not configured")
+
+// ErrGRPCClientsNotConfigured reports a missing outbound RPC factory.
+var ErrGRPCClientsNotConfigured = errors.New("gRPC clients are not configured")
 
 // ErrNotReady reports a service that has not started or is stopping.
 var ErrNotReady = errors.New("service is not ready")
@@ -72,6 +76,7 @@ type Deer struct {
 	events      *jetstream.Client
 	discovery   *nacos.Client
 	publication *nacos.Publication
+	rpcClients  *rpcclient.Factory
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -152,6 +157,11 @@ func (d *Deer) CheckReady(ctx context.Context) error {
 			return err
 		}
 	}
+	if d.rpcClients != nil {
+		if err := d.rpcClients.Health(); err != nil {
+			return err
+		}
+	}
 	if d.publication != nil {
 		if err := d.publication.Health(); err != nil {
 			return err
@@ -220,7 +230,8 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	var cache *redis.Client
 	var events *jetstream.Client
 	var discovery *nacos.Client
-	plan := make([]Initializer, 0, len(spec.Resources)+5)
+	var rpcClients *rpcclient.Factory
+	plan := make([]Initializer, 0, len(spec.Resources)+6)
 	plan = append(plan, Initializer{
 		Name: "deer.logging",
 		Open: func(ctx context.Context) (Cleanup, error) {
@@ -287,6 +298,19 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 			},
 		})
 	}
+	if cfg.GrpcClients != nil {
+		plan = append(plan, Initializer{
+			Name: "deer.grpc-clients",
+			Open: func(ctx context.Context) (Cleanup, error) {
+				var err error
+				rpcClients, err = rpcclient.New(ctx, cfg.GrpcClients, cfg.Name+grpcServiceSuffix, discovery)
+				if err != nil {
+					return nil, err
+				}
+				return func(context.Context) error { return rpcClients.Close() }, nil
+			},
+		})
+	}
 	plan = append(plan, spec.Resources...)
 	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
 	if err != nil {
@@ -303,6 +327,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		cache:       cache,
 		events:      events,
 		discovery:   discovery,
+		rpcClients:  rpcClients,
 	}
 	if cfg.Grpc != nil {
 		if err := d.addGRPC(startup, spec.RegisterGRPC); err != nil {
@@ -431,6 +456,11 @@ func (d *Deer) markReady(ctx context.Context) error {
 	}
 	if d.discovery != nil {
 		if err := d.discovery.Ping(startup); err != nil {
+			return err
+		}
+	}
+	if d.rpcClients != nil {
+		if err := d.rpcClients.Health(); err != nil {
 			return err
 		}
 	}

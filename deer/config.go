@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
@@ -38,6 +39,17 @@ func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceCon
 	}
 	if cfg.GrpcSecurity != nil && cfg.Grpc == nil {
 		return nil, errors.New("gRPC security requires a gRPC listener")
+	}
+	if cfg.GrpcClients != nil {
+		if cfg.Nacos == nil {
+			return nil, errors.New("gRPC clients require Nacos discovery")
+		}
+		if err := rpcclient.Validate(cfg.GrpcClients); err != nil {
+			return nil, err
+		}
+		if cfg.GrpcClients.RequestTimeout.AsDuration() > cfg.ShutdownTimeout.AsDuration() {
+			return nil, errors.New("gRPC client request timeout must fit within shutdown timeout")
+		}
 	}
 	if cfg.Grpc != nil {
 		if err := rpcsecurity.ValidateListener(cfg.Grpc.Address, cfg.Name+grpcServiceSuffix, cfg.GrpcSecurity); err != nil {
