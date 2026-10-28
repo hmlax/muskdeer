@@ -655,3 +655,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：真实PG模拟器双边报价、失效保护/未确认不完成停止、确认后资产/预留归位；未知写及接管始终写调用1次；共享库存反例先红后绿、typed观察及standby/纯裁剪单元测试通过。最终完整make verify、make integration、文档/差异检查通过，业务68.509秒、lint/race/goleak保留，见 [P06.15](validation/P06-15.md)。复杂度拆分保留原断言，旧进程期限另笔交付。
 - 远程：36ec6e0已推送main并核对SHA；本步独立提交/推送并核对SHA。
 - 下一步：Deer拥有的strategy业务命令、实际行情失效联动/接管和30分钟连续模拟；P06保持进行，P07–P10继续完成。
+
+## 2026-10-28：P06.16 独立strategy业务命令
+
+- 改动：生成StrategyRuntime及显式账户/TTL配置；Deer-owned账户循环完整发现最多16实例，各自取得策略lease，通过现有Nacos/mTLS端口执行控制器；不依赖无用JetStream、不准备资金/权限。生命周期/输入revision并发变化等待下一轮观察，交易键冲突仍报错。见 [业务运行](BUSINESS_RUNTIME.md)。
+- 验证：实际market/execution/双strategy进程报价→备用不抢占→旧节点退出/新epoch恢复报价→运行中原子创建新实例并自动发现→两实例终态停止、现金1000/BTC10/预留0；12.41秒通过。账户隔离/停止候选/超限拒绝及确定性并发控制请求先红后绿；完整make verify、make integration、文档/差异检查通过，业务96.972秒、lint/race/goleak保留；见 [P06.16](validation/P06-16.md)。
+- 远程：d753c43已推送main并核对SHA，[CI 40617244341](https://github.com/hmlax/muskdeer/actions/runs/40617244341) success；P06.14a [CI 40617187447](https://github.com/hmlax/muskdeer/actions/runs/40617187447) success。本步独立提交/推送并核对SHA。
+- 下一步：实际行情失效与成交/拒绝恢复联动、显式模拟成交任务及30分钟实际连续运行；P06保持进行，P07–P10继续。

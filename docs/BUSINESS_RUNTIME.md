@@ -1,6 +1,6 @@
 # L1 业务进程装配
 
-P04.10/P05.9 把执行、发布、消费、持仓及行情用例装配进现有 `muskdeer -role ... -config ...` 命令。market、execution和portfolio仍各为独立Deer进程；策略循环继续P06，api管理页面继续P07，cron按后续阶段交付。
+P04.10/P05.9/P06.16 把执行、发布、消费、持仓、行情及策略用例装配进现有 `muskdeer -role ... -config ...` 命令。market、strategy、execution和portfolio各为独立Deer进程；api管理页面继续P07，cron按后续阶段交付。
 
 ## 显式启用
 
@@ -17,7 +17,7 @@ ServiceConfig 增加可选 `business`。省略或 enabled=false 保持已有基�
 }
 ```
 
-portfolio 额外指定 `portfolioConsumer`，例如 `portfolio_v1`。当前接受明确的simulator及market/execution/portfolio角色；pollInterval为10毫秒至5秒，operationTimeout为100毫秒至5秒，均为整数毫秒且单次操作不超过shutdownTimeout。doctor同时验证业务要求；不读取凭据值或连接外部服务来完成配置检查。
+portfolio 额外指定 `portfolioConsumer`，例如 `portfolio_v1`。当前接受明确的simulator及market/strategy/execution/portfolio角色；pollInterval为10毫秒至5秒，operationTimeout为100毫秒至5秒，均为整数毫秒且单次操作不超过shutdownTimeout。doctor同时验证业务要求；不读取凭据值或连接外部服务来完成配置检查。
 
 两角色都要求 PostgreSQL、JetStream、mTLS gRPC listener 和显式 Nacos registration。portfolio 还要求出站 mTLS gRPCClients，允许目标 `execution.grpc`，其客户端证书身份为 `portfolio.grpc`。流、subjectPrefix 和 durable 由环境显式准备；portfolio 使用和 execution 相同的事件 stream/prefix，过滤精确的 `<prefix>.execution.order.v1`。durable 约束见 [Deer](DEER.md)。
 
@@ -45,6 +45,27 @@ market要求PostgreSQL、mTLS gRPC listener和Nacos registration；它使用当�
 ```
 
 feed ID和模式先由显式初始化准备，不接受不存在的产品；模式来自不可变数据库绑定。LIVE条目只写feedId，拒绝回放字段；REPLAY必须完整提供字符串价格/数量及10ms–1s更新间隔，间隔还必须小于绑定最大时效。模式不匹配在构造计划时拒绝，启动不建绑定、不准备资金。实连不成功仍保持LIVE失效，不改用回放。
+
+strategy要求PostgreSQL、mTLS gRPC listener、Nacos registration及出站mTLS gRPCClients，允许market.grpc和execution.grpc。它不直接使用JetStream。显式账户范围与租约示例：
+
+```json
+{
+  "business": {
+    "enabled": true,
+    "executionVenue": "simulator",
+    "pollInterval": "0.1s",
+    "operationTimeout": "1s",
+    "strategy": {
+      "accountIds": ["sim-maker-one"],
+      "leaseTtl": "3s"
+    }
+  }
+}
+```
+
+accountIds为1–16个不重复的已有模拟账户，启动只读检查账户和预算存在；leaseTtl为100ms–30s整数毫秒，严格大于两倍operationTimeout。每账户一个Deer-owned任务，完整读取最多16个未退役实例（包含停止请求），按实例分别取得策略lease并串行调用控制器；这是计算边界，不是容量SLA。超限拒绝，不静默截取遗漏实例。原生operationTimeout覆盖整轮账户工作，需按实测配置。
+
+运行中新建实例自动被下一轮发现，进程内controller map只保存计划/观察游标，不提供独占授权；每轮以真实lease/fence为准。缺配置/投影/预算/健康来源保持恢复，不制造资源。交易调用通过当前execution owner的Nacos/mTLS客户端；所选行情读取不换源。状态/配置revision并发冲突等待下一轮重新读取，交易业务键冲突不因此重发。策略详情见 [控制器](STRATEGY_CONTROLLER.md)。
 
 ## 启动与交易路径
 

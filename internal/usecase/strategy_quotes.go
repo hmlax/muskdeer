@@ -14,6 +14,9 @@ import (
 func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec, token domain.LeaseToken, orders []domain.IntentSnapshot) error {
 	environment, err := s.deps.Environment.Current(ctx, spec)
 	if err != nil {
+		if errors.Is(err, domain.ErrIdempotencyConflict) {
+			return errStrategyReobserve
+		}
 		if errors.Is(err, domain.ErrRiskDenied) || errors.Is(err, domain.ErrInvalidParameters) {
 			return s.protectRecovery(ctx, spec, token, orders)
 		}

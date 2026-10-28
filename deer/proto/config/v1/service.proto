@@ -40,6 +40,13 @@ message BusinessRuntime {
   RiskRuntime risk = 7;
   google.protobuf.Duration execution_lease_ttl = 8;
   SimulatorScenarioRuntime simulator = 9;
+  StrategyRuntime strategy = 10;
+}
+
+// StrategyRuntime discovers existing instances only in explicitly owned accounts.
+message StrategyRuntime {
+  repeated string account_ids = 1;
+  google.protobuf.Duration lease_ttl = 2;
 }
 
 // SimulatorScenarioRuntime explicitly enables privileged L1 venue responses.

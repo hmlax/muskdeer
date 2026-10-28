@@ -15,7 +15,7 @@ make doctor 同时验证精确工具链及服务/API 示例配置；其他文件
 make build 生成 `.cache/bin/muskdeer`；例如 `.cache/bin/muskdeer -role market -config configs/local/market.json` 启动独立 market 进程，SIGTERM/CTRL-C 有序停止。`configs/local` 提供六种无外部依赖的本地配置及独立 loopback 端口；运行与日志边界见 [运维说明](docs/OPERATIONS.md)。api 的管理页面和业务路由仍待 P07。
 `make dev-up` 启动本工作区专属的持久 PostgreSQL/Redis/NATS/Nacos，生成 `.cache/dev` 地址、样例环境变量和六份配置；`make dev-down` 保留数据卷。`make dev-test` 在独立临时工作区验证重复启动、配置、实际依赖就绪和数据保留，结束只清理该测试资源。详见 [开发环境](docs/OPERATIONS.md#开发资源)。
 
-可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费和market工作器/行情RPC；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令进程和双来源market进程的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
+可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费、market工作器/行情RPC和strategy账户控制循环；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令、双来源market及双strategy接管/报价/终态停止的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
 `make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前运行层 integration 与 image-test；后续交易和管理浏览器 E2E 将随业务接入，不将当前命令等同于完整业务验收。
 数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本 19 含交易对/实例/配置来源身份、typed 做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS 意图/预算/撤单/outbox、成交 inbox/持仓、来源/产品/模式/质量政策绑定及有发布授权的行情快照/定价基准、最终所选行情门禁、跨账户平台/交易对额度、持久策略动作和策略运行incarnation，交易表继续增加，见 [迁移说明](docs/MIGRATIONS.md) 和 [参数说明](docs/STRATEGY_PARAMETERS.md)。
 `make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。

@@ -61,6 +61,9 @@ func New(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*R
 	if cfg.Name+".grpc" == rpcsecurity.ServiceMarket {
 		return newMarket(ctx, db, incarnation, cfg.Business)
 	}
+	if cfg.Name+".grpc" == rpcsecurity.ServiceStrategy {
+		return newStrategy(ctx, db, owner, incarnation, cfg.Business)
+	}
 	events, err := owner.JetStream()
 	if err != nil {
 		return nil, err

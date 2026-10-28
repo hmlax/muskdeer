@@ -35,6 +35,10 @@ type StrategyController struct {
 	afterAction int64
 }
 
+const messageStrategyReobserve = "strategy state observation changed"
+
+var errStrategyReobserve = errors.New(messageStrategyReobserve)
+
 // NewStrategyController constructs one bounded, serial strategy loop body.
 func NewStrategyController(deps StrategyDependencies, settings StrategySettings) (*StrategyController, error) {
 	if deps.Leases == nil || deps.Lifecycle == nil || deps.Environment == nil || deps.Actions == nil || deps.Execution == nil || deps.Market == nil ||
@@ -50,6 +54,14 @@ func NewStrategyController(deps StrategyDependencies, settings StrategySettings)
 // Tick performs bounded recovery or one new command. It always requests the
 // configured poll delay, including after a command; it never busy-retries I/O.
 func (s *StrategyController) Tick(ctx context.Context) (bool, error) {
+	worked, err := s.tick(ctx)
+	if errors.Is(err, errStrategyReobserve) {
+		return false, nil
+	}
+	return worked, err
+}
+
+func (s *StrategyController) tick(ctx context.Context) (bool, error) {
 	if ctx == nil {
 		return false, domain.ErrInvalidOrder
 	}
@@ -102,10 +114,14 @@ func (s *StrategyController) Tick(ctx context.Context) (bool, error) {
 }
 
 func (s *StrategyController) transition(ctx context.Context, current domain.StrategySpec, token domain.LeaseToken, state domain.StrategyState, activate bool) (domain.StrategySpec, error) {
-	return s.deps.Lifecycle.Transition(ctx, current, token, domain.StrategyTransition{
+	result, err := s.deps.Lifecycle.Transition(ctx, current, token, domain.StrategyTransition{
 		State:             state,
 		ActivateRequested: activate,
 	})
+	if errors.Is(err, domain.ErrIdempotencyConflict) {
+		return domain.StrategySpec{}, errStrategyReobserve
+	}
+	return result, err
 }
 
 func (s *StrategyController) recover(ctx context.Context, current domain.StrategySpec, token domain.LeaseToken, orders []domain.IntentSnapshot) error {

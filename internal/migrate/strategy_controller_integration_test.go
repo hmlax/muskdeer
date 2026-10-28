@@ -246,11 +246,14 @@ func strategyControllerFixture(ctx context.Context, t *testing.T, db *gorm.DB, s
 	return strategyControllerWith(ctx, t, db, submit, leases, execution, market), execution, market
 }
 
-func strategyControllerWith(ctx context.Context, t *testing.T, db *gorm.DB, submit domain.GatewaySubmit, leases domain.LeaseRepository, execution domain.StrategyExecution, market domain.MarketReader) *usecase.StrategyController {
+func strategyControllerWith(ctx context.Context, t *testing.T, db *gorm.DB, submit domain.GatewaySubmit, leases domain.LeaseRepository, execution domain.StrategyExecution, market domain.MarketReader, wraps ...func(domain.StrategyLifecycle) domain.StrategyLifecycle) *usecase.StrategyController {
 	t.Helper()
 	lifecycle, err := repository.NewStrategyLifecycle(db)
 	if err != nil {
 		t.Fatal(err)
+	}
+	for _, wrap := range wraps {
+		lifecycle = wrap(lifecycle)
 	}
 	environment, err := repository.NewStrategyEnvironment(db)
 	if err != nil {
@@ -283,3 +286,55 @@ func strategyControllerWith(ctx context.Context, t *testing.T, db *gorm.DB, subm
 }
 
 var _ domain.StrategyExecution = (*controllerExecution)(nil)
+
+func TestStrategyControllerReobservesConcurrentControlRequest(t *testing.T) {
+	db, _ := migrationDatabase(t)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	_, submit := admissionFixture(ctx, t, db)
+	portfolioFixture(ctx, t, db, submit)
+	_, execution, market := strategyControllerFixture(ctx, t, db, submit)
+	leases, err := repository.NewLeases(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller := strategyControllerWith(ctx, t, db, submit, leases, execution, market, func(inner domain.StrategyLifecycle) domain.StrategyLifecycle {
+		return &concurrentStopLifecycle{
+			StrategyLifecycle: inner,
+			db:                db,
+		}
+	})
+	strategyControllerTick(ctx, t, controller, market)
+	for range 3 {
+		strategyControllerTick(ctx, t, controller, market)
+	}
+	var row modelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&row, submit.Input.Authority.StrategyID).Error; err != nil {
+		t.Fatal(err)
+	}
+	if row.State != string(domain.StrategyStateStopped) || row.DesiredRunning || execution.submits != 0 {
+		t.Fatal("concurrent stop was lost or generated a trading request")
+	}
+	assertGatewayOrderCount(ctx, t, db, 0)
+}
+
+type concurrentStopLifecycle struct {
+	domain.StrategyLifecycle
+	db      *gorm.DB
+	changed bool
+}
+
+func (s *concurrentStopLifecycle) Instance(ctx context.Context, id int64) (domain.StrategySpec, error) {
+	row, err := s.StrategyLifecycle.Instance(ctx, id)
+	if err != nil || s.changed {
+		return row, err
+	}
+	s.changed = true
+	// Commit the management request after the controller read, before its CAS.
+	err = s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).
+		Select("DesiredRunning", "Revision").Updates(&modelv1.StrategyInstance{
+		DesiredRunning: false,
+		Revision:       row.Revision + 1,
+	}).Error
+	return row, err
+}
