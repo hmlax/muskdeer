@@ -139,7 +139,7 @@ func (s *StrategyController) transition(ctx context.Context, current domain.Stra
 	if errors.Is(err, domain.ErrIdempotencyConflict) {
 		return domain.StrategySpec{}, errStrategyReobserve
 	}
-	return result, err
+	return result, localStrategyFailure(ctx, err)
 }
 
 func (s *StrategyController) recover(ctx context.Context, current domain.StrategySpec, token domain.LeaseToken, orders []domain.IntentSnapshot) error {
@@ -152,7 +152,7 @@ func (s *StrategyController) recover(ctx context.Context, current domain.Strateg
 	}
 	active, err := s.deps.Actions.Active(ctx, current.ID)
 	if err != nil || len(active) != 0 {
-		return err
+		return localStrategyFailure(ctx, err)
 	}
 	_, err = s.transition(ctx, current, token, domain.StrategyStateRunning, true)
 	if errors.Is(err, domain.ErrRiskDenied) || errors.Is(err, domain.ErrInvalidParameters) || errors.Is(err, domain.ErrOutcomeUnknown) {

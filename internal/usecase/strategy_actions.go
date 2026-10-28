@@ -15,7 +15,7 @@ const maxActionObservationsPerTick = 8
 func (s *StrategyController) recoverActions(ctx context.Context, spec domain.StrategySpec, authority domain.StrategyAuthority) (bool, error) {
 	actions, err := s.deps.Actions.Active(ctx, spec.ID)
 	if err != nil {
-		return false, err
+		return false, localStrategyFailure(ctx, err)
 	}
 	for _, action := range actions {
 		if action.State != domain.StrategyActionPending {
@@ -25,7 +25,7 @@ func (s *StrategyController) recoverActions(ctx context.Context, spec domain.Str
 			// A crash can leave an unsent target behind. Discard it and compute
 			// from current input; attempted actions never take this path.
 			_, err := s.deps.Actions.Discard(ctx, action, authority)
-			return true, err
+			return true, localStrategyFailure(ctx, err)
 		}
 		return true, s.dispatch(ctx, action, authority)
 	}
@@ -62,7 +62,7 @@ func (s *StrategyController) observeAction(ctx context.Context, action domain.St
 	// NotFound and transport failure both retain uncertainty. This read cannot
 	// authorize a resend, discard, or a replacement submit with a new key.
 	_, err = s.deps.Actions.Observe(ctx, action, authority)
-	return err
+	return localStrategyFailure(ctx, err)
 }
 
 func (s *StrategyController) dispatch(ctx context.Context, pending domain.StrategyAction, authority domain.StrategyAuthority) error {
@@ -116,7 +116,7 @@ func (s *StrategyController) dispatch(ctx context.Context, pending domain.Strate
 		return errStrategyReobserve
 	}
 	_, err = s.deps.Actions.Observe(ctx, action, authority)
-	return err
+	return localStrategyFailure(ctx, err)
 }
 
 func (s *StrategyController) planAndDispatch(ctx context.Context, authority domain.StrategyAuthority, plan domain.StrategyActionPlan) error {

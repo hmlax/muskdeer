@@ -60,7 +60,7 @@ func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec
 	}
 	active, err := s.deps.Actions.Active(ctx, spec.ID)
 	if err != nil || len(active) != 0 {
-		return err
+		return localStrategyFailure(ctx, err)
 	}
 	target := plan.Submit[0]
 	return s.planAndDispatch(ctx, strategyAuthority(spec, token), domain.StrategyActionPlan{
@@ -102,7 +102,7 @@ func (s *StrategyController) protect(ctx context.Context, spec domain.StrategySp
 func (s *StrategyController) cancelTarget(ctx context.Context, spec domain.StrategySpec, token domain.LeaseToken, orders []domain.IntentSnapshot, id int64) error {
 	active, err := s.deps.Actions.Active(ctx, spec.ID)
 	if err != nil {
-		return err
+		return localStrategyFailure(ctx, err)
 	}
 	for _, action := range active {
 		if action.Plan.Kind == domain.StrategyActionCancel && action.Plan.TargetIntentID == id {
