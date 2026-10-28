@@ -736,3 +736,9 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：PG/race预算回归及原核心部分成交/冻结/终态去重、最终fmt-check/lint 0 issues、四实际进程12秒/6次部分成交与终态精确核算、文档/差异检查通过。本步测试专用改动未重复全套默认integration，见 [P06.26](validation/P06-26.md)。
 - 失败保留：67aef31长场景739,806ms/337次已观测成交后旧通用重复确认错误；首次新短场景strategy.actions等待策略行锁超时，加入诊断后未重现，不宣称根因已修复。两次失败accepted=false，12秒通过不代替A19。
 - 远程：67aef31已推送main并核对SHA，[CI40634728857](https://github.com/hmlax/muskdeer/actions/runs/40634728857)success；本步独立提交/推送并核对SHA。继续固定30分钟及P07管理页面/后端；完整L1仍待P06–P10。
+
+## 2026-10-28：P07.2a 认证测试的独立请求期限
+
+- 发现：3f0470c已推送main并核对SHA，但[CI40637742239](https://github.com/hmlax/muskdeer/actions/runs/40637742239)在两个认证场景28.38/27.98秒失败；旧总context25秒、错误无cause，不能把“locked identity logged in”当作实际绕过证据。完整verify通过，其余集成无FAIL。
+- 改动：独立开通/登录分别5秒上限，整组多次cost12顺序场景90秒；请求耗时/context/error可定位且不含秘密，原角色/锁定/到期/会话上限及审计断言保留，生产认证和HTTP期限不变。
+- 验证：4个真实PG/race场景通过（24.53/24.81/5.25/28.09秒，包84.326秒），fmt-check/lint 0 issues、文档链接/差异检查通过；本步测试专用修改未重复全套Nacos集成，见 [P07.2a](validation/P07-02a.md)。本步独立提交、推送并核对SHA，远程CI重新验证；完整L1仍待P06–P10。
