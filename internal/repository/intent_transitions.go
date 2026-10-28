@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -79,6 +80,12 @@ func (s *intentStore) Prepare(ctx context.Context, current domain.IntentSnapshot
 func (s *intentStore) Unknown(ctx context.Context, current domain.IntentSnapshot, code string) (domain.IntentSnapshot, error) {
 	if code != domain.IntentErrorOutcomeUnknown && code != domain.IntentErrorCoreNotFound {
 		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
+	}
+	if s.simulatorResolution && code == domain.IntentErrorCoreNotFound {
+		resolved, err := s.resolveSimulatorSubmission(ctx, current)
+		if err == nil || !errors.Is(err, domain.ErrOutcomeUnknown) {
+			return resolved, err
+		}
 	}
 	return s.changeIntent(ctx, current, func(row *modelv1.OrderIntent) (bool, error) {
 		if terminalIntent(row.State) || row.State == string(domain.OrderStateIntent) {

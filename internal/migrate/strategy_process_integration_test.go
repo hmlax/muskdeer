@@ -92,7 +92,12 @@ func TestStrategyCommandsDiscoverTakeOverQuoteAndCompleteStop(t *testing.T) {
 
 func createProcessStrategy(ctx context.Context, t *testing.T, db *gorm.DB, submit domain.GatewaySubmit) int64 {
 	t.Helper()
-	row := identityInstance(submit.Input.InstrumentID, "created-after-strategy-start", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
+	return createSourceProcessStrategy(ctx, t, db, submit, domain.MarketSourceBinance)
+}
+
+func createSourceProcessStrategy(ctx context.Context, t *testing.T, db *gorm.DB, submit domain.GatewaySubmit, source domain.MarketSource) int64 {
+	t.Helper()
+	row := identityInstance(submit.Input.InstrumentID, "created-after-strategy-start", domain.StrategyTemplateMarketMaker, source)
 	row.AccountId, row.DesiredRunning = submit.Input.AccountID, true
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(row).Error; err != nil {
@@ -100,6 +105,7 @@ func createProcessStrategy(ctx context.Context, t *testing.T, db *gorm.DB, submi
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = row.Id
+		parameters.MarketDataSource = string(source)
 		parameters.MakerParameters.InventoryHardLimit = "20"
 		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error; err != nil {
 			return err

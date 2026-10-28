@@ -207,7 +207,7 @@ func businessNaming() *configv1.Nacos {
 		NamespaceId: "integration-naming",
 		// infrastructureprobe runs concurrently with its own test CA and
 		// market.grpc processes. Never discover those unrelated fixtures.
-		Group:          "MUSKDEER_BUSINESS_TEST",
+		Group:          "MUSKDEER_BUSINESS_TEST_" + rand.Text(),
 		Cluster:        "TEST",
 		Username:       "nacos",
 		PasswordEnv:    "MUSKDEER_TEST_NACOS_PASSWORD",

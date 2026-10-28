@@ -63,6 +63,7 @@ func TestStrategyLifecycleRecoversBeforeRunningAndWaitsForTerminalStop(t *testin
 	if err != nil {
 		t.Fatal(err)
 	}
+	refreshLifecycleMarket(ctx, t, feed, publisher, snapshots)
 	if decision, err := evaluator.Evaluate(ctx, running.ID); err != nil || !decision.Allowed {
 		t.Fatalf("execution evaluation did not confirm ready runtime: %+v, %v", decision, err)
 	}
@@ -102,6 +103,17 @@ func TestStrategyLifecycleRecoversBeforeRunningAndWaitsForTerminalStop(t *testin
 		t.Fatalf("terminal stop lost retained policy or failed: %+v, %v", stopped, err)
 	}
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
+}
+
+func refreshLifecycleMarket(ctx context.Context, t *testing.T, feed domain.MarketFeedDefinition, publisher domain.LeaseToken, snapshots domain.MarketRepository) {
+	t.Helper()
+	publication, err := snapshots.Get(ctx, feed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := snapshots.Publish(ctx, publisher, publication.Revision, marketReadingFixture(feed, publication.Reading.Sequence+1, "100")); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func lifecycleToken(authority domain.StrategyAuthority) domain.LeaseToken {

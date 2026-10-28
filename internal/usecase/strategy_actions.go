@@ -56,6 +56,9 @@ func (s *StrategyController) observeAction(ctx context.Context, action domain.St
 	if err != nil && !errors.Is(err, domain.ErrCoreNotFound) && !errors.Is(err, domain.ErrOutcomeUnknown) {
 		return err
 	}
+	if err != nil && ctx.Err() != nil {
+		return errStrategyReobserve
+	}
 	// NotFound and transport failure both retain uncertainty. This read cannot
 	// authorize a resend, discard, or a replacement submit with a new key.
 	_, err = s.deps.Actions.Observe(ctx, action, authority)
@@ -96,6 +99,11 @@ func (s *StrategyController) dispatch(ctx context.Context, pending domain.Strate
 	if err != nil && !errors.Is(err, domain.ErrOutcomeUnknown) {
 		return err
 	}
+	if err != nil && ctx.Err() != nil {
+		// Attempt is durable. A fresh tick must observe the original key;
+		// there is no remaining request budget for another database operation.
+		return errStrategyReobserve
+	}
 	_, err = s.deps.Actions.Observe(ctx, action, authority)
 	return err
 }
@@ -126,6 +134,9 @@ func (s *StrategyController) currentOrders(ctx context.Context, spec domain.Stra
 	for pages := 0; pages <= domain.MaxStrategyOpenOrders/domain.MaximumExecutionPage; pages++ {
 		page, next, err := s.deps.Execution.Orders(ctx, filter)
 		if err != nil {
+			if errors.Is(err, domain.ErrOutcomeUnknown) {
+				return nil, errStrategyReobserve
+			}
 			return nil, err
 		}
 		seen += len(page)
@@ -135,6 +146,9 @@ func (s *StrategyController) currentOrders(ctx context.Context, spec domain.Stra
 		for _, row := range page {
 			observed, err := s.deps.Execution.Order(ctx, spec.AccountID, row.ClientOrderID)
 			if err != nil {
+				if errors.Is(err, domain.ErrOutcomeUnknown) {
+					return nil, errStrategyReobserve
+				}
 				return nil, err
 			}
 			if observed.ID != row.ID || observed.Input.Authority.StrategyID != spec.ID || observed.Input.InstrumentID != spec.InstrumentID {

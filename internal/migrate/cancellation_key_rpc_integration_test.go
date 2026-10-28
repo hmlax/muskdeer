@@ -30,15 +30,23 @@ func TestCancellationRPCRecoversLostReplyByStableKeyWithoutAnotherCancel(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
+	committed := make(chan struct{}, 1)
 	lost, err := simulator.WithFaults(core, simulator.FaultPlan{
-		Submit: simulator.ResponseNormal,
-		Cancel: simulator.ResponseLost,
+		Submit:    simulator.ResponseNormal,
+		Cancel:    simulator.ResponseLost,
+		Committed: committed,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	observed := &observedCancellationGateway{TradingGateway: lost}
 	writer, reader := executionRPCFixture(ctx, t, db, observed, intents, submit.ExecutionAuthority.OwnerID)
+	if reply, err := reader.FindOrder(ctx, &executionv1.FindOrderRequest{
+		AccountId: submit.Input.AccountID,
+		Lookup:    &executionv1.FindOrderRequest_IntentId{IntentId: live.ID},
+	}); err != nil || reply.GetOrder().GetState() != commonv1.OrderState_ORDER_STATE_LIVE {
+		t.Fatal("authenticated control did not observe the original live order")
+	}
 	key := strings.Repeat("k", 128)
 	if reply, err := writer.CancelOrder(ctx, &executionv1.CancelOrderRequest{
 		IdempotencyKey: key,
@@ -49,6 +57,11 @@ func TestCancellationRPCRecoversLostReplyByStableKeyWithoutAnotherCancel(t *test
 		Deadline:       timestamppb.New(time.Now().Add(time.Second)),
 	}); err != nil || reply.GetCancellation().GetState() != commonv1.CancellationState_CANCELLATION_STATE_UNKNOWN || observed.cancels.Load() != 1 {
 		t.Fatalf("lost venue cancellation did not retain uncertainty: %v, %v", reply, err)
+	}
+	select {
+	case <-committed:
+	default:
+		t.Fatal("cancellation never reached the intended committed-response-loss boundary")
 	}
 	// Discard the first reply's server ID. The caller retains only its durable
 	// account/key pair, even after both former owners have lost authority.

@@ -61,7 +61,16 @@ func (s *StrategyController) Tick(ctx context.Context) (bool, error) {
 	return worked, err
 }
 
-func (s *StrategyController) tick(ctx context.Context) (bool, error) {
+func (s *StrategyController) tick(ctx context.Context) (worked bool, resultErr error) {
+	stage := domain.StrategyStageBoundary
+	defer func() {
+		if resultErr != nil {
+			resultErr = &domain.StrategyFailure{
+				Stage: stage,
+				Cause: resultErr,
+			}
+		}
+	}()
 	if ctx == nil {
 		return false, domain.ErrInvalidOrder
 	}
@@ -76,6 +85,7 @@ func (s *StrategyController) tick(ctx context.Context) (bool, error) {
 		Kind:       domain.LeaseKindStrategy,
 		StrategyID: s.settings.StrategyID,
 	}
+	stage = domain.StrategyStageAcquire
 	token, err := s.deps.Leases.Acquire(ctx, key, s.settings.OwnerID, s.settings.LeaseTTL)
 	if errors.Is(err, domain.ErrLeaseHeld) {
 		return false, nil
@@ -83,33 +93,41 @@ func (s *StrategyController) tick(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	stage = domain.StrategyStageRenew
 	token, err = s.deps.Leases.Renew(ctx, token, s.settings.LeaseTTL)
 	if err != nil {
 		return false, err
 	}
+	stage = domain.StrategyStageInstance
 	current, err := s.deps.Lifecycle.Instance(ctx, key.StrategyID)
 	if err != nil {
 		return false, err
 	}
 	if current.RuntimeOwnerID != token.OwnerID || current.RuntimeOwnerEpoch != token.Epoch {
+		stage = domain.StrategyStageClaim
 		_, err := s.transition(ctx, current, token, domain.StrategyStateRecovering, false)
 		return false, err
 	}
 	authority := strategyAuthority(current, token)
+	stage = domain.StrategyStageActions
 	handled, err := s.recoverActions(ctx, current, authority)
 	if err != nil || handled {
 		return false, err
 	}
+	stage = domain.StrategyStageOrders
 	orders, err := s.currentOrders(ctx, current)
 	if err != nil {
 		return false, err
 	}
 	if !current.DesiredRunning {
+		stage = domain.StrategyStageStop
 		return false, s.stop(ctx, current, token, orders)
 	}
 	if current.State != domain.StrategyStateRunning || current.ActiveVersion != current.RequestedVersion || current.ActiveSource != current.RequestedSource {
+		stage = domain.StrategyStageRecover
 		return false, s.recover(ctx, current, token, orders)
 	}
+	stage = domain.StrategyStageQuote
 	return false, s.quote(ctx, current, token, orders)
 }
 

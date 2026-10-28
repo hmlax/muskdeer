@@ -173,7 +173,9 @@ func lockAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAu
 
 func lockCoreRows(ctx context.Context, tx *gorm.DB, accountID string, instrumentID int64) (coreRows, error) {
 	var instrument modelv1.Instrument
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "UPDATE"}).First(&instrument, instrumentID).Error; err != nil {
+	// Matching needs mutually exclusive writers, without blocking foreign-key
+	// KEY SHARE checks for another strategy's durable, unsent action metadata.
+	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&instrument, instrumentID).Error; err != nil {
 		return coreRows{}, err
 	}
 	var account modelv1.SimulatorAccount

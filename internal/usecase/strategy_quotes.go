@@ -30,6 +30,9 @@ func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec
 	}
 	p := *environment.Parameters.Maker
 	reference, err := s.deps.Market.Reference(ctx, spec.ActiveSource, spec.InstrumentID, spec.Mode)
+	if ctx.Err() != nil {
+		return errStrategyReobserve
+	}
 	if err != nil {
 		return s.protectRecovery(ctx, spec, token, orders)
 	}

@@ -142,7 +142,7 @@ func executionHandler(db *gorm.DB, authority *usecase.ExecutionOwner) (*executio
 	if err != nil {
 		return nil, err
 	}
-	intents, err := repository.NewIntents(db)
+	intents, err := repository.NewSimulatorIntents(db)
 	if err != nil {
 		return nil, err
 	}

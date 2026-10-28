@@ -1,5 +1,7 @@
 # 策略控制循环
 
+当前L1执行端对已受理但未落核心请求的独立证明，以及RPC耗尽期限后等待新context观察的边界，见 [已受理请求恢复](SIMULATOR_SUBMISSION_RESOLUTION.md)。通用NotFound仍不允许重发或释放预留。
+
 usecase.StrategyController是每实例串行Tick，由调用方提供有界context和新的进程incarnation。构造不启动goroutine、领取租约、准备资金或开风险。Tick领取并续期真实策略lease；standby立即等待下一轮，不读输入、改状态或发交易。每轮请求配置的poll间隔，不能用工作成功触发无延迟重试。
 
 新owner先持久RECOVERING关闭旧许可，再沿原业务键观察活动动作并同步OMS/核心订单。每轮最多观察8个动作，内存游标仅用于公平调度，授权与不确定状态都持久化。PENDING提交是尚未发送的旧目标，恢复时丢弃并重新计算；尝试过的DISPATCHING/WAITING/UNKNOWN只能查原键，NotFound也不代表可重发。未知提交会阻止新提交键，但保留受控撤单通道。P06.17只有在L1数据库能够证明原请求已不可能被受理、且封住旧键后才转NOT_ACCEPTED；没有该证明仍保持UNKNOWN，详见 [截止证明](STRATEGY_ACTION_RESOLUTION.md)。

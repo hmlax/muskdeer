@@ -122,6 +122,13 @@ func strategyAccountTick(ctx context.Context, account string, candidates domain.
 			return false, domain.ErrInvalidOrder
 		}
 		seen[id] = struct{}{}
+	}
+	for id := range controllers {
+		if _, exists := seen[id]; !exists {
+			delete(controllers, id)
+		}
+	}
+	for _, id := range ids {
 		controller := controllers[id]
 		if controller == nil {
 			settings.StrategyID = id
@@ -134,10 +141,10 @@ func strategyAccountTick(ctx context.Context, account string, candidates domain.
 		if _, err := controller.Tick(ctx); err != nil {
 			return false, err
 		}
-	}
-	for id := range controllers {
-		if _, exists := seen[id]; !exists {
-			delete(controllers, id)
+		if ctx.Err() != nil {
+			// A handled remote timeout finishes this account cycle. Other
+			// instances must get the next cycle's fresh native budget.
+			return false, nil
 		}
 	}
 	return false, nil

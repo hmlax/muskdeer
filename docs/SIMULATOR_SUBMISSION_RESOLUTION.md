@@ -1,0 +1,15 @@
+# 已受理但未落核心的L1请求
+
+普通NotFound、网络超时和没有回包都不能释放预留。[动作截止证明](STRATEGY_ACTION_RESOLUTION.md)只处理完全没有受理记录的请求；已有OMS受理记录需要另一条权威路径。
+
+`NewSimulatorIntents`显式选择当前共享PostgreSQL的L1执行合同；业务execution装配使用它。通用`NewIntents`不启用此能力，未来外部网关继续使用通用路径或独立验证其权威合同，不能依赖本地模拟表为空。
+
+在用例查询原client ID收到CoreNotFound，或意图仍为未Prepare的INTENT时，L1仓储尝试READ COMMITTED事务：先取得策略NO KEY UPDATE，再取得核心instrument/account互斥、账户/策略预算和意图状态锁，与核心准入顺序一致。它等待在途核心事务结束，以数据库时间确认Accept/Prepare固定的原submission_deadline已过，意图仍INTENT/SUBMITTING/UNKNOWN且没有核心ID/revision，并检查包含历史的核心订单和SUBMIT命令。存在任何效果或受理证据均不能证明未受理；未Prepare的通用INTENT保持原状态。
+
+证明成立后将原OMS记为REJECTED/CORE_NOT_ACCEPTED；原client ID和业务键保留，核心ID保持为空。四级预算释放及状态outbox在同一事务提交。没有核心冻结时也不制造余额变更，核心余额始终由实际模拟账本决定。取消服务通过原意图观察得到真实终态后，才完成相应取消请求。
+
+迁移21末尾SQL独立验证证明，拒绝提前、旧快照或已有核心证据的伪造；核心INSERT门禁永久封闭已解决的原client ID，包括不携带intent指针的直接模拟命令。解决记录不得删除、软删除、改写截止时间、清除错误或重开状态。没有扩展普通Reject权限，也没有重新发送原核心包。
+
+核心交易对互斥使用NO KEY UPDATE，仍排斥另一个核心写者及交易对元数据更新，但允许KEY SHARE外键检查。仅记录另一策略的PENDING动作不应等待一个在途核心事务；原UPDATE锁会阻塞此类外键，已用受控暂停核心事务的测试先红后绿验证。账户、余额、预算及最终fencing的锁和断言保留。
+
+RPC耗尽请求期限后，策略保留已经落库的DISPATCHING/UNKNOWN，结束当前Tick并按轮询间隔等待新context观察原键；不再用已取消的context尝试本地Observe。行情读取耗尽期限也等待下一轮用真实风险输入执行保护，同账户循环结束本轮而不把已耗尽context传给下一实例。完整订单读取遇到传输不明也等待下一轮，不凭不完整订单集报价。数据库/租约操作自身失败仍会交回Deer处理，原确定性数据库超时退出测试保留。

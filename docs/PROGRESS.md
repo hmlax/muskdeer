@@ -670,3 +670,11 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：原截止前/后、伪造或旧快照证明拒绝、旧RPC/核心键续期拒绝、跨截止在途准入仍WAITING、取消资金保留及真实新决策撤单归位先红后绿；最终完整make verify、make integration、文档/差异检查通过。独立进程接管/自动发现/终态停止10.45秒，lint/race/goleak保留；见 [P06.17](validation/P06-17.md)。
 - 远程：6f90489已推送main并核对SHA，但[CI40618427899](https://github.com/hmlax/muskdeer/actions/runs/40618427899)接管等待失败，不计通过；本步独立提交/推送并核对SHA。
 - 下一步：已受理不明结果权威恢复、实际失效/成交联动、模拟成交和30分钟运行；P06进行，P07–P10继续完成。
+
+## 2026-10-28：P06.18 已受理恢复与双来源实际保护
+
+- 改动：迁移21及显式NewSimulatorIntents，在原截止关闭、等待在途核心事务且无全部核心历史证据后，将INTENT/SUBMITTING/UNKNOWN原身份记REJECTED/CORE_NOT_ACCEPTED，同事务释放四级预算/outbox并永久封闭旧client ID。通用仓储保持未知/未发状态，不推广到外部网关。
+- 修复：远程调用耗尽context后等待新轮观察/保护，同账户不传递已耗尽预算；固定白名单阶段/错误分类隐藏私有cause。受控测试明确复现instrument UPDATE阻塞另一策略动作外键，改NO KEY UPDATE保持核心互斥且允许KEY SHARE；资金/STP/成交/最终fence及相关并发回归全部通过。
+- 验证：实际两market/execution/strategy进程中，分别停止Binance或OKX，失效实例撤清且不换源，健康实例继续新增报价，原来源恢复后重新双边报价，最终两实例终态停止且现金1000/BTC10/冻结及预留归零。最终完整make verify、make integration、文档/差异检查通过，业务99.119秒、双向保护12.78秒、lint/race/goleak保留；失败与诊断如实保留，见 [P06.18](validation/P06-18.md)。
+- 远程：9037765已推送main并核对SHA，[CI40621673148](https://github.com/hmlax/muskdeer/actions/runs/40621673148)success；本步独立提交/推送并核对SHA。
+- 下一步：已受理取消的无效果恢复、实际成交与30分钟连续运行；P06仍进行，P07–P10继续完成。

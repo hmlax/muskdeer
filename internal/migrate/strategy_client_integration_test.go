@@ -51,7 +51,6 @@ func TestStrategyClientTradesThroughOwnedRiskMarketAndSimulatorProcesses(t *test
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}
 	startBusinessProcess(ctx, t, executionCfg, observer)
-	waitProcessRisk(ctx, t, db, submit.Input.Authority.StrategyID, domain.RiskReasonReady)
 	routing, err := repository.NewExecutionRouting(db)
 	if err != nil {
 		t.Fatal(err)
@@ -69,6 +68,10 @@ func TestStrategyClientTradesThroughOwnedRiskMarketAndSimulatorProcesses(t *test
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := client.Account(ctx, submit.Input.AccountID); err != nil {
+		t.Fatal("typed authenticated read control failed before trading")
+	}
+	waitProcessRisk(ctx, t, db, submit.Input.Authority.StrategyID, domain.RiskReasonReady)
 	input := submit.Input
 	input.IdempotencyKey = "typed-client-buy"
 	input.Price, input.Quantity = decimal.NewFromInt(99), decimal.NewFromInt(1)

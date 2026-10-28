@@ -11,7 +11,10 @@ import (
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
-type intentStore struct{ db *gorm.DB }
+type intentStore struct {
+	db                  *gorm.DB
+	simulatorResolution bool
+}
 
 // NewIntents borrows the database and does not call a trading gateway.
 func NewIntents(db *gorm.DB) (domain.IntentExecutionRepository, error) {
@@ -19,6 +22,18 @@ func NewIntents(db *gorm.DB) (domain.IntentExecutionRepository, error) {
 		return nil, domain.ErrInvalidOrder
 	}
 	return &intentStore{db: db}, nil
+}
+
+// NewSimulatorIntents explicitly enables authoritative missing-core resolution
+// for the shared-database L1 venue. External gateways must use NewIntents.
+func NewSimulatorIntents(db *gorm.DB) (domain.IntentExecutionRepository, error) {
+	if db == nil {
+		return nil, domain.ErrInvalidOrder
+	}
+	return &intentStore{
+		db:                  db,
+		simulatorResolution: true,
+	}, nil
 }
 
 func (s *intentStore) Accept(ctx context.Context, in domain.OrderInput, execution domain.LeaseToken) (domain.IntentSnapshot, error) {

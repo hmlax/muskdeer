@@ -86,7 +86,12 @@ func (s *intentService) Recover(ctx context.Context, accountID string, intentID 
 	if err != nil {
 		return domain.IntentSnapshot{}, err
 	}
-	if current.State == domain.OrderStateIntent || current.State == domain.OrderStateRejected || current.State == domain.OrderStateFilled || current.State == domain.OrderStateCanceled {
+	if current.State == domain.OrderStateIntent {
+		// No dispatch was prepared. The generic repository keeps this state;
+		// the explicit shared-database L1 store may prove its deadline closed.
+		return s.store.Unknown(ctx, current, domain.IntentErrorCoreNotFound)
+	}
+	if current.State == domain.OrderStateRejected || current.State == domain.OrderStateFilled || current.State == domain.OrderStateCanceled {
 		return current, nil
 	}
 	order, err := s.gateway.Find(ctx, accountID, current.ClientOrderID)

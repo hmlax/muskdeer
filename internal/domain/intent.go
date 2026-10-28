@@ -10,21 +10,22 @@ import (
 
 // Durable event and risk-admission identifiers.
 const (
-	EventSchemaVersion        int64 = 1
-	EventOrderIntentAccepted        = "OrderIntentAccepted"
-	EventOrderStateChanged          = "OrderStateChanged"
-	EventTradeFilled                = "TradeFilled"
-	EventProducerExecution          = "execution"
-	OutboxStatePending              = "PENDING"
-	OutboxStatePublishing           = "PUBLISHING"
-	OutboxStatePublished            = "PUBLISHED"
-	OutboxStateFailed               = "FAILED"
-	MaxRiskSnapshotAge              = 5 * time.Second
-	MessageRiskDenied               = "new risk admission is denied"
-	IntentErrorOutcomeUnknown       = "OUTCOME_UNKNOWN"
-	IntentErrorCoreNotFound         = "CORE_NOT_FOUND"
-	IntentErrorCoreRejected         = "CORE_REJECTED"
-	IntentErrorRiskDenied           = "RISK_DENIED"
+	EventSchemaVersion         int64 = 1
+	EventOrderIntentAccepted         = "OrderIntentAccepted"
+	EventOrderStateChanged           = "OrderStateChanged"
+	EventTradeFilled                 = "TradeFilled"
+	EventProducerExecution           = "execution"
+	OutboxStatePending               = "PENDING"
+	OutboxStatePublishing            = "PUBLISHING"
+	OutboxStatePublished             = "PUBLISHED"
+	OutboxStateFailed                = "FAILED"
+	MaxRiskSnapshotAge               = 5 * time.Second
+	MessageRiskDenied                = "new risk admission is denied"
+	IntentErrorOutcomeUnknown        = "OUTCOME_UNKNOWN"
+	IntentErrorCoreNotFound          = "CORE_NOT_FOUND"
+	IntentErrorCoreRejected          = "CORE_REJECTED"
+	IntentErrorCoreNotAccepted       = "CORE_NOT_ACCEPTED"
+	IntentErrorRiskDenied            = "RISK_DENIED"
 )
 
 // ErrRiskDenied covers stale/unsafe risk input and exhausted budget capacity.
