@@ -1,0 +1,38 @@
+{
+  "scenario": "P06.27 Maker physical thirty-minute replay",
+  "artifact_id": "ae9d2b9acb464ea394aab90b89f9f545",
+  "metadata": {
+    "revision": "3f0470ca6e1cb4a0694864b1ebe8467a3028b773",
+    "worktree_dirty": true,
+    "toolchain": "go version go1.27.3 darwin/arm64",
+    "kind": "thirty_minute",
+    "accepted": true,
+    "scenario_passed": true,
+    "infrastructure_cleaned": true
+  },
+  "result": {
+    "record_kind": "result",
+    "target_ms": 1800000,
+    "elapsed_ms": 1800006,
+    "fill_count": 808,
+    "passed": true
+  },
+  "observations": 866,
+  "invariant_failures": 0,
+  "maximum_quote_gap_ms": 5700,
+  "maximum_projection_gap_ms": 5757,
+  "maximum_reserved_notional": "39.999998066",
+  "maximum_worst_base": "10.21024028",
+  "final_base": "10",
+  "final_cash_quote": "999.7712276",
+  "final_fees_quote": "0.8075724",
+  "final_cost_quote": "999.917205140952450312308278281337932103",
+  "final_realized_pnl_quote": "-0.311567259047549687691721718662067897",
+  "source_sha256": {
+    "run.log": "294b954f83ac22a07bbb1644744a28b5deec5da4db4234055df8bf8ab990c6e8",
+    "progress.jsonl": "106304827d6f07d66515b6bf7ae90828741d9e381c46f066e33bfc118edac985",
+    "result.json": "abce791ee26e9f7173e92903287c829af87ce6b404ccdb47b525420eb84eda6f",
+    "metadata.json": "d4c1300355887bb6081958934c0d7db18c4d907a59c340d674be795c81172c00"
+  },
+  "scope": "Duration and accounting evidence for the recorded baseline; final-version latency/capacity and full L1 remain P10."
+}
