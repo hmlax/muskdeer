@@ -75,3 +75,10 @@ image-test: image
 	python3 scripts/image-smoke.py
 
 e2e: integration image-test
+
+.PHONY: soak soak-smoke
+soak: build
+	python3 scripts/soak.py
+
+soak-smoke: build
+	python3 scripts/soak.py --smoke

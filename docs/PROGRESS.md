@@ -692,3 +692,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：6秒实际驱动后终态停止，四级预留和冻结归零；核心订单均有先行OMS，3个核心/投影/inbox成交事实，现金/持仓/费用可由事实逐项解释，成本/PnL精确重建一致。最终完整make verify、make integration、文档/差异检查通过，场景8.75秒、业务110.807秒、lint/race/goleak保留，见 [P06.20](validation/P06-20.md)。
 - 远程：e5555ec已推送main并核对SHA；本步独立提交/推送并核对SHA。
 - 下一步：有界长运行驱动及实际30分钟验收；本步6秒不代替A19，P06仍进行，P07–P10继续。
+
+## 2026-10-28：P06.21 有界真实时长驱动
+
+- 改动：新增固定30分钟和12秒短场景，共用四独立业务进程/实际成交驱动；每两秒一致快照验证核心资金/冻结、四级预算、最坏BUY敞口和投影，停止后精确重建。独有消息流有界扩容，安全日志/结果保存在.cache/soak；超时/异常只清理拥有的进程组及Compose，短场景或清理失败绝不标记长验收通过。
+- 验证：聚焦实际12,000ms、6次部分成交通过；完整make verify、make integration、15项Python工具测试、117份文档链接/差异检查通过，lint/race/goleak及原资金断言保留。修正产物路径混用及新配置业务3秒/客户端2秒期限不匹配，失败日志如实保留，见 [P06.21](validation/P06-21.md) 和 [运行说明](STRATEGY_SOAK.md)。
+- 远程：0c163c3已推送main并核对SHA，[CI40629411292](https://github.com/hmlax/muskdeer/actions/runs/40629411292)success；e5555ec的[CI40628438505](https://github.com/hmlax/muskdeer/actions/runs/40628438505)success。本步独立提交/推送并核对SHA。
+- 下一步：从本步已同步版本执行实际30分钟并记录结果；A19尚未完成，P06保持进行，P07–P10继续。

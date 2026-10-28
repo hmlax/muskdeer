@@ -76,12 +76,21 @@ func startStrategyFillProcesses(ctx context.Context, t *testing.T, db *gorm.DB, 
 
 func driveStrategyPartialFills(ctx context.Context, t *testing.T, db *gorm.DB, core domain.Simulator, submit domain.GatewaySubmit, duration time.Duration) int64 {
 	t.Helper()
-	until, next := time.Now().Add(duration), time.Now()
+	return driveStrategyFillsObserved(ctx, t, db, core, submit, duration, nil)
+}
+
+func driveStrategyFillsObserved(ctx context.Context, t *testing.T, db *gorm.DB, core domain.Simulator, submit domain.GatewaySubmit, duration time.Duration, observe func(time.Duration, int64)) int64 {
+	t.Helper()
+	started := time.Now()
+	until, next := started.Add(duration), started
 	ticks := time.NewTicker(100 * time.Millisecond)
 	defer ticks.Stop()
 	var fills int64
 	side := domain.SideBuy
 	for time.Now().Before(until) {
+		if observe != nil {
+			observe(time.Since(started), fills)
+		}
 		if !time.Now().Before(next) && fillStrategySide(ctx, t, db, core, submit, side) {
 			fills++
 			next = time.Now().Add(2 * time.Second)

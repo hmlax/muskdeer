@@ -149,7 +149,22 @@ func waitBusinessProjection(ctx context.Context, t *testing.T, db *gorm.DB, port
 	}
 }
 
+type businessStreamLimits struct {
+	Bytes    int64
+	Messages int64
+	Age      time.Duration
+}
+
 func businessStream(ctx context.Context, t *testing.T) *configv1.JetStream {
+	t.Helper()
+	return businessStreamWithLimits(ctx, t, businessStreamLimits{
+		Bytes:    4 * 1024 * 1024,
+		Messages: 1000,
+		Age:      10 * time.Minute,
+	})
+}
+
+func businessStreamWithLimits(ctx context.Context, t *testing.T, limits businessStreamLimits) *configv1.JetStream {
 	t.Helper()
 	name := strings.ToLower(rand.Text())[:16]
 	cfg := &configv1.JetStream{
@@ -178,10 +193,10 @@ func businessStream(ctx context.Context, t *testing.T) *configv1.JetStream {
 		Storage:    natsjs.FileStorage,
 		Retention:  natsjs.LimitsPolicy,
 		Discard:    natsjs.DiscardNew,
-		MaxBytes:   4 * 1024 * 1024,
-		MaxMsgs:    1000,
+		MaxBytes:   limits.Bytes,
+		MaxMsgs:    limits.Messages,
 		MaxMsgSize: 64 * 1024,
-		MaxAge:     10 * time.Minute,
+		MaxAge:     limits.Age,
 		Duplicates: time.Minute,
 	})
 	if err != nil {
@@ -273,6 +288,14 @@ func businessProcessConfig(t *testing.T, ca *testcert.Authority, postgres *confi
 
 func startBusinessProcess(ctx context.Context, t *testing.T, cfg *configv1.ServiceConfig, observer *nacos.Client) int {
 	t.Helper()
+	return startBusinessProcessFor(ctx, t, cfg, observer, 40*time.Second, "")
+}
+
+func startBusinessProcessFor(ctx context.Context, t *testing.T, cfg *configv1.ServiceConfig, observer *nacos.Client, lifetime time.Duration, logs string) int {
+	t.Helper()
+	if lifetime <= 0 || lifetime > 40*time.Minute {
+		t.Fatal("business process requires an explicit bounded lifetime")
+	}
 	directory := t.TempDir()
 	configPath := filepath.Join(directory, "business.json")
 	data, err := protojson.Marshal(cfg)
@@ -282,11 +305,15 @@ func startBusinessProcess(ctx context.Context, t *testing.T, cfg *configv1.Servi
 	if err := os.WriteFile(configPath, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	output, err := os.Create(filepath.Join(directory, "output.jsonl"))
+	outputPath := filepath.Join(directory, "output.jsonl")
+	if logs != "" {
+		outputPath = filepath.Join(logs, cfg.Name+"-"+cfg.InstanceId+".jsonl")
+	}
+	output, err := os.OpenFile(outputPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
-	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), 40*time.Second)
+	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), lifetime)
 	command := exec.CommandContext(run, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", cfg.Name, "-config", configPath)
 	command.Stdout, command.Stderr = output, output
 	finished := make(chan error, 1)
@@ -296,9 +323,7 @@ func startBusinessProcess(ctx context.Context, t *testing.T, cfg *configv1.Servi
 			if err := command.Process.Signal(syscall.SIGTERM); err != nil && !errors.Is(err, os.ErrProcessDone) {
 				t.Error(err)
 			}
-			if err := <-finished; err != nil {
-				t.Errorf("business process %s exited: %v", cfg.Name, err)
-			}
+			waitBusinessProcessStop(t, cfg, command, finished)
 		}
 		if err := output.Close(); err != nil {
 			t.Error(err)
@@ -331,6 +356,26 @@ func startBusinessProcess(ctx context.Context, t *testing.T, cfg *configv1.Servi
 		case <-ready.Done():
 			t.Fatal("business process did not publish within startup budget")
 		case <-ticks.C:
+		}
+	}
+}
+
+func waitBusinessProcessStop(t *testing.T, cfg *configv1.ServiceConfig, command *exec.Cmd, finished <-chan error) {
+	t.Helper()
+	timer := time.NewTimer(cfg.ShutdownTimeout.AsDuration() + time.Second)
+	defer timer.Stop()
+	select {
+	case err := <-finished:
+		if err != nil {
+			t.Errorf("business process %s exited: %v", cfg.Name, err)
+		}
+	case <-timer.C:
+		t.Errorf("business process %s exceeded its shutdown budget", cfg.Name)
+		if err := command.Process.Kill(); err != nil && !errors.Is(err, os.ErrProcessDone) {
+			t.Error(err)
+		}
+		if err := <-finished; err != nil {
+			t.Logf("business process %s joined after forced stop: %v", cfg.Name, err)
 		}
 	}
 }

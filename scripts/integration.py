@@ -75,6 +75,33 @@ def capture_diagnostics(compose: list[str]) -> None:
         print('Test container diagnostics unavailable; preserving the original error', file=sys.stderr)
 
 
+def test_environment(compose: list[str]) -> dict[str, str]:
+    """Prepare and address only the caller-owned disposable infrastructure."""
+    subprocess.run([*compose, 'exec', '-T', 'postgres', 'postgres', '--version'], check=True)
+    subprocess.run([*compose, 'exec', '-T', 'redis', 'redis-server', '--version'], check=True)
+    subprocess.run([*compose, 'exec', '-T', 'nats', 'nats-server', '--version'], check=True)
+    postgres_address = published_address(compose, 'postgres', 5432)
+    redis_address = published_address(compose, 'redis', 6379)
+    nats_address = published_address(compose, 'nats', 4222)
+    nacos_address = published_address(compose, 'nacos', 8848)
+    initialize_naming(nacos_address)
+    environment = os.environ.copy()
+    postgres_port = postgres_address.rsplit(':', 1)[1]
+    environment['MUSKDEER_TEST_POSTGRES_DSN'] = (
+        f'host=127.0.0.1 port={postgres_port} user=muskdeer password=muskdeer_test_only '
+        'dbname=muskdeer_p01 sslmode=disable'
+    )
+    environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
+    environment['MUSKDEER_TEST_POSTGRES_PORT'] = postgres_port
+    environment['MUSKDEER_TEST_REDIS_PASSWORD'] = 'muskdeer_redis_test_only'
+    environment['MUSKDEER_TEST_REDIS_ADDRESS'] = redis_address
+    environment['MUSKDEER_TEST_NATS_TOKEN'] = 'muskdeer_nats_test_only'
+    environment['MUSKDEER_TEST_NATS_ADDRESS'] = nats_address
+    environment['MUSKDEER_TEST_NACOS_PASSWORD'] = 'muskdeer_nacos_test_only'
+    environment['MUSKDEER_TEST_NACOS_ADDRESS'] = nacos_address
+    return environment
+
+
 def run() -> int:
     project = 'muskdeer-p01-' + uuid.uuid4().hex[:10]
     compose = ['docker', 'compose', '-p', project, '-f', str(ROOT / 'compose.test.yml')]
@@ -82,28 +109,7 @@ def run() -> int:
     try:
         started = True
         subprocess.run([*compose, 'up', '-d', '--wait', '--wait-timeout', '120'], check=True)
-        subprocess.run([*compose, 'exec', '-T', 'postgres', 'postgres', '--version'], check=True)
-        subprocess.run([*compose, 'exec', '-T', 'redis', 'redis-server', '--version'], check=True)
-        subprocess.run([*compose, 'exec', '-T', 'nats', 'nats-server', '--version'], check=True)
-        postgres_address = published_address(compose, 'postgres', 5432)
-        redis_address = published_address(compose, 'redis', 6379)
-        nats_address = published_address(compose, 'nats', 4222)
-        nacos_address = published_address(compose, 'nacos', 8848)
-        initialize_naming(nacos_address)
-        environment = os.environ.copy()
-        postgres_port = postgres_address.rsplit(':', 1)[1]
-        environment['MUSKDEER_TEST_POSTGRES_DSN'] = (
-            f'host=127.0.0.1 port={postgres_port} user=muskdeer password=muskdeer_test_only '
-            'dbname=muskdeer_p01 sslmode=disable'
-        )
-        environment['MUSKDEER_TEST_POSTGRES_PASSWORD'] = 'muskdeer_test_only'
-        environment['MUSKDEER_TEST_POSTGRES_PORT'] = postgres_port
-        environment['MUSKDEER_TEST_REDIS_PASSWORD'] = 'muskdeer_redis_test_only'
-        environment['MUSKDEER_TEST_REDIS_ADDRESS'] = redis_address
-        environment['MUSKDEER_TEST_NATS_TOKEN'] = 'muskdeer_nats_test_only'
-        environment['MUSKDEER_TEST_NATS_ADDRESS'] = nats_address
-        environment['MUSKDEER_TEST_NACOS_PASSWORD'] = 'muskdeer_nacos_test_only'
-        environment['MUSKDEER_TEST_NACOS_ADDRESS'] = nacos_address
+        environment = test_environment(compose)
         result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
             '-count=1', '-v', './internal/persistenceprobe',
