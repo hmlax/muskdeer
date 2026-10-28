@@ -74,7 +74,7 @@ func TestAdminControlProcessesRevalidateAuthorityAndProjectOneDurableResult(t *t
 	}
 	old := waitNativeAdminOperation(ctx, t, client, viewer.Token, accepted.Id, domain.AdminOperationSuperseded)
 	if old.Observation.GetState() != string(domain.StrategyStateCreated) || old.Observation.StrategyRevision != 3 {
-		t.Fatal("owned result worker fabricated the superseded runtime witness")
+		t.Fatal("supersession receipt fabricated the current runtime witness")
 	}
 	// This unfunded metadata fixture has no runtime owner or orders. Its legacy
 	// epoch-zero state is explicit; only the actual service workers write results.

@@ -59,8 +59,8 @@ func TestAdminControlReceiptsReplayAndDoNotInventRuntimeCompletion(t *testing.T)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if changed, err := observer.Observe(ctx, accepted.ID); err != nil || !changed {
-		t.Fatal("replaced target did not become durably superseded", err)
+	if changed, err := observer.Observe(ctx, accepted.ID); err != nil || changed {
+		t.Fatal("already superseded control was observed twice", err)
 	}
 	old, err := controls.Operation(ctx, viewer.Token, accepted.ID)
 	if err != nil || old.State != domain.AdminOperationSuperseded || old.CompletedAt.IsZero() {

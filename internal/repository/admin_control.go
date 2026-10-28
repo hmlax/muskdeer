@@ -98,6 +98,9 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 		if err := invalidateLifecycleRisk(ctx, tx, &instance); err != nil {
 			return err
 		}
+		if err := supersedeAdminControls(ctx, tx, user.Id, &instance, target); err != nil {
+			return err
+		}
 		audit := &modelv1.AdminAudit{
 			Actor:         user.Username,
 			ActorRole:     user.Role,
@@ -184,6 +187,29 @@ func adminControlAllowed(action domain.AdminControlAction, state domain.Strategy
 	default:
 		return false
 	}
+}
+
+// Record the intermediate replacement while the strategy row is still locked.
+// An asynchronous observer cannot reconstruct a target that changed and changed
+// back between polls. Audit/receipt failure rolls this result back as well.
+func supersedeAdminControls(ctx context.Context, tx *gorm.DB, userID int64, instance *modelv1.StrategyInstance, target domain.StrategyState) error {
+	now, err := adminDatabaseTime(ctx, tx, userID)
+	if err != nil {
+		return err
+	}
+	return tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).
+		Where("strategy_instance_id = ? AND state = ? AND (target_state <> ? OR config_version <> ? OR market_data_source <> ?)", instance.Id, domain.AdminOperationAccepted, target, instance.RequestedConfigVersion, instance.MarketDataSource).
+		Select("State", "OutcomeCode", "Revision", "CompletedAt", "ObservedRevision", "ObservedState", "ObservedOwnerId", "ObservedOwnerEpoch").
+		Updates(&modelv1.AdminStrategyOperation{
+			State:              string(domain.AdminOperationSuperseded),
+			OutcomeCode:        domain.AdminOperationOutcomeReplaced,
+			Revision:           2,
+			CompletedAt:        proto.Int64(now),
+			ObservedRevision:   proto.Int64(instance.Revision + 1),
+			ObservedState:      proto.String(instance.State),
+			ObservedOwnerId:    proto.String(instance.RuntimeOwnerId),
+			ObservedOwnerEpoch: proto.Int64(instance.RuntimeOwnerEpoch),
+		}).Error
 }
 
 func adminControlFingerprint(request domain.AdminControlRequest) string {
