@@ -1,6 +1,6 @@
 # 策略管理查询
 
-P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP，P07.9 交付列表/详情/版本页面。写操作仍未交付，不能据此将 R08/A27 标为完成。身份、查询HTTP和页面入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
+P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP，P07.9 交付列表/详情/版本页面。P07.10–P07.14提供[运行控制事务/传输/页面](ADMIN_CONTROL.md)，创建及配置写入仍待交付，不能据此将 R08/A27 标为完成。身份、查询HTTP和页面入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
 
 每次 List、Detail、Versions 均在同一个只读 REPEATABLE READ 事务内校验持久会话、用户启用状态、credential_version、数据库时钟到期及 viewer 权限，然后读取业务数据。注销或凭据变更后的新查询不能沿用此前 API 身份检查的结果。查询是快照观测，不是新增交易风险的授权；并发注销不撤回已经开始的只读快照。
 
@@ -10,7 +10,15 @@ Detail 在同一快照内返回实例、完整请求配置和可为空的实际�
 
 schema 0 的历史版本只返回元数据及零 schema，参数为空，不补默认值或声称可运行。当前 schema 必须匹配实例模板、唯一具体参数形态并通过原有范围校验；未知/损坏参数、数据库故障统一返回固定 unavailable，保留内部错误链用于定位，公开文本不包含数据库细节。构造和查询不创建账号、账户、资金、配置、订单、动作或审计写入。
 
-真实数据库、并发快照反例及工程检查见 [P07.6](validation/P07-06.md)。P07.10增加独立的[管理写事务与结果仓储](ADMIN_CONTROL.md)，包含事务内权限、版本比较、幂等记录与审计；传输/页面仍待接入，不能复用读快照充当写授权。
+真实数据库、并发快照反例及工程检查见 [P07.6](validation/P07-06.md)。[管理写事务与结果仓储](ADMIN_CONTROL.md)包含事务内权限、版本比较、幂等记录与审计，不能复用读快照充当写授权。
+
+## 创建前的持久目录
+
+P07.15增加独立`domain.AdminCatalog`/`repository.NewAdminCatalog`仓储。Accounts读取已开通的L1 SimulatorAccount：持久ID、账户/自营主体、enabled、revision和精确decimal费率；Instruments读取实际执行场所/符号/资产及精确价格tick、数量step、最小金额、状态和元数据版本。禁用账户及HALTED交易对保留明确状态，不自动启用或补资金。
+
+Feeds显式限定一个存在且未软删除的instrument和LIVE/REPLAY模式，返回真实持久feed ID、Binance/OKX身份、外部符号、来源版本及具体质量策略。没有绑定则返回空列表，不自动把另一来源、REPLAY或候选Bitget/Bybit作为可选绑定；不存在交易对返回not-found。绑定并不表示当前publisher在线、快照健康或可授予风险，创建/启动仍须独立验证。
+
+三个查询均使用当前viewer及有界只读REPEATABLE READ事务、自增ID排他游标与1–100限制、软删除过滤及固定错误。Feeds的交易对存在性与绑定列表共用同一快照；并发提交的新绑定仅在下一次查询可见。查询不创建交易实例、账户余额、租约或行情。该步骤只提供仓储，typed gRPC/HTTP及创建表单随后接入；验证见[P07.15](validation/P07-15.md)。
 
 ## 管理 gRPC
 

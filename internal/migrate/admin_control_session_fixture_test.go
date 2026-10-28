@@ -20,10 +20,15 @@ const controlFixturePasswordHash = "$2a$12$7tQm96yDmHbyy.svz42vLuGk.QfcJHSy6QhDG
 
 func adminControlSessionFixture(ctx context.Context, t *testing.T, db *gorm.DB) domain.AdminLogin {
 	t.Helper()
+	return adminControlSessionFixtureForRole(ctx, t, db, domain.AdminRoleOperator)
+}
+
+func adminControlSessionFixtureForRole(ctx context.Context, t *testing.T, db *gorm.DB, role domain.AdminRole) domain.AdminLogin {
+	t.Helper()
 	user := &modelv1.AdminUser{
 		Username:          "control-operator",
 		PasswordHash:      controlFixturePasswordHash,
-		Role:              string(domain.AdminRoleOperator),
+		Role:              string(role),
 		Enabled:           true,
 		CredentialVersion: 1,
 		Revision:          1,
@@ -50,7 +55,7 @@ func adminControlSessionFixture(ctx context.Context, t *testing.T, db *gorm.DB) 
 		Principal: domain.AdminPrincipal{
 			UserID:    user.Id,
 			Username:  user.Username,
-			Role:      domain.AdminRoleOperator,
+			Role:      role,
 			SessionID: session.Id,
 			ExpiresAt: time.UnixMilli(session.ExpiresAt).UTC(),
 		},
