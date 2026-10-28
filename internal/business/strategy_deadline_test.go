@@ -2,7 +2,9 @@ package business
 
 import (
 	"context"
+	"errors"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
@@ -20,7 +22,7 @@ func TestStrategyAccountDoesNotPassSpentBudgetToAnotherInstance(t *testing.T) {
 	leases := &cancelingStrategyLease{cancel: cancel}
 	unused := &cycleUnusedStrategyPorts{}
 	controllers := map[int64]*usecase.StrategyController{99: nil}
-	worked, err := strategyAccountTick(ctx, "account", &cycleStrategyCandidates{}, controllers, usecase.StrategyDependencies{
+	worked, err := strategyAccountTick(ctx, time.Second, "account", &cycleStrategyCandidates{}, controllers, usecase.StrategyDependencies{
 		Leases:      leases,
 		Lifecycle:   unused,
 		Environment: unused,
@@ -34,6 +36,51 @@ func TestStrategyAccountDoesNotPassSpentBudgetToAnotherInstance(t *testing.T) {
 	if err != nil || worked || leases.calls != 1 || len(controllers) != 1 {
 		t.Fatal("spent successful tick budget was passed to a second instance")
 	}
+}
+
+func TestStrategyAccountGivesEachInstanceItsOwnNativeBudget(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(t.Context(), 4*time.Second)
+		defer cancel()
+		owner, err := ownerid.New(ctx, "independent-instance-budget")
+		if err != nil {
+			t.Fatal(err)
+		}
+		leases := &delayedStrategyLease{}
+		unused := &cycleUnusedStrategyPorts{}
+		_, err = strategyAccountTick(ctx, time.Second, "account", &cycleStrategyCandidates{}, make(map[int64]*usecase.StrategyController), usecase.StrategyDependencies{
+			Leases:      leases,
+			Lifecycle:   unused,
+			Environment: unused,
+			Actions:     unused,
+			Execution:   unused,
+			Market:      unused,
+		}, usecase.StrategySettings{
+			OwnerID:  owner,
+			LeaseTTL: 3 * time.Second,
+		})
+		if err != nil || leases.calls != 2 || ctx.Err() != nil {
+			t.Fatalf("two 600ms instance operations shared one 1s budget: calls=%d error=%v parent=%v", leases.calls, err, ctx.Err())
+		}
+	})
+}
+
+type delayedStrategyLease struct {
+	domain.LeaseRepository
+	calls int
+}
+
+func (l *delayedStrategyLease) Acquire(ctx context.Context, _ domain.LeaseKey, _ string, _ time.Duration) (domain.LeaseToken, error) {
+	l.calls++
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) != time.Second {
+		return domain.LeaseToken{}, errors.New("instance did not receive an independent bounded deadline")
+	}
+	time.Sleep(600 * time.Millisecond)
+	if err := ctx.Err(); err != nil {
+		return domain.LeaseToken{}, err
+	}
+	return domain.LeaseToken{}, domain.ErrLeaseHeld
 }
 
 type cancelingStrategyLease struct {

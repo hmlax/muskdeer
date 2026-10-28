@@ -57,6 +57,8 @@ message BusinessRuntime {
 message StrategyRuntime {
   repeated string account_ids = 1;
   google.protobuf.Duration lease_ttl = 2;
+  // May serve management reads without any account workers or outbound clients.
+  bool management_enabled = 3;
 }
 
 // SimulatorScenarioRuntime explicitly enables privileged L1 venue responses.

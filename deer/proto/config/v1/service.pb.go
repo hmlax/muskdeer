@@ -380,11 +380,13 @@ func (x *BusinessRuntime) GetStrategy() *StrategyRuntime {
 
 // StrategyRuntime discovers existing instances only in explicitly owned accounts.
 type StrategyRuntime struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccountIds    []string               `protobuf:"bytes,1,rep,name=account_ids,json=accountIds,proto3" json:"account_ids,omitempty"`
-	LeaseTtl      *durationpb.Duration   `protobuf:"bytes,2,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	AccountIds []string               `protobuf:"bytes,1,rep,name=account_ids,json=accountIds,proto3" json:"account_ids,omitempty"`
+	LeaseTtl   *durationpb.Duration   `protobuf:"bytes,2,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
+	// May serve management reads without any account workers or outbound clients.
+	ManagementEnabled bool `protobuf:"varint,3,opt,name=management_enabled,json=managementEnabled,proto3" json:"management_enabled,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *StrategyRuntime) Reset() {
@@ -429,6 +431,13 @@ func (x *StrategyRuntime) GetLeaseTtl() *durationpb.Duration {
 		return x.LeaseTtl
 	}
 	return nil
+}
+
+func (x *StrategyRuntime) GetManagementEnabled() bool {
+	if x != nil {
+		return x.ManagementEnabled
+	}
+	return false
 }
 
 // SimulatorScenarioRuntime explicitly enables privileged L1 venue responses.
@@ -1697,11 +1706,12 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\x13execution_lease_ttl\x18\b \x01(\v2\x19.google.protobuf.DurationR\x11executionLeaseTtl\x12J\n" +
 	"\tsimulator\x18\t \x01(\v2,.muskdeer.config.v1.SimulatorScenarioRuntimeR\tsimulator\x12?\n" +
 	"\bstrategy\x18\n" +
-	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\"j\n" +
+	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\"\x99\x01\n" +
 	"\x0fStrategyRuntime\x12\x1f\n" +
 	"\vaccount_ids\x18\x01 \x03(\tR\n" +
 	"accountIds\x126\n" +
-	"\tlease_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\"y\n" +
+	"\tlease_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12-\n" +
+	"\x12management_enabled\x18\x03 \x01(\bR\x11managementEnabled\"y\n" +
 	"\x18SimulatorScenarioRuntime\x12\x1f\n" +
 	"\vaccount_ids\x18\x01 \x03(\tR\n" +
 	"accountIds\x12<\n" +

@@ -1,6 +1,6 @@
 # 策略管理查询
 
-P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`。尚未注册管理 gRPC、HTTP 或策略页面，不能据此将 R08/A27 标为完成。身份入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
+P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC。尚未注册策略管理 HTTP 或策略页面，不能据此将 R08/A27 标为完成。身份入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
 
 每次 List、Detail、Versions 均在同一个只读 REPEATABLE READ 事务内校验持久会话、用户启用状态、credential_version、数据库时钟到期及 viewer 权限，然后读取业务数据。注销或凭据变更后的新查询不能沿用此前 API 身份检查的结果。查询是快照观测，不是新增交易风险的授权；并发注销不撤回已经开始的只读快照。
 
@@ -10,4 +10,12 @@ Detail 在同一快照内返回实例、完整请求配置和可为空的实际�
 
 schema 0 的历史版本只返回元数据及零 schema，参数为空，不补默认值或声称可运行。当前 schema 必须匹配实例模板、唯一具体参数形态并通过原有范围校验；未知/损坏参数、数据库故障统一返回固定 unavailable，保留内部错误链用于定位，公开文本不包含数据库细节。构造和查询不创建账号、账户、资金、配置、订单、动作或审计写入。
 
-真实数据库、并发快照反例及工程检查见 [P07.6](validation/P07-06.md)。后续先接入经过 API 服务 mTLS 身份验证的管理 gRPC，再接 Hertz/React 查询页面；管理写入仍需事务内权限、版本比较、幂等操作记录与审计，不能复用读快照充当写授权。
+真实数据库、并发快照反例及工程检查见 [P07.6](validation/P07-06.md)。管理写入仍需事务内权限、版本比较、幂等操作记录与审计，不能复用读快照充当写授权。
+
+## 管理 gRPC
+
+合同为 `api/strategy/v1/management.proto` 的 StrategyManagement，包含 ListStrategies、GetStrategy、ListConfigVersions。调用者必须同时通过 Deer 的 CA/mTLS 验证及方法级 `api.grpc` 身份检查；其他有效服务证书也不具备管理权限，metadata 无法伪造身份。请求携带 API 从 HttpOnly cookie 提取的 AdminSession，不接受浏览器业务 JSON 自行指定会话。无/超长原生期限、超 2KiB 请求、未知请求字段、非法页大小/身份或非规范随机会话拒绝；原生上限 5 秒，沿用 Deer 有界连接/发现及禁止透明重试规则。
+
+响应为显式 Strategy/ConfigVersion 字段及 Maker/Grid oneof，所有小数为 string；生效配置使用消息/optional presence，未生效不会显示成版本零配置。schema 0 不返回参数；金额精度、参数联合及整毫秒约束在输出编码时也检查。错误使用固定文本和明确 Unauthenticated/PermissionDenied/InvalidArgument/NotFound/Unavailable/原生取消期限分类，不向客户端返回持久化原因。
+
+strategy 的 `business.strategy.management_enabled=true` 显式开启，服务器 allowed_peer_services 必须包含 `api.grpc`。可与既有显式账户报价工作器同时开启；若 account_ids 为空，则必须省略 lease_ttl 和 grpc_clients，只装配查询、无交易工作器。此模式仍需 business.enabled、simulator、PG、gRPC mTLS、Nacos 注册及原有有界 poll/operation/shutdown 配置；不自动迁移、创建身份/资金/租约或授予风险。若没有开启管理功能，既有报价进程保持原配置要求且不注册管理服务。

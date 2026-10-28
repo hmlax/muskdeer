@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "deer/proto/common/v1/strategy_parameters.proto";
+
+// StrategyManagement is an API-peer-only administration boundary. Each read
+// checks the persistent viewer session in the business transaction.
+service StrategyManagement {
+  rpc ListStrategies(ListStrategiesRequest) returns (ListStrategiesReply);
+  rpc GetStrategy(GetStrategyRequest) returns (GetStrategyReply);
+  rpc ListConfigVersions(ListConfigVersionsRequest) returns (ListConfigVersionsReply);
+}
+
+// AdminSession is constructed by API from its HttpOnly cookie, never from a
+// browser business JSON field. The token must never be logged or returned.
+message AdminSession {
+  string token = 1;
+}
+
+message ListStrategiesRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+}
+
+message GetStrategyRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+}
+
+message ListConfigVersionsRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+  int64 after_id = 3;
+  int32 limit = 4;
+}
+
+message Strategy {
+  int64 id = 1;
+  string instance_key = 2;
+  string account_id = 3;
+  int64 instrument_id = 4;
+  string template = 5;
+  string code_version = 6;
+  int64 revision = 7;
+  string state = 8;
+  string desired_state = 9;
+  int64 requested_config_version = 10;
+  string requested_market_data_source = 11;
+  optional int64 active_config_version = 12;
+  optional string active_market_data_source = 13;
+  string market_mode = 14;
+  string runtime_owner_id = 15;
+  int64 runtime_owner_epoch = 16;
+  int64 created_at_ms = 17;
+  int64 updated_at_ms = 18;
+}
+
+message ConfigVersion {
+  int64 id = 1;
+  int64 strategy_id = 2;
+  int64 version = 3;
+  string market_data_source = 4;
+  string code_version = 5;
+  string created_by = 6;
+  int64 parameters_schema_version = 7;
+  // Absent only for historical metadata-only schema zero.
+  muskdeer.common.v1.StrategyParameters parameters = 8;
+  int64 created_at_ms = 9;
+}
+
+message ListStrategiesReply {
+  repeated Strategy strategies = 1;
+  int64 next_after_id = 2;
+}
+
+message GetStrategyReply {
+  Strategy strategy = 1;
+  ConfigVersion requested_config = 2;
+  ConfigVersion active_config = 3;
+}
+
+message ListConfigVersionsReply {
+  repeated ConfigVersion versions = 1;
+  int64 next_after_id = 2;
+}

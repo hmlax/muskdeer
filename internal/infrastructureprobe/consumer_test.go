@@ -27,6 +27,29 @@ func TestConsumerBindingDoesNotProvisionMissingDurable(t *testing.T) {
 	}
 }
 
+func TestConsumerEmptyPullKeepsIdleWorkerAliveWithoutHandlerOrAck(t *testing.T) {
+	_, consumer, raw := consumerFixture(t, "empty_pull")
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+	defer cancel()
+	calls := 0
+	for range 3 {
+		call, stop := context.WithTimeout(ctx, 3*time.Second)
+		worked, err := consumer.ConsumeOne(call, &probev1.MultiplyReply{}, func(context.Context, jetstream.DeliveryInfo) error {
+			calls++
+			return nil
+		})
+		contextErr := call.Err()
+		stop()
+		if worked || err != nil || contextErr != nil || calls != 0 {
+			t.Fatalf("empty pull became worker failure or delivery: worked=%t error=%v context=%v calls=%d", worked, err, contextErr, calls)
+		}
+	}
+	info, err := raw.Info(ctx)
+	if err != nil || info.NumAckPending != 0 || info.AckFloor.Stream != 0 || info.Delivered.Stream != 0 {
+		t.Fatal("empty pull created or acknowledged a delivery", err)
+	}
+}
+
 func TestConsumerRejectsMalformedProtobufWithoutAckOrHandler(t *testing.T) {
 	_, consumer, raw := consumerFixture(t, "malformed")
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)

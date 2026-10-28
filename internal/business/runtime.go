@@ -10,6 +10,7 @@ import (
 
 	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
 	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
+	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	"github.com/hmlax/muskdeer/deer/ownerid"
@@ -18,6 +19,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/internal/delivery/marketgrpc"
+	"github.com/hmlax/muskdeer/internal/delivery/strategygrpc"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/eventwire"
 	"github.com/hmlax/muskdeer/internal/migrate"
@@ -35,6 +37,7 @@ const (
 type Runtime struct {
 	execution *executiongrpc.Server
 	market    *marketgrpc.Server
+	strategy  *strategygrpc.Server
 	workers   []deer.Worker
 }
 
@@ -77,14 +80,16 @@ func New(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*R
 // Workers returns a private plan copy for the Deer lifecycle.
 func (r *Runtime) Workers() []deer.Worker { return slices.Clone(r.workers) }
 
-// RegisterGRPC registers execution methods; portfolio currently owns its broker
-// projection worker and the standard Deer health service.
+// RegisterGRPC registers the explicitly assembled business capabilities.
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	if r.execution != nil {
 		executionv1.RegisterExecutionServer(registrar, r.execution)
 	}
 	if r.market != nil {
 		marketv1.RegisterMarketDataServer(registrar, r.market)
+	}
+	if r.strategy != nil {
+		strategyv1.RegisterStrategyManagementServer(registrar, r.strategy)
 	}
 	return nil
 }
@@ -227,13 +232,21 @@ func consumeFill(ctx context.Context, consumer *jetstream.Consumer, handler *use
 }
 
 func runLoop(ctx context.Context, poll, timeout time.Duration, operation func(context.Context) (bool, error)) error {
+	return runOwnedLoop(ctx, poll, func(work context.Context) (bool, error) {
+		attempt, cancel := context.WithTimeout(work, timeout)
+		defer cancel()
+		return operation(attempt)
+	})
+}
+
+// runOwnedLoop propagates the lifecycle context; operations own their native
+// budgets. Batches must bound each constituent operation independently.
+func runOwnedLoop(ctx context.Context, poll time.Duration, operation func(context.Context) (bool, error)) error {
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		attempt, cancel := context.WithTimeout(ctx, timeout)
-		worked, err := operation(attempt)
-		cancel()
+		worked, err := operation(ctx)
 		if err != nil {
 			return err
 		}
