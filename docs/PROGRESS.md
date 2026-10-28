@@ -635,3 +635,9 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：恢复、缺投影/活动动作/有效订单保护、终态停止、旧owner与epoch倒退拒绝、已写状态失权整体回滚先红后绿；最终完整make verify、make integration、文档/差异检查通过，业务73.598秒、lint/race/goleak保留。修正两处历史升级夹具新增列兼容后全套重跑，原断言保留；见 [P06.13](validation/P06-13.md) 和 [生命周期](STRATEGY_LIFECYCLE.md)。
 - 远程：2a835e7已推送main并核对SHA，[CI 40508502953](https://github.com/hmlax/muskdeer/actions/runs/40508502953) success；本步独立提交/推送并核对SHA。
 - 下一步：策略循环实际装配、行情失效撤单与30分钟模拟；P06保持进行，P07–P10继续执行。
+
+## 2026-10-28：P06.14 当前报价与共享预算输入
+
+- 改动：只读一致快照核对完整active spec，返回typed参数/精度/所选symbol/费用/核心最优价、完整订单集总额度及单笔上限、持久刷新时间和风险观察；不领取owner、发单或开放预算。见 [输入语义](STRATEGY_ENVIRONMENT.md)。
+- 验证：本策略LIVE200+另一策略INTENT200争450，规划额度250且未改400预留/核心单1；旧版本/关闭预算拒绝、36位精度和边界测试先红后绿。最终完整make verify、make integration、文档/差异检查通过，业务66.473秒、lint/race/goleak保留；见 [P06.14](validation/P06-14.md)。
+- 远程：d09eb0c已推送main并核对SHA；本步独立提交/推送并核对SHA后继续策略循环，P06仍在进行。
