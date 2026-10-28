@@ -1,0 +1,115 @@
+import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { chromium } from 'playwright';
+
+let stage = 'configuration';
+async function run() {
+  const origin = new URL(process.env.MUSKDEER_BROWSER_ORIGIN ?? '');
+  assert.equal(origin.protocol, 'http:');
+  assert.equal(origin.hostname, '127.0.0.1');
+  assert.equal(origin.pathname, '/');
+  assert.equal(origin.username + origin.password + origin.search + origin.hash, '');
+  const username = process.env.MUSKDEER_BROWSER_USERNAME;
+  const password = process.env.MUSKDEER_BROWSER_PASSWORD;
+  const artifacts = process.env.MUSKDEER_BROWSER_ARTIFACTS;
+  const maker = process.env.MUSKDEER_BROWSER_MAKER_ID;
+  const grid = process.env.MUSKDEER_BROWSER_GRID_ID;
+  const empty = process.env.MUSKDEER_BROWSER_EMPTY === 'true';
+  assert.ok(username && password && artifacts && /^[1-9][0-9]*$/.test(maker ?? '') && /^[1-9][0-9]*$/.test(grid ?? ''));
+  await mkdir(artifacts, { recursive: true, mode: 0o700 });
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+    await context.route('**/*', route => new URL(route.request().url()).origin === origin.origin ? route.continue() : route.abort());
+    const page = await context.newPage();
+    page.setDefaultTimeout(5000);
+    const errors = [];
+    const writes = [];
+    page.on('pageerror', error => errors.push(error.name));
+    page.on('request', request => { if (request.method() !== 'GET') writes.push(new URL(request.url()).pathname); });
+    stage = 'deep-link-login';
+    await page.goto(new URL('/strategies', origin).href);
+    await page.getByRole('heading', { name: '登录工作台' }).waitFor();
+    await page.getByLabel('用户名', { exact: true }).fill(username);
+    await page.getByLabel('密码', { exact: true }).fill(password);
+    await page.getByRole('button', { name: '登录', exact: true }).click();
+    await page.getByRole('heading', { name: '策略实例', exact: true }).waitFor();
+    if (empty) {
+      stage = 'empty-actual-database';
+      await page.getByRole('heading', { name: '暂无策略实例' }).waitFor();
+      await page.screenshot({ path: `${artifacts}/strategies-empty.png`, fullPage: true });
+      assert.deepEqual(errors, []);
+      await context.close();
+      console.log('Actual empty strategy database browser state passed');
+      return;
+    }
+    stage = 'actual-list-and-pagination';
+    await page.getByRole('link', { name: 'query-maker', exact: true }).waitFor();
+    await page.getByRole('link', { name: 'query-grid', exact: true }).waitFor();
+    assert.equal(await page.getByRole('row').count(), 21);
+    await page.screenshot({ path: `${artifacts}/strategies-desktop.png`, fullPage: true });
+    await page.getByRole('button', { name: '下一页', exact: true }).click();
+    await page.getByText('第 2 页', { exact: true }).waitFor();
+    await page.getByRole('link', { name: 'page-grid-19', exact: true }).waitFor();
+    assert.equal(await page.getByRole('row').count(), 2);
+    await page.getByRole('button', { name: '上一页', exact: true }).click();
+    await page.getByRole('link', { name: 'query-maker', exact: true }).waitFor();
+    stage = 'transport-failure-and-retry';
+    await page.route('**/api/v1/strategies?*', route => route.abort());
+    await page.getByRole('button', { name: '刷新', exact: true }).click();
+    await page.getByRole('alert').waitFor();
+    await page.unroute('**/api/v1/strategies?*');
+    await page.getByRole('button', { name: '重试', exact: true }).click();
+    await page.getByRole('link', { name: 'query-maker', exact: true }).waitFor();
+    stage = 'maker-detail-and-history';
+    await page.getByRole('link', { name: 'query-maker', exact: true }).click();
+    await page.getByRole('heading', { name: 'query-maker', exact: true }).waitFor();
+    const requested = page.getByRole('region', { name: '请求配置', exact: true });
+    await requested.getByText('123.123456789012345678', { exact: true }).waitFor();
+    await requested.getByText('Binance', { exact: true }).waitFor();
+    await page.getByRole('region', { name: '生效配置', exact: true }).getByText('尚无已生效配置。').waitFor();
+    await page.reload();
+    await page.getByRole('heading', { name: 'query-maker', exact: true }).waitFor();
+    await page.getByRole('button', { name: '下一页', exact: true }).click();
+    await page.getByRole('button', { name: '查看版本 21', exact: true }).waitFor();
+    await page.getByRole('button', { name: '查看版本 21', exact: true }).click();
+    await page.getByRole('region', { name: '历史版本参数', exact: true }).getByText('123.123456789012345678', { exact: true }).waitFor();
+    await page.screenshot({ path: `${artifacts}/strategy-maker-desktop.png`, fullPage: true });
+    stage = 'grid-and-mobile';
+    await page.goto(new URL(`/strategies/${grid}`, origin).href);
+    await page.getByRole('region', { name: '请求配置', exact: true }).getByText('0.123456789012345678', { exact: true }).waitFor();
+    await page.getByRole('region', { name: '请求配置', exact: true }).getByText('OKX', { exact: true }).waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.reload();
+    await page.getByRole('heading', { name: 'query-grid', exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: `${artifacts}/strategy-grid-mobile.png`, fullPage: true });
+    stage = 'not-found';
+    await page.goto(new URL('/strategies/9223372036854775807', origin).href);
+    await page.getByRole('alert').filter({ hasText: '策略不存在或已删除' }).waitFor();
+    stage = 'revoked-session';
+    await page.goto(new URL(`/strategies/${maker}`, origin).href);
+    await page.getByRole('heading', { name: 'query-maker', exact: true }).waitFor();
+    const cookies = await context.cookies();
+    const csrf = cookies.find(cookie => cookie.name === 'muskdeer_csrf');
+    assert.ok(csrf);
+    const revoked = await context.request.post(new URL('/api/v1/auth/logout', origin).href, { headers: { Origin: origin.origin, 'X-CSRF-Token': csrf.value } });
+    assert.equal(revoked.status(), 204);
+    await page.getByRole('button', { name: '刷新', exact: true }).click();
+    await page.getByRole('heading', { name: '登录工作台' }).waitFor();
+    assert.deepEqual(await page.evaluate(() => [localStorage.length, sessionStorage.length]), [0, 0]);
+    assert.deepEqual(errors, []);
+    assert.ok(writes.includes('/api/v1/auth/login'));
+    assert.ok(writes.every(path => path === '/api/v1/auth/login' || path === '/api/v1/auth/logout'));
+    await context.close();
+    console.log('Actual strategy list/detail, exact decimals, pagination/history, refresh, faults, revocation and mobile passed');
+  } finally {
+    await browser.close();
+  }
+}
+
+run().catch(error => {
+  const category = ['Error', 'AssertionError', 'TimeoutError'].includes(error?.name) ? error.name : 'Error';
+  console.error(`Strategy browser failed: stage=${stage} category=${category}`);
+  process.exitCode = 1;
+});

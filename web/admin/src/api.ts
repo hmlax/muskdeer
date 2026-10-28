@@ -6,6 +6,7 @@ export interface Session {
   role: Role;
   session_id: string;
   expires_at_ms: string;
+  strategy_queries_enabled: boolean;
 }
 
 export class ApiError extends Error {
@@ -32,11 +33,12 @@ function sessionValue(value: unknown): Session {
     role: session.role as Role,
     session_id: session.session_id,
     expires_at_ms: session.expires_at_ms,
+    strategy_queries_enabled: 'strategy_queries_enabled' in session && session.strategy_queries_enabled === true,
   };
 }
 
 async function request(path: string, options: RequestInit = {}): Promise<Response> {
-  const response = await fetch(`/api/v1/auth/${path}`, {
+  const response = await fetch(`/api/v1/${path}`, {
     ...options,
     credentials: 'same-origin',
     cache: 'no-store',
@@ -53,13 +55,13 @@ async function request(path: string, options: RequestInit = {}): Promise<Respons
 }
 
 export async function currentSession(signal: AbortSignal): Promise<Session> {
-  const response = await request('session', { signal });
+  const response = await request('auth/session', { signal });
   const body: unknown = await response.json();
   return sessionValue(body);
 }
 
 export async function login(username: string, password: string): Promise<Session> {
-  const response = await request('login', {
+  const response = await request('auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
@@ -74,7 +76,12 @@ export async function logout(): Promise<void> {
   if (matching.length !== 1) throw new ApiError('FORBIDDEN');
   const proof = decodeURIComponent(matching[0].slice(name.length + 1));
   if (!/^[A-Za-z0-9_-]{43}$/.test(proof)) throw new ApiError('FORBIDDEN');
-  await request('logout', { method: 'POST', headers: { 'X-CSRF-Token': proof } });
+  await request('auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': proof } });
+}
+
+export async function managementJSON(path: string, signal: AbortSignal): Promise<unknown> {
+  const response = await request(path, { signal });
+  return response.json();
 }
 
 export function errorText(error: unknown): string {

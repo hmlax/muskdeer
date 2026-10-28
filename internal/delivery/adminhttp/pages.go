@@ -12,8 +12,18 @@ import (
 )
 
 func (r *Routes) pages(hertz *server.Hertz) {
-	for _, path := range []string{"/", "/login", "/session"} {
+	paths := []string{"/", "/login", "/session"}
+	if r.strategies != nil {
+		paths = append(paths, "/strategies", "/strategies/:strategyID")
+	}
+	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
+			if path == "/strategies/:strategyID" {
+				if _, valid := strategyID(request); !valid {
+					request.String(http.StatusNotFound, "not found")
+					return
+				}
+			}
 			page, err := adminui.File("index.html")
 			if err != nil {
 				request.String(http.StatusServiceUnavailable, "page unavailable")

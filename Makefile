@@ -91,7 +91,13 @@ admin-browser: build
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-browser.py
 
-e2e: integration image-test admin-browser
+admin-strategy-browser: build
+	python3 scripts/web.py browser-install
+	python3 scripts/admin-strategy-browser.py
+
+e2e: integration image-test admin-browser admin-strategy-browser
+
+.PHONY: admin-strategy-browser
 
 .PHONY: soak soak-smoke
 soak: build

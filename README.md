@@ -4,7 +4,7 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
-P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份页面/接口及网格控制循环已分步交付，完整策略管理、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
+P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、实际策略查询页面/HTTP/gRPC及网格控制循环已分步交付，配置/运行管理写操作、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。

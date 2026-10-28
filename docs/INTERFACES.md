@@ -1,6 +1,6 @@
 # 接口、状态与事件约定
 
-本文包含概念管理合同与分步落实的内部合同；P03.6 已生成 [Execution typed Proto](../api/execution/v1/execution.proto) 和 Submit/Cancel 输入边界，见 [交易合同](TRADING_CONTRACT.md)。P07.3已接入[登录/会话/注销HTTP](ADMIN_HTTP.md)，P07.7接入[StrategyManagement typed Proto](../api/strategy/v1/management.proto)的授权列表/详情/版本查询，P07.8由Hertz经实际gRPC提供只读HTTP，见[查询合同](ADMIN_STRATEGIES.md)和[HTTP协议](ADMIN_HTTP.md)。策略页面及写操作、其余管理业务API/OpenAPI尚未交付，不将概念接口标为已实现。
+本文包含概念管理合同与分步落实的内部合同；P03.6 已生成 [Execution typed Proto](../api/execution/v1/execution.proto) 和 Submit/Cancel 输入边界，见 [交易合同](TRADING_CONTRACT.md)。P07.3已接入[登录/会话/注销HTTP](ADMIN_HTTP.md)，P07.7接入[StrategyManagement typed Proto](../api/strategy/v1/management.proto)的授权列表/详情/版本查询，P07.8由Hertz经实际gRPC提供只读HTTP，P07.9提供实际只读页面，见[查询合同](ADMIN_STRATEGIES.md)和[HTTP/页面协议](ADMIN_HTTP.md)。管理写操作、其余管理业务API/OpenAPI尚未交付，不将概念接口标为已实现。
 
 ## 小数字段契约（强制）
 

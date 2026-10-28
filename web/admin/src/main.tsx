@@ -1,8 +1,9 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ApiError, currentSession, errorText, login, logout } from './api';
 import type { Role, Session } from './api';
+import { StrategyWorkspace } from './strategies';
 import './style.css';
 
 const roles: Record<Role, string> = { viewer: '只读用户', operator: '操作员', admin: '管理员' };
@@ -26,6 +27,11 @@ function App() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [retry, setRetry] = useState(0);
+  const strategyView = session?.strategy_queries_enabled && location.pathname.startsWith('/strategies');
+  const sessionExpired = useCallback(() => {
+    setSession(null); setPassword(''); setError('会话已失效，请重新登录。');
+    history.replaceState(null, '', '/login');
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -51,7 +57,7 @@ function App() {
       const value = await login(username, password);
       setPassword('');
       setSession(value);
-      history.replaceState(null, '', '/session');
+      if (!value.strategy_queries_enabled || !location.pathname.startsWith('/strategies')) history.replaceState(null, '', '/session');
     } catch (cause) { setError(errorText(cause)); }
     finally { setBusy(false); }
   }
@@ -68,20 +74,21 @@ function App() {
     finally { setBusy(false); }
   }
 
-  return <div className="shell">
+  return <div className={`shell${strategyView ? ' workbench' : ''}`}>
     <aside className="brand-panel">
       <a className="brand" href="/"><Mark /><span>MUSKDEER<small>管理工作台</small></span></a>
       <div className="brand-copy"><span className="eyebrow">CONTROL WITH CLARITY</span><h1>身份明确，<br />操作有据。</h1><p>在统一的管理入口中，<br />用明确的身份与权限开始工作。</p></div>
       <div className="brand-footer"><span className="status-dot" /> 专属账户 · 独立会话</div>
     </aside>
     <main>
-      <header className="topbar"><span>账户与访问</span><span className="workspace-tag">MUSKDEER / CONSOLE</span></header>
+      <header className="topbar">{session?.strategy_queries_enabled ? <nav className="console-nav" aria-label="控制台导航"><a href="/session" aria-current={!strategyView ? 'page' : undefined}>账户与访问</a><a href="/strategies" aria-current={strategyView ? 'page' : undefined}>策略管理</a></nav> : <span>账户与访问</span>}<span className="workspace-tag">{strategyView && session ? `${session.username} · ${roles[session.role]}` : 'MUSKDEER / CONSOLE'}</span></header>
       <section className="content" aria-busy={loading || busy}>
-        {loading ? <div className="card loading" role="status"><span className="spinner" />正在确认登录状态…</div> : session ?
+        {loading ? <div className="card loading" role="status"><span className="spinner" />正在确认登录状态…</div> : session ? strategyView ? <StrategyWorkspace onExpired={sessionExpired} /> :
           <div className="session-layout"><div className="page-heading"><span className="eyebrow">YOUR WORKSPACE</span><h2>你好，{session.username}</h2><p>你已安全登录 Muskdeer 管理工作台。</p></div>
             <div className="card"><div className="card-heading"><h3>当前会话</h3><span className="badge"><span className="status-dot" /> 已登录</span></div>
               <dl className="session-details"><div><dt>账户</dt><dd>{session.username}</dd></div><div><dt>角色</dt><dd>{roles[session.role]}</dd></div><div><dt>登录有效期至</dt><dd>{expiry(session.expires_at_ms)}</dd></div></dl>
               <p className="notice">操作权限由服务端独立校验，退出后此会话将立即失效。</p>
+              {session.strategy_queries_enabled && <a className="button primary" href="/strategies">查看策略实例<span aria-hidden="true">→</span></a>}
               {error && <div className="error" role="alert">{error}</div>}
               <button className="button secondary" type="button" disabled={busy} onClick={signOut}>{busy ? '正在退出…' : '退出当前会话'}<span aria-hidden="true">↗</span></button>
             </div>

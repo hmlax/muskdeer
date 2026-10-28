@@ -3,6 +3,7 @@ run:
   timeout: 5m
   build-tags:
     - integration
+    - browser
 linters:
   default: none
   enable:
