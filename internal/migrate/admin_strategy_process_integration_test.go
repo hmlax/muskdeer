@@ -46,6 +46,10 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 	}
 	client := adminStrategyProcessClient(ctx, t, ca, observer, rpcsecurity.ServiceAPI)
 	session := &strategyv1.AdminSession{Token: login.Token}
+	creation := strategyv1.NewStrategyCreationClient(adminStrategyProcessConnection(ctx, t, ca, observer, rpcsecurity.ServiceAPI))
+	if _, err := creation.CreateStrategy(ctx, &strategyv1.CreateStrategyRequest{}); status.Code(err) != codes.Unimplemented {
+		t.Fatal("query-only process registered creation capability", err)
+	}
 	control := strategyv1.NewStrategyControlClient(adminStrategyProcessConnection(ctx, t, ca, observer, rpcsecurity.ServiceAPI))
 	if _, err := control.GetOperation(ctx, &strategyv1.GetOperationRequest{
 		Session:     session,

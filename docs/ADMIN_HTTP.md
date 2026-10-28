@@ -1,6 +1,6 @@
 # 管理页面与身份 HTTP
 
-P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP，P07.9交付实际策略列表/详情/版本页面，P07.13接入显式控制/操作结果HTTP，P07.14交付运行控制及独立结果页面。创建/参数发布/换源、行情/订单/成交/持仓/风险/审计查询及完整管理范围仍待后续，不计完整R08/A27通过。
+P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP，P07.9交付实际策略列表/详情/版本页面，P07.13接入显式控制/操作结果HTTP，P07.14交付运行控制及独立结果页面。创建页面/参数发布/换源、行情/订单/成交/持仓/风险/审计查询及完整管理范围仍待后续，不计完整R08/A27通过。
 
 ## 开启入口
 
@@ -72,6 +72,12 @@ POST JSON只接受action、expected_revision、reason三个字符串。动作使
 受理响应为ACCEPTED且没有完成时间/观察事实；终态SUCCEEDED或SUPERSEDED保留实际见证。所有ID/revision/毫秒及小数维持JSON string。版本/同键内容冲突返回409/CONFLICT，未认证401并清Cookie，权限/CSRF/Origin403，非法400，不存在404，依赖/协议故障503；错误不返回内部cause。每次调用原生上限3秒，服从更早父期限，不透明重发写请求。跨字段回复身份不符拒绝，幂等键读取使用拥有独立字符串的GetAll，避免Hertz后续Peek读取覆盖。
 
 登录/当前会话增加布尔strategy_controls_enabled，表示API配置能力；viewer仍不能写，实际事务重新判断权限。未启用时两个路由都返回API JSON 404，不因查询已开而隐式启用控制。实际链路与测试夹具边界见[P07.13](validation/P07-13.md)。
+
+## 策略创建 HTTP
+
+P07.18在原strategy_controls_enabled写能力下增加`POST /api/v1/strategies`。请求体为typed CreateStrategyInput（instance_key/account_id、string instrument_id、code_version、market_data_source、market_mode、具体Maker/Grid parameters和reason），会话Cookie、CSRF及幂等键分别由独立证明提供，体内不能传session。严格nested字段/重复/小数string及身份string校验，固定Origin、≤8KiB、无query、最多3秒实际gRPC。业务事务仍重新校验operator和依赖；见[完整创建合同](ADMIN_CREATION.md)。
+
+成功与原键回放均201及Location策略详情API，返回不可变初始CreationReceipt，当前运行状态另读详情；错误400/401/403/409/503固定、no-store，不在API读取/创建交易资金。独立后端创建已接通，前端创建表单仍待接入，不能将已有启停页面当作创建页面。
 
 ## 策略查询页面
 

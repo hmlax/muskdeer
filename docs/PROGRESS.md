@@ -878,3 +878,9 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：真实PG先红后绿，两个模板×两来源的四初始定义及精确参数；同键并发仅一效果、改原因/来源冲突、同名新键冲突、审计失败整体回滚、跨真实数据库1秒会话到期后SQL拒绝且五类元数据全部回滚、历史收据不能改删。十项PG/race及原升级/迁移/30模型公共字段8.535秒通过，domain/repository单元/race及巨大指数边界通过，见[P07.17](validation/P07-17.md)及[创建合同](ADMIN_CREATION.md)。
 - 工程：完整make verify、27生成文件一致性/Hertz/格式/lint 0 issues/规范正反例/22工具测试/全包单元/race/实际命令构建通过。原资金Grid控制8.52秒、实际CLI重复应用26为1.89秒，组合11.776秒；原暂停/运行请求历史升级0.64秒/包2.032秒通过。149文档链接/差异检查通过，原SQL文件无改动；首次残留未使用导入及测试过短键已修正，原门禁不放宽。
 - 远程：c8bd3a0已推送main并核对SHA，[CI40673406777](https://github.com/hmlax/muskdeer/actions/runs/40673406777)运行中。本步检查后独立提交推送并核对SHA；尚未注册创建gRPC/HTTP/表单，下一步接入这些入口，再继续参数版本/换源及其余管理流程和P08–P10；完整A27/L1未完成。本地默认全量交易/浏览器/镜像未重复，由远程完整CI继续。
+
+## 2026-10-28：P07.18 typed创建gRPC与同源HTTP
+
+- 改动：独立StrategyCreation及具体CreateStrategyInput/CreationReceipt、29生成文件，复用control_enabled/strategy_controls_enabled显式写能力；API POST /api/v1/strategies由同一Deer客户端调用原子创建事务。具体参数/typed mapper、API-peer/未知nested字段/原生期限/大小、独立Cookie/CSRF/key/固定Origin，严格JSON重复/未知/小数string及规范身份string，201/Location/原键回放及固定400/401/403/409/503，无新资金或账户工作器。
+- 验证：三个相关包单元/race1.448/1.453/1.441秒、完整make verify/生成/Hertz/fmt/lint 0 issues/规范正反例/22工具测试/全包单元/race/构建通过。真实独立API/strategy/PG/Nacos/mTLS组合11.923秒通过，新创建1.61秒含真实operator密码登录、双模板双源四创建/原键回放、初始参数及零预留/改内容409、注销后恢复旧Cookie原键仍401、真实viewer登录POST403/零核心订单；原目录3.70秒、查询进程5.07秒及查询模式Creation Unimplemented通过，见[P07.18](validation/P07-18.md)。150文档链接/差异检查通过。
+- 远程：d7b6e03已推送main并核对SHA，c8bd3a0的[CI40673406777](https://github.com/hmlax/muskdeer/actions/runs/40673406777)success，含默认全套集成/三组管理浏览器/持久开发/镜像。本步检查后独立提交推送并核对SHA；创建表单、参数版本发布/换源和其余管理流程仍待后续P07，P08–P10/完整A27/L1未完成。本地前端未改，未重复浏览器/镜像/默认全量交易，远程完整CI继续。

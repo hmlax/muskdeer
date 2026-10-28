@@ -64,6 +64,7 @@ type Routes struct {
 	strategies    strategyv1.StrategyManagementClient
 	catalog       strategyv1.StrategyCatalogClient
 	controls      strategyv1.StrategyControlClient
+	creation      strategyv1.StrategyCreationClient
 	origin        string
 	host          string
 	secure        bool
@@ -116,6 +117,9 @@ func (r *Routes) Register(hertz *server.Hertz) {
 		hertz.GET("/api/v1/accounts", r.listAccounts)
 		hertz.GET("/api/v1/instruments", r.listInstruments)
 		hertz.GET("/api/v1/instruments/:instrumentID/market-feeds", r.listMarketFeeds)
+	}
+	if r.creation != nil {
+		hertz.POST("/api/v1/strategies", r.createStrategy)
 	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {
