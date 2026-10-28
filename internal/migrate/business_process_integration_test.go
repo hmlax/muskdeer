@@ -237,7 +237,7 @@ func businessProcessConfig(t *testing.T, ca *testcert.Authority, postgres *confi
 		InstanceId:      "business-" + role,
 		Version:         "test",
 		StartupTimeout:  durationpb.New(5 * time.Second),
-		ShutdownTimeout: durationpb.New(3 * time.Second),
+		ShutdownTimeout: durationpb.New(5 * time.Second),
 		Grpc: &configv1.Listener{
 			Address:        "127.0.0.1:0",
 			RequestTimeout: durationpb.New(3 * time.Second),

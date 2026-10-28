@@ -112,7 +112,7 @@ func marketProcessConfig(t *testing.T, ca *testcert.Authority, postgres *configv
 	t.Helper()
 	cfg := businessProcessConfig(t, ca, postgres, nil, naming, "market")
 	cfg.InstanceId = "business-market-" + instance
-	cfg.Business.OperationTimeout = durationpb.New(200 * time.Millisecond)
+	cfg.Business.OperationTimeout = durationpb.New(time.Second)
 	cfg.Business.Market = &configv1.MarketRuntime{
 		LeaseTtl: durationpb.New(3 * time.Second),
 		Feeds: []*configv1.MarketFeedRuntime{{

@@ -120,7 +120,7 @@ func TestExecutionRoutingFollowsOwnerAcrossIndependentProcesses(t *testing.T) {
 	second := businessProcessConfig(t, ca, postgres, stream, naming, "execution")
 	first.InstanceId, second.InstanceId = "business-execution.a", "business-execution.b"
 	for _, cfg := range []*configv1.ServiceConfig{first, second} {
-		cfg.Business.OperationTimeout = durationpb.New(200 * time.Millisecond)
+		cfg.Business.OperationTimeout = durationpb.New(time.Second)
 		cfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
 		cfg.Business.Simulator = &configv1.SimulatorScenarioRuntime{
 			AccountIds:  []string{submit.Input.AccountID},
