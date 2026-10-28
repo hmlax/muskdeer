@@ -29,6 +29,8 @@ jobs:
         run: make admin-browser
       - name: Verify actual strategy administration browser workflow
         run: make admin-strategy-browser
+      - name: Verify actual funded control browser workflow
+        run: make admin-control-browser
       - name: Verify persistent development resources
         run: make dev-test
       - name: Build pinned toolchain image and verify runtime

@@ -7,6 +7,7 @@ export interface Session {
   session_id: string;
   expires_at_ms: string;
   strategy_queries_enabled: boolean;
+  strategy_controls_enabled: boolean;
 }
 
 export class ApiError extends Error {
@@ -34,6 +35,7 @@ function sessionValue(value: unknown): Session {
     session_id: session.session_id,
     expires_at_ms: session.expires_at_ms,
     strategy_queries_enabled: 'strategy_queries_enabled' in session && session.strategy_queries_enabled === true,
+    strategy_controls_enabled: 'strategy_controls_enabled' in session && session.strategy_controls_enabled === true,
   };
 }
 
@@ -70,13 +72,28 @@ export async function login(username: string, password: string): Promise<Session
   return sessionValue(body);
 }
 
-export async function logout(): Promise<void> {
+function csrfProof(): string {
   const name = location.protocol === 'https:' ? '__Host-muskdeer_csrf' : 'muskdeer_csrf';
   const matching = document.cookie.split(';').map(cookie => cookie.trim()).filter(cookie => cookie.startsWith(`${name}=`));
   if (matching.length !== 1) throw new ApiError('FORBIDDEN');
   const proof = decodeURIComponent(matching[0].slice(name.length + 1));
   if (!/^[A-Za-z0-9_-]{43}$/.test(proof)) throw new ApiError('FORBIDDEN');
+  return proof;
+}
+
+export async function logout(): Promise<void> {
+  const proof = csrfProof();
   await request('auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': proof } });
+}
+
+export async function managementWriteJSON(path: string, key: string, body: { action: string; expected_revision: string; reason: string }, signal: AbortSignal): Promise<unknown> {
+  const response = await request(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfProof(), 'Idempotency-Key': key },
+    body: JSON.stringify(body),
+    signal,
+  });
+  return response.json();
 }
 
 export async function managementJSON(path: string, signal: AbortSignal): Promise<unknown> {

@@ -105,6 +105,11 @@ func startStrategyQueryAPI(ctx context.Context, t *testing.T, ca *testcert.Autho
 
 func startStrategyManagementAPI(ctx context.Context, t *testing.T, ca *testcert.Authority, postgres *configv1.Postgres, naming *configv1.Nacos, controls bool) string {
 	t.Helper()
+	return startStrategyManagementAPIFor(ctx, t, ca, postgres, naming, controls, 40*time.Second)
+}
+
+func startStrategyManagementAPIFor(ctx context.Context, t *testing.T, ca *testcert.Authority, postgres *configv1.Postgres, naming *configv1.Nacos, controls bool, lifetime time.Duration) string {
+	t.Helper()
 	clients := businessRPCConfig(ca.Issue(t, rpcsecurity.ServiceAPI, false))
 	clients.AllowedServices = []string{rpcsecurity.ServiceStrategy}
 	cfg := &configv1.ServiceConfig{
@@ -141,7 +146,7 @@ func startStrategyManagementAPI(ctx context.Context, t *testing.T, ca *testcert.
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	return startNativeAdminAPI(ctx, t, path, directory)
+	return startNativeAdminAPIFor(ctx, t, path, directory, lifetime)
 }
 
 func readNativeStrategyProto(ctx context.Context, t *testing.T, client *http.Client, base, path string, destination proto.Message) {

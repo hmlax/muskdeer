@@ -16,10 +16,19 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.strategies != nil {
 		paths = append(paths, "/strategies", "/strategies/:strategyID")
 	}
+	if r.controls != nil {
+		paths = append(paths, "/operations/:operationID")
+	}
 	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
 			if path == "/strategies/:strategyID" {
 				if _, valid := strategyID(request); !valid {
+					request.String(http.StatusNotFound, "not found")
+					return
+				}
+			}
+			if path == "/operations/:operationID" {
+				if _, valid := operationID(request); !valid {
 					request.String(http.StatusNotFound, "not found")
 					return
 				}

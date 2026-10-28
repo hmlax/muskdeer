@@ -4,7 +4,7 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
-P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、实际策略查询页面/HTTP/gRPC及网格控制循环已分步交付，配置/运行管理写操作、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
+P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、策略查询与启停页面/HTTP/gRPC、审计操作结果及网格控制循环已分步交付；实际独立进程Grid的浏览器启停和模拟资金冻结/释放通过。创建/配置/换源、其余管理页面、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。
@@ -17,8 +17,8 @@ make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；�
 
 可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费、market工作器/行情RPC和strategy账户控制循环；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令、双来源market及双strategy接管/报价/终态停止的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
 `make soak-smoke` 检查12秒真实策略驱动；`make soak` 使用独有测试基础设施执行固定30分钟场景，保存资金/预算/成交投影采样及实际业务进程日志。短场景不能计为30分钟验收，见 [长运行说明](docs/STRATEGY_SOAK.md)。
-`make web-install web-check web-build`使用项目内精确Node/npm构建React管理页面，产物提交后由Go embed/Hertz托管；普通Go构建无需Node。`make admin-browser`使用独有PG、实际本地账户/API命令和Chromium验证登录、刷新及注销，截图保存在.cache/admin-browser；见[管理入口](docs/ADMIN_HTTP.md)。
-`make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test及身份浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
+`make web-install web-check web-build`使用项目内精确Node/npm构建React管理页面，产物提交后由Go embed/Hertz托管；普通Go构建无需Node。`make admin-browser`验证真实登录/刷新/注销，`make admin-strategy-browser`验证真实策略查询，`make admin-control-browser`通过四个独立业务命令验证Grid启停、资金及幂等结果；均使用独有基础设施和Chromium，见[管理入口](docs/ADMIN_HTTP.md)。
+`make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test及三组管理浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
 数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本25含交易对/实例/配置来源身份、typed做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS意图/预算/撤单/outbox、成交inbox/持仓、行情快照/定价基准、最终所选行情门禁、平台/交易对额度、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及[管理操作收据/结果](docs/ADMIN_CONTROL.md)，交易表继续增加，见[迁移说明](docs/MIGRATIONS.md)和[参数说明](docs/STRATEGY_PARAMETERS.md)。
 `make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。
 在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 检查现有实现与 PROGRESS，从首个未完成任务持续推进至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。

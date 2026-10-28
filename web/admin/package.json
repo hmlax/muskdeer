@@ -10,7 +10,8 @@
     "build": "tsc --noEmit && vite build",
     "browser-install": "playwright install --with-deps chromium",
     "browser-test": "node e2e/auth.mjs",
-    "browser-strategies": "node e2e/strategies.mjs"
+    "browser-strategies": "node e2e/strategies.mjs",
+    "browser-controls": "node e2e/controls.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

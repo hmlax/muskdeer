@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from './api';
+import type { Session } from './api';
+import { StrategyControls } from './operations';
 import { getStrategy, listStrategies, listVersions, sources, states, templates } from './strategy-api';
 import type { ConfigVersion, Parameters, Strategy } from './strategy-api';
 
@@ -44,9 +46,9 @@ function SourcePair({ strategy }: { strategy: Strategy }) {
   return <div className="source-pair"><span>请求 · {sources[strategy.requested_market_data_source]}</span><small>生效 · {strategy.active_market_data_source ? sources[strategy.active_market_data_source] : '未生效'}</small></div>;
 }
 
-export function StrategyWorkspace({ onExpired }: { onExpired: () => void }) {
+export function StrategyWorkspace({ onExpired, session }: { onExpired: () => void; session: Session }) {
   const id = /^\/strategies\/([1-9][0-9]{0,18})$/.exec(location.pathname)?.[1];
-  return id ? <StrategyDetails id={id} onExpired={onExpired} /> : <StrategyList onExpired={onExpired} />;
+  return id ? <StrategyDetails id={id} onExpired={onExpired} session={session} /> : <StrategyList onExpired={onExpired} />;
 }
 
 function StrategyList({ onExpired }: { onExpired: () => void }) {
@@ -89,7 +91,7 @@ function ConfigCard({ title, config }: { title: string; config: ConfigVersion | 
   </section>;
 }
 
-function StrategyDetails({ id, onExpired }: { id: string; onExpired: () => void }) {
+function StrategyDetails({ id, onExpired, session }: { id: string; onExpired: () => void; session: Session }) {
   const [cursors, setCursors] = useState(['0']);
   const [selected, setSelected] = useState<ConfigVersion | null>(null);
   const cursor = cursors[cursors.length - 1];
@@ -103,6 +105,7 @@ function StrategyDetails({ id, onExpired }: { id: string; onExpired: () => void 
     <a className="back-link" href="/strategies">← 策略实例</a>
     <div className="workspace-heading"><div className="page-heading"><span className="eyebrow">STRATEGY DETAIL</span><h2>{strategy?.instance_key ?? '策略详情'}</h2><p>请求目标与实际生效状态分别展示。</p></div><button className="button secondary compact" onClick={() => { setSelected(null); query.reload(); }} disabled={query.loading}>刷新</button></div>
     <QueryState loading={query.loading} error={query.error} retry={query.reload} />
+    <StrategyControls strategy={strategy} loading={query.loading || query.error !== ''} session={session} onExpired={onExpired} onRefresh={query.reload} />
     {query.data && strategy && <><div className="card identity-card"><dl className="parameter-details"><div><dt>实例 ID</dt><dd>{strategy.id}</dd></div><div><dt>模板</dt><dd>{templates[strategy.template]}</dd></div><div><dt>账户</dt><dd>{strategy.account_id}</dd></div><div><dt>交易对 ID</dt><dd>{strategy.instrument_id}</dd></div><div><dt>行情模式</dt><dd>{strategy.market_mode === 'REPLAY' ? '回放' : '实时'}</dd></div><div><dt>实际状态</dt><dd>{states[strategy.state]}</dd></div><div><dt>请求目标</dt><dd>{states[strategy.desired_state]}</dd></div><div><dt>实例修订</dt><dd>{strategy.revision}</dd></div></dl></div>
       <div className="config-columns"><ConfigCard title="请求配置" config={query.data.detail.requested_config} /><ConfigCard title="生效配置" config={query.data.detail.active_config} /></div>
       <div className="card data-card"><div className="card-heading"><h3>配置版本历史</h3><span className="badge">只读</span></div><div className="table-scroll" role="region" aria-label="配置版本" tabIndex={0}><table><thead><tr><th>版本</th><th>行情来源</th><th>代码版本</th><th>提交人</th><th>参数</th></tr></thead><tbody>

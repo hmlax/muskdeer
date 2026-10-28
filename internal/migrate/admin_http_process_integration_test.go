@@ -218,12 +218,20 @@ func nativeAdminRequest(ctx context.Context, t *testing.T, client *http.Client, 
 
 func startNativeAdminAPI(ctx context.Context, t *testing.T, path, directory string) string {
 	t.Helper()
+	return startNativeAdminAPIFor(ctx, t, path, directory, 40*time.Second)
+}
+
+func startNativeAdminAPIFor(ctx context.Context, t *testing.T, path, directory string, lifetime time.Duration) string {
+	t.Helper()
+	if lifetime <= 0 || lifetime > 3*time.Minute {
+		t.Fatal("native management API requires a bounded test lifetime")
+	}
 	logs := filepath.Join(directory, "api.jsonl")
 	output, err := os.OpenFile(logs, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
-	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), 40*time.Second)
+	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), lifetime)
 	command := exec.CommandContext(run, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", "api", "-config", path)
 	command.Stdout, command.Stderr = output, output
 	finished := make(chan error, 1)

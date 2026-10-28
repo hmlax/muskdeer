@@ -133,6 +133,15 @@ func TestControlHTTPMapsConflictAndPrivateFailuresAndKeepsOptIn(t *testing.T) {
 	if result := perform(hertz, "GET", "/api/v1/operations/1", "", controlHTTPHeaders()[1]); result.Code != 404 {
 		t.Fatal("read-only management exposed operation results")
 	}
+	if result := perform(hertz, "GET", "/operations/1", ""); result.Code != 404 {
+		t.Fatal("read-only management exposed the operation page")
+	}
+	hertz = controlHTTPFixture(t, &controlHTTPClient{})
+	for _, path := range []string{"/operations/0", "/operations/01", "/operations/9223372036854775808"} {
+		if result := perform(hertz, "GET", path, ""); result.Code != 404 {
+			t.Fatal("operation page accepted a noncanonical identity")
+		}
+	}
 }
 
 func controlHTTPHeaders() []ut.Header {

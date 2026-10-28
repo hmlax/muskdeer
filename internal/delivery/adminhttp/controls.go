@@ -86,9 +86,8 @@ func (r *Routes) controlStrategy(ctx context.Context, request *app.RequestContex
 }
 
 func (r *Routes) getOperation(ctx context.Context, request *app.RequestContext) {
-	value := request.Param("operationID")
-	id, err := strconv.ParseInt(value, 10, 64)
-	if err != nil || id <= 0 || strconv.FormatInt(id, 10) != value || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
+	id, valid := operationID(request)
+	if !valid || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
@@ -103,6 +102,12 @@ func (r *Routes) getOperation(ctx context.Context, request *app.RequestContext) 
 		OperationId: id,
 	})
 	r.strategyReply(request, reply, err)
+}
+
+func operationID(request *app.RequestContext) (int64, bool) {
+	value := request.Param("operationID")
+	id, err := strconv.ParseInt(value, 10, 64)
+	return id, err == nil && id > 0 && strconv.FormatInt(id, 10) == value
 }
 
 // decodeControl is the actual JSON wire boundary. All business values have
