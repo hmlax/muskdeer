@@ -790,3 +790,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 改动：每次只读RR事务内校验持久会话/用户/角色/到期，实例与版本按自增ID有界分页，详情区分请求/生效配置来源；Maker/Grid显式decimal参数、历史schema0不补默认值、故障固定公开文本。构造及查询不创建交易资源。
 - 验证：真实PG/race三个场景17.442秒通过，注销/旧凭据拒绝、双模板双源、18位精度、游标/边界/不存在资源正确；独立事务中途插入新版本，RC反例先红、RR后绿，新的查询才见新版本。完整make verify、lint 0 issues、文档/差异检查通过，见 [P07.6](validation/P07-06.md) 和 [查询合同](ADMIN_STRATEGIES.md)。首次身份开通期限失败如实保留，未提高期限/降低断言；完整Nacos集成由CI再验证。
 - 远程：b20fd3c已推送main并核对SHA；60b1a80的[CI40643956720](https://github.com/hmlax/muskdeer/actions/runs/40643956720)success。本步独立提交推送并核对SHA，继续管理gRPC/实际查询与操作页面及P08–P10，完整L1未完成。
+
+## 2026-10-28：P06.30 本地真正到期后保留动作并重新观察
+
+- 发现：P07.7组合验证的旧报价/暂停/双来源场景多次因strategy.quote原生期限退出；部分PG日志为策略行锁等待取消，完整阻塞根因未确定。另一次portfolio启动期限失败保留，未虚构共因或吞掉消费者错误。
+- 改动：仅本地输入读取、Plan/Attempt当前ctx及错误链均确实DeadlineExceeded时等待新一轮；原持久动作、键、截止保持，未到期deadline和关键联合错误仍传播，不继续SQL/远端调用或直接判未受理。
+- 验证：单元先红后绿，实际PG/race让真实Plan/Attempt事务先提交再到期，原动作保持、远端写零、原截止证明/Discard后STOPPED和资金/四级预留正确，包14.157秒通过；完整verify及后续组合结果见 [P06.30](validation/P06-30.md)。本步先单独交付可重复验证的修正，不将此前完整集成失败计作通过，P07.7及P09/P10继续。
+- 远程：8eee86a已推送main并核对SHA，[CI40645724348](https://github.com/hmlax/muskdeer/actions/runs/40645724348)success。本步独立测试、提交推送并核对SHA；完整L1未完成。

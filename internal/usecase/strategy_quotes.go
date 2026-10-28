@@ -20,7 +20,7 @@ func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec
 		if errors.Is(err, domain.ErrRiskDenied) || errors.Is(err, domain.ErrInvalidParameters) {
 			return s.protectRecovery(ctx, spec, token, orders)
 		}
-		return err
+		return localStrategyFailure(ctx, err)
 	}
 	if !environment.RiskAllowed && environment.RiskReason != domain.RiskReasonNotEvaluated {
 		return s.protectRecovery(ctx, spec, token, orders)

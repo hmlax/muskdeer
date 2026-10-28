@@ -74,7 +74,7 @@ func (s *StrategyController) dispatch(ctx context.Context, pending domain.Strate
 		return errStrategyReobserve
 	}
 	if err != nil {
-		return err
+		return localStrategyFailure(ctx, err)
 	}
 	if action.Plan.Kind == domain.StrategyActionSubmit {
 		_, err = s.deps.Execution.Submit(ctx, domain.OrderInput{
@@ -132,9 +132,23 @@ func (s *StrategyController) planAndDispatch(ctx context.Context, authority doma
 		return errStrategyReobserve
 	}
 	if err != nil {
-		return err
+		return localStrategyFailure(ctx, err)
 	}
 	return s.dispatch(ctx, stored, authority)
+}
+
+// Only this call's actual deadline permits a new observation cycle. Local
+// commit uncertainty retains the journal, and never authorizes a remote write.
+func localStrategyFailure(ctx context.Context, err error) error {
+	if ctx == nil || !errors.Is(ctx.Err(), context.DeadlineExceeded) || !errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	for _, critical := range []error{domain.ErrLeaseLost, domain.ErrInvalidOrder, domain.ErrIdempotencyConflict, domain.ErrInvalidParameters, domain.ErrForbidden, context.Canceled} {
+		if errors.Is(err, critical) {
+			return err
+		}
+	}
+	return errStrategyReobserve
 }
 
 func (s *StrategyController) currentOrders(ctx context.Context, spec domain.StrategySpec) ([]domain.IntentSnapshot, error) {
