@@ -72,20 +72,20 @@ export interface StrategyPage { strategies: Strategy[]; next_after_id: string }
 export interface VersionPage { versions: ConfigVersion[]; next_after_id: string }
 export interface StrategyDetail { strategy: Strategy; requested_config: ConfigVersion; active_config: ConfigVersion | null }
 
-function object(value: unknown): Record<string, unknown> {
+export function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new ApiError('INVALID_RESPONSE');
   return value as Record<string, unknown>;
 }
-function text(value: unknown): string {
+export function text(value: unknown): string {
   if (typeof value !== 'string' || value.length > 256) throw new ApiError('INVALID_RESPONSE');
   return value;
 }
-function integer(value: unknown, zero = false): string {
+export function integer(value: unknown, zero = false): string {
   const input = text(value);
   if (!/^(0|[1-9][0-9]{0,18})$/.test(input) || BigInt(input) > 9223372036854775807n || (!zero && input === '0')) throw new ApiError('INVALID_RESPONSE');
   return input;
 }
-function decimal(value: unknown): string {
+export function decimal(value: unknown): string {
   const input = text(value);
   if (!/^(0|[1-9][0-9]{0,19})(\.[0-9]{1,18})?$/.test(input)) throw new ApiError('INVALID_RESPONSE');
   return input;

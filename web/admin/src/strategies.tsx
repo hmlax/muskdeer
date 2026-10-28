@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from './api';
 import type { Session } from './api';
 import { StrategyControls } from './operations';
+import { CreationForm } from './creation';
 import { getStrategy, listStrategies, listVersions, sources, states, templates } from './strategy-api';
 import type { ConfigVersion, Parameters, Strategy } from './strategy-api';
 
@@ -48,15 +49,18 @@ function SourcePair({ strategy }: { strategy: Strategy }) {
 
 export function StrategyWorkspace({ onExpired, session }: { onExpired: () => void; session: Session }) {
   const id = /^\/strategies\/([1-9][0-9]{0,18})$/.exec(location.pathname)?.[1];
-  return id ? <StrategyDetails id={id} onExpired={onExpired} session={session} /> : <StrategyList onExpired={onExpired} />;
+  return id ? <StrategyDetails id={id} onExpired={onExpired} session={session} /> : <StrategyList onExpired={onExpired} session={session} />;
 }
 
-function StrategyList({ onExpired }: { onExpired: () => void }) {
+function StrategyList({ onExpired, session }: { onExpired: () => void; session: Session }) {
+  const [creating, setCreating] = useState(false);
   const [cursors, setCursors] = useState(['0']);
   const cursor = cursors[cursors.length - 1];
   const load = useCallback((signal: AbortSignal) => listStrategies(cursor, signal), [cursor]);
   const query = useQuery(load, onExpired);
   return <div className="strategy-workspace">
+    {session.strategy_controls_enabled && session.role !== 'viewer' && !creating && <button className="button primary creation-open" onClick={() => setCreating(true)}>创建策略</button>}
+    {creating && <CreationForm onExpired={onExpired} onCreated={query.reload} onClose={() => setCreating(false)} />}
     <div className="workspace-heading"><div className="page-heading"><span className="eyebrow">STRATEGIES</span><h2>策略实例</h2><p>查看运行状态、行情来源和配置版本。</p></div><button className="button secondary compact" onClick={query.reload} disabled={query.loading}>刷新</button></div>
     <QueryState loading={query.loading} error={query.error} retry={query.reload} />
     {query.data && <><div className="card data-card"><div className="card-heading"><h3>实例列表</h3><span className="badge">只读视图</span></div>

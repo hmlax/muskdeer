@@ -17,7 +17,7 @@
 | P04 | done | P04.1–P04.10 持久OMS/原子预算/撤单、成交inbox/损益、自动事件与真实发布/重投、typed RPC/mTLS、Deer工作器及实际独立业务命令进程闭环通过 |
 | P05 | done | P05.1–P05.9 双来源独立簿/协议/网络/A25、质量/持久发布/typed读取、owned续租/回放/接管及默认market独立命令进程闭环通过 |
 | P06 | done | 做市/目标差分/最终风险门禁/双来源失效保护及实际30分钟808成交核算通过；P06.27记录基线，最终延迟/容量继续P10 |
-| P07 | in_progress | 网格/持久控制循环、独立运行目标、持久认证及实际策略查询仓储/gRPC/HTTP/页面/浏览器通过；6619210/cbb09bf完整CI通过。管理控制事务/审计/幂等收据、typed控制gRPC/HTTP、实际启停与独立结果页面、真实资金Grid独立进程浏览器已验证；创建/配置/换源、其余管理页面及完整A27待完成 |
+| P07 | in_progress | 网格/持久控制循环、独立运行目标、认证及授权目录/策略查询/创建/启停的typed gRPC/HTTP/页面通过；双模板双源创建与四组真实浏览器、资金Grid控制通过。参数发布/换源、撤单/风险开关/其余管理页面及完整A27待完成 |
 | P08–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
@@ -884,3 +884,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 改动：独立StrategyCreation及具体CreateStrategyInput/CreationReceipt、29生成文件，复用control_enabled/strategy_controls_enabled显式写能力；API POST /api/v1/strategies由同一Deer客户端调用原子创建事务。具体参数/typed mapper、API-peer/未知nested字段/原生期限/大小、独立Cookie/CSRF/key/固定Origin，严格JSON重复/未知/小数string及规范身份string，201/Location/原键回放及固定400/401/403/409/503，无新资金或账户工作器。
 - 验证：三个相关包单元/race1.448/1.453/1.441秒、完整make verify/生成/Hertz/fmt/lint 0 issues/规范正反例/22工具测试/全包单元/race/构建通过。真实独立API/strategy/PG/Nacos/mTLS组合11.923秒通过，新创建1.61秒含真实operator密码登录、双模板双源四创建/原键回放、初始参数及零预留/改内容409、注销后恢复旧Cookie原键仍401、真实viewer登录POST403/零核心订单；原目录3.70秒、查询进程5.07秒及查询模式Creation Unimplemented通过，见[P07.18](validation/P07-18.md)。150文档链接/差异检查通过。
 - 远程：d7b6e03已推送main并核对SHA，c8bd3a0的[CI40673406777](https://github.com/hmlax/muskdeer/actions/runs/40673406777)success，含默认全套集成/三组管理浏览器/持久开发/镜像。本步检查后独立提交推送并核对SHA；创建表单、参数版本发布/换源和其余管理流程仍待后续P07，P08–P10/完整A27/L1未完成。本地前端未改，未重复浏览器/镜像/默认全量交易，远程完整CI继续。
+
+## 2026-10-28：P07.19 实际目录驱动的创建页面
+
+- 改动：列表按能力/角色开放创建表单，真实账户/交易对每页100及加载更多、禁用/HALTED、明确模式绑定与来源重选、实际精度、具体Maker/Grid参数及原因；价格/预算/库存/ID/毫秒保持string，档数有界整数，对冲关闭。6秒/卸载取消、同步提交锁、未知请求保留原键/全部内容，错误及初始收据/详情明确不等于运行，刷新列表不卸载请求记录，无新增依赖/浏览器持久存储。
+- 修正与证据：精确下拉框标签超时后加显式可访问名称；禁用option在测试库isDisabled返回false而真实DOM属性true，以原生disabled及CSS :disabled双验证保留业务要求。手机390px root曾568，实际定位sr-only表头辅助文本逃出局部滚动容器，仅加table-scroll position:relative修复；不隐藏整页overflow或删辅助文本。失败日志/截图保留，见[P07.19](validation/P07-19.md)。
+- 验证：真实独立API/strategy/PG/Nacos/mTLS及Chromium，102账户/102交易对分页、目录网络故障重试/禁用/暂停、空LIVE不回退、双模板×双源四实际创建、18位金额价格、真实201丢响应原键重试、详情刷新及viewer只读通过。SQL恰好4收据、四新实例CREATED/无owner/零预留，原核心余额全行不变/订单零。最终四浏览器组合通过：创建13.78秒/包15.575、原登录3.84秒及原生0.81秒、原查询15.60秒、资金Grid控制22.39秒；最终四类截图已查看。
+- 工程：最终4产物重复构建SHA一致；完整make verify及资源最终再验证、29生成文件/Hertz/fmt/lint 0 issues/规范正反例/22工具测试/全包单元/race/实际命令构建、实际非root只读镜像/readiness/JSON日志/SIGTERM、151文档链接/差异检查均通过。创建浏览器进入CI/e2e，原业务及进程期限未增，本地未重复默认完整全量交易。
+- 远程：0151034已推送main并核对SHA，[CI40677003379](https://github.com/hmlax/muskdeer/actions/runs/40677003379)success，含默认全量集成/三组原浏览器/持久开发/镜像。本步检查后独立提交推送并核对SHA；继续参数版本发布/换源、撤单/风险开关/其余管理业务页面及P08–P10，完整A27/L1未完成，不以四元数据创建冒充新实例真实报价或最终版本时长验收。

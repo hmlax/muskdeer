@@ -1,6 +1,6 @@
 # 受审计的策略创建事务
 
-P07.17提供`domain.AdminStrategyCreator`和`repository.NewAdminStrategyCreator`，P07.18接入[typed创建gRPC](../api/strategy/v1/creation.proto)及实际同源HTTP，创建表单随后接入。已有[运行控制](ADMIN_CONTROL.md)及[授权目录](ADMIN_STRATEGIES.md)保持独立；本步不代表完整A27。
+P07.17提供`domain.AdminStrategyCreator`和`repository.NewAdminStrategyCreator`，P07.18接入[typed创建gRPC](../api/strategy/v1/creation.proto)及实际同源HTTP，P07.19接入真实目录驱动的创建表单。已有[运行控制](ADMIN_CONTROL.md)及[授权目录](ADMIN_STRATEGIES.md)保持独立；本步不代表完整A27。
 
 请求明确包含操作者范围幂等键、唯一instance_key、已开通账户、执行instrument、code_version、Binance/OKX单一来源、LIVE/REPLAY模式、具体Maker/Grid参数及原因。身份字段有界ASCII，键16–64字符，原因trim后1–256 UTF-8字节；参数先检查十进制边界/指数再做联合与范围运算，杜绝巨大指数放大。HedgeEnabled在P08实现前拒绝，不保存一个看似开启但无执行器的对冲配置。
 
@@ -25,4 +25,11 @@ API的strategy_controls_enabled显式注册POST /api/v1/strategies，使用固�
 
 新建或原键成功回放均201及Location /api/v1/strategies/:id，返回具体CreationReceipt；初始revision/config_version=1属于创建事实，不是当前运行状态或操作结果页ID。创建不会请求运行，后续启动必须独立控制；查询当前状态使用策略详情。未确认传输结果应保留原键和原内容重试。
 
-持久化验证见[P07.17](validation/P07-17.md)，传输与实际独立进程验证见[P07.18](validation/P07-18.md)。后续创建表单、配置版本发布及换源流程继续P07，P08–P10及完整L1仍待验收。
+持久化验证见[P07.17](validation/P07-17.md)，传输与实际独立进程验证见[P07.18](validation/P07-18.md)。配置版本发布及换源流程继续P07，P08–P10及完整L1仍待验收。
+
+
+## 实际创建表单
+
+策略列表仅在控制能力开启且operator/admin时提供创建入口，使用实际账户/交易对游标目录（每页100，手动加载更多），禁用/HALTED项目不可选择。按所选instrument+mode查询实际绑定，不自动选来源或用REPLAY代替LIVE；显示真实tick/step/最小金额，读取失败可重试。Maker/Grid显示具体价格/BPS/预算/库存/整毫秒字段，仅有界档数转JS整数，其余小数及ID字符串不经Number；初始值明确是示例、对冲关闭。创建原因和标识有本地格式校验，跨字段/当前依赖仍由业务事务判断。
+
+确认时生成一次键并固定完整typed内容。网络结果未知时禁改内容、使用原键/原参数重试；不自动新键或写local/sessionStorage。401清会话，403明确权限，400/409保留输入以便核对；每次请求6秒并在卸载时取消。成功展示初始收据及真实详情链接，明确尚未请求运行；列表刷新不卸载收据或未知请求。viewer没有创建按钮。真实目录分页/双模板双源/精度/原键重试及移动端证据见[P07.19](validation/P07-19.md)，命令make admin-creation-browser已进入CI/e2e。

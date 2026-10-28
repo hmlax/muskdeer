@@ -1,6 +1,6 @@
 # 管理页面与身份 HTTP
 
-P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP，P07.9交付实际策略列表/详情/版本页面，P07.13接入显式控制/操作结果HTTP，P07.14交付运行控制及独立结果页面。创建页面/参数发布/换源、行情/订单/成交/持仓/风险/审计查询及完整管理范围仍待后续，不计完整R08/A27通过。
+P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP，P07.9交付实际策略列表/详情/版本页面，P07.13接入显式控制/操作结果HTTP，P07.14交付运行控制及独立结果页面，P07.18–P07.19接入策略创建HTTP与实际表单。参数发布/换源、行情/订单/成交/持仓/风险/审计查询及完整管理范围仍待后续，不计完整R08/A27通过。
 
 ## 开启入口
 
@@ -77,7 +77,7 @@ POST JSON只接受action、expected_revision、reason三个字符串。动作使
 
 P07.18在原strategy_controls_enabled写能力下增加`POST /api/v1/strategies`。请求体为typed CreateStrategyInput（instance_key/account_id、string instrument_id、code_version、market_data_source、market_mode、具体Maker/Grid parameters和reason），会话Cookie、CSRF及幂等键分别由独立证明提供，体内不能传session。严格nested字段/重复/小数string及身份string校验，固定Origin、≤8KiB、无query、最多3秒实际gRPC。业务事务仍重新校验operator和依赖；见[完整创建合同](ADMIN_CREATION.md)。
 
-成功与原键回放均201及Location策略详情API，返回不可变初始CreationReceipt，当前运行状态另读详情；错误400/401/403/409/503固定、no-store，不在API读取/创建交易资金。独立后端创建已接通，前端创建表单仍待接入，不能将已有启停页面当作创建页面。
+成功与原键回放均201及Location策略详情API，返回不可变初始CreationReceipt，当前运行状态另读详情；错误400/401/403/409/503固定、no-store，不在API读取/创建交易资金。P07.19由策略列表提供实际目录驱动的创建表单，具体Maker/Grid字段、来源选择、原键重试及初始收据/详情；viewer无入口，见[创建页面合同](ADMIN_CREATION.md)。
 
 ## 策略查询页面
 
