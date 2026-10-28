@@ -92,6 +92,9 @@ func readStrategyEnvironment(ctx context.Context, tx *gorm.DB, strategy *modelv1
 	if err != nil {
 		return result, err
 	}
+	if err := strategyPlanningFunds(ctx, tx, strategy, &result); err != nil {
+		return result, err
+	}
 	result.TotalNotional, result.MaximumOrderNotional, err = strategyPlanningBudget(ctx, tx, strategy, instrument.QuoteAsset)
 	if err != nil {
 		return result, err

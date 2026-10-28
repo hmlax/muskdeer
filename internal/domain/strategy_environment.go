@@ -28,6 +28,10 @@ type StrategyEnvironmentView struct {
 	BaseAsset            string
 	QuoteAsset           string
 	QuoteFeeRate         decimal.Decimal
+	Inventory            decimal.Decimal
+	AvailableBase        decimal.Decimal
+	AvailableQuote       decimal.Decimal
+	MaximumBuyQuantity   decimal.Decimal
 	TotalNotional        decimal.Decimal
 	MaximumOrderNotional decimal.Decimal
 	LocalBid             decimal.Decimal

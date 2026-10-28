@@ -52,12 +52,7 @@ func TestStrategyEnvironmentRetainsOwnAllocationButSubtractsOtherObligations(t *
 	if !input.TotalNotional.Equal(decimal.NewFromInt(250)) || !input.MaximumOrderNotional.Equal(decimal.NewFromInt(300)) {
 		t.Fatalf("shared budget lost own reserve or counted peer capacity: total=%s single=%s", input.TotalNotional, input.MaximumOrderNotional)
 	}
-	if input.Parameters.Maker == nil || input.Parameters.Template != domain.StrategyTemplateMarketMaker ||
-		input.Symbol != "BTCUSDT" || input.BaseAsset != "BTC" || input.QuoteAsset != "USDT" ||
-		!input.LocalBid.Equal(submit.Input.Price) || !input.LocalAsk.IsZero() || !input.QuoteFeeRate.Equal(decimal.RequireFromString("0.001")) ||
-		input.ObservedAt.IsZero() || !input.LastRefresh.IsZero() {
-		t.Fatalf("current typed planning input is incomplete: %+v", input)
-	}
+	assertStrategyPlanningInput(t, input, submit)
 	actions, err := repository.NewStrategyActions(db)
 	if err != nil {
 		t.Fatal(err)
@@ -83,4 +78,20 @@ func TestStrategyEnvironmentRetainsOwnAllocationButSubtractsOtherObligations(t *
 	}
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "400")
 	assertGatewayOrderCount(ctx, t, db, 1)
+}
+
+func assertStrategyPlanningInput(t *testing.T, input domain.StrategyEnvironmentView, submit domain.GatewaySubmit) {
+	t.Helper()
+	if input.Parameters.Maker == nil || input.Parameters.Template != domain.StrategyTemplateMarketMaker ||
+		input.Symbol != "BTCUSDT" || input.BaseAsset != "BTC" || input.QuoteAsset != "USDT" ||
+		!input.LocalBid.Equal(submit.Input.Price) || !input.LocalAsk.IsZero() || !input.QuoteFeeRate.Equal(decimal.RequireFromString("0.001")) ||
+		input.ObservedAt.IsZero() || !input.LastRefresh.IsZero() {
+		t.Fatalf("current typed planning input is incomplete: %+v", input)
+	}
+	if !input.Inventory.Equal(decimal.NewFromInt(10)) || !input.AvailableBase.Equal(decimal.NewFromInt(10)) || !input.AvailableQuote.Equal(decimal.NewFromInt(1000)) {
+		t.Fatalf("own confirmed freeze was double-counted in complete-book planning: inventory=%s base=%s quote=%s", input.Inventory, input.AvailableBase, input.AvailableQuote)
+	}
+	if !input.MaximumBuyQuantity.Equal(decimal.NewFromInt(8)) {
+		t.Fatalf("another strategy's outstanding buy was omitted from worst-inventory planning: %s", input.MaximumBuyQuantity)
+	}
 }

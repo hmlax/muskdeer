@@ -30,4 +30,5 @@ const (
 	InstrumentStatusTrading = "TRADING"
 	InstrumentStatusHalted  = "HALTED"
 	ExecutionVenueSimulator = "simulator"
+	MaxStrategyOpenOrders   = 200
 )

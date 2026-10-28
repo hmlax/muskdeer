@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
@@ -120,12 +122,22 @@ func (c *strategyClient) FindOrder(ctx context.Context, accountID, idempotencyKe
 	if err != nil {
 		return domain.IntentSnapshot{}, err
 	}
+	return c.Order(ctx, accountID, clientID)
+}
+
+func (c *strategyClient) Order(ctx context.Context, accountID, clientID string) (domain.IntentSnapshot, error) {
+	if err := strategyQueryContext(ctx, accountID); err != nil {
+		return domain.IntentSnapshot{}, err
+	}
+	if !boundedIdentifier(clientID, 64) {
+		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
+	}
 	reply, err := c.reader.FindOrder(ctx, &executionv1.FindOrderRequest{
 		AccountId: accountID,
 		Lookup:    &executionv1.FindOrderRequest_ClientOrderId{ClientOrderId: clientID},
 	})
 	if err != nil {
-		return domain.IntentSnapshot{}, err
+		return domain.IntentSnapshot{}, strategyObservationFailure(err)
 	}
 	order, err := strategyOrderObservation(reply, accountID, clientID)
 	if err != nil || reply.Cancellation != nil {
@@ -146,9 +158,23 @@ func (c *strategyClient) FindCancellation(ctx context.Context, accountID, idempo
 		IdempotencyKey: idempotencyKey,
 	})
 	if err != nil {
-		return domain.CancellationResult{}, err
+		return domain.CancellationResult{}, strategyObservationFailure(err)
 	}
 	return strategyCancellationObservation(reply, accountID, idempotencyKey)
+}
+
+func strategyObservationFailure(err error) error {
+	if status.Code(err) == codes.NotFound {
+		return domain.ErrCoreNotFound
+	}
+	return &strategyReadOutcome{cause: err}
+}
+
+type strategyReadOutcome struct{ cause error }
+
+func (*strategyReadOutcome) Error() string { return domain.MessageOutcomeUnknown }
+func (e *strategyReadOutcome) Unwrap() error {
+	return errors.Join(domain.ErrOutcomeUnknown, e.cause)
 }
 
 func (c *strategyClient) writer(ctx context.Context, accountID string) (executionv1.ExecutionClient, error) {

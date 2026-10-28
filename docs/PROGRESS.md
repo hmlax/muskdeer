@@ -648,3 +648,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 改动：普通成功夹具采用1秒操作/5秒清理，原3秒lease、100ms发布、500ms行情及资金/终态断言保留；新增200ms真实发布故障，通过测试schema触发器确定性阻塞UPDATE，验证回滚/退出及释放授权，生产代码未改变。
 - 验证：聚焦故障/路由/客户端race、最终完整make verify与make integration、文档/差异检查通过，业务68.509秒、故障0.91秒；见 [P06.14a](validation/P06-14a.md)。控制器代码另笔交付。
 - 远程：0383f89已推送main并核对SHA，[CI 40615426557](https://github.com/hmlax/muskdeer/actions/runs/40615426557) success；P06.13 [CI 40614861010](https://github.com/hmlax/muskdeer/actions/runs/40614861010) success。本步独立提交/推送并核对SHA。
+
+## 2026-10-28：P06.15 策略恢复、报价与保护控制器
+
+- 改动：借用业务端口的串行有界Tick，当前lease/standby、新owner恢复、原键动作查询、完整OMS观察、Maker/Diff与资金/总额/单笔/共享库存裁剪；失效撤单、终态停止及先记录Attempt再发命令，UNKNOWN绝不重发。见 [控制器](STRATEGY_CONTROLLER.md)。
+- 验证：真实PG模拟器双边报价、失效保护/未确认不完成停止、确认后资产/预留归位；未知写及接管始终写调用1次；共享库存反例先红后绿、typed观察及standby/纯裁剪单元测试通过。最终完整make verify、make integration、文档/差异检查通过，业务68.509秒、lint/race/goleak保留，见 [P06.15](validation/P06-15.md)。复杂度拆分保留原断言，旧进程期限另笔交付。
+- 远程：36ec6e0已推送main并核对SHA；本步独立提交/推送并核对SHA。
+- 下一步：Deer拥有的strategy业务命令、实际行情失效联动/接管和30分钟连续模拟；P06保持进行，P07–P10继续完成。
