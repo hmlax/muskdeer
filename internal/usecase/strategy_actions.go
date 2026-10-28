@@ -101,6 +101,12 @@ func (s *StrategyController) dispatch(ctx context.Context, pending domain.Strate
 			Deadline:       action.Deadline,
 		})
 	}
+	if action.Plan.Kind == domain.StrategyActionSubmit && errors.Is(err, domain.ErrRiskDenied) {
+		// A newer admission decision can reject risk after Attempt was durable.
+		// Keep that identity; a fresh tick queries it, and only the existing
+		// deadline/absence proof may resolve it. Never create a replacement here.
+		return errStrategyReobserve
+	}
 	if err != nil && !errors.Is(err, domain.ErrOutcomeUnknown) {
 		return err
 	}

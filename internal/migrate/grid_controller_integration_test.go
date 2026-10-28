@@ -22,10 +22,10 @@ func TestGridControllerMaintainsFixedLevelsAndWaitsForTerminalStop(t *testing.T)
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 	controller, execution, market, submit := gridControllerFixture(ctx, t, db)
-	runGridController(ctx, t, controller, market, "100", 20)
-	orders := assertGridControllerQuotes(ctx, t, execution, submit)
+	orders := waitGridControllerQuotes(ctx, t, controller, execution, market, submit)
+	submits := execution.submits
 	runGridController(ctx, t, controller, market, "100", 4)
-	if execution.submits != 4 {
+	if execution.submits != submits {
 		t.Fatal("unchanged fixed grid levels were needlessly replaced")
 	}
 	stopGridController(ctx, t, db, controller, execution, market, submit, orders)
@@ -36,10 +36,10 @@ func TestGridControllerDrainsOutsideRangeAndReturnsOnlyOnSelectedReference(t *te
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 	controller, execution, market, submit := gridControllerFixture(ctx, t, db)
-	runGridController(ctx, t, controller, market, "100", 20)
-	orders := assertGridControllerQuotes(ctx, t, execution, submit)
+	orders := waitGridControllerQuotes(ctx, t, controller, execution, market, submit)
+	submits, cancels := execution.submits, execution.cancels
 	runGridController(ctx, t, controller, market, "110", 12)
-	if execution.submits != 4 || execution.cancels != 4 {
+	if execution.submits != submits || execution.cancels-cancels != len(orders) {
 		t.Fatal("out-of-range grid added risk or omitted controlled cancels")
 	}
 	for _, order := range orders {
@@ -49,12 +49,11 @@ func TestGridControllerDrainsOutsideRangeAndReturnsOnlyOnSelectedReference(t *te
 	}
 	runGridController(ctx, t, controller, market, "110", 8)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
-	if execution.submits != 4 {
+	if execution.submits != submits {
 		t.Fatal("outside reference silently restarted grid submissions")
 	}
-	runGridController(ctx, t, controller, market, "100", 20)
-	orders = assertGridControllerQuotes(ctx, t, execution, submit)
-	if execution.submits != 8 {
+	orders = waitGridControllerQuotes(ctx, t, controller, execution, market, submit)
+	if execution.submits < submits+len(orders) {
 		t.Fatal("selected reference recovery did not restore fixed funded levels")
 	}
 	stopGridController(ctx, t, db, controller, execution, market, submit, orders)
@@ -114,6 +113,16 @@ func runGridController(ctx context.Context, t *testing.T, controller *usecase.St
 
 func assertGridControllerQuotes(ctx context.Context, t *testing.T, execution *controllerExecution, submit domain.GatewaySubmit) []domain.IntentSnapshot {
 	t.Helper()
+	orders := gridControllerOrders(ctx, t, execution, submit)
+	if !gridControllerQuotesLive(orders) {
+		t.Fatalf("fixed grid did not produce four actual live funded levels: count=%d", len(orders))
+	}
+	assertGridPrices(t, orders)
+	return orders
+}
+
+func gridControllerOrders(ctx context.Context, t *testing.T, execution *controllerExecution, submit domain.GatewaySubmit) []domain.IntentSnapshot {
+	t.Helper()
 	orders, _, err := execution.Orders(ctx, domain.ExecutionFilter{
 		AccountID:    submit.Input.AccountID,
 		StrategyID:   submit.Input.Authority.StrategyID,
@@ -121,9 +130,44 @@ func assertGridControllerQuotes(ctx context.Context, t *testing.T, execution *co
 		Limit:        100,
 		OpenOnly:     true,
 	})
-	if err != nil || len(orders) != 4 {
-		t.Fatalf("fixed grid did not produce four actual funded levels: count=%d error=%v", len(orders), err)
+	if err != nil {
+		t.Fatal(err)
 	}
+	return orders
+}
+
+func gridControllerQuotesLive(orders []domain.IntentSnapshot) bool {
+	if len(orders) != 4 {
+		return false
+	}
+	for _, order := range orders {
+		if order.State != domain.OrderStateLive || order.CancelState != domain.CancelStateNone || order.CoreOrderID <= 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func waitGridControllerQuotes(ctx context.Context, t *testing.T, controller *usecase.StrategyController, execution *controllerExecution, market *controllerMarket, submit domain.GatewaySubmit) []domain.IntentSnapshot {
+	t.Helper()
+	ticks := time.NewTicker(110 * time.Millisecond)
+	defer ticks.Stop()
+	for {
+		strategyControllerTick(ctx, t, controller, market)
+		orders := gridControllerOrders(ctx, t, execution, submit)
+		if gridControllerQuotesLive(orders) {
+			return assertGridControllerQuotes(ctx, t, execution, submit)
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatalf("grid did not converge within its original scenario deadline: count=%d error=%v", len(orders), ctx.Err())
+		case <-ticks.C:
+		}
+	}
+}
+
+func assertGridPrices(t *testing.T, orders []domain.IntentSnapshot) {
+	t.Helper()
 	for _, expected := range []struct {
 		price int64
 		side  domain.Side
@@ -155,7 +199,6 @@ func assertGridControllerQuotes(ctx context.Context, t *testing.T, execution *co
 			t.Fatal("grid level moved, disappeared or duplicated")
 		}
 	}
-	return orders
 }
 
 func stopGridController(ctx context.Context, t *testing.T, db *gorm.DB, controller *usecase.StrategyController, execution *controllerExecution, market *controllerMarket, submit domain.GatewaySubmit, orders []domain.IntentSnapshot) {

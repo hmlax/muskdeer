@@ -4,9 +4,11 @@ package migrate
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
@@ -215,9 +217,20 @@ func strategyControllerTickAt(ctx context.Context, t *testing.T, controller *use
 	}
 	work, cancel := context.WithTimeout(ctx, 2*time.Second)
 	_, err = controller.Tick(work)
+	contextError := work.Err()
 	cancel()
 	if err != nil {
-		t.Fatal(err)
+		var failure *domain.StrategyFailure
+		var databaseError *pgconn.PgError
+		stage, cause := domain.StrategyStageBoundary, err
+		if errors.As(err, &failure) {
+			stage, cause = failure.Stage, failure.Cause
+		}
+		code, constraint := "", ""
+		if errors.As(err, &databaseError) {
+			code, constraint = databaseError.Code, databaseError.ConstraintName
+		}
+		t.Fatalf("strategy tick failed: stage=%s cause=%v context=%v sqlstate=%s constraint=%s", stage, cause, contextError, code, constraint)
 	}
 	if _, err := market.evaluator.Evaluate(ctx, market.strategyID); err != nil {
 		t.Fatal(err)

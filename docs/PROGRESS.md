@@ -770,3 +770,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 改动：测试拥有有界Transport并先关闭客户端池再SIGTERM，原3秒请求/5秒停止、角色/CSRF/审计和进程0退出断言均保留，不改生产transport。
 - 验证：真实PG/race原生场景及连续3次独立schema/进程通过，Deer在途请求/监听失败drain race、最终fmt-check/lint 0 issues及文档/差异检查通过；见 [P07.3a](validation/P07-03a.md)。本步独立提交/推送并核对SHA。
 - 并行状态：P07.5迁移/暂停接管及历史带数据升级已通过聚焦验证；首次全套发现两处旧schema夹具漏省略新字段，修正后完整integration重跑中，尚未提交。P06长运行记录506450a已同步；完整L1继续P07–P10。
+
+## 2026-10-28：P06.28 远端受理前风控拒绝保留原动作
+
+- 改动：Attempt后SUBMIT明确ErrRiskDenied只等待新轮观察，原动作/键/截止保留；不重发或直接判无效果，只有现有数据库截止证明可NOT_ACCEPTED，其他错误及取消错误原样传出。测试诊断保留阶段/cause/SQL状态；Grid在原期限内等四档真实LIVE/CoreOrderID，阶段计数包括此前确认拒绝历史，不用固定Tick次数冒充收敛。
+- 验证：单元及真实PG确定性先红后绿，Submit1次、原键查询、无核心/四预算效果、原期限证明后才解不确定并STOPPED；原Maker/Grid/UNKNOWN/停止/暂停回归通过（包39.766秒），完整make verify、文档/差异检查通过，lint 0 issues/race保留，见 [P06.28](validation/P06-28.md)。组合默认integration仍重跑中，由后续及远程CI验证，不计已通过。
+- 边界：P07.5完整套件曾有一次粗错误、独立暂停3次通过；本步受控发现的明确风险拒绝不被当作该粗错误的已证实根因。迁移24/暂停字段继续单独交付，P06.27长运行不包含本修改；最终版本性能/完整L1继续P10。
+- 远程：bd911fe已推送main并核对SHA，[CI40642383703](https://github.com/hmlax/muskdeer/actions/runs/40642383703)success。本步独立提交/推送并核对SHA；后续P07–P10继续。
