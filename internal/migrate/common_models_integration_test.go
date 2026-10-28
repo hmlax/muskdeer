@@ -19,6 +19,9 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 	}
 	for _, entity := range []any{
 		&modelv1.SchemaMigration{},
+		&modelv1.AdminUser{},
+		&modelv1.AdminSession{},
+		&modelv1.AdminAudit{},
 		&modelv1.Instrument{},
 		&modelv1.StrategyInstance{},
 		&modelv1.StrategyConfigVersion{},

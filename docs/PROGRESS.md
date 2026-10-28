@@ -17,7 +17,7 @@
 | P04 | done | P04.1–P04.10 持久OMS/原子预算/撤单、成交inbox/损益、自动事件与真实发布/重投、typed RPC/mTLS、Deer工作器及实际独立业务命令进程闭环通过 |
 | P05 | done | P05.1–P05.9 双来源独立簿/协议/网络/A25、质量/持久发布/typed读取、owned续租/回放/接管及默认market独立命令进程闭环通过 |
 | P06 | in_progress | 接入做市、目标差分、风险联动、来源失效撤单与30分钟模拟验收 |
-| P07 | in_progress | P07.1网格纯算法通过；控制器装配、管理前后端、权限审计与浏览器验收待完成 |
+| P07 | in_progress | P07.1网格纯算法、P07.2持久认证/会话/审计基础通过；控制器装配、管理前后端与浏览器验收待完成 |
 | P08–P10 | todo | 尚未实现和运行 |
 | P11 | blocked | 缺真实接口合同及测试环境 |
 
@@ -722,3 +722,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：真实下单/部分成交导致投影滞后时旧测试先红，修复后观察通过且实际新意图仍被拒绝；伪造当前已对账风险必须继续报错，消费真实成交后追平。PG/race、fmt-check/lint 0 issues、四实际进程12秒smoke及121份文档链接/差异检查通过，原10秒间隙/成交/终态资金断言保留；本测试步骤未重复全套默认integration，见 [P06.23](validation/P06-23.md)。
 - 远程：7a19bc2已推送main并核对SHA；本步独立提交/推送并核对SHA。
 - 下一步：重新执行固定30分钟，P06/A19未完成；P07管理登录及后续P08–P10继续。
+
+## 2026-10-28：P07.2 持久管理身份、会话与审计
+
+- 改动：3个Proto生成模型/迁移23，角色/独立CSRF、bcrypt固定cost12、256bit随机会话仅摘要持久化；数据库时钟固定到期、登录失败5次/5分钟锁定、8会话上限/最旧撤销，credential_version关闭旧权限、不可变会话/审计。构造不创建账号；前端版本从官方源核验并锁定，传输与页面仍待接入。
+- 验证：真实PG/race角色矩阵、摘要/成本、CSRF、注销不复活、失败计数、旧权限关闭、到期/禁止续期、会话上限/撤销审计、审计失败事务回滚、28模型四字段及并发迁移通过；完整make verify、原默认完整make integration、123份文档链接/差异检查通过，lint/race/goleak保留。修正空库测试未Apply及历史版本预期后全量重跑，见 [P07.2](validation/P07-02.md) 和 [认证基础](ADMIN_AUTH.md)。
+- 远程：4eb6ae6已推送main并核对SHA，[CI40632680044](https://github.com/hmlax/muskdeer/actions/runs/40632680044)success；7a19bc2的[CI40631997376](https://github.com/hmlax/muskdeer/actions/runs/40631997376)success、6468bf0的[CI40631192734](https://github.com/hmlax/muskdeer/actions/runs/40631192734)success。本步独立提交/推送并核对SHA。
+- 并行长运行：4eb6ae6在880,901ms/395次成交后因Nacos心跳及消费deadline退出，accepted=false；Nacos有5.18秒GC停顿记录，不仅据此归因，完整失败证据见P07.2。本步后保持原预算/断言独立重跑，不与另一套容器集成并行。A19未完成，后续管理HTTP/业务接口/页面和P08–P10继续。

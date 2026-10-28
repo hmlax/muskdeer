@@ -30,6 +30,7 @@ P01 最小 Proto 生成结构已直接通过 GORM/PostgreSQL 的精确小数与 
 如果最终交易网关无 fencing、幂等查询或失联撤单能力，明确能力缺口和改造建议；模拟开发继续，但真实接管保证及生产准备不能宣称完成。
 
 ## 变更记录
+2026-10-28：P07管理前端采用React 19.3.1、TypeScript 7.0.2、Vite 8.3.5；构建使用Node.js 24.22.1 LTS/npm 11.19.1，浏览器测试Playwright 1.64.1。版本已从[React注册表](https://registry.npmjs.org/react/19.3.1)、[TypeScript注册表](https://registry.npmjs.org/typescript/7.0.2)、[Vite注册表](https://registry.npmjs.org/vite/8.3.5)、[Node官方发布索引](https://nodejs.org/dist/index.json)及[Playwright注册表](https://registry.npmjs.org/@playwright/test/1.64.1)核验，具体lockfile/构建与浏览器命令随前端代码交付；不将版本选定当作页面验收完成。Go继续精确1.27.3，不受前端工具链影响。
 2026-10-26：创建准备基线；尚未核验本地仓库与任何现有接口。新决策须记录来源、日期、状态及受影响验收，助手建议不标用户批准。
 2026-10-26：按用户本轮明确指令，将四个必备数据库字段与 Model 数据访问规则设为强制规范，覆盖 AGENTS、Proto/ORM、deer、启动指令、实施计划及 A01/A22；Proto/数据库采用 snake_case 字段映射属于本次实现约定。已检查当前工作目录，仅有准备包，无业务代码或实际数据库可供验证。
 2026-10-26：按用户后续明确指令，将接口小数 string 与 Go decimal 规则扩展到所有小数字段，替换此前仅金额/数量或权威数值的有限表述；同步工程规则、Proto/ORM、接口、需求、启动指令、实施计划与 A23。decimal 库具体选型及版本待 P01 核验，当前仅更新规范。

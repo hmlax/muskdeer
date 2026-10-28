@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// AdminUser stores management identity or history; never serialize it as an API view.
+message AdminUser {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string username = 5 [(tagger.tags) = "gorm:\"column:username;type:varchar(64);not null;uniqueIndex:uk_admin_user_name\""];
+  string password_hash = 6 [(tagger.tags) = "gorm:\"column:password_hash;type:varchar(60);not null\""];
+  string role = 7 [(tagger.tags) = "gorm:\"column:role;type:varchar(16);not null\""];
+  bool enabled = 8 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  int64 credential_version = 9 [(tagger.tags) = "gorm:\"column:credential_version;type:bigint;not null\""];
+  int32 failed_attempts = 10 [(tagger.tags) = "gorm:\"column:failed_attempts;type:integer;not null\""];
+  int64 locked_until = 11 [(tagger.tags) = "gorm:\"column:locked_until;type:bigint;not null\""];
+  int64 revision = 12 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+}
+
+// AdminSession stores management identity or history; never serialize it as an API view.
+message AdminSession {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 user_id = 5 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;not null;index:idx_admin_session_user\""];
+  string token_hash = 6 [(tagger.tags) = "gorm:\"column:token_hash;type:char(64);not null;uniqueIndex:uk_admin_session_token\""];
+  string csrf_hash = 7 [(tagger.tags) = "gorm:\"column:csrf_hash;type:char(64);not null\""];
+  int64 credential_version = 8 [(tagger.tags) = "gorm:\"column:credential_version;type:bigint;not null\""];
+  int64 expires_at = 9 [(tagger.tags) = "gorm:\"column:expires_at;type:bigint;not null\""];
+  optional int64 revoked_at = 10 [(tagger.tags) = "gorm:\"column:revoked_at;type:bigint\""];
+}
+
+// AdminAudit stores management identity or history; never serialize it as an API view.
+message AdminAudit {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string actor = 5 [(tagger.tags) = "gorm:\"column:actor;type:varchar(64);not null\""];
+  string actor_role = 6 [(tagger.tags) = "gorm:\"column:actor_role;type:varchar(16);not null\""];
+  string action = 7 [(tagger.tags) = "gorm:\"column:action;type:varchar(64);not null\""];
+  string resource = 8 [(tagger.tags) = "gorm:\"column:resource;type:varchar(128);not null\""];
+  string reason = 9 [(tagger.tags) = "gorm:\"column:reason;type:varchar(256);not null\""];
+  optional int64 before_version = 10 [(tagger.tags) = "gorm:\"column:before_version;type:bigint\""];
+  optional int64 after_version = 11 [(tagger.tags) = "gorm:\"column:after_version;type:bigint\""];
+}
