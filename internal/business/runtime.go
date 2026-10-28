@@ -38,6 +38,7 @@ type Runtime struct {
 	execution       *executiongrpc.Server
 	market          *marketgrpc.Server
 	strategy        *strategygrpc.Server
+	strategyCatalog *strategygrpc.CatalogServer
 	strategyControl *strategygrpc.ControlServer
 	workers         []deer.Worker
 }
@@ -94,6 +95,9 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	}
 	if r.strategyControl != nil {
 		strategyv1.RegisterStrategyControlServer(registrar, r.strategyControl)
+	}
+	if r.strategyCatalog != nil {
+		strategyv1.RegisterStrategyCatalogServer(registrar, r.strategyCatalog)
 	}
 	return nil
 }

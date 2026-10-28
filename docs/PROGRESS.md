@@ -864,3 +864,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 改动：独立AdminCatalog仓储返回真实L1账户/主体/enabled/精确费率、执行交易对精度/状态及指定instrument+LIVE/REPLAY的实际行情绑定。每次当前viewer、只读RR、1–100页/排他ID游标/软删除，缺失交易对明确not-found，不将候选源/绑定冒充健康或交易许可，不创建资金/策略/订单/lease/快照。
 - 验证：repository/domain单元/race、两个真实PG目录及原控制收据PG/race通过（最终包8.264秒），18位费率及38位交易对精度、disabled/双源外部符号/模式隔离/分页/真实空数据、注销与credential变更后拒绝；并发独立提交新LIVE绑定当前快照不可见，下次可见。完整make verify、lint 0 issues/生成/单元/race/命令构建、146文档链接/差异检查通过，见[P07.15](validation/P07-15.md)。初次夹具遗漏迁移、角色修改违反原credential保护及测试lint失败均保留，已修正且未改变生产认证/原期限。
 - 远程：ed097b3已推送main并核对完整SHA，CI40670898680运行中；本步检查后独立提交推送并核对SHA。此步只交付仓储，目录typed gRPC/HTTP、创建/版本/换源事务和表单随后接入；本地未重复浏览器/镜像/默认完整交易，完整A27/L1及P08–P10仍待完成。
+
+## 2026-10-28：P07.16 typed目录gRPC与实际HTTP
+
+- 改动：独立StrategyCatalog、具体账户/交易对/feed/质量策略Proto及26生成文件，随management_enabled显式装配；API借用同一Deer/Nacos/mTLS客户端提供三个只读GET。API-peer/current viewer、原生期限/大小/未知字段/规范Cookie/页/显式mode、小数string及long int64、固定错误/no-store，无新交易资源或前端修改。
+- 验证：三个相关包单元/race及完整make verify/生成/Hertz/格式/lint 0 issues/单元/race/三个命令构建通过。最终真实PG/Nacos/mTLS及两独立命令组合包24.900秒通过：目录3.15秒、原查询HTTP8.66秒、原查询进程11.43秒；38位金额、双源分页/LIVE隔离、实际密码登录及逐次恢复旧Cookie仍401、TLS允许portfolio的业务权限拒绝、资金/预算/实例/租约/订单零，见[P07.16](validation/P07-16.md)。
+- 诊断与启动检查：首次非API证书选到了TLS allowlist之外，修正夹具后另遇首个Nacos.New/Ping超时；原失败/GC/命名日志保留，不扩大原期限或虚构统一根因。预备原先只查console/namespace，新增实际鉴权命名查询，单次≤1秒、最多5次/总≤5秒的启动前传输观察，拒绝/异常结果立即失败；生产客户端/场景/容器期限不变。启动合同先红后绿、最终22工具测试/147文档链接/差异检查通过。
+- 远程：004c4ea已推送main并核对SHA，ed097b3的[CI40670898680](https://github.com/hmlax/muskdeer/actions/runs/40670898680)success，含默认全套集成/三组管理浏览器/持久开发/镜像。本步检查后独立提交推送并核对SHA；本地未重复完整交易/浏览器/镜像，继续创建及配置/换源写事务和表单、其余管理流程和P08–P10，完整A27/L1未完成。

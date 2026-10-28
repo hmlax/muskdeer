@@ -62,6 +62,7 @@ type sessionReply struct {
 type Routes struct {
 	auth          domain.AdminAuth
 	strategies    strategyv1.StrategyManagementClient
+	catalog       strategyv1.StrategyCatalogClient
 	controls      strategyv1.StrategyControlClient
 	origin        string
 	host          string
@@ -110,6 +111,11 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	if r.controls != nil {
 		hertz.POST("/api/v1/strategies/:strategyID/control", r.controlStrategy)
 		hertz.GET("/api/v1/operations/:operationID", r.getOperation)
+	}
+	if r.catalog != nil {
+		hertz.GET("/api/v1/accounts", r.listAccounts)
+		hertz.GET("/api/v1/instruments", r.listInstruments)
+		hertz.GET("/api/v1/instruments/:instrumentID/market-feeds", r.listMarketFeeds)
 	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {

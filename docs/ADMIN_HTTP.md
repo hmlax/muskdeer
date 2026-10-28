@@ -47,6 +47,9 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 |---|---|---|
 | GET /api/v1/strategies | ListStrategiesReply | after_id默认0，limit默认50、范围1–100 |
 | GET /api/v1/strategies/:strategyID | GetStrategyReply | 正规范int64实例ID，无query |
+| GET /api/v1/accounts | ListAccountsReply | 已开通L1账户，after_id/limit同上 |
+| GET /api/v1/instruments | ListInstrumentsReply | 执行交易对元数据，after_id/limit同上 |
+| GET /api/v1/instruments/:instrumentID/market-feeds | ListMarketFeedsReply | mode必须显式LIVE或REPLAY，after_id/limit同上 |
 | GET /api/v1/strategies/:strategyID/versions | ListConfigVersionsReply | 同实例独立版本分页，after_id/limit同上 |
 
 调用使用唯一现有会话Cookie，API自行构造AdminSession，业务服务在同一只读快照内重新验证viewer权利；没有将API身份结果当作业务授权。拒绝GET body、重复/未知参数、非规范整数、溢出/负游标。不存在资源404、会话无效401并清cookie、角色拒绝403、依赖/协议故障503；后端私有错误不返回。路由不开放POST等写操作，也不启动交易。

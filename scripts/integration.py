@@ -6,7 +6,9 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import time
 import uuid
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -42,7 +44,36 @@ def initialize_naming(address: str) -> None:
         state = json.load(response)
     if state.get('version') != '2.5.2':
         raise ValueError('isolated Nacos server did not report version 2.5.2')
-    print('Nacos server 2.5.2: authenticated test namespaces initialized', flush=True)
+    verify_naming_ready(base, token)
+    print('Nacos server 2.5.2: authenticated namespaces and naming lookup ready', flush=True)
+
+
+def verify_naming_ready(base: str, token: str) -> None:
+    """Bound startup admission by the actual one-second naming-read contract."""
+    values = urllib.parse.urlencode({
+        'namespaceId': 'integration-naming', 'groupName': 'MUSKDEER_TEST_READINESS',
+        'clusterName': 'TEST', 'serviceName': 'deer-readiness.grpc', 'healthyOnly': 'true',
+    })
+    request = urllib.request.Request(base + '/v1/ns/instance/list?' + values,
+                                     headers={'Authorization': 'Bearer ' + token})
+    deadline = time.monotonic() + 5
+    for _attempt in range(5):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        try:
+            with urllib.request.urlopen(request, timeout=min(1, remaining)) as response:
+                result = json.load(response)
+            if not isinstance(result, dict) or result.get('hosts') != []:
+                raise ValueError('isolated Nacos readiness returned unexpected instances')
+            return
+        except urllib.error.HTTPError:
+            raise ValueError('isolated Nacos naming readiness was denied') from None
+        except (urllib.error.URLError, TimeoutError):
+            remaining = deadline - time.monotonic()
+            if remaining > 0:
+                time.sleep(min(0.05, remaining))
+    raise ValueError('isolated Nacos naming lookup did not become ready')
 
 
 def published_address(compose: list[str], service: str, port: int) -> str:

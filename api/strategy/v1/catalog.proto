@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+import "deer/proto/common/v1/market.proto";
+
+// StrategyCatalog returns provisioned choices, never a trading authorization.
+// It shares management opt-in and requires API peer plus current viewer session.
+service StrategyCatalog {
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsReply);
+  rpc ListInstruments(ListInstrumentsRequest) returns (ListInstrumentsReply);
+  rpc ListMarketFeeds(ListMarketFeedsRequest) returns (ListMarketFeedsReply);
+}
+
+message ListAccountsRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+}
+
+message ListInstrumentsRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+}
+
+message ListMarketFeedsRequest {
+  AdminSession session = 1;
+  int64 instrument_id = 2;
+  string mode = 3;
+  int64 after_id = 4;
+  int32 limit = 5;
+}
+
+message CatalogAccount {
+  int64 id = 1;
+  string account_id = 2;
+  string subject_id = 3;
+  bool enabled = 4;
+  // Quote asset fee/notional ratio, [0,1), at most 18 fractional digits.
+  string quote_fee_rate = 5;
+  int64 revision = 6;
+}
+
+message CatalogInstrument {
+  int64 id = 1;
+  string execution_venue = 2;
+  string symbol = 3;
+  string base_asset = 4;
+  string quote_asset = 5;
+  // Quote/base price increment, positive numeric(38,18).
+  string price_tick = 6;
+  // Base quantity increment, positive numeric(38,18).
+  string quantity_step = 7;
+  // Minimum quote notional, positive numeric(38,18).
+  string min_notional = 8;
+  string status = 9;
+  int64 metadata_version = 10;
+}
+
+message CatalogMarketFeed {
+  int64 id = 1;
+  string source = 2;
+  int64 instrument_id = 3;
+  string external_symbol = 4;
+  string mode = 5;
+  int64 source_version = 6;
+  // Binding policy does not prove a current, healthy publisher/snapshot.
+  muskdeer.common.v1.MarketPolicy policy = 7;
+}
+
+message ListAccountsReply {
+  repeated CatalogAccount accounts = 1;
+  int64 next_after_id = 2;
+}
+
+message ListInstrumentsReply {
+  repeated CatalogInstrument instruments = 1;
+  int64 next_after_id = 2;
+}
+
+message ListMarketFeedsReply {
+  repeated CatalogMarketFeed feeds = 1;
+  int64 next_after_id = 2;
+}

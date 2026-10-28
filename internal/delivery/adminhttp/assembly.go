@@ -55,6 +55,7 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 			return err
 		}
 		routes.strategies = strategyv1.NewStrategyManagementClient(connection)
+		routes.catalog = strategyv1.NewStrategyCatalogClient(connection)
 		if cfg.AdminHttp.StrategyControlsEnabled {
 			routes.controls = strategyv1.NewStrategyControlClient(connection)
 		}

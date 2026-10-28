@@ -1,6 +1,8 @@
 """Verify startup failures retain diagnostics and scoped cleanup."""
 
 import importlib.util
+import io
+import json
 from pathlib import Path
 import subprocess
 import unittest
@@ -13,6 +15,59 @@ spec.loader.exec_module(runner)
 
 
 class IntegrationFailureTest(unittest.TestCase):
+    def test_naming_admission_recovers_only_bounded_startup_transport_failure(self):
+        response = io.BytesIO(b'{"hosts":[]}')
+        with patch.object(runner.urllib.request, 'urlopen', side_effect=[TimeoutError(), response]) as lookup:
+            with patch.object(runner.time, 'sleep'):
+                runner.verify_naming_ready('http://127.0.0.1:60104/nacos', 'test-only-token')
+        self.assertEqual(lookup.call_count, 2)
+        for call in lookup.call_args_list:
+            self.assertLessEqual(call.kwargs['timeout'], 1)
+
+    def test_naming_admission_keeps_denials_bad_payloads_and_timeout_failed(self):
+        for payload in [b'{}', b'{"hosts":[{"unexpected":"instance"}]}', b'[]']:
+            with self.subTest(payload=payload):
+                with patch.object(runner.urllib.request, 'urlopen', return_value=io.BytesIO(payload)):
+                    with self.assertRaises(ValueError):
+                        runner.verify_naming_ready('http://127.0.0.1:60104/nacos', 'test-only-token')
+        with patch.object(runner.urllib.request, 'urlopen', side_effect=TimeoutError()) as lookup:
+            with patch.object(runner.time, 'sleep'):
+                with self.assertRaisesRegex(ValueError, 'did not become ready'):
+                    runner.verify_naming_ready('http://127.0.0.1:60104/nacos', 'test-only-token')
+        self.assertEqual(lookup.call_count, 5)
+        denied = runner.urllib.error.HTTPError('http://127.0.0.1:60104', 403, 'private-token-detail', {}, None)
+        with patch.object(runner.urllib.request, 'urlopen', side_effect=denied) as lookup:
+            with self.assertRaisesRegex(ValueError, '^isolated Nacos naming readiness was denied$'):
+                runner.verify_naming_ready('http://127.0.0.1:60104/nacos', 'test-only-token')
+        self.assertEqual(lookup.call_count, 1)
+
+    def test_bootstrap_verifies_authenticated_naming_not_only_console(self):
+        requests = []
+
+        def open_request(request, **kwargs):
+            requests.append(request)
+            if request.full_url.endswith('/v1/auth/login'):
+                body = {'accessToken': 'test-only-token'}
+            elif '/v2/console/namespace' in request.full_url:
+                body = {'code': 0, 'data': True}
+            elif request.full_url.endswith('/v1/console/server/state'):
+                body = {'version': '2.5.2'}
+            elif '/v1/ns/instance/list?' in request.full_url:
+                self.assertLessEqual(kwargs['timeout'], 1)
+                self.assertEqual(request.get_header('Authorization'), 'Bearer test-only-token')
+                values = runner.urllib.parse.parse_qs(runner.urllib.parse.urlparse(request.full_url).query)
+                self.assertEqual(values['namespaceId'], ['integration-naming'])
+                self.assertEqual(values['serviceName'], ['deer-readiness.grpc'])
+                self.assertEqual(values['healthyOnly'], ['true'])
+                body = {'hosts': []}
+            else:
+                body = {}
+            return io.BytesIO(json.dumps(body).encode())
+
+        with patch.object(runner.urllib.request, 'urlopen', side_effect=open_request):
+            runner.initialize_naming('127.0.0.1:60104')
+        self.assertTrue(any('/v1/ns/instance/list?' in request.full_url for request in requests))
+
     def test_assigned_ports_reach_only_the_owned_fixture(self):
         bindings = {
             'postgres': '127.0.0.1:60101',

@@ -18,7 +18,11 @@ P07.15增加独立`domain.AdminCatalog`/`repository.NewAdminCatalog`仓储。Acc
 
 Feeds显式限定一个存在且未软删除的instrument和LIVE/REPLAY模式，返回真实持久feed ID、Binance/OKX身份、外部符号、来源版本及具体质量策略。没有绑定则返回空列表，不自动把另一来源、REPLAY或候选Bitget/Bybit作为可选绑定；不存在交易对返回not-found。绑定并不表示当前publisher在线、快照健康或可授予风险，创建/启动仍须独立验证。
 
-三个查询均使用当前viewer及有界只读REPEATABLE READ事务、自增ID排他游标与1–100限制、软删除过滤及固定错误。Feeds的交易对存在性与绑定列表共用同一快照；并发提交的新绑定仅在下一次查询可见。查询不创建交易实例、账户余额、租约或行情。该步骤只提供仓储，typed gRPC/HTTP及创建表单随后接入；验证见[P07.15](validation/P07-15.md)。
+三个查询均使用当前viewer及有界只读REPEATABLE READ事务、自增ID排他游标与1–100限制、软删除过滤及固定错误。Feeds的交易对存在性与绑定列表共用同一快照；并发提交的新绑定仅在下一次查询可见。查询不创建交易实例、账户余额、租约或行情。仓储验证见[P07.15](validation/P07-15.md)。
+
+P07.16由[typed目录Proto](../api/strategy/v1/catalog.proto)的独立StrategyCatalog提供ListAccounts/ListInstruments/ListMarketFeeds，随management_enabled显式注册，不需要control_enabled。复用API-peer、原生≤5秒、≤2KiB、未知字段/规范会话及分页门禁；具体账户/交易对/feed/质量策略字段，不使用JSON或bytes业务包装。小数string、int64保留，服务端对精确小数和feed输入身份再次验证，错误沿用固定管理合同。
+
+API的strategy_queries_enabled同时显式接入三个[目录HTTP](ADMIN_HTTP.md)GET；借用同一个Deer/Nacos/mTLS客户端，不在API读取业务目录表、不透明重试或创建交易资源。实际两独立命令、真实viewer密码登录/业务鉴权与注销旧Cookie回归见[P07.16](validation/P07-16.md)。创建和参数/换源写事务及表单仍待后续。
 
 ## 管理 gRPC
 

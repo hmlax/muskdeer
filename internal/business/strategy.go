@@ -62,6 +62,14 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		if err != nil {
 			return nil, err
 		}
+		catalog, err := repository.NewAdminCatalog(db)
+		if err != nil {
+			return nil, err
+		}
+		runtime.strategyCatalog, err = strategygrpc.NewCatalog(catalog)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if cfg.Strategy.ControlEnabled {
 		if err := assembleStrategyControl(db, cfg, runtime); err != nil {

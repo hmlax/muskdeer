@@ -136,6 +136,11 @@ func strategyPage(request *app.RequestContext) (domain.AdminPage, bool) {
 	if err != nil {
 		return page, false
 	}
+	return adminPageValues(values)
+}
+
+func adminPageValues(values url.Values) (domain.AdminPage, bool) {
+	page := domain.AdminPage{Limit: 50}
 	for name, entries := range values {
 		if len(entries) != 1 {
 			return page, false
