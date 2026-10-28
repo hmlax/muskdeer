@@ -397,6 +397,244 @@ func (x *AdminAudit) GetAfterVersion() int64 {
 	return 0
 }
 
+// AdminStrategyOperation retains an actor-scoped idempotent control receipt.
+// Authentication secrets are never stored here. Terminal observations are immutable.
+type AdminStrategyOperation struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Id                 int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt           int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt           int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt           *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	ActorUserId        int64                  `protobuf:"varint,5,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty" gorm:"column:actor_user_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_operation_key"`
+	ActorSessionId     int64                  `protobuf:"varint,6,opt,name=actor_session_id,json=actorSessionId,proto3" json:"actor_session_id,omitempty" gorm:"column:actor_session_id;type:bigint;not null"`
+	StrategyInstanceId int64                  `protobuf:"varint,7,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty" gorm:"column:strategy_instance_id;type:bigint;not null;index:idx_admin_strategy_operation_strategy"`
+	AuditId            int64                  `protobuf:"varint,8,opt,name=audit_id,json=auditId,proto3" json:"audit_id,omitempty" gorm:"column:audit_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_operation_audit"`
+	IdempotencyKey     string                 `protobuf:"bytes,9,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty" gorm:"column:idempotency_key;type:varchar(64);not null;uniqueIndex:uk_admin_strategy_operation_key"`
+	RequestFingerprint string                 `protobuf:"bytes,10,opt,name=request_fingerprint,json=requestFingerprint,proto3" json:"request_fingerprint,omitempty" gorm:"column:request_fingerprint;type:char(64);not null"`
+	Action             string                 `protobuf:"bytes,11,opt,name=action,proto3" json:"action,omitempty" gorm:"column:action;type:varchar(32);not null"`
+	TargetState        string                 `protobuf:"bytes,12,opt,name=target_state,json=targetState,proto3" json:"target_state,omitempty" gorm:"column:target_state;type:varchar(16);not null"`
+	ExpectedRevision   int64                  `protobuf:"varint,13,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty" gorm:"column:expected_revision;type:bigint;not null"`
+	EffectRevision     int64                  `protobuf:"varint,14,opt,name=effect_revision,json=effectRevision,proto3" json:"effect_revision,omitempty" gorm:"column:effect_revision;type:bigint;not null"`
+	ConfigVersion      int64                  `protobuf:"varint,15,opt,name=config_version,json=configVersion,proto3" json:"config_version,omitempty" gorm:"column:config_version;type:bigint;not null"`
+	MarketDataSource   string                 `protobuf:"bytes,16,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty" gorm:"column:market_data_source;type:varchar(32);not null"`
+	Reason             string                 `protobuf:"bytes,17,opt,name=reason,proto3" json:"reason,omitempty" gorm:"column:reason;type:varchar(256);not null"`
+	State              string                 `protobuf:"bytes,18,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null;index:idx_admin_strategy_operation_pending"`
+	OutcomeCode        string                 `protobuf:"bytes,19,opt,name=outcome_code,json=outcomeCode,proto3" json:"outcome_code,omitempty" gorm:"column:outcome_code;type:varchar(32);not null"`
+	Revision           int64                  `protobuf:"varint,20,opt,name=revision,proto3" json:"revision,omitempty" gorm:"column:revision;type:bigint;not null"`
+	CompletedAt        *int64                 `protobuf:"varint,21,opt,name=completed_at,json=completedAt,proto3,oneof" json:"completed_at,omitempty" gorm:"column:completed_at;type:bigint"`
+	ObservedRevision   *int64                 `protobuf:"varint,22,opt,name=observed_revision,json=observedRevision,proto3,oneof" json:"observed_revision,omitempty" gorm:"column:observed_revision;type:bigint"`
+	ObservedState      *string                `protobuf:"bytes,23,opt,name=observed_state,json=observedState,proto3,oneof" json:"observed_state,omitempty" gorm:"column:observed_state;type:varchar(32)"`
+	ObservedOwnerId    *string                `protobuf:"bytes,24,opt,name=observed_owner_id,json=observedOwnerId,proto3,oneof" json:"observed_owner_id,omitempty" gorm:"column:observed_owner_id;type:varchar(128)"`
+	ObservedOwnerEpoch *int64                 `protobuf:"varint,25,opt,name=observed_owner_epoch,json=observedOwnerEpoch,proto3,oneof" json:"observed_owner_epoch,omitempty" gorm:"column:observed_owner_epoch;type:bigint"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *AdminStrategyOperation) Reset() {
+	*x = AdminStrategyOperation{}
+	mi := &file_deer_proto_model_v1_admin_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminStrategyOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminStrategyOperation) ProtoMessage() {}
+
+func (x *AdminStrategyOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_admin_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminStrategyOperation.ProtoReflect.Descriptor instead.
+func (*AdminStrategyOperation) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_admin_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AdminStrategyOperation) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetActorSessionId() int64 {
+	if x != nil {
+		return x.ActorSessionId
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetAuditId() int64 {
+	if x != nil {
+		return x.AuditId
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetRequestFingerprint() string {
+	if x != nil {
+		return x.RequestFingerprint
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetTargetState() string {
+	if x != nil {
+		return x.TargetState
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetExpectedRevision() int64 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetEffectRevision() int64 {
+	if x != nil {
+		return x.EffectRevision
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetConfigVersion() int64 {
+	if x != nil {
+		return x.ConfigVersion
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetMarketDataSource() string {
+	if x != nil {
+		return x.MarketDataSource
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetOutcomeCode() string {
+	if x != nil {
+		return x.OutcomeCode
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetCompletedAt() int64 {
+	if x != nil && x.CompletedAt != nil {
+		return *x.CompletedAt
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetObservedRevision() int64 {
+	if x != nil && x.ObservedRevision != nil {
+		return *x.ObservedRevision
+	}
+	return 0
+}
+
+func (x *AdminStrategyOperation) GetObservedState() string {
+	if x != nil && x.ObservedState != nil {
+		return *x.ObservedState
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetObservedOwnerId() string {
+	if x != nil && x.ObservedOwnerId != nil {
+		return *x.ObservedOwnerId
+	}
+	return ""
+}
+
+func (x *AdminStrategyOperation) GetObservedOwnerEpoch() int64 {
+	if x != nil && x.ObservedOwnerEpoch != nil {
+		return *x.ObservedOwnerEpoch
+	}
+	return 0
+}
+
 var File_deer_proto_model_v1_admin_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_admin_proto_rawDesc = "" +
@@ -454,7 +692,41 @@ const file_deer_proto_model_v1_admin_proto_rawDesc = "" +
 	"\n" +
 	"_delete_atB\x11\n" +
 	"\x0f_before_versionB\x10\n" +
-	"\x0e_after_versionB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
+	"\x0e_after_version\"\x99\x15\n" +
+	"\x16AdminStrategyOperation\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12\x85\x01\n" +
+	"\ractor_user_id\x18\x05 \x01(\x03Ba\x9a\x84\x9e\x03\\gorm:\"column:actor_user_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_operation_key\"R\vactorUserId\x12b\n" +
+	"\x10actor_session_id\x18\x06 \x01(\x03B8\x9a\x84\x9e\x033gorm:\"column:actor_session_id;type:bigint;not null\"R\x0eactorSessionId\x12\x9a\x01\n" +
+	"\x14strategy_instance_id\x18\a \x01(\x03Bh\x9a\x84\x9e\x03cgorm:\"column:strategy_instance_id;type:bigint;not null;index:idx_admin_strategy_operation_strategy\"R\x12strategyInstanceId\x12y\n" +
+	"\baudit_id\x18\b \x01(\x03B^\x9a\x84\x9e\x03Ygorm:\"column:audit_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_operation_audit\"R\aauditId\x12\x91\x01\n" +
+	"\x0fidempotency_key\x18\t \x01(\tBh\x9a\x84\x9e\x03cgorm:\"column:idempotency_key;type:varchar(64);not null;uniqueIndex:uk_admin_strategy_operation_key\"R\x0eidempotencyKey\x12n\n" +
+	"\x13request_fingerprint\x18\n" +
+	" \x01(\tB=\x9a\x84\x9e\x038gorm:\"column:request_fingerprint;type:char(64);not null\"R\x12requestFingerprint\x12K\n" +
+	"\x06action\x18\v \x01(\tB3\x9a\x84\x9e\x03.gorm:\"column:action;type:varchar(32);not null\"R\x06action\x12\\\n" +
+	"\ftarget_state\x18\f \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:target_state;type:varchar(16);not null\"R\vtargetState\x12f\n" +
+	"\x11expected_revision\x18\r \x01(\x03B9\x9a\x84\x9e\x034gorm:\"column:expected_revision;type:bigint;not null\"R\x10expectedRevision\x12`\n" +
+	"\x0feffect_revision\x18\x0e \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:effect_revision;type:bigint;not null\"R\x0eeffectRevision\x12]\n" +
+	"\x0econfig_version\x18\x0f \x01(\x03B6\x9a\x84\x9e\x031gorm:\"column:config_version;type:bigint;not null\"R\rconfigVersion\x12m\n" +
+	"\x12market_data_source\x18\x10 \x01(\tB?\x9a\x84\x9e\x03:gorm:\"column:market_data_source;type:varchar(32);not null\"R\x10marketDataSource\x12L\n" +
+	"\x06reason\x18\x11 \x01(\tB4\x9a\x84\x9e\x03/gorm:\"column:reason;type:varchar(256);not null\"R\x06reason\x12s\n" +
+	"\x05state\x18\x12 \x01(\tB]\x9a\x84\x9e\x03Xgorm:\"column:state;type:varchar(16);not null;index:idx_admin_strategy_operation_pending\"R\x05state\x12\\\n" +
+	"\foutcome_code\x18\x13 \x01(\tB9\x9a\x84\x9e\x034gorm:\"column:outcome_code;type:varchar(32);not null\"R\voutcomeCode\x12L\n" +
+	"\brevision\x18\x14 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:revision;type:bigint;not null\"R\brevision\x12S\n" +
+	"\fcompleted_at\x18\x15 \x01(\x03B+\x9a\x84\x9e\x03&gorm:\"column:completed_at;type:bigint\"H\x01R\vcompletedAt\x88\x01\x01\x12b\n" +
+	"\x11observed_revision\x18\x16 \x01(\x03B0\x9a\x84\x9e\x03+gorm:\"column:observed_revision;type:bigint\"H\x02R\x10observedRevision\x88\x01\x01\x12^\n" +
+	"\x0eobserved_state\x18\x17 \x01(\tB2\x9a\x84\x9e\x03-gorm:\"column:observed_state;type:varchar(32)\"H\x03R\robservedState\x88\x01\x01\x12g\n" +
+	"\x11observed_owner_id\x18\x18 \x01(\tB6\x9a\x84\x9e\x031gorm:\"column:observed_owner_id;type:varchar(128)\"H\x04R\x0fobservedOwnerId\x88\x01\x01\x12j\n" +
+	"\x14observed_owner_epoch\x18\x19 \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:observed_owner_epoch;type:bigint\"H\x05R\x12observedOwnerEpoch\x88\x01\x01B\f\n" +
+	"\n" +
+	"_delete_atB\x0f\n" +
+	"\r_completed_atB\x14\n" +
+	"\x12_observed_revisionB\x11\n" +
+	"\x0f_observed_stateB\x14\n" +
+	"\x12_observed_owner_idB\x17\n" +
+	"\x15_observed_owner_epochB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
 var (
 	file_deer_proto_model_v1_admin_proto_rawDescOnce sync.Once
@@ -468,11 +740,12 @@ func file_deer_proto_model_v1_admin_proto_rawDescGZIP() []byte {
 	return file_deer_proto_model_v1_admin_proto_rawDescData
 }
 
-var file_deer_proto_model_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deer_proto_model_v1_admin_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_deer_proto_model_v1_admin_proto_goTypes = []any{
-	(*AdminUser)(nil),    // 0: muskdeer.model.v1.AdminUser
-	(*AdminSession)(nil), // 1: muskdeer.model.v1.AdminSession
-	(*AdminAudit)(nil),   // 2: muskdeer.model.v1.AdminAudit
+	(*AdminUser)(nil),              // 0: muskdeer.model.v1.AdminUser
+	(*AdminSession)(nil),           // 1: muskdeer.model.v1.AdminSession
+	(*AdminAudit)(nil),             // 2: muskdeer.model.v1.AdminAudit
+	(*AdminStrategyOperation)(nil), // 3: muskdeer.model.v1.AdminStrategyOperation
 }
 var file_deer_proto_model_v1_admin_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -490,13 +763,14 @@ func file_deer_proto_model_v1_admin_proto_init() {
 	file_deer_proto_model_v1_admin_proto_msgTypes[0].OneofWrappers = []any{}
 	file_deer_proto_model_v1_admin_proto_msgTypes[1].OneofWrappers = []any{}
 	file_deer_proto_model_v1_admin_proto_msgTypes[2].OneofWrappers = []any{}
+	file_deer_proto_model_v1_admin_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_model_v1_admin_proto_rawDesc), len(file_deer_proto_model_v1_admin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -76,6 +76,23 @@ func (a *adminAuth) Logout(ctx context.Context, token, csrf string) error {
 // transaction: user SHARE first, then session. Role/credential changes and
 // logout cannot commit across the effect. Read-only identity uses a RR snapshot.
 func readAdminAuthority(ctx context.Context, tx *gorm.DB, token, csrf string, required domain.AdminRole, sessionStrength string) (*modelv1.AdminUser, *modelv1.AdminSession, error) {
+	userStrength := ""
+	if sessionStrength != "" {
+		userStrength = "SHARE"
+	}
+	return readAdminAuthorityLocks(ctx, tx, token, csrf, required, userStrength, sessionStrength)
+}
+
+// Mutations serialize actor-scoped keys at the user row before any session or
+// strategy lock. This also keeps credential change/logout outside the effect.
+func readAdminControlAuthority(ctx context.Context, tx *gorm.DB, token, csrf string) (*modelv1.AdminUser, *modelv1.AdminSession, error) {
+	if _, valid := adminSecretHash(csrf); !valid {
+		return nil, nil, domain.ErrForbidden
+	}
+	return readAdminAuthorityLocks(ctx, tx, token, csrf, domain.AdminRoleOperator, "NO KEY UPDATE", "SHARE")
+}
+
+func readAdminAuthorityLocks(ctx context.Context, tx *gorm.DB, token, csrf string, required domain.AdminRole, userStrength, sessionStrength string) (*modelv1.AdminUser, *modelv1.AdminSession, error) {
 	hash, valid := adminSecretHash(token)
 	if !valid {
 		return nil, nil, domain.ErrUnauthenticated
@@ -86,8 +103,8 @@ func readAdminAuthority(ctx context.Context, tx *gorm.DB, token, csrf string, re
 	}
 	var user modelv1.AdminUser
 	userQuery := tx.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ? AND enabled AND delete_at IS NULL", first.UserId)
-	if sessionStrength != "" {
-		userQuery = userQuery.Clauses(clause.Locking{Strength: "SHARE"})
+	if userStrength != "" {
+		userQuery = userQuery.Clauses(clause.Locking{Strength: userStrength})
 	}
 	if err := userQuery.First(&user).Error; err != nil {
 		return nil, nil, adminSessionLookupFailure(err)
