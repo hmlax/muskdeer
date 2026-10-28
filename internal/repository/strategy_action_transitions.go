@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -44,8 +45,8 @@ func (s *strategyActions) Discard(ctx context.Context, current domain.StrategyAc
 }
 
 func (s *strategyActions) Observe(ctx context.Context, current domain.StrategyAction, authority domain.StrategyAuthority) (domain.StrategyAction, error) {
-	return s.changeAction(ctx, current, authority, func(tx *gorm.DB, row *modelv1.StrategyAction, _ *modelv1.StrategyInstance, _ int64) (bool, error) {
-		if row.State == string(domain.StrategyActionObserved) {
+	return s.changeAction(ctx, current, authority, func(tx *gorm.DB, row *modelv1.StrategyAction, _ *modelv1.StrategyInstance, now int64) (bool, error) {
+		if row.State == string(domain.StrategyActionObserved) || row.State == string(domain.StrategyActionNotAccepted) {
 			return false, nil
 		}
 		if row.State != string(domain.StrategyActionDispatching) && row.State != string(domain.StrategyActionWaiting) && row.State != string(domain.StrategyActionUnknown) {
@@ -62,6 +63,11 @@ func (s *strategyActions) Observe(ctx context.Context, current domain.StrategyAc
 		}
 		if err != nil {
 			return false, err
+		}
+		if row.State == string(domain.StrategyActionUnknown) {
+			if err := resolveUnacceptedAction(ctx, tx, row, now); err != nil {
+				return false, err
+			}
 		}
 		changed := row.State != state || row.GetIntentId() != intent || row.GetCancellationId() != cancellation ||
 			row.ObservedOrderState != orderState || row.ObservedCancellationState != cancelState || row.OwnerId != authority.OwnerID || row.OwnerEpoch != authority.OwnerEpoch
@@ -105,7 +111,7 @@ func (s *strategyActions) changeAction(ctx context.Context, current domain.Strat
 		}
 		result, err = actionSnapshot(&row)
 		return err
-	})
+	}, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return domain.StrategyAction{}, actionFailure(ctx, err)
 	}

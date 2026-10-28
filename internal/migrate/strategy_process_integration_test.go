@@ -157,9 +157,34 @@ func waitStrategyProcessQuotes(ctx context.Context, t *testing.T, db *gorm.DB, i
 		}
 		select {
 		case <-ctx.Done():
+			logStrategyRecoveryState(ctx, t, db, id)
 			t.Fatalf("strategy %d did not acquire a newer owner and bilateral quotes: state=%s epoch=%d", id, row.State, row.RuntimeOwnerEpoch)
 		case <-ticker.C:
 		}
+	}
+}
+
+func logStrategyRecoveryState(ctx context.Context, t *testing.T, db *gorm.DB, id int64) {
+	t.Helper()
+	inspect, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second)
+	defer cancel()
+	var actions []*modelv1.StrategyAction
+	if err := db.WithContext(inspect).Model(&modelv1.StrategyAction{}).Where("strategy_instance_id = ?", id).Order("id DESC").Limit(12).Find(&actions).Error; err != nil {
+		t.Log("strategy action diagnostic query did not complete")
+		return
+	}
+	for _, action := range actions {
+		t.Logf("strategy action id=%d kind=%s state=%s deadline=%d intent=%d cancellation=%d order_state=%s cancellation_state=%s",
+			action.Id, action.Kind, action.State, action.DeadlineAt, action.GetIntentId(), action.GetCancellationId(), action.ObservedOrderState, action.ObservedCancellationState)
+	}
+	var orders []*modelv1.OrderIntent
+	if err := db.WithContext(inspect).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ?", id).Order("id DESC").Limit(12).Find(&orders).Error; err != nil {
+		t.Log("strategy order diagnostic query did not complete")
+		return
+	}
+	for _, order := range orders {
+		t.Logf("strategy order id=%d state=%s cancel=%s core=%d deadline=%d error=%s",
+			order.Id, order.State, order.CancelState, order.GetCoreOrderId(), order.SubmissionDeadlineAt, order.ErrorCode)
 	}
 }
 

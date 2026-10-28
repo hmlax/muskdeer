@@ -1,6 +1,6 @@
 # 版本化数据库升级
 
-P03.2 提供显式迁移工具，服务启动及 dev-up 都不会自动执行迁移或 AutoMigrate。当前版本 19 包含迁移记录、交易对/实例/配置来源身份、typed 模板参数、策略/执行/行情租约、模拟核心、OMS/持仓、行情绑定及有发布授权的快照/基准、持久策略动作及运行incarnation；后续业务表继续按新版本加入。
+P03.2 提供显式迁移工具，服务启动及 dev-up 都不会自动执行迁移或 AutoMigrate。当前版本 20 包含迁移记录、交易对/实例/配置来源身份、typed 模板参数、策略/执行/行情租约、模拟核心、OMS/持仓、行情绑定及有发布授权的快照/基准、持久策略动作及运行incarnation；后续业务表继续按新版本加入。
 
 ## 使用
 
@@ -13,7 +13,7 @@ make build
 
 本地开发可使用 `make dev-up` 生成的 `.cache/dev/execution.json`，先 source `.cache/dev/environment.sh`。工具只装配配置中的 PostgreSQL，不创建业务进程、日志文件、Redis、Nacos 或消息客户端。Go 固定 1.27.3，整个命令有 30 秒总预算及 SIGTERM 取消；数据库各语句还受配置 statement_timeout 限制。
 
-成功输出 typed JSON `{"status":"applied","version":19}`，包括已经是当前版本的情况；参数错误退出 2，配置/连接/历史/执行/清理错误退出 1。必须显式传 -apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出 SQL、凭据或原始配置，历史不一致有独立安全提示。
+成功输出 typed JSON `{"status":"applied","version":20}`，包括已经是当前版本的情况；参数错误退出 2，配置/连接/历史/执行/清理错误退出 1。必须显式传 -apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出 SQL、凭据或原始配置，历史不一致有独立安全提示。
 
 ## 结构与执行
 
@@ -64,3 +64,5 @@ SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/mi
 版本18增加生成模型StrategyAction，先持久PENDING，再以CAS/策略租约写DISPATCHING后才允许调用执行端。决策键永久绑定业务字段及稳定RPC键，尝试后的截止时间不可重写；缺失结果保持UNKNOWN，已受理未完成保留WAITING，均阻止新增提交键。只有未派发动作能丢弃。提交前独立deferred门禁重新检查真实策略/租约/时间及关联OMS身份，失权整体回滚动作状态；没有初始化资金、风险许可或自动派发。新表同样含Id自增主键、create_at/update_at非NULL、delete_at可NULL，历史保留并禁止删除/软删除；详见 [动作日志](STRATEGY_ACTIONS.md)。
 
 版本19在StrategyInstance增加runtime_owner_id/epoch。零epoch保留历史元数据和明确模拟夹具；实际生命周期先记录正epoch恢复状态，再允许进入RUNNING。正epoch不可退回零或改写同epoch身份，提交末尾重新检查真实租约；停止/暂停完成及配置切换须无OMS、核心订单或动作义务。所有权元数据不替代最终执行端fencing，不因升级自动启动策略或开放风险，见 [生命周期](STRATEGY_LIFECYCLE.md)。
+
+版本20增加NOT_ACCEPTED及原业务键永久门禁。在当前策略准入互斥/lease和READ COMMITTED下，只有原截止时间已过且全部受理/核心证据均不存在时才允许判定；提交末尾SQL独立重验。旧RPC/核心键不能续期复活，相关受理历史保留；未确认取消的父订单不因此释放资金。只适用于当前L1共享数据库合同，见 [截止证明](STRATEGY_ACTION_RESOLUTION.md)。

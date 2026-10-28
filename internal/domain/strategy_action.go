@@ -24,6 +24,7 @@ const (
 	StrategyActionUnknown     StrategyActionState = "UNKNOWN"
 	StrategyActionObserved    StrategyActionState = "OBSERVED"
 	StrategyActionDiscarded   StrategyActionState = "DISCARDED"
+	StrategyActionNotAccepted StrategyActionState = "NOT_ACCEPTED"
 
 	MaxActiveStrategyActions = 256
 )

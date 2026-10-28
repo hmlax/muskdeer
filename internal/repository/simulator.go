@@ -141,7 +141,10 @@ func lockGateway(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuth
 
 func lockAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority, execution domain.LeaseToken, accountID string, instrumentID int64) (*modelv1.StrategyInstance, int64, error) {
 	var strategy modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "SHARE"}).First(&strategy, authority.StrategyID).Error; err != nil {
+	// Admission, action resolution and the final core gate use one mutex.
+	// Acquire it before either lease: upgrading SHARE after taking a lease
+	// deadlocks with another admission holding SHARE while waiting for it.
+	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy, authority.StrategyID).Error; err != nil {
 		return nil, 0, err
 	}
 	if strategy.AccountId != accountID || strategy.InstrumentId != instrumentID || strategy.ActiveConfigVersion == nil || *strategy.ActiveConfigVersion != authority.ConfigVersion {
@@ -218,6 +221,12 @@ func coreFailure(ctx context.Context, err error) error {
 	}
 	var databaseError *pgconn.PgError
 	if errors.As(err, &databaseError) {
+		if databaseError.ConstraintName == "strategy_action_not_accepted" {
+			return &corePersistenceError{
+				category: domain.ErrInvalidOrder,
+				cause:    err,
+			}
+		}
 		if databaseError.ConstraintName == "simulator_command_fence" {
 			return &corePersistenceError{
 				category: domain.ErrLeaseLost,

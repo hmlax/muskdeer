@@ -33,8 +33,12 @@ func (s *cancellationStore) Accept(ctx context.Context, input domain.CancelInput
 	}
 	var result domain.CancellationSnapshot
 	err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
-		if _, _, err := lockAuthority(ctx, tx, input.Authority, execution, input.AccountID, input.InstrumentID); err != nil {
+		_, now, err := lockAuthority(ctx, tx, input.Authority, execution, input.AccountID, input.InstrumentID)
+		if err != nil {
 			return err
+		}
+		if input.Deadline.UnixMilli() <= now {
+			return domain.ErrInvalidOrder
 		}
 		if _, err := lockIntentInstrument(ctx, tx, input.InstrumentID); err != nil {
 			return err

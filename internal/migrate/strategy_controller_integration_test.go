@@ -120,7 +120,7 @@ func TestStrategyControllerUnknownWriteIsOnlyObservedAcrossTakeover(t *testing.T
 		t.Fatalf("uncertainty was erased: %+v, %v", active, err)
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
+	assertReservedBudget(ctx, t, db, submit.Input.AccountID, active[0].Plan.Price.Mul(active[0].Plan.Quantity).String())
 }
 
 type controllerExecution struct {
@@ -138,6 +138,17 @@ type controllerExecution struct {
 func (e *controllerExecution) Submit(ctx context.Context, input domain.OrderInput) (domain.IntentSnapshot, error) {
 	e.submits++
 	if e.dropSubmit {
+		accepted, err := e.store.Accept(ctx, input, e.owner)
+		if err != nil {
+			return domain.IntentSnapshot{}, err
+		}
+		prepared, err := e.store.Prepare(ctx, accepted, input.Authority, e.owner, input.Deadline)
+		if err != nil {
+			return domain.IntentSnapshot{}, err
+		}
+		if _, err := e.store.Unknown(ctx, prepared, domain.IntentErrorOutcomeUnknown); err != nil {
+			return domain.IntentSnapshot{}, err
+		}
 		return domain.IntentSnapshot{}, domain.ErrOutcomeUnknown
 	}
 	return e.intents.Submit(ctx, input, e.owner)
