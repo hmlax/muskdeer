@@ -1,6 +1,6 @@
 # 策略管理查询
 
-P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP，P07.9 交付列表/详情/版本页面。P07.10–P07.14提供[运行控制事务/传输/页面](ADMIN_CONTROL.md)，创建及配置写入仍待交付，不能据此将 R08/A27 标为完成。身份、查询HTTP和页面入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
+P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP，P07.9 交付列表/详情/版本页面。P07.10–P07.14提供[运行控制事务/传输/页面](ADMIN_CONTROL.md)，创建及配置管理接口/页面仍待交付，不能据此将 R08/A27 标为完成。身份、查询HTTP和页面入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
 
 每次 List、Detail、Versions 均在同一个只读 REPEATABLE READ 事务内校验持久会话、用户启用状态、credential_version、数据库时钟到期及 viewer 权限，然后读取业务数据。注销或凭据变更后的新查询不能沿用此前 API 身份检查的结果。查询是快照观测，不是新增交易风险的授权；并发注销不撤回已经开始的只读快照。
 
@@ -22,7 +22,7 @@ Feeds显式限定一个存在且未软删除的instrument和LIVE/REPLAY模式，
 
 P07.16由[typed目录Proto](../api/strategy/v1/catalog.proto)的独立StrategyCatalog提供ListAccounts/ListInstruments/ListMarketFeeds，随management_enabled显式注册，不需要control_enabled。复用API-peer、原生≤5秒、≤2KiB、未知字段/规范会话及分页门禁；具体账户/交易对/feed/质量策略字段，不使用JSON或bytes业务包装。小数string、int64保留，服务端对精确小数和feed输入身份再次验证，错误沿用固定管理合同。
 
-API的strategy_queries_enabled同时显式接入三个[目录HTTP](ADMIN_HTTP.md)GET；借用同一个Deer/Nacos/mTLS客户端，不在API读取业务目录表、不透明重试或创建交易资源。实际两独立命令、真实viewer密码登录/业务鉴权与注销旧Cookie回归见[P07.16](validation/P07-16.md)。创建和参数/换源写事务及表单仍待后续。
+API的strategy_queries_enabled同时显式接入三个[目录HTTP](ADMIN_HTTP.md)GET；借用同一个Deer/Nacos/mTLS客户端，不在API读取业务目录表、不透明重试或创建交易资源。实际两独立命令、真实viewer密码登录/业务鉴权与注销旧Cookie回归见[P07.16](validation/P07-16.md)。P07.17已提供独立[创建持久事务](ADMIN_CREATION.md)，创建传输/表单及参数/换源管理仍待后续。
 
 ## 管理 gRPC
 

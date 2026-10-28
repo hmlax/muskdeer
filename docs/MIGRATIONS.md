@@ -1,6 +1,6 @@
 # 版本化数据库升级
 
-P03.2提供显式迁移工具，服务启动及dev-up都不会自动执行迁移或AutoMigrate。当前版本25包含迁移记录、交易对/实例/配置来源身份、typed模板参数、策略/执行/行情租约、模拟核心、OMS/持仓、行情快照/基准、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及管理操作收据/结果；后续业务表继续按新版本加入。
+P03.2提供显式迁移工具，服务启动及dev-up都不会自动执行迁移或AutoMigrate。当前版本26包含迁移记录、交易对/实例/配置来源身份、typed模板参数、策略/执行/行情租约、模拟核心、OMS/持仓、行情快照/基准、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及管理操作收据/结果；后续业务表继续按新版本加入。
 
 ## 使用
 
@@ -13,7 +13,7 @@ make build
 
 本地开发可使用 `make dev-up` 生成的 `.cache/dev/execution.json`，先 source `.cache/dev/environment.sh`。工具只装配配置中的 PostgreSQL，不创建业务进程、日志文件、Redis、Nacos 或消息客户端。Go 固定 1.27.3，整个命令有 30 秒总预算及 SIGTERM 取消；数据库各语句还受配置 statement_timeout 限制。
 
-成功输出typed JSON `{"status":"applied","version":25}`，包括已经是当前版本的情况；参数错误退出2，配置/连接/历史/执行/清理错误退出1。必须显式传-apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出SQL、凭据或原始配置，历史不一致有独立安全提示。
+成功输出typed JSON `{"status":"applied","version":26}`，包括已经是当前版本的情况；参数错误退出2，配置/连接/历史/执行/清理错误退出1。必须显式传-apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出SQL、凭据或原始配置，历史不一致有独立安全提示。
 
 ## 结构与执行
 
@@ -76,3 +76,6 @@ SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/mi
 版本24为StrategyInstance加入独立desired_state，只允许RUNNING/PAUSED/STOPPED且与desired_running一致。升级按原bool及PAUSING/PAUSED实际状态回填；新建旧式实例在插入触发器内规范化，旧bool-only启停请求映射RUNNING/STOPPED，显式暂停必须同时命名PAUSED。实际运行状态及租约接管不能改写该请求目标；有owner的运行状态转换末尾再核对请求目标，原恢复/终态义务/fencing约束保留。后续管理接口在自己的鉴权/幂等/审计事务内写入该目标，本字段自身不构成匿名管理入口。
 
 版本25增加生成AdminStrategyOperation，按操作者/幂等键保存绑定审计及实例版本/来源/目标的ACCEPTED收据。SQL验证当前operator会话及审计、禁止身份/历史改删；SUCCEEDED需真实目标状态及当前运行租约或已清空义务证明，SUPERSEDED需目标已被替换。升级不改变旧实例/配置或创建用户/资金/风险许可；见[管理控制基础](ADMIN_CONTROL.md)。
+
+
+版本26增加生成AdminStrategyCreation及不可变创建收据表，按操作者/幂等键唯一。SQL核对当前operator会话、不可变审计、实际CREATED/请求STOPPED的初始配置及零预留独立预算，等待后按数据库时钟检查到期，禁止改删历史；原实例/参数/资金/运行目标均不改写。创建业务由显式仓储调用，不因升级自动开通用户或交易资源，见[创建事务](ADMIN_CREATION.md)。
