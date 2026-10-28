@@ -763,3 +763,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 证据：实际make soak退出0；原产物、dirty基线3f0470c、同时开发负载、最终金额及摘要如实记录于 [P06.27](validation/P06-27.md) 和 [结果JSON](validation/P06-27-result.json)，本步文档/证据JSON检查后独立提交推送。原失败不覆盖；本次不声称后续P07控制器/迁移已运行30分钟。
 - 远程：586339a已推送main并核对SHA；04b1f05管理页[CI40640011562](https://github.com/hmlax/muskdeer/actions/runs/40640011562)success，dc7b3e1认证修正[CI40639554093](https://github.com/hmlax/muskdeer/actions/runs/40639554093)success。
 - 状态：P06 done；A19时长/核算部分通过，延迟/容量及最终版本仍待P10。继续P07持久暂停目标及管理业务前后端、P08–P10，完整L1未完成。
+
+## 2026-10-28：P07.3a 原生 HTTP 测试资源清理
+
+- 发现：586339a[CI40640597226](https://github.com/hmlax/muskdeer/actions/runs/40640597226)管理原生场景业务断言后，进程清理5秒耗尽而失败；旧测试借用默认全局HTTP连接池，未在自己API停止前关闭空闲连接。
+- 改动：测试拥有有界Transport并先关闭客户端池再SIGTERM，原3秒请求/5秒停止、角色/CSRF/审计和进程0退出断言均保留，不改生产transport。
+- 验证：真实PG/race原生场景及连续3次独立schema/进程通过，Deer在途请求/监听失败drain race、最终fmt-check/lint 0 issues及文档/差异检查通过；见 [P07.3a](validation/P07-03a.md)。本步独立提交/推送并核对SHA。
+- 并行状态：P07.5迁移/暂停接管及历史带数据升级已通过聚焦验证；首次全套发现两处旧schema夹具漏省略新字段，修正后完整integration重跑中，尚未提交。P06长运行记录506450a已同步；完整L1继续P07–P10。

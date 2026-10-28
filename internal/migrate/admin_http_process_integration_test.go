@@ -92,9 +92,16 @@ func TestAdminCommandAndAPIProcessLoginSessionAndLogout(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	transport := &http.Transport{
+		MaxIdleConns:    2,
+		MaxConnsPerHost: 2,
+	}
+	// Registered after the owned API: client sockets close before its SIGTERM.
+	t.Cleanup(transport.CloseIdleConnections)
 	client := &http.Client{
-		Jar:     jar,
-		Timeout: 3 * time.Second,
+		Jar:       jar,
+		Timeout:   3 * time.Second,
+		Transport: transport,
 	}
 	body := `{"username":"native-viewer","password":"` + adminFixturePassword + `"}`
 	reply := nativeAdminRequest(ctx, t, client, base, "POST", "/api/v1/auth/login", body, base, "")
