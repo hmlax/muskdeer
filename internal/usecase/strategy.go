@@ -165,8 +165,10 @@ func (s *StrategyController) recover(ctx context.Context, current domain.Strateg
 
 func (s *StrategyController) stop(ctx context.Context, current domain.StrategySpec, token domain.LeaseToken, orders []domain.IntentSnapshot) error {
 	target, pending := domain.StrategyStateStopped, domain.StrategyStateStopping
-	if current.State == domain.StrategyStatePausing || current.State == domain.StrategyStatePaused {
+	if current.DesiredState == domain.StrategyStatePaused {
 		target, pending = domain.StrategyStatePaused, domain.StrategyStatePausing
+	} else if current.DesiredState != domain.StrategyStateStopped {
+		return domain.ErrInvalidParameters
 	}
 	if current.State != target {
 		var err error

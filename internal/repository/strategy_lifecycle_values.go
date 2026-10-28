@@ -29,14 +29,17 @@ func lifecycleBoundary(ctx context.Context, strategyID int64, token domain.Lease
 }
 
 func lifecycleDesired(row *modelv1.StrategyInstance, transition domain.StrategyTransition) error {
-	if transition.State == domain.StrategyStateRunning && !row.DesiredRunning {
-		return domain.ErrRiskDenied
-	}
+	var target domain.StrategyState
 	switch transition.State {
-	case domain.StrategyStatePausing, domain.StrategyStatePaused, domain.StrategyStateStopping, domain.StrategyStateStopped:
-		if row.DesiredRunning {
-			return domain.ErrRiskDenied
-		}
+	case domain.StrategyStateRunning:
+		target = domain.StrategyStateRunning
+	case domain.StrategyStatePausing, domain.StrategyStatePaused:
+		target = domain.StrategyStatePaused
+	case domain.StrategyStateStopping, domain.StrategyStateStopped:
+		target = domain.StrategyStateStopped
+	}
+	if target != "" && row.DesiredState != string(target) {
+		return domain.ErrRiskDenied
 	}
 	return nil
 }
@@ -57,6 +60,7 @@ func strategySpec(row *modelv1.StrategyInstance) domain.StrategySpec {
 		Revision:          row.Revision,
 		State:             domain.StrategyState(row.State),
 		DesiredRunning:    row.DesiredRunning,
+		DesiredState:      domain.StrategyState(row.DesiredState),
 		RequestedVersion:  row.RequestedConfigVersion,
 		RequestedSource:   domain.MarketSource(row.MarketDataSource),
 		ActiveVersion:     row.GetActiveConfigVersion(),

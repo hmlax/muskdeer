@@ -4,7 +4,7 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
-P01–P05 已完成公共运行层、模拟现货/OMS后端闭环和双来源行情层：Binance/OKX公开实连、独立簿/质量/发布授权、typed读取及实际 market/execution/portfolio 命令进程。做市/策略失效撤单、管理页面和完整 L1 继续 P06–P10。进度及限制见 docs/PROGRESS.md。
+P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份页面/接口及网格控制循环已分步交付，完整策略管理、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。
@@ -19,7 +19,7 @@ make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；�
 `make soak-smoke` 检查12秒真实策略驱动；`make soak` 使用独有测试基础设施执行固定30分钟场景，保存资金/预算/成交投影采样及实际业务进程日志。短场景不能计为30分钟验收，见 [长运行说明](docs/STRATEGY_SOAK.md)。
 `make web-install web-check web-build`使用项目内精确Node/npm构建React管理页面，产物提交后由Go embed/Hertz托管；普通Go构建无需Node。`make admin-browser`使用独有PG、实际本地账户/API命令和Chromium验证登录、刷新及注销，截图保存在.cache/admin-browser；见[管理入口](docs/ADMIN_HTTP.md)。
 `make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test及身份浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
-数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本 23 含交易对/实例/配置来源身份、typed 做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS 意图/预算/撤单/outbox、成交 inbox/持仓、来源/产品/模式/质量政策绑定及有发布授权的行情快照/定价基准、最终所选行情门禁、跨账户平台/交易对额度、持久策略动作和策略运行incarnation，交易表继续增加，见 [迁移说明](docs/MIGRATIONS.md) 和 [参数说明](docs/STRATEGY_PARAMETERS.md)。
+数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本24含交易对/实例/配置来源身份、typed做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS意图/预算/撤单/outbox、成交inbox/持仓、行情快照/定价基准、最终所选行情门禁、平台/交易对额度、持久动作/运行incarnation、管理身份/审计及独立请求运行目标，交易表继续增加，见[迁移说明](docs/MIGRATIONS.md)和[参数说明](docs/STRATEGY_PARAMETERS.md)。
 `make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。
 在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 检查现有实现与 PROGRESS，从首个未完成任务持续推进至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。
 每个最小步骤完成并通过相关测试/检查后，立即提交并推送到该远程仓库，确认同步后继续下一步。文档步骤验证文档与文件完整性，不宣称业务测试已通过。

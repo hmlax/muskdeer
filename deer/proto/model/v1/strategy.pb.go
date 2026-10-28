@@ -189,8 +189,10 @@ type StrategyInstance struct {
 	MarketMode             string                 `protobuf:"bytes,17,opt,name=market_mode,json=marketMode,proto3" json:"market_mode,omitempty" gorm:"column:market_mode;type:varchar(16);not null;default:REPLAY"`
 	RuntimeOwnerId         string                 `protobuf:"bytes,18,opt,name=runtime_owner_id,json=runtimeOwnerId,proto3" json:"runtime_owner_id,omitempty" gorm:"column:runtime_owner_id;type:varchar(128);not null;default:''"`
 	RuntimeOwnerEpoch      int64                  `protobuf:"varint,19,opt,name=runtime_owner_epoch,json=runtimeOwnerEpoch,proto3" json:"runtime_owner_epoch,omitempty" gorm:"column:runtime_owner_epoch;type:bigint;not null;default:0"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Durable requested target, independent of runtime recovery/ownership.
+	DesiredState  string `protobuf:"bytes,20,opt,name=desired_state,json=desiredState,proto3" json:"desired_state,omitempty" gorm:"column:desired_state;type:varchar(16);not null;default:''"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StrategyInstance) Reset() {
@@ -354,6 +356,13 @@ func (x *StrategyInstance) GetRuntimeOwnerEpoch() int64 {
 		return x.RuntimeOwnerEpoch
 	}
 	return 0
+}
+
+func (x *StrategyInstance) GetDesiredState() string {
+	if x != nil {
+		return x.DesiredState
+	}
+	return ""
 }
 
 // StrategyConfigVersion stores immutable version/source identity and typed
@@ -525,7 +534,7 @@ const file_deer_proto_model_v1_strategy_proto_rawDesc = "" +
 	"\x06status\x18\f \x01(\tB3\x9a\x84\x9e\x03.gorm:\"column:status;type:varchar(16);not null\"R\x06status\x12c\n" +
 	"\x10metadata_version\x18\r \x01(\x03B8\x9a\x84\x9e\x033gorm:\"column:metadata_version;type:bigint;not null\"R\x0fmetadataVersionB\f\n" +
 	"\n" +
-	"_delete_at\"\x99\x10\n" +
+	"_delete_at\"\x85\x11\n" +
 	"\x10StrategyInstance\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -548,7 +557,8 @@ const file_deer_proto_model_v1_strategy_proto_rawDesc = "" +
 	"\vmarket_mode\x18\x11 \x01(\tBG\x9a\x84\x9e\x03Bgorm:\"column:market_mode;type:varchar(16);not null;default:REPLAY\"R\n" +
 	"marketMode\x12s\n" +
 	"\x10runtime_owner_id\x18\x12 \x01(\tBI\x9a\x84\x9e\x03Dgorm:\"column:runtime_owner_id;type:varchar(128);not null;default:''\"R\x0eruntimeOwnerId\x12u\n" +
-	"\x13runtime_owner_epoch\x18\x13 \x01(\x03BE\x9a\x84\x9e\x03@gorm:\"column:runtime_owner_epoch;type:bigint;not null;default:0\"R\x11runtimeOwnerEpochB\f\n" +
+	"\x13runtime_owner_epoch\x18\x13 \x01(\x03BE\x9a\x84\x9e\x03@gorm:\"column:runtime_owner_epoch;type:bigint;not null;default:0\"R\x11runtimeOwnerEpoch\x12j\n" +
+	"\rdesired_state\x18\x14 \x01(\tBE\x9a\x84\x9e\x03@gorm:\"column:desired_state;type:varchar(16);not null;default:''\"R\fdesiredStateB\f\n" +
 	"\n" +
 	"_delete_atB\x18\n" +
 	"\x16_active_config_versionB\x1c\n" +

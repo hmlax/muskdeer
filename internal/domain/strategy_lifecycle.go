@@ -14,6 +14,7 @@ type StrategySpec struct {
 	Revision          int64
 	State             StrategyState
 	DesiredRunning    bool
+	DesiredState      StrategyState
 	RequestedVersion  int64
 	RequestedSource   MarketSource
 	ActiveVersion     int64
