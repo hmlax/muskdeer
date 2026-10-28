@@ -82,6 +82,15 @@ func TestStrategyHTTPRequiresExplicitDiscoveryAndBoundedAllowedClient(t *testing
 	if err := ValidateConfig(cfg); err != nil {
 		t.Fatal(err)
 	}
+	controls := proto.CloneOf(cfg)
+	controls.AdminHttp.StrategyControlsEnabled = true
+	if err := ValidateConfig(controls); err != nil {
+		t.Fatal("complete control HTTP opt-in rejected", err)
+	}
+	controls.AdminHttp.StrategyQueriesEnabled = false
+	if err := ValidateConfig(controls); err == nil {
+		t.Fatal("control HTTP bypassed the query/discovery requirements")
+	}
 	for _, mutate := range []func(*configv1.ServiceConfig){
 		func(v *configv1.ServiceConfig) { v.Nacos = nil },
 		func(v *configv1.ServiceConfig) { v.GrpcClients = nil },

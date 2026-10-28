@@ -1,6 +1,6 @@
 # 管理页面与身份 HTTP
 
-P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP，P07.9交付实际策略列表/详情/版本页面。配置/控制写操作、行情/订单/成交/持仓/风险/审计查询及异步操作仍待后续步骤，不计完整R08/A27通过。
+P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP，P07.9交付实际策略列表/详情/版本页面。P07.13接入显式控制/操作结果HTTP；配置写入、运行控制按钮、行情/订单/成交/持仓/风险/审计查询及完整浏览器写流程仍待后续步骤，不计完整R08/A27通过。
 
 ## 开启入口
 
@@ -54,6 +54,21 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 响应从具体Proto直接序列化为HTTP JSON，采用proto字段名；int64 ID/版本/毫秒和所有小数均为JSON string，grid_count等int32计数仍为整数。Maker/Grid是parameters中的具体oneof，schema0参数为空；requested_config与active_config分别表示请求与实际生效，未生效为null/presence缺失，不能据此显示为已运行。该序列化是实际传输边界，不通过JSON/map复制业务对象。登录与当前会话增加布尔 `session.strategy_queries_enabled` 能力标识，供后续页面只展示已启用入口；标识不授予业务权限。
 
 协议、配置/边界及实际独立API→Nacos/mTLS→strategy→PG验证见[P07.8](validation/P07-08.md)。独立OpenAPI仍待交付。
+
+## 运行控制与操作结果 HTTP
+
+额外`admin_http.strategy_controls_enabled=true`才注册写入及操作查询，同时要求strategy_queries_enabled及原有Nacos/API mTLS客户端完整。strategy端须另外开启control_enabled。API借用同一Deer客户端连接调用独立StrategyControl，不写本地策略/操作表，不缓存用户授权。
+
+| 方法/路径 | 结果 | 边界 |
+|---|---|---|
+| POST /api/v1/strategies/:strategyID/control | 新受理202；已终态原键回放200；Location指向具体操作 | 固定Origin、唯一Cookie/独立X-CSRF-Token/Idempotency-Key、严格JSON、当前operator及revision |
+| GET /api/v1/operations/:operationID | 200，typed StrategyOperation及可空持久观察 | 唯一会话Cookie、当前viewer；不隐式执行控制或写结果 |
+
+POST JSON只接受action、expected_revision、reason三个字符串。动作使用strategy.start/resume/pause/stop；revision为正规范int64字符串，原因规范化后1–256 UTF-8字节，幂等键16–64个已允许ASCII字符。拒绝数字revision、重复/未知/null字段、尾随数据、超过2048字节body及任何query；会话/CSRF不能通过业务JSON伪造。操作ID同样要求正规范int64，无GET body/query。停止不等于平仓或取消流程完成，实际业务证明见[管理控制](ADMIN_CONTROL.md)。
+
+受理响应为ACCEPTED且没有完成时间/观察事实；终态SUCCEEDED或SUPERSEDED保留实际见证。所有ID/revision/毫秒及小数维持JSON string。版本/同键内容冲突返回409/CONFLICT，未认证401并清Cookie，权限/CSRF/Origin403，非法400，不存在404，依赖/协议故障503；错误不返回内部cause。每次调用原生上限3秒，服从更早父期限，不透明重发写请求。跨字段回复身份不符拒绝，幂等键读取使用拥有独立字符串的GetAll，避免Hertz后续Peek读取覆盖。
+
+登录/当前会话增加布尔strategy_controls_enabled，表示API配置能力；viewer仍不能写，实际事务重新判断权限，前端按钮尚待接入。未启用时两个路由都返回API JSON 404，不因查询已开而隐式启用控制。实际链路与测试夹具边界见[P07.13](validation/P07-13.md)。
 
 ## 策略查询页面
 

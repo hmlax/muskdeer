@@ -38,6 +38,8 @@ message AdminHTTP {
   bool allow_insecure_loopback = 3;
   // Explicitly route read-only strategy management to its owned gRPC client.
   bool strategy_queries_enabled = 4;
+  // Separate opt-in for management writes/results; requires strategy queries.
+  bool strategy_controls_enabled = 5;
 }
 
 // BusinessRuntime configures owned business work without migrating

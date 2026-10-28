@@ -188,7 +188,12 @@ func TestAdminCommandAndAPIProcessLoginSessionAndLogout(t *testing.T) {
 	}
 }
 
-func nativeAdminRequest(ctx context.Context, t *testing.T, client *http.Client, base, method, path, body, origin, csrf string) *http.Response {
+type nativeAdminHeader struct {
+	Key   string
+	Value string
+}
+
+func nativeAdminRequest(ctx context.Context, t *testing.T, client *http.Client, base, method, path, body, origin, csrf string, headers ...nativeAdminHeader) *http.Response {
 	t.Helper()
 	request, err := http.NewRequestWithContext(ctx, method, base+path, strings.NewReader(body))
 	if err != nil {
@@ -200,6 +205,9 @@ func nativeAdminRequest(ctx context.Context, t *testing.T, client *http.Client, 
 	}
 	if csrf != "" {
 		request.Header.Set("X-CSRF-Token", csrf)
+	}
+	for _, header := range headers {
+		request.Header.Set(header.Key, header.Value)
 	}
 	response, err := client.Do(request)
 	if err != nil {

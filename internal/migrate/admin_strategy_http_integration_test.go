@@ -100,6 +100,11 @@ func TestAdminStrategyHTTPQueriesRealDiscoveredProcessAndRevokedSession(t *testi
 
 func startStrategyQueryAPI(ctx context.Context, t *testing.T, ca *testcert.Authority, postgres *configv1.Postgres, naming *configv1.Nacos) string {
 	t.Helper()
+	return startStrategyManagementAPI(ctx, t, ca, postgres, naming, false)
+}
+
+func startStrategyManagementAPI(ctx context.Context, t *testing.T, ca *testcert.Authority, postgres *configv1.Postgres, naming *configv1.Nacos, controls bool) string {
+	t.Helper()
 	clients := businessRPCConfig(ca.Issue(t, rpcsecurity.ServiceAPI, false))
 	clients.AllowedServices = []string{rpcsecurity.ServiceStrategy}
 	cfg := &configv1.ServiceConfig{
@@ -120,10 +125,11 @@ func startStrategyQueryAPI(ctx context.Context, t *testing.T, ca *testcert.Autho
 		Nacos:       proto.CloneOf(naming),
 		GrpcClients: clients,
 		AdminHttp: &configv1.AdminHTTP{
-			Enabled:                true,
-			PublicOrigin:           "http://127.0.0.1:0",
-			AllowInsecureLoopback:  true,
-			StrategyQueriesEnabled: true,
+			Enabled:                 true,
+			PublicOrigin:            "http://127.0.0.1:0",
+			AllowInsecureLoopback:   true,
+			StrategyQueriesEnabled:  true,
+			StrategyControlsEnabled: controls,
 		},
 	}
 	directory := t.TempDir()

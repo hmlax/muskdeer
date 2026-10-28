@@ -31,12 +31,15 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		return nil
 	}
 	if !admin.Enabled {
-		if admin.PublicOrigin != "" || admin.AllowInsecureLoopback || admin.StrategyQueriesEnabled {
+		if admin.PublicOrigin != "" || admin.AllowInsecureLoopback || admin.StrategyQueriesEnabled || admin.StrategyControlsEnabled {
 			return ErrInvalidConfig
 		}
 		return nil
 	}
 	if cfg.Name != "api" || cfg.Postgres == nil || cfg.Http == nil {
+		return ErrInvalidConfig
+	}
+	if admin.StrategyControlsEnabled && !admin.StrategyQueriesEnabled {
 		return ErrInvalidConfig
 	}
 	if admin.StrategyQueriesEnabled && (cfg.Nacos == nil || cfg.GrpcClients == nil ||

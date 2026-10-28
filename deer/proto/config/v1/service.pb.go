@@ -207,8 +207,10 @@ type AdminHTTP struct {
 	AllowInsecureLoopback bool `protobuf:"varint,3,opt,name=allow_insecure_loopback,json=allowInsecureLoopback,proto3" json:"allow_insecure_loopback,omitempty"`
 	// Explicitly route read-only strategy management to its owned gRPC client.
 	StrategyQueriesEnabled bool `protobuf:"varint,4,opt,name=strategy_queries_enabled,json=strategyQueriesEnabled,proto3" json:"strategy_queries_enabled,omitempty"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	// Separate opt-in for management writes/results; requires strategy queries.
+	StrategyControlsEnabled bool `protobuf:"varint,5,opt,name=strategy_controls_enabled,json=strategyControlsEnabled,proto3" json:"strategy_controls_enabled,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AdminHTTP) Reset() {
@@ -265,6 +267,13 @@ func (x *AdminHTTP) GetAllowInsecureLoopback() bool {
 func (x *AdminHTTP) GetStrategyQueriesEnabled() bool {
 	if x != nil {
 		return x.StrategyQueriesEnabled
+	}
+	return false
+}
+
+func (x *AdminHTTP) GetStrategyControlsEnabled() bool {
+	if x != nil {
+		return x.StrategyControlsEnabled
 	}
 	return false
 }
@@ -1708,12 +1717,13 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"monitoring\x12?\n" +
 	"\bbusiness\x18\x10 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\bbusiness\x12<\n" +
 	"\n" +
-	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\"\xbc\x01\n" +
+	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\"\xf8\x01\n" +
 	"\tAdminHTTP\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12#\n" +
 	"\rpublic_origin\x18\x02 \x01(\tR\fpublicOrigin\x126\n" +
 	"\x17allow_insecure_loopback\x18\x03 \x01(\bR\x15allowInsecureLoopback\x128\n" +
-	"\x18strategy_queries_enabled\x18\x04 \x01(\bR\x16strategyQueriesEnabled\"\xd3\x04\n" +
+	"\x18strategy_queries_enabled\x18\x04 \x01(\bR\x16strategyQueriesEnabled\x12:\n" +
+	"\x19strategy_controls_enabled\x18\x05 \x01(\bR\x17strategyControlsEnabled\"\xd3\x04\n" +
 	"\x0fBusinessRuntime\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12'\n" +
 	"\x0fexecution_venue\x18\x02 \x01(\tR\x0eexecutionVenue\x12>\n" +

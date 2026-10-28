@@ -199,12 +199,9 @@ func adminControlFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := adminProvisionRequest(ctx, t, auth, "control-operator", domain.AdminRoleOperator); err != nil {
-		t.Fatal(err)
-	}
-	actor, err := adminLoginRequest(ctx, t, auth, "control-operator", adminFixturePassword)
-	if err != nil {
-		t.Fatal(err)
+	actor := adminControlSessionFixture(ctx, t, db)
+	if _, err := auth.Identity(ctx, actor.Token); err != nil {
+		t.Fatal("explicit control fixture did not provide a real current session", err)
 	}
 	controls, err := repository.NewAdminStrategyControl(db)
 	if err != nil {

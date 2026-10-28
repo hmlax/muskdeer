@@ -90,6 +90,10 @@ func (r *Routes) strategySession(request *app.RequestContext) (*strategyv1.Admin
 }
 
 func (r *Routes) strategyReply(request *app.RequestContext, reply proto.Message, err error) {
+	r.strategyStatusReply(request, http.StatusOK, reply, err)
+}
+
+func (r *Routes) strategyStatusReply(request *app.RequestContext, responseStatus int, reply proto.Message, err error) {
 	if err == nil && reply != nil && reply.ProtoReflect().IsValid() && proto.Size(reply) <= 256*1024 {
 		// This is the actual HTTP serialization boundary, with typed business
 		// messages throughout. int64 and decimal values remain JSON strings.
@@ -98,7 +102,7 @@ func (r *Routes) strategyReply(request *app.RequestContext, reply proto.Message,
 			EmitUnpopulated: true,
 		}).Marshal(reply)
 		if encodeErr == nil {
-			request.Data(http.StatusOK, "application/json; charset=utf-8", data)
+			request.Data(responseStatus, "application/json; charset=utf-8", data)
 			return
 		}
 	}
@@ -111,6 +115,8 @@ func (r *Routes) strategyReply(request *app.RequestContext, reply proto.Message,
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 	case codes.NotFound:
 		writeError(request, http.StatusNotFound, codeNotFound, messageNotFound)
+	case codes.Aborted:
+		writeError(request, http.StatusConflict, codeConflict, domain.MessageAdminConflict)
 	default:
 		writeError(request, http.StatusServiceUnavailable, codeUnavailable, domain.MessageAdminUnavailable)
 	}
