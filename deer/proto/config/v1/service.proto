@@ -61,6 +61,8 @@ message StrategyRuntime {
   google.protobuf.Duration lease_ttl = 2;
   // May serve management reads without any account workers or outbound clients.
   bool management_enabled = 3;
+  // Registers operator controls and a result-only observer; grants no trading resources.
+  bool control_enabled = 4;
 }
 
 // SimulatorScenarioRuntime explicitly enables privileged L1 venue responses.

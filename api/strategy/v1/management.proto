@@ -14,6 +14,54 @@ service StrategyManagement {
   rpc ListConfigVersions(ListConfigVersionsRequest) returns (ListConfigVersionsReply);
 }
 
+// StrategyControl is registered only with explicit management control opt-in.
+// Operator/CSRF writes and viewer result reads revalidate persistent authority.
+service StrategyControl {
+  rpc ControlStrategy(ControlStrategyRequest) returns (StrategyOperation);
+  rpc GetOperation(GetOperationRequest) returns (StrategyOperation);
+}
+
+message ControlStrategyRequest {
+  AdminSession session = 1;
+  string csrf_token = 2;
+  string idempotency_key = 3;
+  int64 strategy_id = 4;
+  int64 expected_revision = 5;
+  string action = 6;
+  string reason = 7;
+}
+
+message GetOperationRequest {
+  AdminSession session = 1;
+  int64 operation_id = 2;
+}
+
+message StrategyOperation {
+  int64 id = 1;
+  int64 actor_user_id = 2;
+  int64 strategy_id = 3;
+  string action = 4;
+  string target_state = 5;
+  int64 expected_revision = 6;
+  int64 effect_revision = 7;
+  int64 config_version = 8;
+  string market_data_source = 9;
+  string state = 10;
+  string outcome_code = 11;
+  string reason = 12;
+  int64 revision = 13;
+  int64 created_at_ms = 14;
+  optional int64 completed_at_ms = 15;
+  OperationObservation observation = 16;
+}
+
+message OperationObservation {
+  int64 strategy_revision = 1;
+  string state = 2;
+  string runtime_owner_id = 3;
+  int64 runtime_owner_epoch = 4;
+}
+
 // AdminSession is constructed by API from its HttpOnly cookie, never from a
 // browser business JSON field. The token must never be logged or returned.
 message AdminSession {

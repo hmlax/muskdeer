@@ -63,7 +63,9 @@ strategy要求PostgreSQL、mTLS gRPC listener、Nacos registration及出站mTLS 
 }
 ```
 
-accountIds为1–16个不重复的已有模拟账户，启动只读检查账户和预算存在；leaseTtl为100ms–30s整数毫秒，严格大于两倍operationTimeout。每账户一个Deer-owned任务，完整读取最多16个未退役实例（包含停止请求），按实例分别取得策略lease并串行调用控制器；这是计算边界，不是容量SLA。超限拒绝，不静默截取遗漏实例。原生operationTimeout覆盖整轮账户工作，需按实测配置。
+accountIds为1–16个不重复的已有模拟账户，启动只读检查账户和预算存在；leaseTtl为100ms–30s整数毫秒，严格大于两倍operationTimeout。每账户一个Deer-owned任务，完整读取最多16个未退役实例（包含停止请求），按实例分别取得策略lease并串行调用控制器；这是计算边界，不是容量SLA。超限拒绝，不静默截取遗漏实例。账户发现及每个串行实例Tick分别取得原生operationTimeout，全部服从父生命周期取消，不让后续实例复用已耗尽的账户context；期限需按实测配置。
+
+management_enabled开启typed查询；额外control_enabled才注册管理控制gRPC及strategy.operations结果工作器。该工作器按页公平观测已受理结果，不下单/改资金，不以控制节点在线代替当前运行owner。可在无accountIds的独立管理节点开启；交易账户循环仍必须显式绑定。详见[管理控制](ADMIN_CONTROL.md)。
 
 运行中新建实例自动被下一轮发现，进程内controller map只保存计划/观察游标，不提供独占授权；每轮以真实lease/fence为准。缺配置/投影/预算/健康来源保持恢复，不制造资源。交易调用通过当前execution owner的Nacos/mTLS客户端；所选行情读取不换源。状态/配置revision并发冲突等待下一轮重新读取，交易业务键冲突不因此重发。策略详情见 [控制器](STRATEGY_CONTROLLER.md)。
 

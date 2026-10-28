@@ -18,4 +18,4 @@ schema 0 的历史版本只返回元数据及零 schema，参数为空，不补�
 
 响应为显式 Strategy/ConfigVersion 字段及 Maker/Grid oneof，所有小数为 string；生效配置使用消息/optional presence，未生效不会显示成版本零配置。schema 0 不返回参数；金额精度、参数联合及整毫秒约束在输出编码时也检查。错误使用固定文本和明确 Unauthenticated/PermissionDenied/InvalidArgument/NotFound/Unavailable/原生取消期限分类，不向客户端返回持久化原因。
 
-strategy 的 `business.strategy.management_enabled=true` 显式开启，服务器 allowed_peer_services 必须包含 `api.grpc`。可与既有显式账户报价工作器同时开启；若 account_ids 为空，则必须省略 lease_ttl 和 grpc_clients，只装配查询、无交易工作器。此模式仍需 business.enabled、simulator、PG、gRPC mTLS、Nacos 注册及原有有界 poll/operation/shutdown 配置；不自动迁移、创建身份/资金/租约或授予风险。若没有开启管理功能，既有报价进程保持原配置要求且不注册管理服务。
+strategy 的 `business.strategy.management_enabled=true` 显式开启，服务器 allowed_peer_services 必须包含 `api.grpc`。可与既有显式账户报价工作器同时开启；若 account_ids 为空，则必须省略 lease_ttl 和 grpc_clients，control_enabled未开启时只装配查询；额外控制及结果观测工作器须单独显式开启，见[控制说明](ADMIN_CONTROL.md)，均不创建交易工作器。此模式仍需 business.enabled、simulator、PG、gRPC mTLS、Nacos 注册及原有有界 poll/operation/shutdown 配置；不自动迁移、创建身份/资金/租约或授予风险。若没有开启管理功能，既有报价进程保持原配置要求且不注册管理服务。

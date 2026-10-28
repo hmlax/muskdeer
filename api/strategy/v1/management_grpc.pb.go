@@ -201,3 +201,149 @@ var StrategyManagement_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "api/strategy/v1/management.proto",
 }
+
+const (
+	StrategyControl_ControlStrategy_FullMethodName = "/muskdeer.strategy.v1.StrategyControl/ControlStrategy"
+	StrategyControl_GetOperation_FullMethodName    = "/muskdeer.strategy.v1.StrategyControl/GetOperation"
+)
+
+// StrategyControlClient is the client API for StrategyControl service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// StrategyControl is registered only with explicit management control opt-in.
+// Operator/CSRF writes and viewer result reads revalidate persistent authority.
+type StrategyControlClient interface {
+	ControlStrategy(ctx context.Context, in *ControlStrategyRequest, opts ...grpc.CallOption) (*StrategyOperation, error)
+	GetOperation(ctx context.Context, in *GetOperationRequest, opts ...grpc.CallOption) (*StrategyOperation, error)
+}
+
+type strategyControlClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewStrategyControlClient(cc grpc.ClientConnInterface) StrategyControlClient {
+	return &strategyControlClient{cc}
+}
+
+func (c *strategyControlClient) ControlStrategy(ctx context.Context, in *ControlStrategyRequest, opts ...grpc.CallOption) (*StrategyOperation, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StrategyOperation)
+	err := c.cc.Invoke(ctx, StrategyControl_ControlStrategy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *strategyControlClient) GetOperation(ctx context.Context, in *GetOperationRequest, opts ...grpc.CallOption) (*StrategyOperation, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StrategyOperation)
+	err := c.cc.Invoke(ctx, StrategyControl_GetOperation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// StrategyControlServer is the server API for StrategyControl service.
+// All implementations must embed UnimplementedStrategyControlServer
+// for forward compatibility.
+//
+// StrategyControl is registered only with explicit management control opt-in.
+// Operator/CSRF writes and viewer result reads revalidate persistent authority.
+type StrategyControlServer interface {
+	ControlStrategy(context.Context, *ControlStrategyRequest) (*StrategyOperation, error)
+	GetOperation(context.Context, *GetOperationRequest) (*StrategyOperation, error)
+	mustEmbedUnimplementedStrategyControlServer()
+}
+
+// UnimplementedStrategyControlServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedStrategyControlServer struct{}
+
+func (UnimplementedStrategyControlServer) ControlStrategy(context.Context, *ControlStrategyRequest) (*StrategyOperation, error) {
+	return nil, status.Error(codes.Unimplemented, "method ControlStrategy not implemented")
+}
+func (UnimplementedStrategyControlServer) GetOperation(context.Context, *GetOperationRequest) (*StrategyOperation, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetOperation not implemented")
+}
+func (UnimplementedStrategyControlServer) mustEmbedUnimplementedStrategyControlServer() {}
+func (UnimplementedStrategyControlServer) testEmbeddedByValue()                         {}
+
+// UnsafeStrategyControlServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to StrategyControlServer will
+// result in compilation errors.
+type UnsafeStrategyControlServer interface {
+	mustEmbedUnimplementedStrategyControlServer()
+}
+
+func RegisterStrategyControlServer(s grpc.ServiceRegistrar, srv StrategyControlServer) {
+	// If the following call panics, it indicates UnimplementedStrategyControlServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&StrategyControl_ServiceDesc, srv)
+}
+
+func _StrategyControl_ControlStrategy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ControlStrategyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StrategyControlServer).ControlStrategy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StrategyControl_ControlStrategy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StrategyControlServer).ControlStrategy(ctx, req.(*ControlStrategyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StrategyControl_GetOperation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOperationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StrategyControlServer).GetOperation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StrategyControl_GetOperation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StrategyControlServer).GetOperation(ctx, req.(*GetOperationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// StrategyControl_ServiceDesc is the grpc.ServiceDesc for StrategyControl service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var StrategyControl_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "muskdeer.strategy.v1.StrategyControl",
+	HandlerType: (*StrategyControlServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ControlStrategy",
+			Handler:    _StrategyControl_ControlStrategy_Handler,
+		},
+		{
+			MethodName: "GetOperation",
+			Handler:    _StrategyControl_GetOperation_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "api/strategy/v1/management.proto",
+}

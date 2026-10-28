@@ -20,7 +20,10 @@ import (
 	"github.com/hmlax/muskdeer/internal/usecase"
 )
 
-const strategyWorkerPrefix = "strategy.account."
+const (
+	strategyWorkerPrefix     = "strategy.account."
+	strategyOperationsWorker = "strategy.operations"
+)
 
 func validateStrategyConfig(cfg *configv1.ServiceConfig) error {
 	strategy := cfg.Business.Strategy
@@ -29,6 +32,9 @@ func validateStrategyConfig(cfg *configv1.ServiceConfig) error {
 		return ErrInvalidConfig
 	}
 	if strategy.ManagementEnabled && !slices.Contains(cfg.GrpcSecurity.AllowedPeerServices, rpcsecurity.ServiceAPI) {
+		return ErrInvalidConfig
+	}
+	if strategy.ControlEnabled && !strategy.ManagementEnabled {
 		return ErrInvalidConfig
 	}
 	if len(strategy.AccountIds) == 0 {
@@ -54,6 +60,11 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		}
 		runtime.strategy, err = strategygrpc.New(queries)
 		if err != nil {
+			return nil, err
+		}
+	}
+	if cfg.Strategy.ControlEnabled {
+		if err := assembleStrategyControl(db, cfg, runtime); err != nil {
 			return nil, err
 		}
 	}
@@ -130,8 +141,35 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 			},
 		})
 	}
-	runtime.workers = workers
+	runtime.workers = append(runtime.workers, workers...)
 	return runtime, nil
+}
+
+func assembleStrategyControl(db *gorm.DB, cfg *configv1.BusinessRuntime, runtime *Runtime) error {
+	controls, err := repository.NewAdminStrategyControl(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyControl, err = strategygrpc.NewControl(controls)
+	if err != nil {
+		return err
+	}
+	observer, err := repository.NewAdminOperationObserver(db)
+	if err != nil {
+		return err
+	}
+	projector, err := usecase.NewAdminOperationProjector(observer, cfg.OperationTimeout.AsDuration())
+	if err != nil {
+		return err
+	}
+	poll := cfg.PollInterval.AsDuration()
+	runtime.workers = append(runtime.workers, deer.Worker{
+		Name: strategyOperationsWorker,
+		Run: func(ctx context.Context) error {
+			return runOwnedLoop(ctx, poll, projector.Tick)
+		},
+	})
+	return nil
 }
 
 func strategyAccountTick(ctx context.Context, timeout time.Duration, account string, candidates domain.StrategyCandidates, controllers map[int64]*usecase.StrategyController, deps usecase.StrategyDependencies, settings usecase.StrategySettings) (bool, error) {

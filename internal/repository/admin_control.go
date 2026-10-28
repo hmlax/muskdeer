@@ -216,6 +216,12 @@ func adminOperation(row *modelv1.AdminStrategyOperation) domain.AdminOperation {
 	}
 	if row.CompletedAt != nil {
 		result.CompletedAt = time.UnixMilli(*row.CompletedAt).UTC()
+		result.Observation = &domain.AdminOperationObservation{
+			StrategyRevision:  row.GetObservedRevision(),
+			State:             domain.StrategyState(row.GetObservedState()),
+			RuntimeOwnerID:    row.GetObservedOwnerId(),
+			RuntimeOwnerEpoch: row.GetObservedOwnerEpoch(),
+		}
 	}
 	return result
 }

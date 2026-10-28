@@ -95,6 +95,15 @@ type AdminOperation struct {
 	Revision         int64
 	CreatedAt        time.Time
 	CompletedAt      time.Time
+	Observation      *AdminOperationObservation
+}
+
+// AdminOperationObservation is the persisted runtime proof for a terminal result.
+type AdminOperationObservation struct {
+	StrategyRevision  int64
+	State             StrategyState
+	RuntimeOwnerID    string
+	RuntimeOwnerEpoch int64
 }
 
 // AdminStrategyControl revalidates operator/CSRF inside the mutation transaction.

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -45,6 +46,13 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 	}
 	client := adminStrategyProcessClient(ctx, t, ca, observer, rpcsecurity.ServiceAPI)
 	session := &strategyv1.AdminSession{Token: login.Token}
+	control := strategyv1.NewStrategyControlClient(adminStrategyProcessConnection(ctx, t, ca, observer, rpcsecurity.ServiceAPI))
+	if _, err := control.GetOperation(ctx, &strategyv1.GetOperationRequest{
+		Session:     session,
+		OperationId: 1,
+	}); status.Code(err) != codes.Unimplemented {
+		t.Fatal("query-only process registered management control capability", err)
+	}
 	page, err := client.ListStrategies(ctx, &strategyv1.ListStrategiesRequest{
 		Session: session,
 		Limit:   domain.MaxAdminPageSize,
@@ -92,6 +100,11 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 
 func adminStrategyProcessClient(ctx context.Context, t *testing.T, ca *testcert.Authority, discovery *nacos.Client, service string) strategyv1.StrategyManagementClient {
 	t.Helper()
+	return strategyv1.NewStrategyManagementClient(adminStrategyProcessConnection(ctx, t, ca, discovery, service))
+}
+
+func adminStrategyProcessConnection(ctx context.Context, t *testing.T, ca *testcert.Authority, discovery *nacos.Client, service string) grpc.ClientConnInterface {
+	t.Helper()
 	cfg := businessRPCConfig(ca.Issue(t, service, false))
 	cfg.AllowedServices = []string{rpcsecurity.ServiceStrategy}
 	factory, err := rpcclient.New(ctx, cfg, service, discovery)
@@ -107,7 +120,7 @@ func adminStrategyProcessClient(ctx context.Context, t *testing.T, ca *testcert.
 	if err != nil {
 		t.Fatal(err)
 	}
-	return strategyv1.NewStrategyManagementClient(connection)
+	return connection
 }
 
 func assertAdminStrategyProcessRejectsOtherPeer(ctx context.Context, t *testing.T, ca *testcert.Authority, discovery *nacos.Client, session *strategyv1.AdminSession) {

@@ -37,6 +37,11 @@ func TestStrategyRuntimeNeedsExplicitAccountsLeaseAndBothReaders(t *testing.T) {
 	if err := ValidateConfig(cfg); err != nil {
 		t.Fatal(err)
 	}
+	control := proto.CloneOf(cfg)
+	control.Business.Strategy.ControlEnabled = true
+	if err := ValidateConfig(control); err == nil {
+		t.Fatal("controls were enabled without management opt-in")
+	}
 	for _, mutate := range []func(*configv1.ServiceConfig){
 		func(v *configv1.ServiceConfig) { v.Business.Strategy = nil },
 		func(v *configv1.ServiceConfig) { v.Business.Strategy.AccountIds = nil },
@@ -81,6 +86,11 @@ func TestManagementOnlyStrategyRequiresExplicitOptInWithoutTradingBindings(t *te
 	}
 	if err := ValidateConfig(cfg); err != nil {
 		t.Fatal(err)
+	}
+	control := proto.CloneOf(cfg)
+	control.Business.Strategy.ControlEnabled = true
+	if err := ValidateConfig(control); err != nil {
+		t.Fatal("explicit controls required trading accounts or outbound clients", err)
 	}
 	for _, mutate := range []func(*configv1.ServiceConfig){
 		func(v *configv1.ServiceConfig) { v.Business.Strategy.ManagementEnabled = false },

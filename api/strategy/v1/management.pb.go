@@ -22,6 +22,382 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type ControlStrategyRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Session          *AdminSession          `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	CsrfToken        string                 `protobuf:"bytes,2,opt,name=csrf_token,json=csrfToken,proto3" json:"csrf_token,omitempty"`
+	IdempotencyKey   string                 `protobuf:"bytes,3,opt,name=idempotency_key,json=idempotencyKey,proto3" json:"idempotency_key,omitempty"`
+	StrategyId       int64                  `protobuf:"varint,4,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	ExpectedRevision int64                  `protobuf:"varint,5,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	Action           string                 `protobuf:"bytes,6,opt,name=action,proto3" json:"action,omitempty"`
+	Reason           string                 `protobuf:"bytes,7,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *ControlStrategyRequest) Reset() {
+	*x = ControlStrategyRequest{}
+	mi := &file_api_strategy_v1_management_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ControlStrategyRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ControlStrategyRequest) ProtoMessage() {}
+
+func (x *ControlStrategyRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_strategy_v1_management_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ControlStrategyRequest.ProtoReflect.Descriptor instead.
+func (*ControlStrategyRequest) Descriptor() ([]byte, []int) {
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ControlStrategyRequest) GetSession() *AdminSession {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
+func (x *ControlStrategyRequest) GetCsrfToken() string {
+	if x != nil {
+		return x.CsrfToken
+	}
+	return ""
+}
+
+func (x *ControlStrategyRequest) GetIdempotencyKey() string {
+	if x != nil {
+		return x.IdempotencyKey
+	}
+	return ""
+}
+
+func (x *ControlStrategyRequest) GetStrategyId() int64 {
+	if x != nil {
+		return x.StrategyId
+	}
+	return 0
+}
+
+func (x *ControlStrategyRequest) GetExpectedRevision() int64 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
+}
+
+func (x *ControlStrategyRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ControlStrategyRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type GetOperationRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Session       *AdminSession          `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	OperationId   int64                  `protobuf:"varint,2,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetOperationRequest) Reset() {
+	*x = GetOperationRequest{}
+	mi := &file_api_strategy_v1_management_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetOperationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetOperationRequest) ProtoMessage() {}
+
+func (x *GetOperationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_strategy_v1_management_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetOperationRequest.ProtoReflect.Descriptor instead.
+func (*GetOperationRequest) Descriptor() ([]byte, []int) {
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetOperationRequest) GetSession() *AdminSession {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
+func (x *GetOperationRequest) GetOperationId() int64 {
+	if x != nil {
+		return x.OperationId
+	}
+	return 0
+}
+
+type StrategyOperation struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ActorUserId      int64                  `protobuf:"varint,2,opt,name=actor_user_id,json=actorUserId,proto3" json:"actor_user_id,omitempty"`
+	StrategyId       int64                  `protobuf:"varint,3,opt,name=strategy_id,json=strategyId,proto3" json:"strategy_id,omitempty"`
+	Action           string                 `protobuf:"bytes,4,opt,name=action,proto3" json:"action,omitempty"`
+	TargetState      string                 `protobuf:"bytes,5,opt,name=target_state,json=targetState,proto3" json:"target_state,omitempty"`
+	ExpectedRevision int64                  `protobuf:"varint,6,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	EffectRevision   int64                  `protobuf:"varint,7,opt,name=effect_revision,json=effectRevision,proto3" json:"effect_revision,omitempty"`
+	ConfigVersion    int64                  `protobuf:"varint,8,opt,name=config_version,json=configVersion,proto3" json:"config_version,omitempty"`
+	MarketDataSource string                 `protobuf:"bytes,9,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty"`
+	State            string                 `protobuf:"bytes,10,opt,name=state,proto3" json:"state,omitempty"`
+	OutcomeCode      string                 `protobuf:"bytes,11,opt,name=outcome_code,json=outcomeCode,proto3" json:"outcome_code,omitempty"`
+	Reason           string                 `protobuf:"bytes,12,opt,name=reason,proto3" json:"reason,omitempty"`
+	Revision         int64                  `protobuf:"varint,13,opt,name=revision,proto3" json:"revision,omitempty"`
+	CreatedAtMs      int64                  `protobuf:"varint,14,opt,name=created_at_ms,json=createdAtMs,proto3" json:"created_at_ms,omitempty"`
+	CompletedAtMs    *int64                 `protobuf:"varint,15,opt,name=completed_at_ms,json=completedAtMs,proto3,oneof" json:"completed_at_ms,omitempty"`
+	Observation      *OperationObservation  `protobuf:"bytes,16,opt,name=observation,proto3" json:"observation,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *StrategyOperation) Reset() {
+	*x = StrategyOperation{}
+	mi := &file_api_strategy_v1_management_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StrategyOperation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StrategyOperation) ProtoMessage() {}
+
+func (x *StrategyOperation) ProtoReflect() protoreflect.Message {
+	mi := &file_api_strategy_v1_management_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StrategyOperation.ProtoReflect.Descriptor instead.
+func (*StrategyOperation) Descriptor() ([]byte, []int) {
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *StrategyOperation) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetActorUserId() int64 {
+	if x != nil {
+		return x.ActorUserId
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetStrategyId() int64 {
+	if x != nil {
+		return x.StrategyId
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *StrategyOperation) GetTargetState() string {
+	if x != nil {
+		return x.TargetState
+	}
+	return ""
+}
+
+func (x *StrategyOperation) GetExpectedRevision() int64 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetEffectRevision() int64 {
+	if x != nil {
+		return x.EffectRevision
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetConfigVersion() int64 {
+	if x != nil {
+		return x.ConfigVersion
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetMarketDataSource() string {
+	if x != nil {
+		return x.MarketDataSource
+	}
+	return ""
+}
+
+func (x *StrategyOperation) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *StrategyOperation) GetOutcomeCode() string {
+	if x != nil {
+		return x.OutcomeCode
+	}
+	return ""
+}
+
+func (x *StrategyOperation) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *StrategyOperation) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetCreatedAtMs() int64 {
+	if x != nil {
+		return x.CreatedAtMs
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetCompletedAtMs() int64 {
+	if x != nil && x.CompletedAtMs != nil {
+		return *x.CompletedAtMs
+	}
+	return 0
+}
+
+func (x *StrategyOperation) GetObservation() *OperationObservation {
+	if x != nil {
+		return x.Observation
+	}
+	return nil
+}
+
+type OperationObservation struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	StrategyRevision  int64                  `protobuf:"varint,1,opt,name=strategy_revision,json=strategyRevision,proto3" json:"strategy_revision,omitempty"`
+	State             string                 `protobuf:"bytes,2,opt,name=state,proto3" json:"state,omitempty"`
+	RuntimeOwnerId    string                 `protobuf:"bytes,3,opt,name=runtime_owner_id,json=runtimeOwnerId,proto3" json:"runtime_owner_id,omitempty"`
+	RuntimeOwnerEpoch int64                  `protobuf:"varint,4,opt,name=runtime_owner_epoch,json=runtimeOwnerEpoch,proto3" json:"runtime_owner_epoch,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *OperationObservation) Reset() {
+	*x = OperationObservation{}
+	mi := &file_api_strategy_v1_management_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *OperationObservation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OperationObservation) ProtoMessage() {}
+
+func (x *OperationObservation) ProtoReflect() protoreflect.Message {
+	mi := &file_api_strategy_v1_management_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OperationObservation.ProtoReflect.Descriptor instead.
+func (*OperationObservation) Descriptor() ([]byte, []int) {
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *OperationObservation) GetStrategyRevision() int64 {
+	if x != nil {
+		return x.StrategyRevision
+	}
+	return 0
+}
+
+func (x *OperationObservation) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+func (x *OperationObservation) GetRuntimeOwnerId() string {
+	if x != nil {
+		return x.RuntimeOwnerId
+	}
+	return ""
+}
+
+func (x *OperationObservation) GetRuntimeOwnerEpoch() int64 {
+	if x != nil {
+		return x.RuntimeOwnerEpoch
+	}
+	return 0
+}
+
 // AdminSession is constructed by API from its HttpOnly cookie, never from a
 // browser business JSON field. The token must never be logged or returned.
 type AdminSession struct {
@@ -33,7 +409,7 @@ type AdminSession struct {
 
 func (x *AdminSession) Reset() {
 	*x = AdminSession{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[0]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +421,7 @@ func (x *AdminSession) String() string {
 func (*AdminSession) ProtoMessage() {}
 
 func (x *AdminSession) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[0]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +434,7 @@ func (x *AdminSession) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminSession.ProtoReflect.Descriptor instead.
 func (*AdminSession) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{0}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AdminSession) GetToken() string {
@@ -79,7 +455,7 @@ type ListStrategiesRequest struct {
 
 func (x *ListStrategiesRequest) Reset() {
 	*x = ListStrategiesRequest{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[1]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -91,7 +467,7 @@ func (x *ListStrategiesRequest) String() string {
 func (*ListStrategiesRequest) ProtoMessage() {}
 
 func (x *ListStrategiesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[1]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +480,7 @@ func (x *ListStrategiesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListStrategiesRequest.ProtoReflect.Descriptor instead.
 func (*ListStrategiesRequest) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{1}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListStrategiesRequest) GetSession() *AdminSession {
@@ -138,7 +514,7 @@ type GetStrategyRequest struct {
 
 func (x *GetStrategyRequest) Reset() {
 	*x = GetStrategyRequest{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[2]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -150,7 +526,7 @@ func (x *GetStrategyRequest) String() string {
 func (*GetStrategyRequest) ProtoMessage() {}
 
 func (x *GetStrategyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[2]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -163,7 +539,7 @@ func (x *GetStrategyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStrategyRequest.ProtoReflect.Descriptor instead.
 func (*GetStrategyRequest) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{2}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetStrategyRequest) GetSession() *AdminSession {
@@ -192,7 +568,7 @@ type ListConfigVersionsRequest struct {
 
 func (x *ListConfigVersionsRequest) Reset() {
 	*x = ListConfigVersionsRequest{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[3]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -204,7 +580,7 @@ func (x *ListConfigVersionsRequest) String() string {
 func (*ListConfigVersionsRequest) ProtoMessage() {}
 
 func (x *ListConfigVersionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[3]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -217,7 +593,7 @@ func (x *ListConfigVersionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigVersionsRequest.ProtoReflect.Descriptor instead.
 func (*ListConfigVersionsRequest) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{3}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListConfigVersionsRequest) GetSession() *AdminSession {
@@ -274,7 +650,7 @@ type Strategy struct {
 
 func (x *Strategy) Reset() {
 	*x = Strategy{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[4]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -286,7 +662,7 @@ func (x *Strategy) String() string {
 func (*Strategy) ProtoMessage() {}
 
 func (x *Strategy) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[4]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -299,7 +675,7 @@ func (x *Strategy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Strategy.ProtoReflect.Descriptor instead.
 func (*Strategy) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{4}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Strategy) GetId() int64 {
@@ -446,7 +822,7 @@ type ConfigVersion struct {
 
 func (x *ConfigVersion) Reset() {
 	*x = ConfigVersion{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[5]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -458,7 +834,7 @@ func (x *ConfigVersion) String() string {
 func (*ConfigVersion) ProtoMessage() {}
 
 func (x *ConfigVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[5]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -471,7 +847,7 @@ func (x *ConfigVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigVersion.ProtoReflect.Descriptor instead.
 func (*ConfigVersion) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{5}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ConfigVersion) GetId() int64 {
@@ -547,7 +923,7 @@ type ListStrategiesReply struct {
 
 func (x *ListStrategiesReply) Reset() {
 	*x = ListStrategiesReply{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[6]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -559,7 +935,7 @@ func (x *ListStrategiesReply) String() string {
 func (*ListStrategiesReply) ProtoMessage() {}
 
 func (x *ListStrategiesReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[6]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -572,7 +948,7 @@ func (x *ListStrategiesReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListStrategiesReply.ProtoReflect.Descriptor instead.
 func (*ListStrategiesReply) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{6}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListStrategiesReply) GetStrategies() []*Strategy {
@@ -600,7 +976,7 @@ type GetStrategyReply struct {
 
 func (x *GetStrategyReply) Reset() {
 	*x = GetStrategyReply{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[7]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -612,7 +988,7 @@ func (x *GetStrategyReply) String() string {
 func (*GetStrategyReply) ProtoMessage() {}
 
 func (x *GetStrategyReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[7]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -625,7 +1001,7 @@ func (x *GetStrategyReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetStrategyReply.ProtoReflect.Descriptor instead.
 func (*GetStrategyReply) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{7}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetStrategyReply) GetStrategy() *Strategy {
@@ -659,7 +1035,7 @@ type ListConfigVersionsReply struct {
 
 func (x *ListConfigVersionsReply) Reset() {
 	*x = ListConfigVersionsReply{}
-	mi := &file_api_strategy_v1_management_proto_msgTypes[8]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +1047,7 @@ func (x *ListConfigVersionsReply) String() string {
 func (*ListConfigVersionsReply) ProtoMessage() {}
 
 func (x *ListConfigVersionsReply) ProtoReflect() protoreflect.Message {
-	mi := &file_api_strategy_v1_management_proto_msgTypes[8]
+	mi := &file_api_strategy_v1_management_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +1060,7 @@ func (x *ListConfigVersionsReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListConfigVersionsReply.ProtoReflect.Descriptor instead.
 func (*ListConfigVersionsReply) Descriptor() ([]byte, []int) {
-	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{8}
+	return file_api_strategy_v1_management_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListConfigVersionsReply) GetVersions() []*ConfigVersion {
@@ -705,7 +1081,45 @@ var File_api_strategy_v1_management_proto protoreflect.FileDescriptor
 
 const file_api_strategy_v1_management_proto_rawDesc = "" +
 	"\n" +
-	" api/strategy/v1/management.proto\x12\x14muskdeer.strategy.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\"$\n" +
+	" api/strategy/v1/management.proto\x12\x14muskdeer.strategy.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\"\x9c\x02\n" +
+	"\x16ControlStrategyRequest\x12<\n" +
+	"\asession\x18\x01 \x01(\v2\".muskdeer.strategy.v1.AdminSessionR\asession\x12\x1d\n" +
+	"\n" +
+	"csrf_token\x18\x02 \x01(\tR\tcsrfToken\x12'\n" +
+	"\x0fidempotency_key\x18\x03 \x01(\tR\x0eidempotencyKey\x12\x1f\n" +
+	"\vstrategy_id\x18\x04 \x01(\x03R\n" +
+	"strategyId\x12+\n" +
+	"\x11expected_revision\x18\x05 \x01(\x03R\x10expectedRevision\x12\x16\n" +
+	"\x06action\x18\x06 \x01(\tR\x06action\x12\x16\n" +
+	"\x06reason\x18\a \x01(\tR\x06reason\"v\n" +
+	"\x13GetOperationRequest\x12<\n" +
+	"\asession\x18\x01 \x01(\v2\".muskdeer.strategy.v1.AdminSessionR\asession\x12!\n" +
+	"\foperation_id\x18\x02 \x01(\x03R\voperationId\"\xee\x04\n" +
+	"\x11StrategyOperation\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\"\n" +
+	"\ractor_user_id\x18\x02 \x01(\x03R\vactorUserId\x12\x1f\n" +
+	"\vstrategy_id\x18\x03 \x01(\x03R\n" +
+	"strategyId\x12\x16\n" +
+	"\x06action\x18\x04 \x01(\tR\x06action\x12!\n" +
+	"\ftarget_state\x18\x05 \x01(\tR\vtargetState\x12+\n" +
+	"\x11expected_revision\x18\x06 \x01(\x03R\x10expectedRevision\x12'\n" +
+	"\x0feffect_revision\x18\a \x01(\x03R\x0eeffectRevision\x12%\n" +
+	"\x0econfig_version\x18\b \x01(\x03R\rconfigVersion\x12,\n" +
+	"\x12market_data_source\x18\t \x01(\tR\x10marketDataSource\x12\x14\n" +
+	"\x05state\x18\n" +
+	" \x01(\tR\x05state\x12!\n" +
+	"\foutcome_code\x18\v \x01(\tR\voutcomeCode\x12\x16\n" +
+	"\x06reason\x18\f \x01(\tR\x06reason\x12\x1a\n" +
+	"\brevision\x18\r \x01(\x03R\brevision\x12\"\n" +
+	"\rcreated_at_ms\x18\x0e \x01(\x03R\vcreatedAtMs\x12+\n" +
+	"\x0fcompleted_at_ms\x18\x0f \x01(\x03H\x00R\rcompletedAtMs\x88\x01\x01\x12L\n" +
+	"\vobservation\x18\x10 \x01(\v2*.muskdeer.strategy.v1.OperationObservationR\vobservationB\x12\n" +
+	"\x10_completed_at_ms\"\xb3\x01\n" +
+	"\x14OperationObservation\x12+\n" +
+	"\x11strategy_revision\x18\x01 \x01(\x03R\x10strategyRevision\x12\x14\n" +
+	"\x05state\x18\x02 \x01(\tR\x05state\x12(\n" +
+	"\x10runtime_owner_id\x18\x03 \x01(\tR\x0eruntimeOwnerId\x12.\n" +
+	"\x13runtime_owner_epoch\x18\x04 \x01(\x03R\x11runtimeOwnerEpoch\"$\n" +
 	"\fAdminSession\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\"\x86\x01\n" +
 	"\x15ListStrategiesRequest\x12<\n" +
@@ -775,7 +1189,10 @@ const file_api_strategy_v1_management_proto_rawDesc = "" +
 	"\x12StrategyManagement\x12h\n" +
 	"\x0eListStrategies\x12+.muskdeer.strategy.v1.ListStrategiesRequest\x1a).muskdeer.strategy.v1.ListStrategiesReply\x12_\n" +
 	"\vGetStrategy\x12(.muskdeer.strategy.v1.GetStrategyRequest\x1a&.muskdeer.strategy.v1.GetStrategyReply\x12t\n" +
-	"\x12ListConfigVersions\x12/.muskdeer.strategy.v1.ListConfigVersionsRequest\x1a-.muskdeer.strategy.v1.ListConfigVersionsReplyB6Z4github.com/hmlax/muskdeer/api/strategy/v1;strategyv1b\x06proto3"
+	"\x12ListConfigVersions\x12/.muskdeer.strategy.v1.ListConfigVersionsRequest\x1a-.muskdeer.strategy.v1.ListConfigVersionsReply2\xdf\x01\n" +
+	"\x0fStrategyControl\x12h\n" +
+	"\x0fControlStrategy\x12,.muskdeer.strategy.v1.ControlStrategyRequest\x1a'.muskdeer.strategy.v1.StrategyOperation\x12b\n" +
+	"\fGetOperation\x12).muskdeer.strategy.v1.GetOperationRequest\x1a'.muskdeer.strategy.v1.StrategyOperationB6Z4github.com/hmlax/muskdeer/api/strategy/v1;strategyv1b\x06proto3"
 
 var (
 	file_api_strategy_v1_management_proto_rawDescOnce sync.Once
@@ -789,40 +1206,51 @@ func file_api_strategy_v1_management_proto_rawDescGZIP() []byte {
 	return file_api_strategy_v1_management_proto_rawDescData
 }
 
-var file_api_strategy_v1_management_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_api_strategy_v1_management_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_api_strategy_v1_management_proto_goTypes = []any{
-	(*AdminSession)(nil),              // 0: muskdeer.strategy.v1.AdminSession
-	(*ListStrategiesRequest)(nil),     // 1: muskdeer.strategy.v1.ListStrategiesRequest
-	(*GetStrategyRequest)(nil),        // 2: muskdeer.strategy.v1.GetStrategyRequest
-	(*ListConfigVersionsRequest)(nil), // 3: muskdeer.strategy.v1.ListConfigVersionsRequest
-	(*Strategy)(nil),                  // 4: muskdeer.strategy.v1.Strategy
-	(*ConfigVersion)(nil),             // 5: muskdeer.strategy.v1.ConfigVersion
-	(*ListStrategiesReply)(nil),       // 6: muskdeer.strategy.v1.ListStrategiesReply
-	(*GetStrategyReply)(nil),          // 7: muskdeer.strategy.v1.GetStrategyReply
-	(*ListConfigVersionsReply)(nil),   // 8: muskdeer.strategy.v1.ListConfigVersionsReply
-	(*v1.StrategyParameters)(nil),     // 9: muskdeer.common.v1.StrategyParameters
+	(*ControlStrategyRequest)(nil),    // 0: muskdeer.strategy.v1.ControlStrategyRequest
+	(*GetOperationRequest)(nil),       // 1: muskdeer.strategy.v1.GetOperationRequest
+	(*StrategyOperation)(nil),         // 2: muskdeer.strategy.v1.StrategyOperation
+	(*OperationObservation)(nil),      // 3: muskdeer.strategy.v1.OperationObservation
+	(*AdminSession)(nil),              // 4: muskdeer.strategy.v1.AdminSession
+	(*ListStrategiesRequest)(nil),     // 5: muskdeer.strategy.v1.ListStrategiesRequest
+	(*GetStrategyRequest)(nil),        // 6: muskdeer.strategy.v1.GetStrategyRequest
+	(*ListConfigVersionsRequest)(nil), // 7: muskdeer.strategy.v1.ListConfigVersionsRequest
+	(*Strategy)(nil),                  // 8: muskdeer.strategy.v1.Strategy
+	(*ConfigVersion)(nil),             // 9: muskdeer.strategy.v1.ConfigVersion
+	(*ListStrategiesReply)(nil),       // 10: muskdeer.strategy.v1.ListStrategiesReply
+	(*GetStrategyReply)(nil),          // 11: muskdeer.strategy.v1.GetStrategyReply
+	(*ListConfigVersionsReply)(nil),   // 12: muskdeer.strategy.v1.ListConfigVersionsReply
+	(*v1.StrategyParameters)(nil),     // 13: muskdeer.common.v1.StrategyParameters
 }
 var file_api_strategy_v1_management_proto_depIdxs = []int32{
-	0,  // 0: muskdeer.strategy.v1.ListStrategiesRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
-	0,  // 1: muskdeer.strategy.v1.GetStrategyRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
-	0,  // 2: muskdeer.strategy.v1.ListConfigVersionsRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
-	9,  // 3: muskdeer.strategy.v1.ConfigVersion.parameters:type_name -> muskdeer.common.v1.StrategyParameters
-	4,  // 4: muskdeer.strategy.v1.ListStrategiesReply.strategies:type_name -> muskdeer.strategy.v1.Strategy
-	4,  // 5: muskdeer.strategy.v1.GetStrategyReply.strategy:type_name -> muskdeer.strategy.v1.Strategy
-	5,  // 6: muskdeer.strategy.v1.GetStrategyReply.requested_config:type_name -> muskdeer.strategy.v1.ConfigVersion
-	5,  // 7: muskdeer.strategy.v1.GetStrategyReply.active_config:type_name -> muskdeer.strategy.v1.ConfigVersion
-	5,  // 8: muskdeer.strategy.v1.ListConfigVersionsReply.versions:type_name -> muskdeer.strategy.v1.ConfigVersion
-	1,  // 9: muskdeer.strategy.v1.StrategyManagement.ListStrategies:input_type -> muskdeer.strategy.v1.ListStrategiesRequest
-	2,  // 10: muskdeer.strategy.v1.StrategyManagement.GetStrategy:input_type -> muskdeer.strategy.v1.GetStrategyRequest
-	3,  // 11: muskdeer.strategy.v1.StrategyManagement.ListConfigVersions:input_type -> muskdeer.strategy.v1.ListConfigVersionsRequest
-	6,  // 12: muskdeer.strategy.v1.StrategyManagement.ListStrategies:output_type -> muskdeer.strategy.v1.ListStrategiesReply
-	7,  // 13: muskdeer.strategy.v1.StrategyManagement.GetStrategy:output_type -> muskdeer.strategy.v1.GetStrategyReply
-	8,  // 14: muskdeer.strategy.v1.StrategyManagement.ListConfigVersions:output_type -> muskdeer.strategy.v1.ListConfigVersionsReply
-	12, // [12:15] is the sub-list for method output_type
-	9,  // [9:12] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	4,  // 0: muskdeer.strategy.v1.ControlStrategyRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
+	4,  // 1: muskdeer.strategy.v1.GetOperationRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
+	3,  // 2: muskdeer.strategy.v1.StrategyOperation.observation:type_name -> muskdeer.strategy.v1.OperationObservation
+	4,  // 3: muskdeer.strategy.v1.ListStrategiesRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
+	4,  // 4: muskdeer.strategy.v1.GetStrategyRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
+	4,  // 5: muskdeer.strategy.v1.ListConfigVersionsRequest.session:type_name -> muskdeer.strategy.v1.AdminSession
+	13, // 6: muskdeer.strategy.v1.ConfigVersion.parameters:type_name -> muskdeer.common.v1.StrategyParameters
+	8,  // 7: muskdeer.strategy.v1.ListStrategiesReply.strategies:type_name -> muskdeer.strategy.v1.Strategy
+	8,  // 8: muskdeer.strategy.v1.GetStrategyReply.strategy:type_name -> muskdeer.strategy.v1.Strategy
+	9,  // 9: muskdeer.strategy.v1.GetStrategyReply.requested_config:type_name -> muskdeer.strategy.v1.ConfigVersion
+	9,  // 10: muskdeer.strategy.v1.GetStrategyReply.active_config:type_name -> muskdeer.strategy.v1.ConfigVersion
+	9,  // 11: muskdeer.strategy.v1.ListConfigVersionsReply.versions:type_name -> muskdeer.strategy.v1.ConfigVersion
+	5,  // 12: muskdeer.strategy.v1.StrategyManagement.ListStrategies:input_type -> muskdeer.strategy.v1.ListStrategiesRequest
+	6,  // 13: muskdeer.strategy.v1.StrategyManagement.GetStrategy:input_type -> muskdeer.strategy.v1.GetStrategyRequest
+	7,  // 14: muskdeer.strategy.v1.StrategyManagement.ListConfigVersions:input_type -> muskdeer.strategy.v1.ListConfigVersionsRequest
+	0,  // 15: muskdeer.strategy.v1.StrategyControl.ControlStrategy:input_type -> muskdeer.strategy.v1.ControlStrategyRequest
+	1,  // 16: muskdeer.strategy.v1.StrategyControl.GetOperation:input_type -> muskdeer.strategy.v1.GetOperationRequest
+	10, // 17: muskdeer.strategy.v1.StrategyManagement.ListStrategies:output_type -> muskdeer.strategy.v1.ListStrategiesReply
+	11, // 18: muskdeer.strategy.v1.StrategyManagement.GetStrategy:output_type -> muskdeer.strategy.v1.GetStrategyReply
+	12, // 19: muskdeer.strategy.v1.StrategyManagement.ListConfigVersions:output_type -> muskdeer.strategy.v1.ListConfigVersionsReply
+	2,  // 20: muskdeer.strategy.v1.StrategyControl.ControlStrategy:output_type -> muskdeer.strategy.v1.StrategyOperation
+	2,  // 21: muskdeer.strategy.v1.StrategyControl.GetOperation:output_type -> muskdeer.strategy.v1.StrategyOperation
+	17, // [17:22] is the sub-list for method output_type
+	12, // [12:17] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_api_strategy_v1_management_proto_init() }
@@ -830,16 +1258,17 @@ func file_api_strategy_v1_management_proto_init() {
 	if File_api_strategy_v1_management_proto != nil {
 		return
 	}
-	file_api_strategy_v1_management_proto_msgTypes[4].OneofWrappers = []any{}
+	file_api_strategy_v1_management_proto_msgTypes[2].OneofWrappers = []any{}
+	file_api_strategy_v1_management_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_strategy_v1_management_proto_rawDesc), len(file_api_strategy_v1_management_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   13,
 			NumExtensions: 0,
-			NumServices:   1,
+			NumServices:   2,
 		},
 		GoTypes:           file_api_strategy_v1_management_proto_goTypes,
 		DependencyIndexes: file_api_strategy_v1_management_proto_depIdxs,
