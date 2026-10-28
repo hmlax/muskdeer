@@ -23,6 +23,8 @@ const (
 type soakSample struct {
 	RecordKind       string `json:"record_kind"`
 	ElapsedMS        int64  `json:"elapsed_ms"`
+	QuoteGapMS       int64  `json:"quote_gap_ms"`
+	ProjectionGapMS  int64  `json:"projection_gap_ms"`
 	FillCount        int64  `json:"fill_count"`
 	ProjectedFills   int64  `json:"projected_fills"`
 	CoreOrders       int64  `json:"core_orders"`
@@ -43,6 +45,18 @@ type soakSample struct {
 }
 
 type soakAmount struct{ Amount string }
+
+func observeSoakQuotes(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmit) (bool, error) {
+	var sides struct {
+		Buys  int64
+		Sells int64
+	}
+	err := db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).
+		Where("account_id = ? AND strategy_instance_id = ? AND state IN ? AND cancel_state = ? AND delete_at IS NULL",
+			submit.Input.AccountID, submit.Input.Authority.StrategyID, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}, domain.CancelStateNone).
+		Select("count(*) FILTER (WHERE side = ?) AS buys, count(*) FILTER (WHERE side = ?) AS sells", domain.SideBuy, domain.SideSell).Scan(&sides).Error
+	return sides.Buys > 0 && sides.Sells > 0, err
+}
 
 func readSoakSample(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmit) (soakSample, error) {
 	var sample soakSample

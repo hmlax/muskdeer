@@ -70,12 +70,20 @@ func runStrategySoak(t *testing.T, duration time.Duration, minimumFills int64) {
 	started := time.Now()
 	nextSample, lastQuote, lastProjection := time.Duration(0), time.Duration(0), time.Duration(0)
 	observe := func(elapsed time.Duration, fills int64) {
+		result.ElapsedMS, result.FillCount = elapsed.Milliseconds(), fills
+		call, stop := context.WithTimeout(ctx, 3*time.Second)
+		defer stop()
+		bilateral, err := observeSoakQuotes(call, db, submit)
+		if err != nil {
+			t.Fatalf("soak quote observation at %s: %v", elapsed, err)
+		}
+		if bilateral {
+			lastQuote = elapsed
+		}
 		if elapsed < nextSample {
 			return
 		}
 		nextSample = elapsed + 2*time.Second
-		call, stop := context.WithTimeout(ctx, 3*time.Second)
-		defer stop()
 		sample, err := readSoakSample(call, db, submit)
 		if err != nil {
 			t.Fatalf("soak invariant at %s: %v", elapsed, err)
@@ -84,17 +92,15 @@ func runStrategySoak(t *testing.T, duration time.Duration, minimumFills int64) {
 		if sample.FillCount != fills {
 			t.Fatal("driver fills differ from immutable core facts")
 		}
-		if sample.QuoteBuys > 0 && sample.QuoteSells > 0 {
-			lastQuote = elapsed
-		}
 		if sample.Reconciled {
 			lastProjection = elapsed
 		}
-		if elapsed-lastQuote > 10*time.Second || elapsed-lastProjection > 10*time.Second {
-			t.Fatal("soak exceeded its 10-second quote/projection observation bound")
-		}
+		sample.QuoteGapMS, sample.ProjectionGapMS = (elapsed - lastQuote).Milliseconds(), (elapsed - lastProjection).Milliseconds()
 		if err := json.NewEncoder(progress).Encode(sample); err != nil {
 			t.Fatal(err)
+		}
+		if elapsed-lastQuote > 10*time.Second || elapsed-lastProjection > 10*time.Second {
+			t.Fatalf("soak exceeded its 10-second observation bound: elapsed_ms=%d quote_gap_ms=%d projection_gap_ms=%d", sample.ElapsedMS, sample.QuoteGapMS, sample.ProjectionGapMS)
 		}
 	}
 	result.FillCount = driveStrategyFillsObserved(ctx, t, db, core, submit, duration, observe)

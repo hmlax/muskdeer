@@ -68,6 +68,11 @@ func (s *StrategyController) observeAction(ctx context.Context, action domain.St
 func (s *StrategyController) dispatch(ctx context.Context, pending domain.StrategyAction, authority domain.StrategyAuthority) error {
 	native, _ := ctx.Deadline()
 	action, err := s.deps.Actions.Attempt(ctx, pending, authority, native.Truncate(time.Millisecond))
+	if errors.Is(err, domain.ErrRiskDenied) {
+		// A stop can commit after quoting or Plan. No execution call occurred;
+		// keep any PENDING action durable for the next tick to discard.
+		return errStrategyReobserve
+	}
 	if err != nil {
 		return err
 	}
@@ -115,6 +120,11 @@ func (s *StrategyController) planAndDispatch(ctx context.Context, authority doma
 	}
 	plan.Key = hex.EncodeToString(random[:])
 	stored, err := s.deps.Actions.Plan(ctx, authority, plan)
+	if errors.Is(err, domain.ErrRiskDenied) {
+		// Admission has observed newer lifecycle intent. Re-read that intent
+		// using the next bounded tick instead of killing the account worker.
+		return errStrategyReobserve
+	}
 	if err != nil {
 		return err
 	}
