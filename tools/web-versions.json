@@ -1,0 +1,10 @@
+{
+  "node": "24.22.1",
+  "npm": "11.19.1",
+  "archives": {
+    "darwin-arm64": "654ba79de6155647e22321932b45f2a1ccb705976cc337c9b8e278beb085a628",
+    "darwin-x64": "65e450f90a6eaacd5000f611861c4ce65fadc87f813795dc4ed0c0e5f2fca2d4",
+    "linux-arm64": "dbabf7a1cbf947e6059ffad2c27b80041db97dea1e553b62afdee7f13fca336e",
+    "linux-x64": "6c172a9ab6718f7b801fb5a7bd486af2ee5e32758086a04b84fcce2aa77095e6"
+  }
+}

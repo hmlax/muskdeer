@@ -26,6 +26,16 @@ message ServiceConfig {
   Listener monitoring = 15;
   // Explicit L1 business opt-in; omitted configurations remain infrastructure probes.
   BusinessRuntime business = 16;
+  // Explicit management HTTP opt-in. No identity is provisioned at startup.
+  AdminHTTP admin_http = 17;
+}
+
+// AdminHTTP pins the browser origin independently of request/proxy headers.
+message AdminHTTP {
+  bool enabled = 1;
+  string public_origin = 2;
+  // Only literal loopback HTTP is accepted; HTTPS remains the normal mode.
+  bool allow_insecure_loopback = 3;
 }
 
 // BusinessRuntime configures owned business work without migrating

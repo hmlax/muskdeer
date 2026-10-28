@@ -10,6 +10,11 @@
 !deer/**
 !internal
 !internal/**
+!web
+!web/admin
+!web/admin/assets.go
+!web/admin/dist
+!web/admin/dist/**
 !third_party
 !third_party/**
 **/*_test.go

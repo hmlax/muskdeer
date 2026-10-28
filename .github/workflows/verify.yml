@@ -19,10 +19,14 @@ jobs:
           cache: false
       - name: Install pinned generators
         run: make tools
+      - name: Build and verify pinned administration assets
+        run: make web-install web-check web-generated-check
       - name: Verify generated code, lint, unit tests and build
         run: make verify
       - name: Verify isolated infrastructure contracts
         run: make integration
+      - name: Verify actual administration browser workflow
+        run: make admin-browser
       - name: Verify persistent development resources
         run: make dev-test
       - name: Build pinned toolchain image and verify runtime

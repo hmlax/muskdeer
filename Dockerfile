@@ -10,6 +10,8 @@ COPY api ./api
 COPY cmd ./cmd
 COPY deer ./deer
 COPY internal ./internal
+COPY web/admin/assets.go ./web/admin/assets.go
+COPY web/admin/dist ./web/admin/dist
 COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     go build -mod=readonly -trimpath -o /out/muskdeer ./cmd/muskdeer

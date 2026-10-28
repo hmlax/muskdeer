@@ -13,6 +13,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/internal/business"
+	"github.com/hmlax/muskdeer/internal/delivery/adminhttp"
 )
 
 const requiredGoVersion = "go1.27.3"
@@ -45,6 +46,9 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 		return diagnosticExit(diagnostic, err, 1)
 	}
 	if err := business.ValidateConfig(cfg); err != nil {
+		return diagnosticExit(diagnostic, err, 1)
+	}
+	if err := adminhttp.ValidateConfig(cfg); err != nil {
 		return diagnosticExit(diagnostic, err, 1)
 	}
 	if _, err := fmt.Fprintln(output, "go1.27.3: configuration syntax and limits validated"); err != nil {

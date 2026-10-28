@@ -7,6 +7,8 @@ import (
 	"io"
 	"log/slog"
 
+	"github.com/cloudwego/hertz/pkg/app/server"
+
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -14,6 +16,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/internal/business"
+	"github.com/hmlax/muskdeer/internal/delivery/adminhttp"
 	"github.com/hmlax/muskdeer/internal/processlog"
 )
 
@@ -55,6 +58,9 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 	}
 	cfg = proto.CloneOf(cfg)
 	if err := business.ValidateConfig(cfg); err != nil {
+		return err
+	}
+	if err := adminhttp.ValidateConfig(cfg); err != nil {
 		return err
 	}
 	if _, err := ParseRole(string(role)); err != nil {
@@ -109,7 +115,12 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 	)
 	if role == RoleAPI {
 		var api *deer.DeerApi
-		api, cleanup, err = deer.NewDeerApi(ctx, cfg, deer.APISpec{Service: spec})
+		api, cleanup, err = deer.NewDeerApi(ctx, cfg, deer.APISpec{
+			Service: spec,
+			Routes: func(ctx context.Context, owner *deer.Deer, hertz *server.Hertz) error {
+				return adminhttp.Assemble(ctx, cfg, owner, hertz)
+			},
+		})
 		if err == nil {
 			owner = api.Deer
 			httpAddress = api.HTTPAddress()

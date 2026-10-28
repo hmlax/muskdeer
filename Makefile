@@ -1,4 +1,4 @@
-.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e
+.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e web-install web-build web-check web-generated-check admin-browser
 
 doctor:
 	python3 scripts/go.py version
@@ -50,6 +50,7 @@ build:
 	mkdir -p .cache/bin
 	python3 scripts/go.py build -o .cache/bin/muskdeer ./cmd/muskdeer
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
+	python3 scripts/go.py build -o .cache/bin/admin ./cmd/admin
 
 verify: doctor contract-check generate-check hz-check fmt-check lint policy-test test-tooling test test-race build
 
@@ -74,7 +75,23 @@ image:
 image-test: image
 	python3 scripts/image-smoke.py
 
-e2e: integration image-test
+web-install:
+	python3 scripts/web.py install
+
+web-build:
+	python3 scripts/web.py build
+
+web-check:
+	python3 scripts/web.py check
+
+web-generated-check: web-build
+	git diff --exit-code -- web/admin/dist
+
+admin-browser: build
+	python3 scripts/web.py browser-install
+	python3 scripts/admin-browser.py
+
+e2e: integration image-test admin-browser
 
 .PHONY: soak soak-smoke
 soak: build
