@@ -3,10 +3,13 @@ package adminhttp
 import (
 	"net"
 	"testing"
+	"time"
 
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
 func TestManagementOriginValidationRejectsImplicitTrustAndRemoteHTTP(t *testing.T) {
@@ -56,5 +59,42 @@ func TestManagementOriginValidationRejectsImplicitTrustAndRemoteHTTP(t *testing.
 	valid.AdminHttp.PublicOrigin, valid.AdminHttp.AllowInsecureLoopback = testOrigin, false
 	if err := ValidateConfig(valid); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestStrategyHTTPRequiresExplicitDiscoveryAndBoundedAllowedClient(t *testing.T) {
+	cfg := &configv1.ServiceConfig{
+		Name:     "api",
+		Postgres: &configv1.Postgres{},
+		Http:     &configv1.Listener{Address: "127.0.0.1:0"},
+		Nacos:    &configv1.Nacos{},
+		GrpcClients: &configv1.GRPCClients{
+			AllowedServices: []string{rpcsecurity.ServiceStrategy},
+			RequestTimeout:  durationpb.New(time.Second),
+		},
+		AdminHttp: &configv1.AdminHTTP{
+			Enabled:                true,
+			PublicOrigin:           "http://127.0.0.1:0",
+			AllowInsecureLoopback:  true,
+			StrategyQueriesEnabled: true,
+		},
+	}
+	if err := ValidateConfig(cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, mutate := range []func(*configv1.ServiceConfig){
+		func(v *configv1.ServiceConfig) { v.Nacos = nil },
+		func(v *configv1.ServiceConfig) { v.GrpcClients = nil },
+		func(v *configv1.ServiceConfig) {
+			v.GrpcClients.AllowedServices = []string{rpcsecurity.ServiceExecution}
+		},
+		func(v *configv1.ServiceConfig) { v.GrpcClients.RequestTimeout = durationpb.New(6 * time.Second) },
+		func(v *configv1.ServiceConfig) { v.AdminHttp.Enabled = false },
+	} {
+		changed := proto.CloneOf(cfg)
+		mutate(changed)
+		if err := ValidateConfig(changed); err == nil {
+			t.Fatal("incomplete strategy HTTP configuration accepted")
+		}
 	}
 }

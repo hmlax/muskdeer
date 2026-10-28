@@ -6,10 +6,13 @@ import (
 	"net"
 	"net/netip"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
 // MessageInvalidConfig never includes an untrusted origin or configuration.
@@ -28,12 +31,17 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		return nil
 	}
 	if !admin.Enabled {
-		if admin.PublicOrigin != "" || admin.AllowInsecureLoopback {
+		if admin.PublicOrigin != "" || admin.AllowInsecureLoopback || admin.StrategyQueriesEnabled {
 			return ErrInvalidConfig
 		}
 		return nil
 	}
 	if cfg.Name != "api" || cfg.Postgres == nil || cfg.Http == nil {
+		return ErrInvalidConfig
+	}
+	if admin.StrategyQueriesEnabled && (cfg.Nacos == nil || cfg.GrpcClients == nil ||
+		!slices.Contains(cfg.GrpcClients.AllowedServices, rpcsecurity.ServiceStrategy) ||
+		cfg.GrpcClients.RequestTimeout.CheckValid() != nil || cfg.GrpcClients.RequestTimeout.AsDuration() <= 0 || cfg.GrpcClients.RequestTimeout.AsDuration() > 5*time.Second) {
 		return ErrInvalidConfig
 	}
 	bindHost, bindPort, err := net.SplitHostPort(cfg.Http.Address)

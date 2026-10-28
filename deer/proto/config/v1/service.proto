@@ -36,6 +36,8 @@ message AdminHTTP {
   string public_origin = 2;
   // Only literal loopback HTTP is accepted; HTTPS remains the normal mode.
   bool allow_insecure_loopback = 3;
+  // Explicitly route read-only strategy management to its owned gRPC client.
+  bool strategy_queries_enabled = 4;
 }
 
 // BusinessRuntime configures owned business work without migrating

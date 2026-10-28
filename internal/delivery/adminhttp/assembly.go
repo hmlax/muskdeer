@@ -5,8 +5,11 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 
+	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/rpcclient"
+	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/migrate"
 	"github.com/hmlax/muskdeer/internal/repository"
 )
@@ -41,6 +44,17 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 	routes, err := New(auth, origin, secure)
 	if err != nil {
 		return err
+	}
+	if cfg.AdminHttp.StrategyQueriesEnabled {
+		factory, err := owner.GRPCClients()
+		if err != nil {
+			return err
+		}
+		connection, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceStrategy})
+		if err != nil {
+			return err
+		}
+		routes.strategies = strategyv1.NewStrategyManagementClient(connection)
 	}
 	routes.Register(hertz)
 	return nil

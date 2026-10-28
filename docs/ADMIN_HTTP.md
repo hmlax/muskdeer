@@ -1,6 +1,6 @@
 # 管理页面与身份 HTTP
 
-P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；策略配置、行情/订单/成交/持仓/风险/审计查询、异步操作及管理业务gRPC仍待后续步骤。此登录纵向切片不计完整R08/A27通过。
+P07.3提供登录、当前会话和注销的实际页面/接口，以及显式本地账户开通命令；P07.7提供typed管理查询gRPC，P07.8接入只读策略查询HTTP。策略页面、配置/控制写操作、行情/订单/成交/持仓/风险/审计查询及异步操作仍待后续步骤，不计完整R08/A27通过。
 
 ## 开启入口
 
@@ -38,6 +38,22 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 | POST /api/v1/auth/logout | 204，撤销会话并清cookie | 固定Origin、唯一会话cookie、独立X-CSRF-Token |
 
 会话JSON的user_id/session_id/expires_at_ms是字符串，role使用已定义枚举；不返回任何秘密。401/403/400/503使用固定错误code/message，内部错误不序列化；不存在的`/api/*`返回JSON 404，静态页面不吞掉接口错误，错误方法返回JSON 405。管理响应no-store、Vary Cookie、nosniff；CSP限制资源/表单同源，禁止frame嵌入和base修改。登录/会话/注销的持久约束见[认证基础](ADMIN_AUTH.md)。后续业务写必须在效果事务内重新授权，不能把此页面的角色展示当作授权。
+
+## 策略查询 HTTP
+
+显式加入 `admin_http.strategy_queries_enabled=true` 后注册以下只读路由。API需要同环境Nacos及Deer拥有的grpc_clients，允许 `strategy.grpc`，使用已签发的 `api.grpc` mTLS客户端身份、正数且最多5秒的RPC原生上限；实际handler上限3秒并继承更早的HTTP取消/期限。strategy需显式开启 `business.strategy.management_enabled`，见[业务查询合同](ADMIN_STRATEGIES.md)。未开启时仍返回API JSON 404，不查询本地业务表或回退其他服务。
+
+| 方法/路径 | 返回typed合同 | 参数 |
+|---|---|---|
+| GET /api/v1/strategies | ListStrategiesReply | after_id默认0，limit默认50、范围1–100 |
+| GET /api/v1/strategies/:strategyID | GetStrategyReply | 正规范int64实例ID，无query |
+| GET /api/v1/strategies/:strategyID/versions | ListConfigVersionsReply | 同实例独立版本分页，after_id/limit同上 |
+
+调用使用唯一现有会话Cookie，API自行构造AdminSession，业务服务在同一只读快照内重新验证viewer权利；没有将API身份结果当作业务授权。拒绝GET body、重复/未知参数、非规范整数、溢出/负游标。不存在资源404、会话无效401并清cookie、角色拒绝403、依赖/协议故障503；后端私有错误不返回。路由不开放POST等写操作，也不启动交易。
+
+响应从具体Proto直接序列化为HTTP JSON，采用proto字段名；int64 ID/版本/毫秒和所有小数均为JSON string，grid_count等int32计数仍为整数。Maker/Grid是parameters中的具体oneof，schema0参数为空；requested_config与active_config分别表示请求与实际生效，未生效为null/presence缺失，不能据此显示为已运行。该序列化是实际传输边界，不通过JSON/map复制业务对象。登录与当前会话增加布尔 `session.strategy_queries_enabled` 能力标识，供后续页面只展示已启用入口；标识不授予业务权限。
+
+协议、配置/边界及实际独立API→Nacos/mTLS→strategy→PG验证见[P07.8](validation/P07-08.md)。当前React仅身份页面，策略页面和独立OpenAPI仍未交付。
 
 ## 构建与浏览器验证
 

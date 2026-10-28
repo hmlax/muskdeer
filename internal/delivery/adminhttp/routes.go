@@ -14,6 +14,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/protocol"
 
+	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
@@ -43,11 +44,12 @@ type errorReply struct {
 }
 
 type sessionView struct {
-	UserID      string           `json:"user_id"`
-	Username    string           `json:"username"`
-	Role        domain.AdminRole `json:"role"`
-	SessionID   string           `json:"session_id"`
-	ExpiresAtMS string           `json:"expires_at_ms"`
+	UserID                 string           `json:"user_id"`
+	Username               string           `json:"username"`
+	Role                   domain.AdminRole `json:"role"`
+	SessionID              string           `json:"session_id"`
+	ExpiresAtMS            string           `json:"expires_at_ms"`
+	StrategyQueriesEnabled bool             `json:"strategy_queries_enabled"`
 }
 
 type sessionReply struct {
@@ -57,6 +59,7 @@ type sessionReply struct {
 // Routes owns immutable delivery values and borrows the sole auth instance.
 type Routes struct {
 	auth          domain.AdminAuth
+	strategies    strategyv1.StrategyManagementClient
 	origin        string
 	host          string
 	secure        bool
@@ -96,6 +99,11 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	hertz.POST("/api/v1/auth/login", r.login)
 	hertz.GET("/api/v1/auth/session", r.session)
 	hertz.POST("/api/v1/auth/logout", r.logout)
+	if r.strategies != nil {
+		hertz.GET("/api/v1/strategies", r.listStrategies)
+		hertz.GET("/api/v1/strategies/:strategyID", r.getStrategy)
+		hertz.GET("/api/v1/strategies/:strategyID/versions", r.listStrategyVersions)
+	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {
 			writeError(request, http.StatusNotFound, codeNotFound, messageNotFound)
@@ -152,6 +160,7 @@ func (r *Routes) login(ctx context.Context, request *app.RequestContext) {
 		return
 	}
 	r.setCookies(request, login.Token, login.CSRF, int(domain.AdminSessionTTL/time.Second))
+	view.StrategyQueriesEnabled = r.strategies != nil
 	request.JSON(http.StatusOK, sessionReply{Session: view})
 }
 
@@ -171,6 +180,7 @@ func (r *Routes) session(ctx context.Context, request *app.RequestContext) {
 		r.failure(request, domain.ErrAuthUnavailable)
 		return
 	}
+	view.StrategyQueriesEnabled = r.strategies != nil
 	request.JSON(http.StatusOK, sessionReply{Session: view})
 }
 

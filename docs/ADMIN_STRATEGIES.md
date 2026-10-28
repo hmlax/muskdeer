@@ -1,6 +1,6 @@
 # 策略管理查询
 
-P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC。尚未注册策略管理 HTTP 或策略页面，不能据此将 R08/A27 标为完成。身份入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
+P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP。策略页面与写操作仍未交付，不能据此将 R08/A27 标为完成。身份及查询HTTP入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
 
 每次 List、Detail、Versions 均在同一个只读 REPEATABLE READ 事务内校验持久会话、用户启用状态、credential_version、数据库时钟到期及 viewer 权限，然后读取业务数据。注销或凭据变更后的新查询不能沿用此前 API 身份检查的结果。查询是快照观测，不是新增交易风险的授权；并发注销不撤回已经开始的只读快照。
 
