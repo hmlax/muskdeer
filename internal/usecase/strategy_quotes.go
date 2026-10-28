@@ -25,10 +25,6 @@ func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec
 	if !environment.RiskAllowed && environment.RiskReason != domain.RiskReasonNotEvaluated {
 		return s.protectRecovery(ctx, spec, token, orders)
 	}
-	if environment.Parameters.Template != domain.StrategyTemplateMarketMaker || environment.Parameters.Maker == nil {
-		return domain.ErrInvalidParameters
-	}
-	p := *environment.Parameters.Maker
 	reference, err := s.deps.Market.Reference(ctx, spec.ActiveSource, spec.InstrumentID, spec.Mode)
 	if ctx.Err() != nil {
 		return errStrategyReobserve
@@ -36,32 +32,11 @@ func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec
 	if err != nil {
 		return s.protectRecovery(ctx, spec, token, orders)
 	}
-	targets, err := quoting.Maker(quoting.Input{
-		Instrument: quoting.Instrument{
-			ID:              environment.Instrument.ID,
-			MetadataVersion: environment.Instrument.MetadataVersion,
-			Status:          environment.Instrument.Status,
-			PriceTick:       environment.Instrument.PriceTick,
-			QuantityStep:    environment.Instrument.QuantityStep,
-			MinNotional:     environment.Instrument.MinNotional,
-		},
-		Source:         spec.ActiveSource,
-		Symbol:         environment.Symbol,
-		Mode:           spec.Mode,
-		Market:         reference,
-		Parameters:     p,
-		Inventory:      environment.Inventory,
-		AvailableBase:  environment.AvailableBase,
-		AvailableQuote: environment.AvailableQuote,
-		QuoteFeeRate:   environment.QuoteFeeRate,
-		LocalBid:       environment.LocalBid,
-		LocalAsk:       environment.LocalAsk,
-		Now:            time.Now(),
-	})
+	quotes, err := strategyQuoteTargets(spec, environment, reference, time.Now())
 	if err != nil {
 		return s.protectRecovery(ctx, spec, token, orders)
 	}
-	targets = fundedTargets(targets, environment)
+	targets := fundedTargets(quotes.targets, environment)
 	plan, err := quoting.Diff(quoting.DiffInput{
 		StrategyID:         spec.ID,
 		AccountID:          spec.AccountID,
@@ -70,9 +45,9 @@ func (s *StrategyController) quote(ctx context.Context, spec domain.StrategySpec
 		Orders:             orders,
 		Now:                time.Now(),
 		LastRefresh:        environment.LastRefresh,
-		RepriceBPS:         p.RepriceBPS,
-		MinRefreshInterval: p.MinRefreshInterval,
-		MaxQuoteAge:        p.MaxQuoteAge,
+		RepriceBPS:         quotes.reprice,
+		MinRefreshInterval: quotes.minRefresh,
+		MaxQuoteAge:        quotes.maxAge,
 	})
 	if err != nil {
 		return err

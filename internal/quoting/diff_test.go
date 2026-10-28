@@ -18,6 +18,16 @@ func TestDiffKeepsUnchangedAndSmallRepriceTargets(t *testing.T) {
 	}
 }
 
+func TestDiffZeroToleranceRequiresAnExactFixedGridPrice(t *testing.T) {
+	input := diffFixture(t)
+	input.RepriceBPS = decimal.Zero
+	input.Orders[0].Input.Price = input.Targets[0].Price.Add(decimal.RequireFromString("0.001"))
+	plan, err := Diff(input)
+	if err != nil || len(plan.Cancel) != 1 || plan.Cancel[0] != input.Orders[0].ID || len(plan.Submit) != 0 {
+		t.Fatalf("fixed-level policy retained a nearby off-grid order: %+v, %v", plan, err)
+	}
+}
+
 func TestDiffWaitsForTerminalCancellationBeforeAnyReplacement(t *testing.T) {
 	input := diffFixture(t)
 	input.Targets[0].Price = input.Targets[0].Price.Sub(decimal.NewFromInt(1))

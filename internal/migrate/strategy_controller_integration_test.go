@@ -201,11 +201,16 @@ func (m *controllerMarket) Reference(ctx context.Context, source domain.MarketSo
 
 func strategyControllerTick(ctx context.Context, t *testing.T, controller *usecase.StrategyController, market *controllerMarket) {
 	t.Helper()
+	strategyControllerTickAt(ctx, t, controller, market, "100")
+}
+
+func strategyControllerTickAt(ctx context.Context, t *testing.T, controller *usecase.StrategyController, market *controllerMarket, midpoint string) {
+	t.Helper()
 	publication, err := market.store.Get(ctx, market.feed.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := market.store.Publish(ctx, market.publisher, publication.Revision, marketReadingFixture(market.feed, publication.Reading.Sequence+1, "100")); err != nil {
+	if _, err := market.store.Publish(ctx, market.publisher, publication.Revision, marketReadingFixture(market.feed, publication.Reading.Sequence+1, midpoint)); err != nil {
 		t.Fatal(err)
 	}
 	work, cancel := context.WithTimeout(ctx, 2*time.Second)
