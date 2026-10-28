@@ -5,6 +5,7 @@ package migrate
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
@@ -21,27 +22,32 @@ const (
 )
 
 type soakSample struct {
-	RecordKind       string `json:"record_kind"`
-	ElapsedMS        int64  `json:"elapsed_ms"`
-	QuoteGapMS       int64  `json:"quote_gap_ms"`
-	ProjectionGapMS  int64  `json:"projection_gap_ms"`
-	FillCount        int64  `json:"fill_count"`
-	ProjectedFills   int64  `json:"projected_fills"`
-	CoreOrders       int64  `json:"core_orders"`
-	QuoteBuys        int64  `json:"quote_buys"`
-	QuoteSells       int64  `json:"quote_sells"`
-	BaseTotal        string `json:"base_total"`
-	QuoteTotal       string `json:"quote_total"`
-	BaseFrozen       string `json:"base_frozen"`
-	QuoteFrozen      string `json:"quote_frozen"`
-	ReservedNotional string `json:"reserved_notional"`
-	WorstBase        string `json:"worst_base"`
-	FeesQuote        string `json:"fees_quote"`
-	CostQuote        string `json:"cost_quote"`
-	RealizedPnlQuote string `json:"realized_pnl_quote"`
-	Reconciled       bool   `json:"reconciled"`
-	RiskFlag         bool   `json:"risk_flag"`
-	RiskReason       string `json:"risk_reason"`
+	RecordKind           string `json:"record_kind"`
+	ElapsedMS            int64  `json:"elapsed_ms"`
+	QuoteGapMS           int64  `json:"quote_gap_ms"`
+	ProjectionGapMS      int64  `json:"projection_gap_ms"`
+	FillCount            int64  `json:"fill_count"`
+	ProjectedFills       int64  `json:"projected_fills"`
+	CoreOrders           int64  `json:"core_orders"`
+	QuoteBuys            int64  `json:"quote_buys"`
+	QuoteSells           int64  `json:"quote_sells"`
+	BaseTotal            string `json:"base_total"`
+	QuoteTotal           string `json:"quote_total"`
+	BaseFrozen           string `json:"base_frozen"`
+	QuoteFrozen          string `json:"quote_frozen"`
+	ReservedNotional     string `json:"reserved_notional"`
+	WorstBase            string `json:"worst_base"`
+	FeesQuote            string `json:"fees_quote"`
+	CostQuote            string `json:"cost_quote"`
+	RealizedPnlQuote     string `json:"realized_pnl_quote"`
+	Reconciled           bool   `json:"reconciled"`
+	RiskFlag             bool   `json:"risk_flag"`
+	RiskReconciled       bool   `json:"risk_reconciled"`
+	RiskSnapshotEligible bool   `json:"risk_snapshot_eligible"`
+	SourceSequence       int64  `json:"source_sequence"`
+	ProjectionSequence   int64  `json:"projection_sequence"`
+	InvariantFailed      bool   `json:"invariant_failed"`
+	RiskReason           string `json:"risk_reason"`
 }
 
 type soakAmount struct{ Amount string }
@@ -154,7 +160,7 @@ func checkSoakFrozen(ctx context.Context, tx *gorm.DB, account string, sample *s
 		}
 	}
 	if !base.Equal(baseFrozen) || !quote.Equal(quoteFrozen) {
-		return domain.ErrReconciliationMismatch
+		return fmt.Errorf("core frozen totals: %w", domain.ErrReconciliationMismatch)
 	}
 	intents := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Select("client_order_id").Where("account_id = ?", account)
 	var unexplained int64
@@ -162,7 +168,7 @@ func checkSoakFrozen(ctx context.Context, tx *gorm.DB, account string, sample *s
 		return err
 	}
 	if unexplained != 0 {
-		return domain.ErrReconciliationMismatch
+		return fmt.Errorf("core orders without prior intents: %w", domain.ErrReconciliationMismatch)
 	}
 	return tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ?", account).Count(&sample.CoreOrders).Error
 }
@@ -221,17 +227,30 @@ func readSoakProjection(ctx context.Context, tx *gorm.DB, submit domain.GatewayS
 		return err
 	}
 	sample.Reconciled = portfolio.Reconciled && portfolio.LastSourceSequence == source.Last && sample.ProjectedFills == source.Count
+	sample.SourceSequence, sample.ProjectionSequence = source.Last, portfolio.LastSourceSequence
 	sample.FeesQuote, sample.CostQuote, sample.RealizedPnlQuote = portfolio.FeesQuote, portfolio.CostQuote, portfolio.RealizedPnlQuote
 	if sample.Reconciled && (!decimal.RequireFromString(portfolio.Quantity).Equal(base) || !decimal.RequireFromString(portfolio.CashQuote).Equal(quote)) {
-		return domain.ErrReconciliationMismatch
+		return fmt.Errorf("projected balances: %w", domain.ErrReconciliationMismatch)
 	}
 	var risk modelv1.RiskSnapshot
 	if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&risk).Error; err != nil {
 		return err
 	}
 	sample.RiskFlag, sample.RiskReason = risk.AllowNewRisk, risk.ReasonCode
-	if sample.RiskFlag && (!risk.Reconciled || !sample.Reconciled) {
-		return domain.ErrReconciliationMismatch
+	sample.RiskReconciled = risk.Reconciled
+	var clock struct{ NowMS int64 }
+	if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", risk.Id).
+		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
+		return err
+	}
+	// This is only the snapshot's own eligibility. Final admission also checks
+	// current market, metadata, ownership and budgets; a raw allow flag alone
+	// is never trading permission. Core fills atomically clear Reconciled.
+	sample.RiskSnapshotEligible = risk.DeleteAt == nil && risk.AllowNewRisk && risk.Reconciled && risk.ObservedAt <= clock.NowMS && risk.ExpiresAt > clock.NowMS &&
+		clock.NowMS-risk.ObservedAt <= domain.MaxRiskSnapshotAge.Milliseconds() && risk.AccountId == submit.Input.AccountID &&
+		risk.InstrumentId == submit.Input.InstrumentID && risk.ConfigVersion == submit.Input.Authority.ConfigVersion
+	if sample.RiskSnapshotEligible && !sample.Reconciled {
+		return fmt.Errorf("eligible risk snapshot with incomplete projection: %w", domain.ErrReconciliationMismatch)
 	}
 	return nil
 }

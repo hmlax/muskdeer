@@ -85,10 +85,14 @@ func runStrategySoak(t *testing.T, duration time.Duration, minimumFills int64) {
 		}
 		nextSample = elapsed + 2*time.Second
 		sample, err := readSoakSample(call, db, submit)
+		sample.RecordKind, sample.ElapsedMS = soakRecordSample, elapsed.Milliseconds()
 		if err != nil {
+			sample.InvariantFailed = true
+			if writeErr := json.NewEncoder(progress).Encode(sample); writeErr != nil {
+				t.Error(writeErr)
+			}
 			t.Fatalf("soak invariant at %s: %v", elapsed, err)
 		}
-		sample.RecordKind, sample.ElapsedMS = soakRecordSample, elapsed.Milliseconds()
 		if sample.FillCount != fills {
 			t.Fatal("driver fills differ from immutable core facts")
 		}
