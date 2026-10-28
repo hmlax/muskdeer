@@ -261,7 +261,7 @@ func TestMarketProvenanceUpgradeClosesLegacyGrants(t *testing.T) {
 	}
 	strategy := identityInstance(instrument.Id, "legacy-risk-upgrade", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Omit("MarketMode").Create(strategy).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Omit("MarketMode", "RuntimeOwnerId", "RuntimeOwnerEpoch").Create(strategy).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)

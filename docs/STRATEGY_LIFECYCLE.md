@@ -1,0 +1,11 @@
+# 策略运行生命周期
+
+P06.13的repository.NewStrategyLifecycle借用根数据库，保存实例实际状态及运行incarnation。读取返回纯domain.StrategySpec，区分requested/active配置来源、desired_running和实际状态。构造不领取租约、准备资产或启动策略任务。
+
+当前策略租约、完整resource scope及revision是状态写入的前提。新进程或新epoch必须先持久RECOVERING；前一incarnation的RUNNING不能继承为新进程已完成恢复。运行元数据epoch一旦为正，不可倒退、清零或更换同epoch身份；事务末尾以数据库时间重新验证真实租约，失权回滚全部状态和风险关闭操作。
+
+进入RUNNING、完成STOPPED/PAUSED及激活新requested配置前，要求本实例所有非终态OMS订单、有效模拟核心订单和活动动作均已收敛。配置按typed模板/schema/code/source校验；激活后仍受共享账户最坏库存政策保护。RUNNING另从实际账本、投影/事实、启用的全部预算及所选健康行情验证资格，原始行情寿命继续裁剪。状态转换只关闭旧风险许可，execution周期评估才重新开放；状态RUNNING本身不能绕过最终交易门禁。
+
+STOPPING/PAUSING关闭新增风险，保留active配置供撤单/观察；desired_running=false不自动代表订单已终态。进程退出也不代表停止完成。UNKNOWN、WAITING和未发送但尚未丢弃的动作都阻止完成及配置切换。源码中的生命周期组件仍待独立strategy控制器装配。
+
+迁移19为既有元数据/显式模拟夹具保留零runtime epoch，不伪造历史运行owner。实际生命周期只能用当前真实策略租约领取正epoch，既有核心/意图路径继续独立验证策略和执行lease。管理层后续只写请求状态/配置，不能用Nacos在线或页面操作回包冒充运行授权。

@@ -261,7 +261,7 @@ func TestGlobalBudgetUpgradeCarriesUnknownObligationsWithoutEnablingRisk(t *test
 	}
 	strategy := identityInstance(instrument.Id, "legacy-global-risk", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(strategy).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Omit("RuntimeOwnerId", "RuntimeOwnerEpoch").Create(strategy).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)

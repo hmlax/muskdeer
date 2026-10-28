@@ -46,6 +46,8 @@ message StrategyInstance {
   optional int64 active_config_version = 15 [(tagger.tags) = "gorm:\"column:active_config_version;type:bigint\""];
   optional string active_market_data_source = 16 [(tagger.tags) = "gorm:\"column:active_market_data_source;type:varchar(32)\""];
   string market_mode = 17 [(tagger.tags) = "gorm:\"column:market_mode;type:varchar(16);not null;default:REPLAY\""];
+  string runtime_owner_id = 18 [(tagger.tags) = "gorm:\"column:runtime_owner_id;type:varchar(128);not null;default:''\""];
+  int64 runtime_owner_epoch = 19 [(tagger.tags) = "gorm:\"column:runtime_owner_epoch;type:bigint;not null;default:0\""];
 }
 
 // StrategyConfigVersion stores immutable version/source identity and typed
