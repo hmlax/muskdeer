@@ -63,6 +63,13 @@ func runStrategySoak(t *testing.T, duration time.Duration, minimumFills int64) {
 		}
 	})
 	_, submit := admissionFixture(ctx, t, db)
+	traceProcessLocks(ctx, t, db, []string{
+		"migration-test",
+		"market/business-market-soak",
+		"execution/business-execution",
+		"portfolio/business-portfolio",
+		"strategy/business-strategy.soak",
+	})
 	core, _ := executionFixture(t, db)
 	portfolio := portfolioFixture(ctx, t, db, submit)
 	startStrategySoakProcesses(ctx, t, db, postgres, submit, duration+time.Minute, directory)

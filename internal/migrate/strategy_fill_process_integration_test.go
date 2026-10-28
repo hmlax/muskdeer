@@ -146,9 +146,14 @@ func fillStrategySide(ctx context.Context, t *testing.T, db *gorm.DB, core domai
 	if err != nil {
 		t.Fatalf("actual external partial fill failed: %v", err)
 	}
-	duplicate, err := core.Fill(call, request)
-	if err != nil || duplicate.ID != filled.ID || !duplicate.FeeAmount.Equal(filled.FeeAmount) {
-		t.Fatal("repeated natural fill identity changed core effects")
+	confirmation, cancelConfirmation := context.WithTimeout(ctx, time.Second)
+	defer cancelConfirmation()
+	duplicate, err := core.Fill(confirmation, request)
+	if err != nil {
+		t.Fatalf("natural fill duplicate confirmation failed: error=%v context=%v", err, confirmation.Err())
+	}
+	if duplicate.ID != filled.ID || !duplicate.FeeAmount.Equal(filled.FeeAmount) {
+		t.Fatalf("natural fill duplicate changed confirmed effects: first_id=%d duplicate_id=%d first_fee=%s duplicate_fee=%s", filled.ID, duplicate.ID, filled.FeeAmount.String(), duplicate.FeeAmount.String())
 	}
 	if !quantity.LessThan(remaining) {
 		t.Fatal("scenario did not produce an actual partial fill")

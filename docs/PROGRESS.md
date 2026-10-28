@@ -729,3 +729,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：真实PG/race角色矩阵、摘要/成本、CSRF、注销不复活、失败计数、旧权限关闭、到期/禁止续期、会话上限/撤销审计、审计失败事务回滚、28模型四字段及并发迁移通过；完整make verify、原默认完整make integration、123份文档链接/差异检查通过，lint/race/goleak保留。修正空库测试未Apply及历史版本预期后全量重跑，见 [P07.2](validation/P07-02.md) 和 [认证基础](ADMIN_AUTH.md)。
 - 远程：4eb6ae6已推送main并核对SHA，[CI40632680044](https://github.com/hmlax/muskdeer/actions/runs/40632680044)success；7a19bc2的[CI40631997376](https://github.com/hmlax/muskdeer/actions/runs/40631997376)success、6468bf0的[CI40631192734](https://github.com/hmlax/muskdeer/actions/runs/40631192734)success。本步独立提交/推送并核对SHA。
 - 并行长运行：4eb6ae6在880,901ms/395次成交后因Nacos心跳及消费deadline退出，accepted=false；Nacos有5.18秒GC停顿记录，不仅据此归因，完整失败证据见P07.2。本步后保持原预算/断言独立重跑，不与另一套容器集成并行。A19未完成，后续管理HTTP/业务接口/页面和P08–P10继续。
+
+## 2026-10-28：P06.26 重复确认独立期限与锁诊断
+
+- 改动：成交驱动的首次成交及同自然键确认分别使用1秒context，区分调用失败与ID/费用不一致；真实PG受控600ms+600ms回归先红后绿，实际成交事实仍1条，核心资金/去重逻辑未变。长场景接入只读、有界且随测试取消join的进程锁链诊断，保留首个持续等待样本。
+- 验证：PG/race预算回归及原核心部分成交/冻结/终态去重、最终fmt-check/lint 0 issues、四实际进程12秒/6次部分成交与终态精确核算、文档/差异检查通过。本步测试专用改动未重复全套默认integration，见 [P06.26](validation/P06-26.md)。
+- 失败保留：67aef31长场景739,806ms/337次已观测成交后旧通用重复确认错误；首次新短场景strategy.actions等待策略行锁超时，加入诊断后未重现，不宣称根因已修复。两次失败accepted=false，12秒通过不代替A19。
+- 远程：67aef31已推送main并核对SHA，[CI40634728857](https://github.com/hmlax/muskdeer/actions/runs/40634728857)success；本步独立提交/推送并核对SHA。继续固定30分钟及P07管理页面/后端；完整L1仍待P06–P10。

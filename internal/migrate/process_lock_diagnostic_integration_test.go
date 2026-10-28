@@ -29,10 +29,12 @@ func traceProcessLocks(ctx context.Context, t *testing.T, db *gorm.DB, applicati
 	run, cancel := context.WithCancel(ctx)
 	finished := make(chan struct{})
 	var samples [][]processLockDiagnostic
+	var firstStall []processLockDiagnostic
 	go func() {
 		defer close(finished)
 		ticks := time.NewTicker(50 * time.Millisecond)
 		defer ticks.Stop()
+		waits := make(map[int]time.Time)
 		for {
 			select {
 			case <-run.Done():
@@ -53,9 +55,22 @@ func traceProcessLocks(ctx context.Context, t *testing.T, db *gorm.DB, applicati
 				continue
 			}
 			waiting := false
+			current := make(map[int]time.Time)
 			for _, row := range rows {
-				waiting = waiting || row.WaitType == "Lock"
+				if row.WaitType != "Lock" {
+					continue
+				}
+				waiting = true
+				started, exists := waits[row.PID]
+				if !exists {
+					started = time.Now()
+				}
+				current[row.PID] = started
+				if firstStall == nil && time.Since(started) >= 500*time.Millisecond {
+					firstStall = rows
+				}
 			}
+			waits = current
 			if waiting {
 				samples = append(samples, rows)
 				if len(samples) > 10 {
@@ -69,6 +84,9 @@ func traceProcessLocks(ctx context.Context, t *testing.T, db *gorm.DB, applicati
 		<-finished
 		if !t.Failed() {
 			return
+		}
+		for _, row := range firstStall {
+			t.Logf("first sustained lock pid=%d application=%s wait=%s/%s blockers=%s query=%s", row.PID, row.Application, row.WaitType, row.WaitEvent, row.Blockers, strings.Join(strings.Fields(row.Query), " "))
 		}
 		for index, sample := range samples {
 			for _, row := range sample {
