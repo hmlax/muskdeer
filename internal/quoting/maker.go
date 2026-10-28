@@ -104,16 +104,21 @@ func Maker(input Input) ([]Target, error) {
 }
 
 func validateInput(input Input) error {
-	i, p := input.Instrument, input.Parameters
-	if i.ID <= 0 || i.MetadataVersion <= 0 || i.Status != domain.InstrumentStatusTrading || !domain.FixedDecimal(i.PriceTick, 20, 18, false) ||
-		!domain.FixedDecimal(i.QuantityStep, 20, 18, false) || !domain.FixedDecimal(i.MinNotional, 20, 18, false) {
-		return ErrInvalidInput
-	}
+	p := input.Parameters
 	if err := boundedParameters(p); err != nil {
 		return err
 	}
 	if err := p.Validate(); err != nil {
 		return err
+	}
+	return validateMarketInput(input, p.MaxMarketAge)
+}
+
+func validateMarketInput(input Input, maxMarketAge time.Duration) error {
+	i := input.Instrument
+	if i.ID <= 0 || i.MetadataVersion <= 0 || i.Status != domain.InstrumentStatusTrading || !domain.FixedDecimal(i.PriceTick, 20, 18, false) ||
+		!domain.FixedDecimal(i.QuantityStep, 20, 18, false) || !domain.FixedDecimal(i.MinNotional, 20, 18, false) {
+		return ErrInvalidInput
 	}
 	if !domain.FixedDecimal(input.Inventory, 40, 36, true) || !domain.FixedDecimal(input.AvailableBase, 40, 36, true) ||
 		!domain.FixedDecimal(input.AvailableQuote, 40, 36, true) || !domain.FixedDecimal(input.QuoteFeeRate, 1, 18, true) || input.QuoteFeeRate.GreaterThanOrEqual(decimal.NewFromInt(1)) {
@@ -127,7 +132,7 @@ func validateInput(input Input) error {
 		!input.Market.AuthorityUntil.After(input.Now) || input.Market.Reading.ValidUntil.After(input.Market.AuthorityUntil) {
 		return domain.ErrUnreliableMarket
 	}
-	return input.Market.Reading.Selected(input.Source, i.ID, input.Symbol, input.Mode, input.Now, min(p.MaxMarketAge, 5*time.Second))
+	return input.Market.Reading.Selected(input.Source, i.ID, input.Symbol, input.Mode, input.Now, min(maxMarketAge, 5*time.Second))
 }
 
 func boundedParameters(p domain.MakerParameters) error {
@@ -186,6 +191,10 @@ func allocateQuantity(input Input, price decimal.Decimal, side domain.Side, fund
 	if side == domain.SideSell {
 		limit = minimum(input.Parameters.LevelNotional, funds.sellLimit)
 	}
+	return allocateAt(input, price, side, limit, funds)
+}
+
+func allocateAt(input Input, price decimal.Decimal, side domain.Side, limit decimal.Decimal, funds *allocation) decimal.Decimal {
 	step := input.Instrument.QuantityStep
 	lots, _ := limit.QuoRem(price.Mul(step), 0)
 	if side == domain.SideBuy {

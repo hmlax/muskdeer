@@ -132,7 +132,7 @@ func terminal(state domain.OrderState) bool {
 func validateDiff(input DiffInput) error {
 	if input.StrategyID <= 0 || input.AccountID == "" || len(input.AccountID) > 64 || input.InstrumentID <= 0 || input.Now.UnixMilli() <= 0 || input.LastRefresh.After(input.Now) ||
 		input.MinRefreshInterval < time.Millisecond || input.MaxQuoteAge < input.MinRefreshInterval || input.MaxQuoteAge > time.Hour ||
-		!domain.FixedDecimal(input.RepriceBPS, 5, 10, true) || input.RepriceBPS.GreaterThan(decimal.NewFromInt(10000)) || len(input.Targets) > 40 || len(input.Orders) > 200 {
+		!domain.FixedDecimal(input.RepriceBPS, 5, 10, true) || input.RepriceBPS.GreaterThan(decimal.NewFromInt(10000)) || len(input.Targets) > domain.MaxStrategyOpenOrders || len(input.Orders) > domain.MaxStrategyOpenOrders {
 		return ErrInvalidInput
 	}
 	if err := validateTargets(input.Targets); err != nil {
@@ -158,7 +158,7 @@ func validateTargets(targets []Target) error {
 			return ErrInvalidInput
 		}
 		seenTargets[key] = struct{}{}
-		if target.Level < 0 || target.Level >= 20 || (target.Side != domain.SideBuy && target.Side != domain.SideSell) || target.TimeInForce != domain.TimeInForcePostOnly ||
+		if target.Level < 0 || target.Level >= domain.MaxGridCount || (target.Side != domain.SideBuy && target.Side != domain.SideSell) || target.TimeInForce != domain.TimeInForcePostOnly ||
 			!domain.FixedDecimal(target.Price, 20, 18, false) || !domain.FixedDecimal(target.Quantity, 20, 18, false) {
 			return ErrInvalidInput
 		}
