@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"gorm.io/gorm"
@@ -51,6 +52,12 @@ func (s *cancellationStore) Observe(ctx context.Context, current domain.Cancella
 	}
 	if code != "" && code != domain.IntentErrorOutcomeUnknown && code != domain.IntentErrorCoreNotFound && code != domain.IntentErrorCoreRejected {
 		return domain.CancellationSnapshot{}, domain.ErrInvalidOrder
+	}
+	if s.simulatorResolution && cancellationMayHaveNoEffect(current.State) && (state == domain.CancellationRequested || state == domain.CancellationUnknown) && !current.Input.Deadline.After(time.Now()) {
+		resolved, err := s.resolveSimulatorCancellation(ctx, current)
+		if err == nil || !errors.Is(err, domain.ErrOutcomeUnknown) {
+			return resolved, err
+		}
 	}
 	var result domain.CancellationSnapshot
 	err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {

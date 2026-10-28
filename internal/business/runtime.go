@@ -150,7 +150,7 @@ func executionHandler(db *gorm.DB, authority *usecase.ExecutionOwner) (*executio
 	if err != nil {
 		return nil, err
 	}
-	requests, err := repository.NewCancellations(db)
+	requests, err := repository.NewSimulatorCancellations(db)
 	if err != nil {
 		return nil, err
 	}

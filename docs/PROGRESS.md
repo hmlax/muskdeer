@@ -678,3 +678,10 @@ P01–P05 公共运行层、模拟交易合同、OMS/消息/投影及Binance/OKX
 - 验证：实际两market/execution/strategy进程中，分别停止Binance或OKX，失效实例撤清且不换源，健康实例继续新增报价，原来源恢复后重新双边报价，最终两实例终态停止且现金1000/BTC10/冻结及预留归零。最终完整make verify、make integration、文档/差异检查通过，业务99.119秒、双向保护12.78秒、lint/race/goleak保留；失败与诊断如实保留，见 [P06.18](validation/P06-18.md)。
 - 远程：9037765已推送main并核对SHA，[CI40621673148](https://github.com/hmlax/muskdeer/actions/runs/40621673148)success；本步独立提交/推送并核对SHA。
 - 下一步：已受理取消的无效果恢复、实际成交与30分钟连续运行；P06仍进行，P07–P10继续完成。
+
+## 2026-10-28：P06.19 已受理取消的无效果证明
+
+- 改动：迁移22及显式NewSimulatorCancellations，仅原期限关闭、等待在途核心事务且无全部CANCEL命令历史时，拒绝原请求并封闭旧核心键；不更新父订单、余额或任何预算，通用仓储保持原观察。核心提交/取消显式READ COMMITTED，数据库在首次意图查询前拒绝旧快照准入。
+- 验证：未发取消截止前/后、旧键续期/核心调用/删除拒绝、新决策实际取消后才释放；有核心命令不误判、提前/旧快照/有证据伪造拒绝，以及跨期限在途核心事务末尾回滚的实际锁等待先红后绿。父LIVE/NONE、真实冻结及四级预留保持；完整make verify、make integration、文档/差异检查通过，lint/race/goleak保留，见 [P06.19](validation/P06-19.md)。
+- 远程：5365fa3已推送main并核对SHA，[CI40627481803](https://github.com/hmlax/muskdeer/actions/runs/40627481803)success；本步独立提交/推送并核对SHA。
+- 下一步：实际成交及30分钟真实时长的连续模拟；P06进行，P07–P10继续完成。

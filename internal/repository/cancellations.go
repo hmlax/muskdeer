@@ -14,7 +14,10 @@ import (
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
-type cancellationStore struct{ db *gorm.DB }
+type cancellationStore struct {
+	db                  *gorm.DB
+	simulatorResolution bool
+}
 
 // NewCancellations borrows the database. It never sends a core command.
 func NewCancellations(db *gorm.DB) (domain.CancellationRepository, error) {
@@ -22,6 +25,17 @@ func NewCancellations(db *gorm.DB) (domain.CancellationRepository, error) {
 		return nil, domain.ErrInvalidOrder
 	}
 	return &cancellationStore{db: db}, nil
+}
+
+// NewSimulatorCancellations selects the shared-database L1 recovery contract.
+func NewSimulatorCancellations(db *gorm.DB) (domain.CancellationRepository, error) {
+	if db == nil {
+		return nil, domain.ErrInvalidOrder
+	}
+	return &cancellationStore{
+		db:                  db,
+		simulatorResolution: true,
+	}, nil
 }
 
 func (s *cancellationStore) Accept(ctx context.Context, input domain.CancelInput, execution domain.LeaseToken) (domain.CancellationSnapshot, error) {

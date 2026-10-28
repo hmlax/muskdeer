@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 
@@ -64,7 +65,7 @@ func (s *simulator) Cancel(ctx context.Context, command domain.GatewayCancel) (d
 		}
 		result, err = coreOrder(order)
 		return err
-	})
+	}, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return domain.CoreOrder{}, coreFailure(ctx, err)
 	}

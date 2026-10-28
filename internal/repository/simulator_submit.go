@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -77,7 +78,7 @@ func (s *simulator) Submit(ctx context.Context, command domain.GatewaySubmit) (d
 		}
 		result, err = coreOrder(order)
 		return err
-	})
+	}, &sql.TxOptions{Isolation: sql.LevelReadCommitted})
 	if err != nil {
 		return domain.CoreOrder{}, coreFailure(ctx, err)
 	}
