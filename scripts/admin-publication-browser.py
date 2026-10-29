@@ -18,7 +18,7 @@ def run() -> int:
         process = subprocess.Popen([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration,browser',
             '-race', '-count=1', '-v', '-timeout=3m', '-run',
-            '^TestAdminPublicationBrowserUsesActualVersionsAndPreservesUnknownRequest$', './internal/migrate',
+            '^TestAdminPublicationBrowser(UsesActualVersionsAndPreservesUnknownRequest|RunsFundedTemplatesAndWaitsForSelectedSource)$', './internal/migrate',
         ], cwd=ROOT, env=environment, start_new_session=True)
         try:
             code = process.wait(timeout=240)

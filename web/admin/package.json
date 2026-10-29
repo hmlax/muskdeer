@@ -13,7 +13,8 @@
     "browser-strategies": "node e2e/strategies.mjs",
     "browser-controls": "node e2e/controls.mjs",
     "browser-creation": "node e2e/creation.mjs",
-    "browser-publication": "node e2e/publication.mjs"
+    "browser-publication": "node e2e/publication.mjs",
+    "browser-funded-publication": "node e2e/funded-publication.mjs"
   },
   "dependencies": {
     "react": "19.3.1",
