@@ -206,6 +206,9 @@ func strategyLocalPrice(ctx context.Context, tx *gorm.DB, instrumentID int64, si
 }
 
 func strategyPlanningRisk(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, now time.Time) (bool, domain.RiskReason, error) {
+	if !requestedConfigurationActive(strategy) {
+		return false, domain.RiskReasonConfigurationPending, nil
+	}
 	var row modelv1.RiskSnapshot
 	err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).First(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

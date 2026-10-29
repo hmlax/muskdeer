@@ -40,19 +40,22 @@ func (r AdminCreateStrategy) Normalize() (AdminCreateStrategy, error) {
 		!utf8.ValidString(r.Reason) || len(r.Reason) == 0 || len(r.Reason) > 256 || strings.ContainsRune(r.Reason, 0) {
 		return AdminCreateStrategy{}, ErrInvalidAdminCreation
 	}
-	switch r.Parameters.Template {
-	case StrategyTemplateMarketMaker:
-		if r.Parameters.Maker == nil || r.Parameters.Grid != nil || !boundedCreationParameters(r.Parameters) || r.Parameters.Maker.HedgeEnabled || r.Parameters.Maker.Validate() != nil {
-			return AdminCreateStrategy{}, ErrInvalidAdminCreation
-		}
-	case StrategyTemplateGrid:
-		if r.Parameters.Grid == nil || r.Parameters.Maker != nil || !boundedCreationParameters(r.Parameters) || r.Parameters.Grid.Validate() != nil {
-			return AdminCreateStrategy{}, ErrInvalidAdminCreation
-		}
-	default:
+	if !validAdminStrategyParameters(r.Parameters) {
 		return AdminCreateStrategy{}, ErrInvalidAdminCreation
 	}
 	return r, nil
+}
+
+func validAdminStrategyParameters(parameters StrategyParameters) bool {
+	switch parameters.Template {
+	case StrategyTemplateMarketMaker:
+		return parameters.Maker != nil && parameters.Grid == nil && boundedCreationParameters(parameters) &&
+			!parameters.Maker.HedgeEnabled && parameters.Maker.Validate() == nil
+	case StrategyTemplateGrid:
+		return parameters.Grid != nil && parameters.Maker == nil && boundedCreationParameters(parameters) && parameters.Grid.Validate() == nil
+	default:
+		return false
+	}
 }
 
 func boundedCreationParameters(p StrategyParameters) bool {

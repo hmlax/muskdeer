@@ -10,13 +10,14 @@ type RiskReason string
 
 // Persisted eligibility reasons do not replace per-order authorization.
 const (
-	RiskReasonNotEvaluated RiskReason = "NOT_EVALUATED"
-	RiskReasonReady        RiskReason = "READY"
-	RiskReasonStopped      RiskReason = "STRATEGY_STOPPED"
-	RiskReasonParameters   RiskReason = "INVALID_PARAMETERS"
-	RiskReasonBudget       RiskReason = "BUDGET_DISABLED"
-	RiskReasonUnreconciled RiskReason = "UNRECONCILED"
-	RiskReasonMarket       RiskReason = "MARKET_UNAVAILABLE"
+	RiskReasonNotEvaluated         RiskReason = "NOT_EVALUATED"
+	RiskReasonReady                RiskReason = "READY"
+	RiskReasonStopped              RiskReason = "STRATEGY_STOPPED"
+	RiskReasonParameters           RiskReason = "INVALID_PARAMETERS"
+	RiskReasonBudget               RiskReason = "BUDGET_DISABLED"
+	RiskReasonUnreconciled         RiskReason = "UNRECONCILED"
+	RiskReasonMarket               RiskReason = "MARKET_UNAVAILABLE"
+	RiskReasonConfigurationPending RiskReason = "CONFIGURATION_PENDING"
 )
 
 // RiskDecision is eligibility only; every order still needs atomic limits,

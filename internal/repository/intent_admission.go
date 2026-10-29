@@ -88,7 +88,7 @@ func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput,
 }
 
 func validateRiskSnapshot(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance) (*modelv1.RiskSnapshot, int64, error) {
-	if strategy.State != string(domain.StrategyStateRunning) || !strategy.DesiredRunning || strategy.ActiveMarketDataSource == nil || strategy.ActiveConfigVersion == nil {
+	if strategy.State != string(domain.StrategyStateRunning) || !strategy.DesiredRunning || !requestedConfigurationActive(strategy) {
 		return nil, 0, domain.ErrRiskDenied
 	}
 	var snapshot modelv1.RiskSnapshot

@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// AdminStrategyPublication is an immutable actor-scoped idempotency receipt.
+// Configuration remains in its typed immutable version, not an opaque payload.
+message AdminStrategyPublication {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 actor_user_id = 5 [(tagger.tags) = "gorm:\"column:actor_user_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_publication_key\""];
+  int64 actor_session_id = 6 [(tagger.tags) = "gorm:\"column:actor_session_id;type:bigint;not null\""];
+  int64 strategy_instance_id = 7 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_publication_version\""];
+  int64 audit_id = 8 [(tagger.tags) = "gorm:\"column:audit_id;type:bigint;not null;uniqueIndex:uk_admin_strategy_publication_audit\""];
+  string idempotency_key = 9 [(tagger.tags) = "gorm:\"column:idempotency_key;type:varchar(64);not null;uniqueIndex:uk_admin_strategy_publication_key\""];
+  string request_fingerprint = 10 [(tagger.tags) = "gorm:\"column:request_fingerprint;type:char(64);not null\""];
+  int64 previous_config_version = 11 [(tagger.tags) = "gorm:\"column:previous_config_version;type:bigint;not null\""];
+  int64 config_version = 12 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null;uniqueIndex:uk_admin_strategy_publication_version\""];
+  int64 previous_revision = 13 [(tagger.tags) = "gorm:\"column:previous_revision;type:bigint;not null\""];
+  int64 revision = 14 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  string market_data_source = 15 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null\""];
+  string reason = 16 [(tagger.tags) = "gorm:\"column:reason;type:varchar(256);not null\""];
+}

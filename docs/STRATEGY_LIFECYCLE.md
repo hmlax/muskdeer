@@ -10,6 +10,8 @@ STOPPING/PAUSING关闭新增风险，保留active配置供撤单/观察；desire
 
 P07.20将策略预算纳入激活事务：保存新的requested版本/来源不改变旧预算；只有旧义务收敛且本实例预留严格为零后，替换active配置才按Maker的两倍side_budget或Grid的total_budget更新已有策略额度。使用decimal精确计算，并保持预算enabled、账户/平台额度和所有资金余额；额度相同或重放同一active对不增加预算修订。沿用已有active配置的恢复保留既有额度，首次激活及换版采用新参数额度。加锁顺序为策略/租约→instrument→核心账户→账户预算→策略预算，与交易准入一致；库存校验、状态写入、关闭风险或事务末尾租约验证失败，配置和预算一并回滚。残余预留不得通过激活释放或归零，返回UNKNOWN等待核对。
 
+P07.21的[配置发布事务](ADMIN_PUBLICATION.md)保持运行目标及实际active对。运行中requested/active版本或来源不一致时，周期风控持久关闭并返回CONFIGURATION_PENDING，规划/准入和最终核心SQL分别拒绝新增风险；不能因旧源仍健康而重新开放旧许可。暂停/停止继续关闭风险，旧版本撤单与成交观察继续完成原义务。
+
 P07.5/迁移24用desired_state持久区分RUNNING/PAUSED/STOPPED，与兼容bool保持一致。控制器的新owner仍先RECOVERING，但随后按请求目标进入PAUSING或STOPPING，不从被恢复流程覆盖的实际状态猜测用户意图。完成PAUSED/STOPPED仍须真实义务终态；从PAUSED显式改为STOPPED即使bool同为false也不会丢失，恢复RUNNING仍需重新走健康及所有权检查。生命周期仓储及数据库转换末尾都核对请求目标，实际运行状态变更不写请求字段。管理鉴权/幂等/审计入口另由后续步骤接入。
 
 迁移19为既有元数据/显式模拟夹具保留零runtime epoch，不伪造历史运行owner。实际生命周期只能用当前真实策略租约领取正epoch，既有核心/意图路径继续独立验证策略和执行lease。管理层后续只写请求状态/配置，不能用Nacos在线或页面操作回包冒充运行授权。

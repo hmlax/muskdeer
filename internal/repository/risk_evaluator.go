@@ -77,6 +77,10 @@ func evaluateRiskInputs(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 		StrategyID: strategy.Id,
 		Reason:     domain.RiskReasonParameters,
 	}
+	if !requestedConfigurationActive(strategy) {
+		result.Reason = domain.RiskReasonConfigurationPending
+		return result, 5000, nil
+	}
 	age, err := riskParameterAge(ctx, tx, strategy)
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidParameters) || errors.Is(err, gorm.ErrRecordNotFound) {

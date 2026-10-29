@@ -12,8 +12,8 @@ import (
 )
 
 func lockCreationDependencies(ctx context.Context, tx *gorm.DB, request domain.AdminCreateStrategy) error {
-	// Match core's instrument-before-account order. Creation holds no existing
-	// strategy lock, and all dependency reads remain shared until commit.
+	// Match core's instrument-before-account order. Publication already holds
+	// its strategy row; dependency reads remain shared until commit.
 	var instrument modelv1.Instrument
 	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", request.InstrumentID).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&instrument).Error; err != nil {

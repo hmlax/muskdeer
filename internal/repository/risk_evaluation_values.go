@@ -12,6 +12,11 @@ import (
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
+func requestedConfigurationActive(strategy *modelv1.StrategyInstance) bool {
+	return strategy.ActiveConfigVersion != nil && strategy.ActiveMarketDataSource != nil &&
+		strategy.RequestedConfigVersion == *strategy.ActiveConfigVersion && strategy.MarketDataSource == *strategy.ActiveMarketDataSource
+}
+
 func riskBudgetsEnabled(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, quoteAsset string) (bool, error) {
 	var account modelv1.AccountBudget
 	err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&account).Error
