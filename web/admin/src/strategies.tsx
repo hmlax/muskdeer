@@ -4,6 +4,7 @@ import type { Session } from './api';
 import { StrategyControls } from './operations';
 import { CreationForm } from './creation';
 import { PublicationForm } from './publication';
+import { RiskPanel } from './risk';
 import { getStrategy, listStrategies, listVersions, sources, states, templates } from './strategy-api';
 import type { ConfigVersion, Parameters, Strategy, StrategyDetail } from './strategy-api';
 
@@ -112,6 +113,7 @@ function StrategyDetails({ id, onExpired, session }: { id: string; onExpired: ()
     <div className="workspace-heading"><div className="page-heading"><span className="eyebrow">STRATEGY DETAIL</span><h2>{strategy?.instance_key ?? '策略详情'}</h2><p>请求目标与实际生效状态分别展示。</p></div><button className="button secondary compact" onClick={() => { setSelected(null); query.reload(); }} disabled={query.loading}>刷新</button></div>
     <QueryState loading={query.loading} error={query.error} retry={query.reload} />
     <StrategyControls strategy={strategy} loading={query.loading || query.error !== ''} session={session} onExpired={onExpired} onRefresh={query.reload} />
+    <RiskPanel id={id} current={strategy} loading={query.loading || query.error !== ''} session={session} onExpired={onExpired} onRefresh={query.reload} />
     {session.strategy_controls_enabled && session.role !== 'viewer' && !publication && query.data?.detail.requested_config.parameters && !(query.data.detail.requested_config.parameters.kind === 'market_maker' && query.data.detail.requested_config.parameters.values.hedge_enabled) && <button className="button primary" onClick={() => setPublication(query.data!.detail)}>发布参数与换源</button>}
     {publication && <PublicationForm initial={publication} current={query.data?.detail ?? null} loading={query.loading || query.error !== ''} onExpired={onExpired} onRefresh={query.reload} onClose={() => setPublication(null)} />}
     {query.data && strategy && <><div className="card identity-card"><dl className="parameter-details"><div><dt>实例 ID</dt><dd>{strategy.id}</dd></div><div><dt>模板</dt><dd>{templates[strategy.template]}</dd></div><div><dt>账户</dt><dd>{strategy.account_id}</dd></div><div><dt>交易对 ID</dt><dd>{strategy.instrument_id}</dd></div><div><dt>行情模式</dt><dd>{strategy.market_mode === 'REPLAY' ? '回放' : '实时'}</dd></div><div><dt>实际状态</dt><dd>{states[strategy.state]}</dd></div><div><dt>请求目标</dt><dd>{states[strategy.desired_state]}</dd></div><div><dt>实例修订</dt><dd>{strategy.revision}</dd></div></dl></div>

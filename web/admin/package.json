@@ -15,7 +15,8 @@
     "browser-creation": "node e2e/creation.mjs",
     "browser-publication": "node e2e/publication.mjs",
     "browser-funded-publication": "node e2e/funded-publication.mjs",
-    "browser-audits": "node e2e/audits.mjs"
+    "browser-audits": "node e2e/audits.mjs",
+    "browser-risk": "node e2e/risk.mjs"
   },
   "dependencies": {
     "react": "19.3.1",
