@@ -65,7 +65,7 @@ func TestStrategyActivationUpgradeRetainsExistingActiveBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := activationBudget(ctx, t, db, instance.Id)
-	if version, err := Apply(ctx, db); err != nil || version != 28 {
+	if version, err := Apply(ctx, db); err != nil || version != 29 {
 		t.Fatalf("activation constraint upgrade failed: %d, %v", version, err)
 	}
 	var actual modelv1.StrategyInstance

@@ -21,6 +21,12 @@ func validateWorstInventory(ctx context.Context, tx *gorm.DB, accountID string, 
 	if err != nil {
 		return err
 	}
+	return validateInventoryAtLimit(ctx, tx, accountID, instrument, additional, limit)
+}
+
+// Callers hold the core account and account budget mutexes. Recovery can use
+// the requested policy without writing it into the active configuration.
+func validateInventoryAtLimit(ctx context.Context, tx *gorm.DB, accountID string, instrument *modelv1.Instrument, additional, limit decimal.Decimal) error {
 	var balance modelv1.SimulatorBalance
 	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ? AND delete_at IS NULL", accountID, instrument.BaseAsset).First(&balance).Error; err != nil {
 		return err

@@ -235,7 +235,7 @@ func coreFailure(ctx context.Context, err error) error {
 				cause:    err,
 			}
 		}
-		if databaseError.ConstraintName == "simulator_intent_risk" || databaseError.ConstraintName == "simulator_market_risk" || databaseError.ConstraintName == "oms_global_risk" || databaseError.ConstraintName == "simulator_inventory_risk" || databaseError.ConstraintName == "simulator_configuration_pending" {
+		if databaseError.ConstraintName == "simulator_intent_risk" || databaseError.ConstraintName == "simulator_market_risk" || databaseError.ConstraintName == "oms_global_risk" || databaseError.ConstraintName == "simulator_inventory_risk" || databaseError.ConstraintName == "simulator_configuration_pending" || databaseError.ConstraintName == "simulator_admin_risk" {
 			return &corePersistenceError{
 				category: domain.ErrRiskDenied,
 				cause:    err,

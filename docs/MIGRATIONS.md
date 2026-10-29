@@ -1,6 +1,6 @@
 # 版本化数据库升级
 
-P03.2提供显式迁移工具，服务启动及dev-up都不会自动执行迁移或AutoMigrate。当前版本28包含迁移记录、交易对/实例/配置来源身份、typed模板参数、策略/执行/行情租约、模拟核心、OMS/持仓、行情快照/基准、持久动作/运行incarnation、管理身份/审计、独立请求运行目标、管理操作收据/结果、运行配置激活预算同步及[配置发布收据/待激活最终门禁](ADMIN_PUBLICATION.md)；后续业务表继续按新版本加入。
+P03.2提供显式迁移工具，服务启动及dev-up都不会自动执行迁移或AutoMigrate。当前版本29包含迁移记录、交易对/实例/配置来源身份、typed模板参数、策略/执行/行情租约、模拟核心、OMS/持仓、行情快照/基准、持久动作/运行incarnation、管理身份/审计、独立请求运行目标、管理操作收据/结果、运行配置激活预算同步、[配置发布收据/待激活最终门禁](ADMIN_PUBLICATION.md)及[策略风险控制收据/最终开关门禁](ADMIN_RISK.md)；后续业务表继续按新版本加入。
 
 ## 使用
 
@@ -13,7 +13,7 @@ make build
 
 本地开发可使用 `make dev-up` 生成的 `.cache/dev/execution.json`，先 source `.cache/dev/environment.sh`。工具只装配配置中的 PostgreSQL，不创建业务进程、日志文件、Redis、Nacos 或消息客户端。Go 固定 1.27.3，整个命令有 30 秒总预算及 SIGTERM 取消；数据库各语句还受配置 statement_timeout 限制。
 
-成功输出typed JSON `{"status":"applied","version":28}`，包括已经是当前版本的情况；参数错误退出2，配置/连接/历史/执行/清理错误退出1。必须显式传-apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出SQL、凭据或原始配置，历史不一致有独立安全提示。
+成功输出typed JSON `{"status":"applied","version":29}`，包括已经是当前版本的情况；参数错误退出2，配置/连接/历史/执行/清理错误退出1。必须显式传-apply，不支持自动降级、删除卷或回写修复历史。错误文本不输出SQL、凭据或原始配置，历史不一致有独立安全提示。
 
 ## 结构与执行
 
@@ -79,3 +79,9 @@ SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/mi
 
 
 版本26增加生成AdminStrategyCreation及不可变创建收据表，按操作者/幂等键唯一。SQL核对当前operator会话、不可变审计、实际CREATED/请求STOPPED的初始配置及零预留独立预算，等待后按数据库时钟检查到期，禁止改删历史；原实例/参数/资金/运行目标均不改写。创建业务由显式仓储调用，不因升级自动开通用户或交易资源，见[创建事务](ADMIN_CREATION.md)。
+
+版本27同步安全配置激活与策略预算，必须无旧义务且满足当前参数和共享最坏库存；改变预算不自动打开已关闭的资格开关。升级保留旧已生效配置、额度、预留及 Enabled，见[配置发布](ADMIN_PUBLICATION.md)。
+
+版本28增加生成 AdminStrategyPublication 及不可变发布收据，当前 operator 会话/审计与请求版本共同约束发布。请求配置未激活时，OMS 与最终核心拒绝旧配置继续新增风险；升级不隐式激活或切换行情，见[发布合同](ADMIN_PUBLICATION.md)。
+
+版本29增加生成 AdminStrategyRiskChange 及不可变风险收据，风险管理版本独立于资金 Revision。关闭仅影响本策略新风险，保留义务/资金和撤单能力；恢复要求当前 admin、确认配置/目标与有期限的恢复证明，提交时再检查权限及义务。模拟核心还拒绝绕过 OMS 的已管理策略关闭后提交。旧预算与状态不重写，见[风险控制](ADMIN_RISK.md)。

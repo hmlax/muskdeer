@@ -60,15 +60,9 @@ func TestFencedMarketSnapshotsKeepExactBaselineAcrossTakeoverAndExpiry(t *testin
 	if _, err := snapshots.Publish(ctx, authority, 1, old); !errors.Is(err, domain.ErrOldMarketReading) {
 		t.Fatalf("old sequence overwrote snapshot: %v", err)
 	}
-	timer := time.NewTimer(time.Until(first.Reading.ValidUntil) + 20*time.Millisecond)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		t.Fatal("market snapshot expiry test exceeded deadline")
-	case <-timer.C:
-	}
+	waitMarketDatabaseExpiry(ctx, t, db, feed.ID, first.Reading.ValidUntil)
 	ageExpired, err := snapshots.Get(ctx, feed.ID)
-	if err != nil || ageExpired.Reading.Quality != domain.MarketQualityStale || !ageExpired.Reading.Mid.IsZero() || !ageExpired.AuthorityUntil.After(time.Now()) {
+	if err != nil || ageExpired.Reading.Quality != domain.MarketQualityStale || !ageExpired.Reading.Mid.IsZero() || !ageExpired.AuthorityUntil.After(ageExpired.Reading.EvaluatedAt) {
 		t.Fatalf("stored healthy quote outlived its freshness while publisher remained valid: %+v, %v", ageExpired, err)
 	}
 	queued := marketReadingFixture(feed, 11, "100")
@@ -78,6 +72,29 @@ func TestFencedMarketSnapshotsKeepExactBaselineAcrossTakeoverAndExpiry(t *testin
 		t.Fatalf("DB-time queue age or baseline changed: %+v, %v", stale, err)
 	}
 	assertMarketTakeover(ctx, t, db, snapshots, feed, authority, stale, first.Baseline)
+}
+
+func waitMarketDatabaseExpiry(ctx context.Context, t *testing.T, db *gorm.DB, feedID int64, deadline time.Time) {
+	t.Helper()
+	// PostgreSQL, not the host/VM wall-clock offset, decides freshness. Keep
+	// the original scenario deadline and wait for its actual precondition.
+	ticks := time.NewTicker(5 * time.Millisecond)
+	defer ticks.Stop()
+	for {
+		var clock struct{ NowMS int64 }
+		if err := db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ?", feedID).
+			Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
+			t.Fatal(err)
+		}
+		if clock.NowMS > deadline.UnixMilli() {
+			return
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatal("market snapshot expiry test exceeded deadline", ctx.Err())
+		case <-ticks.C:
+		}
+	}
 }
 
 func assertMarketTakeover(ctx context.Context, t *testing.T, db *gorm.DB, snapshots domain.MarketRepository, feed domain.MarketFeedDefinition, authority domain.LeaseToken, stale domain.MarketPublication, baseline domain.MarketBaseline) {

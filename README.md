@@ -21,7 +21,7 @@ make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；�
 `make admin-publication-browser`验证真实参数发布/版本冲突/原键重试，以及做市/网格在模拟资金下的换源、冷来源等待、预算切换及暂停/停止保留，见[发布合同](docs/ADMIN_PUBLICATION.md)。
 `make admin-audit-browser`验证真实审计列表/详情、精确筛选/分页、原文和高位修订，以及当前会话失效后拒绝读取。
 `make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test及六组管理浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
-数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本28含交易对/实例/配置来源身份、typed做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS意图/预算/撤单/outbox、成交inbox/持仓、行情快照/定价基准、最终所选行情门禁、平台/交易对额度、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及[管理操作收据/结果](docs/ADMIN_CONTROL.md)、[策略创建事务收据](docs/ADMIN_CREATION.md)、激活预算同步与[配置发布事务/待激活门禁](docs/ADMIN_PUBLICATION.md)，交易表继续增加，见[迁移说明](docs/MIGRATIONS.md)和[参数说明](docs/STRATEGY_PARAMETERS.md)。
+数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本29含交易对/实例/配置来源身份、typed做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS意图/预算/撤单/outbox、成交inbox/持仓、行情快照/定价基准、最终所选行情门禁、平台/交易对额度、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及[管理操作收据/结果](docs/ADMIN_CONTROL.md)、[策略创建事务收据](docs/ADMIN_CREATION.md)、激活预算同步、[配置发布事务/待激活门禁](docs/ADMIN_PUBLICATION.md)及[策略风险控制仓储/最终开关](docs/ADMIN_RISK.md)，交易表继续增加，见[迁移说明](docs/MIGRATIONS.md)和[参数说明](docs/STRATEGY_PARAMETERS.md)。
 `make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。
 在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 检查现有实现与 PROGRESS，从首个未完成任务持续推进至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。
 每个最小步骤完成并通过相关测试/检查后，立即提交并推送到该远程仓库，确认同步后继续下一步。文档步骤验证文档与文件完整性，不宣称业务测试已通过。
