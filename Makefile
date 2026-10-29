@@ -107,9 +107,13 @@ admin-publication-browser: build
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-publication-browser.py
 
-e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser
+admin-audit-browser: build
+	python3 scripts/web.py browser-install
+	python3 scripts/admin-audit-browser.py
 
-.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser
+e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser
+
+.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser
 
 .PHONY: soak soak-smoke
 soak: build

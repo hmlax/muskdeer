@@ -5,6 +5,7 @@ import { ApiError, currentSession, errorText, login, logout } from './api';
 import type { Role, Session } from './api';
 import { StrategyWorkspace } from './strategies';
 import { OperationWorkspace } from './operations';
+import { AuditWorkspace } from './audits';
 import './style.css';
 
 const roles: Record<Role, string> = { viewer: '只读用户', operator: '操作员', admin: '管理员' };
@@ -30,7 +31,8 @@ function App() {
   const [retry, setRetry] = useState(0);
   const strategyView = session?.strategy_queries_enabled && location.pathname.startsWith('/strategies');
   const operationView = session?.strategy_controls_enabled && location.pathname.startsWith('/operations');
-  const managementView = strategyView || operationView;
+  const auditView = session?.strategy_queries_enabled && location.pathname.startsWith('/audits');
+  const managementView = strategyView || operationView || auditView;
   const sessionExpired = useCallback(() => {
     setSession(null); setPassword(''); setError('会话已失效，请重新登录。');
     history.replaceState(null, '', '/login');
@@ -60,7 +62,7 @@ function App() {
       const value = await login(username, password);
       setPassword('');
       setSession(value);
-      if (!(value.strategy_queries_enabled && location.pathname.startsWith('/strategies')) && !(value.strategy_controls_enabled && location.pathname.startsWith('/operations'))) history.replaceState(null, '', '/session');
+      if (!(value.strategy_queries_enabled && (location.pathname.startsWith('/strategies') || location.pathname.startsWith('/audits'))) && !(value.strategy_controls_enabled && location.pathname.startsWith('/operations'))) history.replaceState(null, '', '/session');
     } catch (cause) { setError(errorText(cause)); }
     finally { setBusy(false); }
   }
@@ -84,9 +86,9 @@ function App() {
       <div className="brand-footer"><span className="status-dot" /> 专属账户 · 独立会话</div>
     </aside>
     <main>
-      <header className="topbar">{session?.strategy_queries_enabled ? <nav className="console-nav" aria-label="控制台导航"><a href="/session" aria-current={!managementView ? 'page' : undefined}>账户与访问</a><a href="/strategies" aria-current={managementView ? 'page' : undefined}>策略管理</a></nav> : <span>账户与访问</span>}<span className="workspace-tag">{managementView && session ? `${session.username} · ${roles[session.role]}` : 'MUSKDEER / CONSOLE'}</span></header>
+      <header className="topbar">{session?.strategy_queries_enabled ? <nav className="console-nav" aria-label="控制台导航"><a href="/session" aria-current={!managementView ? 'page' : undefined}>账户与访问</a><a href="/strategies" aria-current={strategyView || operationView ? 'page' : undefined}>策略管理</a><a href="/audits" aria-current={auditView ? 'page' : undefined}>审计记录</a></nav> : <span>账户与访问</span>}<span className="workspace-tag">{managementView && session ? `${session.username} · ${roles[session.role]}` : 'MUSKDEER / CONSOLE'}</span></header>
       <section className="content" aria-busy={loading || busy}>
-        {loading ? <div className="card loading" role="status"><span className="spinner" />正在确认登录状态…</div> : session ? operationView ? <OperationWorkspace onExpired={sessionExpired} /> : strategyView ? <StrategyWorkspace onExpired={sessionExpired} session={session} /> :
+        {loading ? <div className="card loading" role="status"><span className="spinner" />正在确认登录状态…</div> : session ? auditView ? <AuditWorkspace onExpired={sessionExpired} /> : operationView ? <OperationWorkspace onExpired={sessionExpired} /> : strategyView ? <StrategyWorkspace onExpired={sessionExpired} session={session} /> :
           <div className="session-layout"><div className="page-heading"><span className="eyebrow">YOUR WORKSPACE</span><h2>你好，{session.username}</h2><p>你已安全登录 Muskdeer 管理工作台。</p></div>
             <div className="card"><div className="card-heading"><h3>当前会话</h3><span className="badge"><span className="status-dot" /> 已登录</span></div>
               <dl className="session-details"><div><dt>账户</dt><dd>{session.username}</dd></div><div><dt>角色</dt><dd>{roles[session.role]}</dd></div><div><dt>登录有效期至</dt><dd>{expiry(session.expires_at_ms)}</dd></div></dl>

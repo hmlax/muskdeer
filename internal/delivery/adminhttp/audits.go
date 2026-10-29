@@ -38,9 +38,8 @@ func (r *Routes) listAudits(ctx context.Context, request *app.RequestContext) {
 }
 
 func (r *Routes) getAudit(ctx context.Context, request *app.RequestContext) {
-	value := request.Param("auditID")
-	id, err := strconv.ParseInt(value, 10, 64)
-	if err != nil || id <= 0 || strconv.FormatInt(id, 10) != value || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
+	id, valid := auditID(request)
+	if !valid || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
@@ -58,6 +57,12 @@ func (r *Routes) getAudit(ctx context.Context, request *app.RequestContext) {
 		err = status.Error(codes.Unavailable, domain.MessageAdminUnavailable)
 	}
 	r.strategyReply(request, reply, err)
+}
+
+func auditID(request *app.RequestContext) (int64, bool) {
+	value := request.Param("auditID")
+	id, err := strconv.ParseInt(value, 10, 64)
+	return id, err == nil && id > 0 && strconv.FormatInt(id, 10) == value
 }
 
 func auditFilterQuery(request *app.RequestContext) (domain.AdminAuditFilter, bool) {

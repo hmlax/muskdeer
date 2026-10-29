@@ -32,7 +32,11 @@ List按自增ID升序，以排他after_id及1–100条限制分页；actor/actio
 
 响应只含历史ID、actor及当时role、action、resource、reason、可空before/after版本、UTC创建时间；无用户密码、session/CSRF哈希、原幂等键或请求指纹。可空版本保留presence和完整int64，不把缺失伪造为0，不依据历史记录授予当前权限或断言控制已完成。历史原因按原值返回，后续页面必须按文本渲染。读请求不写审计、不启动观测器或改变实例、风险、订单和余额，故障/取消不返回部分数据，公开错误沿用固定管理合同。真实历史/权限/并发快照/故障验证见[P07.25](validation/P07-25.md)。
 
-P07.26通过独立[StrategyAudit typed Proto](../api/strategy/v1/audit.proto)提供ListAudits/GetAudit。沿用management_enabled、API-peer-only、≤5秒原生期限、2KiB/未知字段及规范会话边界；AuditEntry全部具体字段，optional int64前后修订，输出检验历史角色/文本/时间/版本及请求ID、精确筛选/升序页/游标一致，不返回不可信部分页。查询模式也注册，不依赖control_enabled，无新增工作器。API的strategy_queries_enabled沿同一个Deer/Nacos/mTLS客户端连接提供[两个审计HTTP](ADMIN_HTTP.md)，不读取本地审计业务表或缓存权限；审计页面继续后续。
+P07.26通过独立[StrategyAudit typed Proto](../api/strategy/v1/audit.proto)提供ListAudits/GetAudit。沿用management_enabled、API-peer-only、≤5秒原生期限、2KiB/未知字段及规范会话边界；AuditEntry全部具体字段，optional int64前后修订，输出检验历史角色/文本/时间/版本及请求ID、精确筛选/升序页/游标一致，不返回不可信部分页。查询模式也注册，不依赖control_enabled，无新增工作器。API的strategy_queries_enabled沿同一个Deer/Nacos/mTLS客户端连接提供[两个审计HTTP](ADMIN_HTTP.md)，不读取本地审计业务表或缓存权限。
+
+P07.28提供`/audits`列表与`/audits/:auditID`详情。viewer/operator/admin沿同一查询能力看见“审计记录”导航，不需要控制能力；深层登录与刷新保留入口，未启用查询时HTML与API都404。actor/action/resource按原值填写，只有明确查询才应用；本地检查UTF-8字节/控制字符/前后空白，筛选条件写入URL供刷新，改变条件重置分页，游标分页不使用offset或Number。载入/空结果/权限/依赖失败/协议失败/404/当前会话失效均有明确状态；每次读取6秒、卸载/替换条件取消，旧读取不能覆盖新条件。
+
+详情展示原ID、历史操作者/角色、动作、对象、原因、可空前后修订和UTC时间/原毫秒；缺失修订用“—”，ID/修订保留string，只有安全整数毫秒用于日期格式化。已知策略对象链接到既有策略详情；历史原因通过React文本渲染，不执行HTML。列表只提供详情/分页/查询，不把审计记录当作操作成功或授予写权限，无浏览器持久存储。`make admin-audit-browser`作为第六组进入CI/e2e，使用独立实际API/strategy与PG/Nacos/mTLS、Chromium验证；明确区分真实创建/发布历史与高位ID导入测试夹具。
 
 ## 管理 gRPC
 

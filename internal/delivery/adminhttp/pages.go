@@ -19,6 +19,9 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.controls != nil {
 		paths = append(paths, "/operations/:operationID")
 	}
+	if r.audits != nil {
+		paths = append(paths, "/audits", "/audits/:auditID")
+	}
 	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
 			if path == "/strategies/:strategyID" {
@@ -29,6 +32,12 @@ func (r *Routes) pages(hertz *server.Hertz) {
 			}
 			if path == "/operations/:operationID" {
 				if _, valid := operationID(request); !valid {
+					request.String(http.StatusNotFound, "not found")
+					return
+				}
+			}
+			if path == "/audits/:auditID" {
+				if _, valid := auditID(request); !valid {
 					request.String(http.StatusNotFound, "not found")
 					return
 				}

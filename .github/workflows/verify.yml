@@ -35,6 +35,8 @@ jobs:
         run: make admin-creation-browser
       - name: Verify actual configuration publication browser workflow
         run: make admin-publication-browser
+      - name: Verify actual audit history browser workflow
+        run: make admin-audit-browser
       - name: Verify persistent development resources
         run: make dev-test
       - name: Build pinned toolchain image and verify runtime

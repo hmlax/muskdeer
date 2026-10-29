@@ -36,3 +36,23 @@ func TestEmbeddedPagesRefreshAndAssetsCannotSwallowAPIOrReadLocalFiles(t *testin
 		}
 	}
 }
+
+func TestAuditPagesRequireOptInAndCanonicalHistoryIdentity(t *testing.T) {
+	hertz := auditHTTPFixture(t, &auditHTTPClient{})
+	for _, path := range []string{"/audits", "/audits?actor=history-actor", "/audits/9007199254740993"} {
+		page := perform(hertz, "GET", path, "")
+		if page.Code != 200 || !strings.HasPrefix(string(page.Header().Peek("Content-Type")), "text/html") {
+			t.Fatal("audit deep route refresh did not serve the embedded application", path)
+		}
+	}
+	for _, path := range []string{"/audits/0", "/audits/01", "/audits/9223372036854775808", "/api/v1/audits/missing"} {
+		page := perform(hertz, "GET", path, "")
+		if page.Code == 200 || strings.Contains(page.Body.String(), "<html") {
+			t.Fatal("audit page fallback swallowed invalid identity or an API error", path)
+		}
+	}
+	disabled := auditHTTPFixture(t, nil)
+	if page := perform(disabled, "GET", "/audits", ""); page.Code != 404 {
+		t.Fatal("audit page ignored query opt-in")
+	}
+}
