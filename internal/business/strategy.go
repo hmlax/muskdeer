@@ -81,6 +81,14 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		if err := assembleStrategyRisk(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
 			return nil, err
 		}
+		orders, err := repository.NewAdminOrders(db)
+		if err != nil {
+			return nil, err
+		}
+		runtime.strategyOrders, err = strategygrpc.NewOrderQuery(orders)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if cfg.Strategy.ControlEnabled {
 		if err := assembleStrategyControl(db, cfg, runtime); err != nil {

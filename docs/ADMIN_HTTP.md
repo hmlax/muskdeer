@@ -1,6 +1,6 @@
 # 管理页面与身份 HTTP
 
-已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史及[策略风险状态和控制](ADMIN_RISK.md)的 typed 接口和实际页面；独立撤单、行情/订单/成交/持仓等其余能力及完整 R08/A27 尚未完成。
+已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史及[策略风险状态和控制](ADMIN_RISK.md)的 typed 接口和实际页面，以及[订单列表/详情typed接口](ADMIN_ORDERS.md)。订单页面、独立撤单、行情/成交/持仓等其余能力及完整 R08/A27 尚未完成。
 
 ## 开启入口
 
@@ -53,6 +53,8 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 | GET /api/v1/strategies/:strategyID/versions | ListConfigVersionsReply | 同实例独立版本分页，after_id/limit同上 |
 | GET /api/v1/audits | ListAuditsReply | after_id/limit同上；actor/action/resource可选精确匹配 |
 | GET /api/v1/audits/:auditID | GetAuditReply | 正规范int64审计ID，无query |
+| GET /api/v1/strategies/:strategyID/orders | ListStrategyOrdersReply | 明确策略；after_id/limit同上，可选state/open_only，见订单合同 |
+| GET /api/v1/strategies/:strategyID/orders/:orderID | GetStrategyOrderReply | 正规范int64策略及OMS订单ID，无query |
 
 调用使用唯一现有会话Cookie，API自行构造AdminSession，业务服务在同一只读快照内重新验证viewer权利；没有将API身份结果当作业务授权。拒绝GET body、重复/未知参数、非规范整数、溢出/负游标。不存在资源404、会话无效401并清cookie、角色拒绝403、依赖/协议故障503；后端私有错误不返回。路由不开放POST等写操作，也不启动交易。
 

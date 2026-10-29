@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyOrderQuery observes orders without reconciling or releasing funds.
+service StrategyOrderQuery {
+  rpc ListStrategyOrders(ListStrategyOrdersRequest) returns (ListStrategyOrdersReply);
+  rpc GetStrategyOrder(GetStrategyOrderRequest) returns (GetStrategyOrderReply);
+}
+
+message ListStrategyOrdersRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+  int64 after_id = 3;
+  int32 limit = 4;
+  string state = 5;
+  bool open_only = 6;
+}
+
+message ListStrategyOrdersReply {
+  repeated StrategyOrder orders = 1;
+  int64 next_after_id = 2;
+}
+
+message GetStrategyOrderRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+  int64 order_id = 3;
+}
+
+message GetStrategyOrderReply {
+  StrategyOrder order = 1;
+}
+
+// State, fills, reserves and confirmed core revision are the OMS observation.
+// market_data_source belongs to the order's historical configuration version.
+message StrategyOrder {
+  int64 id = 1;
+  string client_order_id = 2;
+  int64 strategy_id = 3;
+  string account_id = 4;
+  int64 instrument_id = 5;
+  int64 config_version = 6;
+  string market_data_source = 7;
+  string side = 8;
+  string price = 9;
+  string quantity = 10;
+  string filled_quantity = 11;
+  string reserved_notional = 12;
+  string time_in_force = 13;
+  bool reduce_only = 14;
+  string state = 15;
+  string cancel_state = 16;
+  int64 confirmed_core_id = 17;
+  int64 confirmed_core_revision = 18;
+  int64 revision = 19;
+  string error_code = 20;
+  int64 deadline_ms = 21;
+  int64 created_at_ms = 22;
+  int64 updated_at_ms = 23;
+  // Presence proves an observed acceptance, not an OMS reconciliation. Absence
+  // never proves that submission had no effect. This observation can be newer.
+  StrategyOrderCore core = 24;
+}
+
+message StrategyOrderCore {
+  int64 id = 1;
+  string state = 2;
+  string cancel_state = 3;
+  string filled_quantity = 4;
+  string frozen_asset = 5;
+  string frozen_amount = 6;
+  string quote_fee_rate = 7;
+  int64 revision = 8;
+  int64 updated_at_ms = 9;
+}

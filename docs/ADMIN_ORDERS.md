@@ -1,12 +1,12 @@
 # 管理订单查询
 
-P07.32提供当前 viewer 权限下的策略订单仓储列表与详情，尚未注册新 gRPC/HTTP 或页面。数据来自真实 OMS 意图与可关联的模拟核心事实，不创建、确认或撤销任何订单，不触发对账、释放预留或开放风险。独立管理撤单继续后续步骤。
+P07.32提供当前 viewer 权限下的策略订单仓储列表与详情，P07.33增加typed gRPC/HTTP入口，页面继续后续。数据来自真实 OMS 意图与可关联的模拟核心事实，不创建、确认或撤销任何订单，不触发对账、释放预留或开放风险。独立管理撤单继续后续步骤。
 
 ## 范围与字段
 
 [域合同](../internal/domain/admin_orders.go)以明确策略 ID 为必填范围，按 OMS 自增 ID 升序使用 exclusive cursor，每页1–100。可选择一个已定义 OMS 状态及 open_only；开放状态包括 INTENT、SUBMITTING、LIVE、PARTIALLY_FILLED、UNKNOWN，终态与 open_only 组合拒绝。详情同时绑定策略 ID 和订单 ID，不能越过同账户的兄弟策略。
 
-每条返回业务账户/交易对/稳定客户端订单 ID、订单自己的配置版本与历史行情来源、方向、价格/数量/已确认成交、名义额预留、TIF/reduce_only、OMS 与取消状态、最后已确认核心 ID/版本、记录修订/截止/创建/更新时间及固定业务错误代码。金额保持 decimal.Decimal，后续接口小数统一 string。提交幂等键、请求追踪键、策略及执行租约身份不进入管理视图。
+每条返回业务账户/交易对/稳定客户端订单 ID、订单自己的配置版本与历史行情来源、方向、价格/数量/已确认成交、名义额预留、TIF/reduce_only、OMS 与取消状态、最后已确认核心 ID/版本、记录修订/截止/创建/更新时间及固定业务错误代码。Go金额保持 decimal.Decimal，接口小数统一 string。提交幂等键、请求追踪键、策略及执行租约身份不进入管理视图。
 
 以账户、策略、交易对和客户端身份关联实际核心记录，独立返回最新可见核心 ID、状态/取消状态、成交数量、冻结资产/金额、费用率、修订及核心记录更新时间。核心已成交但 OMS 尚未确认时，两种状态和预留分别保留；提交结果未知但核心存在时也明确显示二者差异，不在读取中改成 LIVE 或释放额度。
 
@@ -18,4 +18,17 @@ P07.32提供当前 viewer 权限下的策略订单仓储列表与详情，尚未
 
 使用生成模型直接读取，所有 GORM 操作均绑定 WithContext/Model；批量配置和核心查询随页长有界，不做逐单 N+1 查询。无法关联已确认核心、业务字段不相符、存储失败或父取消时整页/详情失败，不返回部分 OMS 成功或游标。对外错误固定，内部诊断仍可通过私有错误链定位。
 
-实际资金、UNKNOWN、部分成交、历史来源、分页/策略隔离、并发核心事实与失败/权限验证见[当前进度](PROGRESS.md)。此步骤无新表、Proto 或默认权限，不能计为完整 R08/A27。
+实际资金、UNKNOWN、部分成交、历史来源、分页/策略隔离、并发核心事实与失败/权限验证见[当前进度](PROGRESS.md)。此能力没有新增表或默认权限，不能计为完整 R08/A27。
+
+## typed 传输边界
+
+[订单Proto](../api/strategy/v1/orders.proto)的StrategyOrderQuery提供ListStrategyOrders与GetStrategyOrder。只随strategy.management_enabled注册，验证API mTLS身份、最多5秒原生截止、≤2KiB请求和当前viewer；不要求控制能力，不创建交易工作器。API复用既有strategy连接，HTTP单次最多3秒，继续继承更早父取消。
+
+| GET 路径 | 参数与返回 |
+|---|---|
+| /api/v1/strategies/:strategyID/orders | ListStrategyOrdersReply；limit默认50、范围1–100，after_id默认0；可选state精确OMS枚举、open_only严格true/false |
+| /api/v1/strategies/:strategyID/orders/:orderID | GetStrategyOrderReply；两个ID均为规范正int64，无query |
+
+只接受唯一会话Cookie；拒绝GET body、超过1024字节query、重复/未知参数、非规范ID和矛盾筛选。错误使用固定400/401/403/404/503，不返回私有存储原因；未开启查询路由404，写方法405。响应no-store，所有ID/修订/毫秒和小数为JSON string。
+
+具体StrategyOrder与可空core分别携带OMS及核心观察，confirmed_core_id/confirmed_core_revision表示OMS最后确认，core.revision可以更新。core缺失以null表达，不能变为“未受理”；UNKNOWN同时存在core合法，OMS LIVE/PENDING同时core CANCELED/CONFIRMED也合法。共享显式字段校验器检查策略与详情身份、升序游标/状态筛选、金额精度及非负边界、确认版本和来源，不强求OMS与核心状态/成交相同。下游异常成功整页拒绝，不泄露部分数据。
