@@ -65,6 +65,7 @@ type Routes struct {
 	catalog       strategyv1.StrategyCatalogClient
 	controls      strategyv1.StrategyControlClient
 	creation      strategyv1.StrategyCreationClient
+	publication   strategyv1.StrategyPublicationClient
 	origin        string
 	host          string
 	secure        bool
@@ -120,6 +121,9 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	}
 	if r.creation != nil {
 		hertz.POST("/api/v1/strategies", r.createStrategy)
+	}
+	if r.publication != nil {
+		hertz.POST("/api/v1/strategies/:strategyID/configurations", r.publishConfiguration)
 	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {

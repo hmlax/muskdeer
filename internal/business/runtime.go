@@ -35,13 +35,14 @@ const (
 
 // Runtime owns only assembled values. Deer owns every connection and task.
 type Runtime struct {
-	execution        *executiongrpc.Server
-	market           *marketgrpc.Server
-	strategy         *strategygrpc.Server
-	strategyCatalog  *strategygrpc.CatalogServer
-	strategyControl  *strategygrpc.ControlServer
-	strategyCreation *strategygrpc.CreationServer
-	workers          []deer.Worker
+	execution           *executiongrpc.Server
+	market              *marketgrpc.Server
+	strategy            *strategygrpc.Server
+	strategyCatalog     *strategygrpc.CatalogServer
+	strategyControl     *strategygrpc.ControlServer
+	strategyCreation    *strategygrpc.CreationServer
+	strategyPublication *strategygrpc.PublicationServer
+	workers             []deer.Worker
 }
 
 // New assembles explicit L1 mode and only reads the exact migration ledger.
@@ -102,6 +103,9 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	}
 	if r.strategyCreation != nil {
 		strategyv1.RegisterStrategyCreationServer(registrar, r.strategyCreation)
+	}
+	if r.strategyPublication != nil {
+		strategyv1.RegisterStrategyPublicationServer(registrar, r.strategyPublication)
 	}
 	return nil
 }

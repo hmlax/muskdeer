@@ -50,6 +50,10 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 	if _, err := creation.CreateStrategy(ctx, &strategyv1.CreateStrategyRequest{}); status.Code(err) != codes.Unimplemented {
 		t.Fatal("query-only process registered creation capability", err)
 	}
+	publication := strategyv1.NewStrategyPublicationClient(adminStrategyProcessConnection(ctx, t, ca, observer, rpcsecurity.ServiceAPI))
+	if _, err := publication.PublishConfiguration(ctx, &strategyv1.PublishConfigurationRequest{}); status.Code(err) != codes.Unimplemented {
+		t.Fatal("query-only process registered configuration publication", err)
+	}
 	control := strategyv1.NewStrategyControlClient(adminStrategyProcessConnection(ctx, t, ca, observer, rpcsecurity.ServiceAPI))
 	if _, err := control.GetOperation(ctx, &strategyv1.GetOperationRequest{
 		Session:     session,

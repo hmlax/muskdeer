@@ -59,6 +59,7 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 		if cfg.AdminHttp.StrategyControlsEnabled {
 			routes.controls = strategyv1.NewStrategyControlClient(connection)
 			routes.creation = strategyv1.NewStrategyCreationClient(connection)
+			routes.publication = strategyv1.NewStrategyPublicationClient(connection)
 		}
 	}
 	routes.Register(hertz)

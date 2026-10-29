@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+import "deer/proto/common/v1/strategy_parameters.proto";
+
+// StrategyPublication requires explicit management control opt-in and current
+// operator/CSRF proof. Publishing requested input does not resume a strategy.
+service StrategyPublication {
+  rpc PublishConfiguration(PublishConfigurationRequest) returns (PublicationReceipt);
+}
+
+message PublishConfigurationInput {
+  int64 expected_revision = 1;
+  int64 expected_config_version = 2;
+  string market_data_source = 3;
+  muskdeer.common.v1.StrategyParameters parameters = 4;
+  string reason = 5;
+}
+
+message PublishConfigurationRequest {
+  AdminSession session = 1;
+  string csrf_token = 2;
+  string idempotency_key = 3;
+  int64 strategy_id = 4;
+  PublishConfigurationInput input = 5;
+}
+
+// PublicationReceipt is immutable requested metadata, not runtime completion.
+message PublicationReceipt {
+  int64 id = 1;
+  int64 actor_user_id = 2;
+  int64 strategy_id = 3;
+  int64 previous_config_version = 4;
+  int64 config_version = 5;
+  int64 previous_revision = 6;
+  int64 revision = 7;
+  string market_data_source = 8;
+  string reason = 9;
+  int64 created_at_ms = 10;
+}

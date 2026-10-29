@@ -154,6 +154,14 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 }
 
 func assembleStrategyControl(db *gorm.DB, cfg *configv1.BusinessRuntime, runtime *Runtime) error {
+	publisher, err := repository.NewAdminStrategyPublisher(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyPublication, err = strategygrpc.NewPublication(publisher)
+	if err != nil {
+		return err
+	}
 	creator, err := repository.NewAdminStrategyCreator(db)
 	if err != nil {
 		return err

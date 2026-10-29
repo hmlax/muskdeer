@@ -24,10 +24,10 @@ python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json
 
 可选 `business` 显式启用 L1 market/execution/portfolio；doctor 校验支持的角色、明确 simulator、mTLS/依赖及循环参数。execution可用risk.accountIds及executionLeaseTtl启用账户范围风险刷新。启动只读检查完整迁移历史，不执行升级/初始化资金；字段与进程行为见 [业务运行](BUSINESS_RUNTIME.md)。
 
-strategy的management_enabled显式提供管理查询/目录；control_enabled额外注册typed运行控制/创建gRPC和Deer-owned操作结果观测，需要management已开及api.grpc身份白名单。省略control仍只有查询；无account_ids时控制/观测不配置交易lease或outbound clients，不自动准备执行者或资金。HTTP写入口由API另行显式开启，见[管理控制](ADMIN_CONTROL.md)及[创建合同](ADMIN_CREATION.md)。
+strategy的management_enabled显式提供管理查询/目录；control_enabled额外注册typed运行控制/创建/配置发布gRPC和Deer-owned操作结果观测，需要management已开及api.grpc身份白名单。省略control仍只有查询；无account_ids时控制/观测不配置交易lease或outbound clients，不自动准备执行者或资金。HTTP写入口由API另行显式开启，见[管理控制](ADMIN_CONTROL.md)、[创建合同](ADMIN_CREATION.md)及[发布合同](ADMIN_PUBLICATION.md)。
 
 make verify 会通过 doctor 检查这些实际示例，并继续生成、格式、lint、单元/race 与构建；隔离依赖实连通过 make integration 单独执行。
 
 可选`admin_http`显式启用api身份页面及接口，需要PostgreSQL、字面量loopback监听和固定规范化public_origin。HTTP开发还需allow_insecure_loopback；外部HTTPS使用Secure/Host-only cookie，忽略转发头作为身份或Origin证据。端口0只允许同受拥有loopback监听匹配的显式开发配置，实际Origin来自监听器地址。启用时启动只读检查迁移，不开通账户；配置、开通命令及浏览器验证见[管理HTTP](ADMIN_HTTP.md)。
 
-admin_http.strategy_queries_enabled允许策略查询/账户交易对行情绑定目录；额外strategy_controls_enabled才开放同源策略创建、运行控制与操作结果，需要查询已开启及原有Nacos/mTLS客户端配置。登录会话返回两项独立能力布尔，不构成用户授权；业务事务仍检查持久角色/CSRF/会话及版本。默认关闭写入口，strategy端control_enabled也须独立开启。
+admin_http.strategy_queries_enabled允许策略查询/账户交易对行情绑定目录；额外strategy_controls_enabled才开放同源策略创建、配置发布、运行控制与操作结果，需要查询已开启及原有Nacos/mTLS客户端配置。登录会话返回两项独立能力布尔，不构成用户授权；业务事务仍检查持久角色/CSRF/会话及版本。默认关闭写入口，strategy端control_enabled也须独立开启。
