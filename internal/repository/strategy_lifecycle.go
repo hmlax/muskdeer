@@ -119,11 +119,15 @@ func prepareLifecycle(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyIns
 		}
 	}
 	if transition.ActivateRequested {
+		replacing := row.GetActiveConfigVersion() != row.RequestedConfigVersion || row.GetActiveMarketDataSource() != row.MarketDataSource
 		row.ActiveConfigVersion, row.ActiveMarketDataSource = proto.Int64(row.RequestedConfigVersion), proto.String(row.MarketDataSource)
 		if _, err := riskParameterAge(ctx, tx, row); err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrInvalidParameters
 			}
+			return err
+		}
+		if err := prepareActivationBudget(ctx, tx, row, replacing); err != nil {
 			return err
 		}
 	}
@@ -209,7 +213,7 @@ func lifecycleFailure(ctx context.Context, err error) error {
 		switch databaseError.ConstraintName {
 		case "strategy_runtime_fence":
 			category = domain.ErrLeaseLost
-		case "strategy_runtime_transition", "strategy_runtime_unresolved":
+		case "strategy_runtime_transition", "strategy_runtime_unresolved", "strategy_activation_budget":
 			category = domain.ErrOutcomeUnknown
 		}
 		if category != nil {

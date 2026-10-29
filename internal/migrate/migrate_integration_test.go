@@ -43,7 +43,7 @@ func TestConcurrentMigrationAndGeneratedLedgerConstraints(t *testing.T) {
 		workers.Go(func() {
 			<-start
 			version, err := Apply(ctx, db)
-			if err == nil && version != 26 {
+			if err == nil && version != 27 {
 				err = fmt.Errorf("migration version = %d", version)
 			}
 			results <- err
@@ -60,7 +60,7 @@ func TestConcurrentMigrationAndGeneratedLedgerConstraints(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Find(&rows).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 26 || rows[0].Id <= 0 || rows[0].CreateAt <= 0 || rows[0].UpdateAt <= 0 || rows[0].DeleteAt != nil {
+	if len(rows) != 27 || rows[0].Id <= 0 || rows[0].CreateAt <= 0 || rows[0].UpdateAt <= 0 || rows[0].DeleteAt != nil {
 		t.Fatalf("generated ledger = %v", rows)
 	}
 	for _, column := range []string{"create_at", "update_at"} {
@@ -71,7 +71,7 @@ func TestConcurrentMigrationAndGeneratedLedgerConstraints(t *testing.T) {
 		}
 	}
 	extra := &modelv1.SchemaMigration{
-		Version:  27,
+		Version:  28,
 		Name:     "future-test.sql",
 		Checksum: strings.Repeat("a", 64),
 	}
@@ -127,7 +127,7 @@ func TestFailedMigrationRollsBackDDLAndRejectsChangedHistory(t *testing.T) {
 	if db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Migrator().HasColumn(&modelv1.SchemaMigration{}, "rollback_probe") {
 		t.Fatal("failed version left its earlier DDL committed")
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 26 {
+	if version, err := Apply(ctx, db); err != nil || version != 27 {
 		t.Fatalf("rollback left a lock or partial history: %d, %v", version, err)
 	}
 	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).
@@ -191,7 +191,7 @@ func TestMigrationLockContentionHonorsCallerDeadline(t *testing.T) {
 	}
 	retry, cancelRetry := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancelRetry()
-	if version, err := Apply(retry, db); err != nil || version != 26 {
+	if version, err := Apply(retry, db); err != nil || version != 27 {
 		t.Fatalf("canceled lock wait left partial state: %d, %v", version, err)
 	}
 }
@@ -230,7 +230,7 @@ func TestMigrationCommandAppliesOnlyItsConfiguredSchema(t *testing.T) {
 			Status  string `json:"status"`
 			Version int64  `json:"version"`
 		}
-		if err := json.Unmarshal(output, &reply); err != nil || reply.Status != "applied" || reply.Version != 26 {
+		if err := json.Unmarshal(output, &reply); err != nil || reply.Status != "applied" || reply.Version != 27 {
 			t.Fatalf("migration command output = %s, %v", output, err)
 		}
 	}

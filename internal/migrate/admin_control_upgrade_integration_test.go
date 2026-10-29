@@ -44,7 +44,7 @@ func TestAdminControlUpgradeRetainsExistingRequestedConfiguration(t *testing.T) 
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 26 {
+	if version, err := Apply(ctx, db); err != nil || version != 27 {
 		t.Fatal("operation ledger upgrade failed", err)
 	}
 	var actual modelv1.StrategyInstance

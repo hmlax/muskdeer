@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
@@ -104,7 +103,7 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 			return err
 		}
-		limit := creationBudget(request.Parameters)
+		limit := strategyParameterBudget(request.Parameters)
 		if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
 			StrategyInstanceId: instance.Id,
 			AccountId:          request.AccountID,
@@ -148,13 +147,6 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 		return domain.AdminCreationReceipt{}, adminCreationFailure(err)
 	}
 	return result, nil
-}
-
-func creationBudget(parameters domain.StrategyParameters) decimal.Decimal {
-	if parameters.Grid != nil {
-		return parameters.Grid.TotalBudget
-	}
-	return parameters.Maker.SideBudget.Mul(decimal.NewFromInt(2))
 }
 
 func adminCreationReceipt(row *modelv1.AdminStrategyCreation) domain.AdminCreationReceipt {
