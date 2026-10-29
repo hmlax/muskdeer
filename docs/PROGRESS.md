@@ -935,3 +935,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：domain/repository单元/race1.422/1.362秒；四真实PG场景覆盖实际创建/发布/控制历史及原键不重写、精确过滤/分页/详情、当前viewer/Logout/credential拒绝、权限与历史RR一致、int64修订/调用方指针隔离、不可改删及存储失败/父取消无部分数据。测试复杂度首次58被lint拒绝，拆辅助函数保留断言；完整make verify/32生成/Hertz/fmt/lint 0 issues/规范/22工具/单元/race/构建通过。
 - 最终复验：首次PG专项宽前缀误选需要Nacos的原HTTP，在业务前因缺地址失败，失败记录保留；精确选定四审计及原两目录数据库场景最终4.189秒通过，原期限不变。158文档链接/差异通过，本地未重复默认全部交易/五浏览器/镜像。
 - 远程：38a9fdc已推送main并核对SHA，[CI40810909656](https://github.com/hmlax/muskdeer/actions/runs/40810909656)最近仍运行；f35ba93的[CI40808840414](https://github.com/hmlax/muskdeer/actions/runs/40808840414)success，含默认全部交易/五浏览器/持久开发/镜像。本步检查后独立提交推送核对SHA；继续审计typed入口/页面、撤单/风险开关及剩余P07、P08–P10，完整A27/L1未完成。
+
+## 2026-10-29：P07.26 typed审计gRPC及HTTP
+
+- 改动：独立StrategyAudit ListAudits/GetAudit与具体历史字段/optional修订、生成34；管理opt-in注册、API-peer/current viewer及原期限/未知字段/大小，输出身份/筛选/升序页/游标/版本校验。API沿查询能力及原同一连接提供审计列表/详情GET，规范Cookie/URL条件/3秒/no-store/固定错误及错配成功503，所有int64字符串及presence保留，无新schema/依赖/任务/资产。见[P07.26](validation/P07-26.md)与[HTTP合同](ADMIN_HTTP.md)。
+- 验证：相关单元/race、完整make verify/34生成/Hertz/fmt/lint 0 issues/规范/22工具/全包单元/race/构建通过。新夹具误用不存在的租约类型在编译时修正，按已准备lease断言无新增。真实两独立API/strategy/PG/Nacos/mTLS组合12.792秒，新审计3.56/原目录1.50/只读管理6.00秒；实际viewer密码登录/分页过滤/详情/历史角色及可空版本、非API有效证书拒绝/Logout旧Cookie401通过，5审计、零核心订单/无新增lease、全部原余额行不变。
+- CI诊断：298858b已推送main并核对SHA，CI40811984985最近仍运行；38a9fdc的[CI40810909656](https://github.com/hmlax/muskdeer/actions/runs/40810909656)失败，默认全部交易和四原浏览器通过，发布组的原元数据冲突重载断言失败；新双模板资金65.49秒通过。完整日志已取回，原冲突重载等待正单独定位修复，不把CI整体报绿。
+- 范围：本步检查后独立提交推送核对SHA；未重复本地全部交易/五浏览器/镜像。继续浏览器竞态修复、审计页面、撤单/风险开关及其余P07、P08–P10，完整A27/L1未完成。

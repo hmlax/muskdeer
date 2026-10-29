@@ -70,6 +70,14 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		if err != nil {
 			return nil, err
 		}
+		audits, err := repository.NewAdminAudits(db)
+		if err != nil {
+			return nil, err
+		}
+		runtime.strategyAudit, err = strategygrpc.NewAudit(audits)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if cfg.Strategy.ControlEnabled {
 		if err := assembleStrategyControl(db, cfg, runtime); err != nil {

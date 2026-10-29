@@ -30,7 +30,9 @@ P07.25增加独立`domain.AdminAudits`/`repository.NewAdminAudits`仓储，为�
 
 List按自增ID升序，以排他after_id及1–100条限制分页；actor/action/resource分别为可选精确匹配，全部参数化，不接受SQL表达式、通配符或前缀查询。字段分别至多64/64/128 UTF-8字节，拒绝非法编码、控制字符及前后空白，不隐式改写过滤条件。页间各自有快照，新增历史会在后续查询出现。Detail要求正ID，不存在时明确not-found。
 
-响应只含历史ID、actor及当时role、action、resource、reason、可空before/after版本、UTC创建时间；无用户密码、session/CSRF哈希、原幂等键或请求指纹。可空版本保留presence和完整int64，不把缺失伪造为0，不依据历史记录授予当前权限或断言控制已完成。历史原因按原值返回，后续页面必须按文本渲染。读请求不写审计、不启动观测器或改变实例、风险、订单和余额，故障/取消不返回部分数据，公开错误沿用固定管理合同。真实历史/权限/并发快照/故障验证见[P07.25](validation/P07-25.md)；此步尚未装配审计gRPC/HTTP/页面。
+响应只含历史ID、actor及当时role、action、resource、reason、可空before/after版本、UTC创建时间；无用户密码、session/CSRF哈希、原幂等键或请求指纹。可空版本保留presence和完整int64，不把缺失伪造为0，不依据历史记录授予当前权限或断言控制已完成。历史原因按原值返回，后续页面必须按文本渲染。读请求不写审计、不启动观测器或改变实例、风险、订单和余额，故障/取消不返回部分数据，公开错误沿用固定管理合同。真实历史/权限/并发快照/故障验证见[P07.25](validation/P07-25.md)。
+
+P07.26通过独立[StrategyAudit typed Proto](../api/strategy/v1/audit.proto)提供ListAudits/GetAudit。沿用management_enabled、API-peer-only、≤5秒原生期限、2KiB/未知字段及规范会话边界；AuditEntry全部具体字段，optional int64前后修订，输出检验历史角色/文本/时间/版本及请求ID、精确筛选/升序页/游标一致，不返回不可信部分页。查询模式也注册，不依赖control_enabled，无新增工作器。API的strategy_queries_enabled沿同一个Deer/Nacos/mTLS客户端连接提供[两个审计HTTP](ADMIN_HTTP.md)，不读取本地审计业务表或缓存权限；审计页面继续后续。
 
 ## 管理 gRPC
 

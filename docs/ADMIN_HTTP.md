@@ -51,12 +51,16 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 | GET /api/v1/instruments | ListInstrumentsReply | 执行交易对元数据，after_id/limit同上 |
 | GET /api/v1/instruments/:instrumentID/market-feeds | ListMarketFeedsReply | mode必须显式LIVE或REPLAY，after_id/limit同上 |
 | GET /api/v1/strategies/:strategyID/versions | ListConfigVersionsReply | 同实例独立版本分页，after_id/limit同上 |
+| GET /api/v1/audits | ListAuditsReply | after_id/limit同上；actor/action/resource可选精确匹配 |
+| GET /api/v1/audits/:auditID | GetAuditReply | 正规范int64审计ID，无query |
 
 调用使用唯一现有会话Cookie，API自行构造AdminSession，业务服务在同一只读快照内重新验证viewer权利；没有将API身份结果当作业务授权。拒绝GET body、重复/未知参数、非规范整数、溢出/负游标。不存在资源404、会话无效401并清cookie、角色拒绝403、依赖/协议故障503；后端私有错误不返回。路由不开放POST等写操作，也不启动交易。
 
 响应从具体Proto直接序列化为HTTP JSON，采用proto字段名；int64 ID/版本/毫秒和所有小数均为JSON string，grid_count等int32计数仍为整数。Maker/Grid是parameters中的具体oneof，schema0参数为空；requested_config与active_config分别表示请求与实际生效，未生效为null/presence缺失，不能据此显示为已运行。该序列化是实际传输边界，不通过JSON/map复制业务对象。登录与当前会话增加布尔 `session.strategy_queries_enabled` 能力标识，供后续页面只展示已启用入口；标识不授予业务权限。
 
 协议、配置/边界及实际独立API→Nacos/mTLS→strategy→PG验证见[P07.8](validation/P07-08.md)。独立OpenAPI仍待交付。
+
+P07.26增加[typed审计合同](../api/strategy/v1/audit.proto)。查询字符串至多1024字节，actor/action/resource分别至多64/64/128 UTF-8字节；精确匹配、不改写大小写/前后空白，不接受重复/未知项或在URL指定session。按ID升序分页，每次都是当前viewer的一次快照。历史actor_role不代表调用者当前权限；可空before_version/after_version使用Proto optional，缺失字段不补0。所有ID/修订/毫秒仍是JSON string，原因保留原文，页面按文本显示。单条响应身份与请求不匹配返回503。入口随原strategy_queries_enabled开启，不需要控制能力，不改变审计/策略/资金或后台工作器。
 
 ## 运行控制与操作结果 HTTP
 

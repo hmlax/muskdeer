@@ -39,6 +39,7 @@ type Runtime struct {
 	market              *marketgrpc.Server
 	strategy            *strategygrpc.Server
 	strategyCatalog     *strategygrpc.CatalogServer
+	strategyAudit       *strategygrpc.AuditServer
 	strategyControl     *strategygrpc.ControlServer
 	strategyCreation    *strategygrpc.CreationServer
 	strategyPublication *strategygrpc.PublicationServer
@@ -100,6 +101,9 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	}
 	if r.strategyCatalog != nil {
 		strategyv1.RegisterStrategyCatalogServer(registrar, r.strategyCatalog)
+	}
+	if r.strategyAudit != nil {
+		strategyv1.RegisterStrategyAuditServer(registrar, r.strategyAudit)
 	}
 	if r.strategyCreation != nil {
 		strategyv1.RegisterStrategyCreationServer(registrar, r.strategyCreation)

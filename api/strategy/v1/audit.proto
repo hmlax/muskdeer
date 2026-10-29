@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyAudit exposes platform management history through the management
+// service. API peer identity and a current viewer session are both required.
+service StrategyAudit {
+  rpc ListAudits(ListAuditsRequest) returns (ListAuditsReply);
+  rpc GetAudit(GetAuditRequest) returns (GetAuditReply);
+}
+
+message ListAuditsRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+  // Optional exact matches; empty means no filter, never a SQL pattern.
+  string actor = 4;
+  string action = 5;
+  string resource = 6;
+}
+
+message GetAuditRequest {
+  AdminSession session = 1;
+  int64 audit_id = 2;
+}
+
+// AuditEntry contains historical facts, never current trading authorization.
+// No credentials, session identity, idempotency key or fingerprint are exposed.
+message AuditEntry {
+  int64 id = 1;
+  string actor = 2;
+  string actor_role = 3;
+  string action = 4;
+  string resource = 5;
+  string reason = 6;
+  optional int64 before_version = 7;
+  optional int64 after_version = 8;
+  int64 created_at_ms = 9;
+}
+
+message ListAuditsReply {
+  repeated AuditEntry audits = 1;
+  int64 next_after_id = 2;
+}
+
+message GetAuditReply {
+  AuditEntry audit = 1;
+}
