@@ -928,3 +928,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 目标保留：暂停后发布保持PAUSED/旧active/旧额度，实际owner租约继续推进但无新意图，恢复后才生效新版本并报价；停止后再次发布保持STOPPED/旧active/旧额度，不隐式恢复。每模板3发布/4控制/0成交，最终USDT1000/BTC10、冻结/四级预留零。见[P07.24](validation/P07-24.md)，无应用行为/schema/生成物/嵌入资产改变。
 - 验证：race浏览器一次通过，原元数据14.74秒、资金组合69.90秒（Maker39.67/Grid30.22），包86.364秒；原期限及断言不变，自有资源清理。最终运行/停止发布截图已查看，完整make verify/32生成/Hertz/fmt/lint 0 issues/规范/22工具/单元/race/构建、web-check通过。最后仅多字段事务字面量格式整理并重新编译；本地未重复默认全部交易/其他四浏览器/镜像。
 - 远程：f35ba93已推送main并核对SHA，[CI40808840414](https://github.com/hmlax/muskdeer/actions/runs/40808840414)最近观察仍运行，未预报通过。本步检查后独立提交推送并核对SHA；继续撤单/风险开关/其余管理页面与P08–P10，完整A27/L1未完成。
+
+## 2026-10-29：P07.25 当前权限下的审计历史查询
+
+- 改动：独立AdminAudits仓储List/Detail，当前viewer、只读RR、精确actor/action/resource及有界UTF-8/页游标、明确可空前后版本/当时角色/原因/UTC时间，不暴露凭据/幂等资料；原生成审计直接读取，无新模型/schema/Proto/依赖、无写入或运行权限。合同与边界见[管理查询](ADMIN_STRATEGIES.md)、[P07.25](validation/P07-25.md)，此步尚未接RPC/HTTP/页面。
+- 验证：domain/repository单元/race1.422/1.362秒；四真实PG场景覆盖实际创建/发布/控制历史及原键不重写、精确过滤/分页/详情、当前viewer/Logout/credential拒绝、权限与历史RR一致、int64修订/调用方指针隔离、不可改删及存储失败/父取消无部分数据。测试复杂度首次58被lint拒绝，拆辅助函数保留断言；完整make verify/32生成/Hertz/fmt/lint 0 issues/规范/22工具/单元/race/构建通过。
+- 最终复验：首次PG专项宽前缀误选需要Nacos的原HTTP，在业务前因缺地址失败，失败记录保留；精确选定四审计及原两目录数据库场景最终4.189秒通过，原期限不变。158文档链接/差异通过，本地未重复默认全部交易/五浏览器/镜像。
+- 远程：38a9fdc已推送main并核对SHA，[CI40810909656](https://github.com/hmlax/muskdeer/actions/runs/40810909656)最近仍运行；f35ba93的[CI40808840414](https://github.com/hmlax/muskdeer/actions/runs/40808840414)success，含默认全部交易/五浏览器/持久开发/镜像。本步检查后独立提交推送核对SHA；继续审计typed入口/页面、撤单/风险开关及剩余P07、P08–P10，完整A27/L1未完成。

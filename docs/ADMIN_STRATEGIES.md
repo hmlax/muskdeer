@@ -1,6 +1,6 @@
 # 策略管理查询
 
-P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP，P07.9 交付列表/详情/版本页面。P07.10–P07.14提供[运行控制事务/传输/页面](ADMIN_CONTROL.md)，配置发布/换源管理仍待交付，不能据此将 R08/A27 标为完成。身份、查询HTTP和页面入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
+P07.6 提供 `domain.AdminStrategies` 和借用现有数据库的 `repository.NewAdminStrategies`，P07.7 接入 typed 管理 gRPC，P07.8 通过 API/DeerApi 的 Hertz 提供只读 HTTP，P07.9 交付列表/详情/版本页面。P07.10–P07.14提供[运行控制事务/传输/页面](ADMIN_CONTROL.md)，P07.21–P07.24提供[配置发布/换源事务、入口与双模板资金浏览器](ADMIN_PUBLICATION.md)；其余管理范围继续后续，不能据此将 R08/A27 标为完成。身份、查询HTTP和页面入口见 [管理 HTTP](ADMIN_HTTP.md)，运行目标与实际状态见 [生命周期](STRATEGY_LIFECYCLE.md)。
 
 每次 List、Detail、Versions 均在同一个只读 REPEATABLE READ 事务内校验持久会话、用户启用状态、credential_version、数据库时钟到期及 viewer 权限，然后读取业务数据。注销或凭据变更后的新查询不能沿用此前 API 身份检查的结果。查询是快照观测，不是新增交易风险的授权；并发注销不撤回已经开始的只读快照。
 
@@ -22,7 +22,15 @@ Feeds显式限定一个存在且未软删除的instrument和LIVE/REPLAY模式，
 
 P07.16由[typed目录Proto](../api/strategy/v1/catalog.proto)的独立StrategyCatalog提供ListAccounts/ListInstruments/ListMarketFeeds，随management_enabled显式注册，不需要control_enabled。复用API-peer、原生≤5秒、≤2KiB、未知字段/规范会话及分页门禁；具体账户/交易对/feed/质量策略字段，不使用JSON或bytes业务包装。小数string、int64保留，服务端对精确小数和feed输入身份再次验证，错误沿用固定管理合同。
 
-API的strategy_queries_enabled同时显式接入三个[目录HTTP](ADMIN_HTTP.md)GET；借用同一个Deer/Nacos/mTLS客户端，不在API读取业务目录表、不透明重试或创建交易资源。实际两独立命令、真实viewer密码登录/业务鉴权与注销旧Cookie回归见[P07.16](validation/P07-16.md)。P07.17已提供独立[创建持久事务](ADMIN_CREATION.md)，P07.18接入创建gRPC/HTTP，P07.19接入实际创建表单；参数发布/换源管理仍待后续。
+API的strategy_queries_enabled同时显式接入三个[目录HTTP](ADMIN_HTTP.md)GET；借用同一个Deer/Nacos/mTLS客户端，不在API读取业务目录表、不透明重试或创建交易资源。实际两独立命令、真实viewer密码登录/业务鉴权与注销旧Cookie回归见[P07.16](validation/P07-16.md)。P07.17已提供独立[创建持久事务](ADMIN_CREATION.md)，P07.18接入创建gRPC/HTTP，P07.19接入实际创建表单；参数发布/换源见[发布说明](ADMIN_PUBLICATION.md)。
+
+## 审计历史查询
+
+P07.25增加独立`domain.AdminAudits`/`repository.NewAdminAudits`仓储，为后续风险、撤单及审计页面提供持久历史。每次List/Detail均复用只读RR内的当前viewer校验；平台viewer/operator/admin可查看平台管理审计，当前没有账户分级授权。已开始的快照不被并发提交的新审计混入；注销、凭据变更后的下一查询拒绝。
+
+List按自增ID升序，以排他after_id及1–100条限制分页；actor/action/resource分别为可选精确匹配，全部参数化，不接受SQL表达式、通配符或前缀查询。字段分别至多64/64/128 UTF-8字节，拒绝非法编码、控制字符及前后空白，不隐式改写过滤条件。页间各自有快照，新增历史会在后续查询出现。Detail要求正ID，不存在时明确not-found。
+
+响应只含历史ID、actor及当时role、action、resource、reason、可空before/after版本、UTC创建时间；无用户密码、session/CSRF哈希、原幂等键或请求指纹。可空版本保留presence和完整int64，不把缺失伪造为0，不依据历史记录授予当前权限或断言控制已完成。历史原因按原值返回，后续页面必须按文本渲染。读请求不写审计、不启动观测器或改变实例、风险、订单和余额，故障/取消不返回部分数据，公开错误沿用固定管理合同。真实历史/权限/并发快照/故障验证见[P07.25](validation/P07-25.md)；此步尚未装配审计gRPC/HTTP/页面。
 
 ## 管理 gRPC
 
