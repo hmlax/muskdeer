@@ -4,16 +4,10 @@ import { ApiError } from './api';
 import { accountChoices, createStrategy, feedChoices, instrumentChoices } from './creation-api';
 import type { CatalogPage, CreationInput, CreationReceipt, FeedChoice } from './creation-api';
 import { sources, templates } from './strategy-api';
-import type { GridParameters, MakerParameters, Source, Template } from './strategy-api';
-
-type GridDraft = { [K in keyof GridParameters]: string };
-type MakerDraft = { [K in Exclude<keyof MakerParameters, 'hedge_enabled' | 'hedge_threshold' | 'hedge_max_wait_ms' | 'max_hedge_backlog'>]: string };
-const initialGrid: GridDraft = { lower_price: '98', upper_price: '102', grid_count: '5', total_budget: '50', per_order_notional: '10', inventory_limit: '20', max_market_age_ms: '500' };
-const initialMaker: MakerDraft = { quote_levels: '2', level_spacing_bps: '2', base_spread_bps: '10', level_notional: '10', side_budget: '20', inventory_target: '10', inventory_soft_limit: '15', inventory_hard_limit: '20', reprice_bps: '1', min_refresh_interval_ms: '100', max_quote_age_ms: '1000', max_market_age_ms: '500' };
-const gridFields: [keyof GridDraft, string][] = [['lower_price', '下界价格'], ['upper_price', '上界价格'], ['grid_count', '网格数量'], ['total_budget', '总预算（报价资产）'], ['per_order_notional', '单笔名义额（报价资产）'], ['inventory_limit', '库存上限（基础资产）'], ['max_market_age_ms', '行情最大年龄（ms）']];
-const makerFields: [keyof MakerDraft, string][] = [['quote_levels', '报价档数'], ['level_spacing_bps', '档距（BPS）'], ['base_spread_bps', '基础价差（BPS）'], ['level_notional', '单档名义额（报价资产）'], ['side_budget', '单侧预算（报价资产）'], ['inventory_target', '目标库存（基础资产）'], ['inventory_soft_limit', '库存软限（基础资产）'], ['inventory_hard_limit', '库存硬限（基础资产）'], ['reprice_bps', '重报阈值（BPS）'], ['min_refresh_interval_ms', '最小刷新间隔（ms）'], ['max_quote_age_ms', '挂单最大年龄（ms）'], ['max_market_age_ms', '行情最大年龄（ms）']];
+import type { Source, Template } from './strategy-api';
+import { gridFields, initialGrid, initialMaker, makerFields, parameterInput, validDraft } from './parameter-draft';
+import type { GridDraft, MakerDraft } from './parameter-draft';
 const identifier = /^[A-Za-z0-9_.:-]{1,64}$/;
-const decimalInput = /^(0|[1-9][0-9]{0,19})(\.[0-9]{1,18})?$/;
 
 function useChoices<T extends { id: string }>(load: (cursor: string, signal: AbortSignal) => Promise<CatalogPage<T>>, onExpired: () => void) {
   const [items, setItems] = useState<T[]>([]); const [cursor, setCursor] = useState('0'); const [next, setNext] = useState('0');
@@ -54,10 +48,9 @@ export function CreationForm({ onExpired, onCreated, onClose }: { onExpired: () 
     event.preventDefault(); if (controller.current || busy) return;
     let request = prepared;
     if (!request) {
-      const note = reason.trim(); const fields = template === 'grid' ? gridFields : makerFields; const draft = template === 'grid' ? grid : maker;
-      const validFields = fields.every(([key]) => { const value = draft[key as keyof typeof draft] as string; return key === 'grid_count' || key === 'quote_levels' ? /^[1-9][0-9]{0,2}$/.test(value) && Number(value) <= (key === 'grid_count' ? 200 : 20) : key.endsWith('_ms') ? /^[1-9][0-9]{0,6}$/.test(value) && BigInt(value) <= 3600000n : decimalInput.test(value); });
+      const note = reason.trim(); const validFields = validDraft(template, grid, maker);
       if (!identifier.test(name) || !identifier.test(code) || !note || new TextEncoder().encode(note).length > 256 || note.includes('\0') || !source || !feeds.some(f => f.source === source) || !accounts.items.some(a => a.account_id === account && a.enabled) || !selected || selected.status !== 'TRADING' || !validFields) { setError('请检查账户、来源、实例标识和参数格式；原因应为 1–256 字节。'); return; }
-      const parameters: CreationInput['parameters'] = template === 'grid' ? { grid: { ...grid, grid_count: Number(grid.grid_count) } } : { market_maker: { ...maker, quote_levels: Number(maker.quote_levels), hedge_enabled: false, hedge_threshold: '0', hedge_max_wait_ms: '0', max_hedge_backlog: '0' } };
+      const parameters = parameterInput(template, grid, maker);
       request = { key: crypto.randomUUID(), body: { instance_key: name, account_id: account, instrument_id: instrument, code_version: code, market_data_source: source, market_mode: mode, parameters, reason: note } };
       setPrepared(request);
     }
@@ -90,7 +83,7 @@ export function CreationForm({ onExpired, onCreated, onClose }: { onExpired: () 
       {feedLoading && <p role="status">正在读取所选模式的来源…</p>}{instrument && !feedLoading && !feedError && feeds.length === 0 && <p className="notice">当前模式没有已绑定来源，请检查行情配置。</p>}
       {feedError && <p className="error" role="alert">来源读取失败。<button type="button" className="button secondary compact" onClick={() => setFeedEpoch(e => e + 1)}>重试来源</button></p>}
       <h4>策略参数</h4>{template === 'market_maker' && <p className="muted">对冲：关闭</p>}<div className="creation-fields">{template === 'grid' ? gridFields.map(([key, label]) => <label key={key}>{label}<input required inputMode="decimal" value={grid[key]} maxLength={40} onChange={e => setGrid({ ...grid, [key]: e.target.value })} /></label>) : makerFields.map(([key, label]) => <label key={key}>{label}<input required inputMode="decimal" value={maker[key]} maxLength={40} onChange={e => setMaker({ ...maker, [key]: e.target.value })} /></label>)}</div>
-      <label>创建原因<textarea required value={reason} maxLength={256} onChange={e => setReason(e.target.value)} /></label></fieldset>
+      <label>创建原因<textarea aria-label="创建原因" required value={reason} maxLength={256} onChange={e => setReason(e.target.value)} /></label></fieldset>
       {error && <p className="error" role="alert">{error}</p>}<button type="submit" className="button primary" disabled={busy || !prepared && unavailable}>{busy ? '正在创建…' : prepared ? '按原请求重试创建' : '确认创建'}</button>
     </form>}
   </section>;

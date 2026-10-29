@@ -41,3 +41,13 @@ strategy的`control_enabled`显式注册独立`StrategyPublication.PublishConfig
 ```
 
 201与原键201回放均返回typed PublicationReceipt：id/actor_user_id/strategy_id、previous_config_version/config_version、previous_revision/revision、market_data_source/reason/created_at_ms；int64按ProtoJSON string输出，`Location`指向策略详情，所有响应no-store。API在展示成功前检查实例、两个版本推进、来源和规范原因与原请求匹配，并要求actor和时间为正值；不匹配视为不可确认的503，客户端保留原键/原请求观察或重试。409明确冲突、400无效请求，401/403仍由当前持久权限裁决；201仅证明requested输入的这次历史提交，后续详情可能已有更新请求。
+
+## 管理页面
+
+P07.23在详情中按控制能力及operator/admin角色开放“发布参数与换源”；viewer、缺typed参数的历史请求及当前不支持的启用对冲历史配置不提供编辑。表单始终从当前requested参数完整填充，不从所选历史行推断；模板/账户/instrument/mode/code保持只读。来源读取实际instrument+mode绑定，保留当前请求来源，由用户明确选择新源，不回退。字段标注BPS、资产单位/毫秒，小数/ID/版本/毫秒始终string，仅有界档数转JS整数；共用创建的草稿规则，无新依赖。
+
+编辑基线展示实例修订及请求版本，并与最近读取的requested/active/运行目标分别显示。刷新不丢弃草稿；修订冲突后刷新观测，用户显式“载入当前请求”才能替换编辑基线，不能自动丢弃输入或覆盖他人的版本。原因1–256 UTF-8字节，当前开通及跨字段规则仍由事务裁决。
+
+首次确认时生成单一随机键并冻结完整请求，6秒/卸载取消和同步提交锁防止重复事件；结果未知或403保留原键/原内容。详情刷新暂时清空查询结果也不卸载表单；即使已观察到更高修订，原请求仍能按原键重试。400/409解除冻结并保留草稿，401沿现有登录失效流程。成功收据保持原版本/来源/修订，刷新后独立显示实际状态；后续请求版本更高时提示本收据是历史记录。页面不把201等同激活，不隐式恢复，离开也不撤回已提交请求。无浏览器持久存储。
+
+`make admin-publication-browser`使用独立实际API/strategy、PostgreSQL/Nacos/mTLS与Chromium验证；进入默认CI及e2e第五组浏览器。发布后自动撤旧单/新源健康/激活预算/恢复报价的实际资金浏览器继续单独验收；本组元数据四实例保持CREATED/STOPPED，不能冒充运行证明。
