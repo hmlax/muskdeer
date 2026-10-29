@@ -115,9 +115,13 @@ admin-risk-browser: build
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-risk-browser.py
 
-e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser
+admin-orders-browser: build
+	python3 scripts/web.py browser-install
+	python3 scripts/admin-orders-browser.py
 
-.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser
+e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser
+
+.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser
 
 .PHONY: soak soak-smoke
 soak: build

@@ -105,6 +105,7 @@ def run(action: str) -> int:
         'browser-funded-publication': ['run', 'browser-funded-publication'],
         'browser-audits': ['run', 'browser-audits'],
         'browser-risk': ['run', 'browser-risk'],
+        'browser-orders': ['run', 'browser-orders'],
     }
     if action == 'doctor':
         return 0
@@ -113,7 +114,7 @@ def run(action: str) -> int:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['doctor', 'lock', 'install', 'build', 'check', 'browser-install', 'browser-test', 'browser-strategies', 'browser-controls', 'browser-creation', 'browser-publication', 'browser-funded-publication', 'browser-audits', 'browser-risk'])
+    parser.add_argument('action', choices=['doctor', 'lock', 'install', 'build', 'check', 'browser-install', 'browser-test', 'browser-strategies', 'browser-controls', 'browser-creation', 'browser-publication', 'browser-funded-publication', 'browser-audits', 'browser-risk', 'browser-orders'])
     options = parser.parse_args()
     try:
         sys.exit(run(options.action))
