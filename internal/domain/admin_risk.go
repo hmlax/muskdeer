@@ -19,6 +19,7 @@ const (
 	AdminRiskBlock                 AdminRiskAction = "risk.strategy.block"
 	AdminRiskUnblock               AdminRiskAction = "risk.strategy.unblock"
 	AdminAuditResourceRisk                         = "strategy_risk"
+	AdminRiskRecoveryDeniedCode                    = "RECOVERY_DENIED"
 	MessageInvalidAdminRisk                        = "invalid strategy risk control request"
 	MessageAdminRiskRecoveryDenied                 = "strategy risk recovery conditions are not met"
 )
@@ -96,9 +97,19 @@ type AdminRiskState struct {
 	UpdatedAt              time.Time
 }
 
-// AdminStrategyRisk requires current operator authority for block and current
-// admin authority plus fresh recovery checks for unblock, inside its transaction.
-type AdminStrategyRisk interface {
-	Change(context.Context, string, string, AdminRiskRequest) (AdminRiskReceipt, error)
+// AdminStrategyRiskReader returns a snapshot under current viewer authority.
+type AdminStrategyRiskReader interface {
 	State(context.Context, string, int64) (AdminRiskState, error)
+}
+
+// AdminStrategyRiskWriter requires current operator authority for block and
+// current admin authority plus fresh recovery checks for unblock.
+type AdminStrategyRiskWriter interface {
+	Change(context.Context, string, string, AdminRiskRequest) (AdminRiskReceipt, error)
+}
+
+// AdminStrategyRisk shares one repository across independently exposed abilities.
+type AdminStrategyRisk interface {
+	AdminStrategyRiskReader
+	AdminStrategyRiskWriter
 }

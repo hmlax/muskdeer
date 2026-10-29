@@ -64,6 +64,8 @@ type Routes struct {
 	strategies    strategyv1.StrategyManagementClient
 	catalog       strategyv1.StrategyCatalogClient
 	audits        strategyv1.StrategyAuditClient
+	riskQueries   strategyv1.StrategyRiskQueryClient
+	riskControls  strategyv1.StrategyRiskControlClient
 	controls      strategyv1.StrategyControlClient
 	creation      strategyv1.StrategyCreationClient
 	publication   strategyv1.StrategyPublicationClient
@@ -129,6 +131,12 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	}
 	if r.publication != nil {
 		hertz.POST("/api/v1/strategies/:strategyID/configurations", r.publishConfiguration)
+	}
+	if r.riskQueries != nil {
+		hertz.GET("/api/v1/strategies/:strategyID/risk", r.getStrategyRisk)
+	}
+	if r.riskControls != nil {
+		hertz.POST("/api/v1/strategies/:strategyID/risk", r.changeStrategyRisk)
 	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {

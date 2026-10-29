@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyRiskQuery is available only with management queries enabled.
+service StrategyRiskQuery {
+  rpc GetStrategyRisk(GetStrategyRiskRequest) returns (StrategyRiskState);
+}
+
+// StrategyRiskControl is registered separately, only with controls enabled.
+service StrategyRiskControl {
+  rpc ChangeStrategyRisk(ChangeStrategyRiskRequest) returns (StrategyRiskReceipt);
+}
+
+message GetStrategyRiskRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+}
+
+message StrategyRiskState {
+  int64 strategy_id = 1;
+  bool enabled = 2;
+  int64 revision = 3;
+  string quote_asset = 4;
+  string limit_notional = 5;
+  string reserved_notional = 6;
+  string state = 7;
+  string desired_state = 8;
+  int64 requested_config_version = 9;
+  string market_data_source = 10;
+  int64 updated_at_ms = 11;
+}
+
+// Block leaves the two expected configuration/target fields empty. Unblock
+// requires both to bind the current view confirmed by an administrator.
+message ChangeStrategyRiskInput {
+  string action = 1;
+  int64 expected_revision = 2;
+  string reason = 3;
+  int64 expected_config_version = 4;
+  string expected_desired_state = 5;
+}
+
+message ChangeStrategyRiskRequest {
+  AdminSession session = 1;
+  string csrf_token = 2;
+  string idempotency_key = 3;
+  int64 strategy_id = 4;
+  ChangeStrategyRiskInput input = 5;
+}
+
+// StrategyRiskReceipt is historical confirmation, never a current trading grant.
+message StrategyRiskReceipt {
+  int64 id = 1;
+  int64 actor_user_id = 2;
+  int64 strategy_id = 3;
+  string action = 4;
+  bool previous_enabled = 5;
+  bool enabled = 6;
+  int64 previous_revision = 7;
+  int64 revision = 8;
+  int64 expected_config_version = 9;
+  string expected_desired_state = 10;
+  string reason = 11;
+  int64 created_at_ms = 12;
+}

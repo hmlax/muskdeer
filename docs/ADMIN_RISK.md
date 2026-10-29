@@ -1,6 +1,6 @@
 # 策略风险开关
 
-P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。此步骤尚未注册管理 gRPC、HTTP 或页面；后续接入复用既有管理会话、mTLS、CSRF 和审计查询。
+P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。P07.30接入独立 typed gRPC 查询/控制和管理 HTTP，复用既有管理会话、mTLS、CSRF、审计查询及同一连接；风险管理页面继续后续。
 
 ## 语义与权限
 
@@ -23,6 +23,21 @@ P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。此�
 [迁移 29](../internal/migrate/sql/0029_admin_strategy_risk.sql) 新增带自增 Id、非空创建/更新时间及 nullable 删除时间的收据表；历史禁止改写、删除和软删除。提交时独立检查当前会话、角色、凭据版本、会话到期、相符审计、独立风险版本、实际旗标及已关闭的缓存许可。恢复证明受当前选择行情的有效期、事件/接收年龄、发布租约及最多 5 秒限制；提交时已过期或仍有义务则整笔回滚。
 
 模拟核心对已管理策略的全部新增提交检查当前预算旗标，包括没有 OMS intent ID 的直接核心提交。裸核心历史场景没有策略预算时保持原合同，迁移不自动创建或启用预算。取消保留原授权/fencing 检查。历史迁移 1–28 的字节和校验和不改变，升级不重写现有预算、金额、状态或权限。
+
+## Typed 管理入口
+
+[风险 Proto](../api/strategy/v1/risk.proto) 明确区分 StrategyRiskQuery.GetStrategyRisk 与 StrategyRiskControl.ChangeStrategyRisk：前者随 management/query opt-in 注册，后者仅随 control opt-in 注册。查询进程不注册修改 RPC。两者都要求已验证 API mTLS 身份、当前持久会话和至多 5 秒的调用预算；≤2KiB、未知字段和嵌套会话/输入检查保留，无新连接、后台任务、资金或预算初始化。
+
+| 方法/路径 | 返回 | 证明/输入 |
+|---|---|---|
+| GET /api/v1/strategies/:strategyID/risk | 200 StrategyRiskState | 唯一会话 Cookie、当前 viewer、规范正 int64 路径，无 query/body |
+| POST /api/v1/strategies/:strategyID/risk | 200 StrategyRiskReceipt | 固定 Origin、唯一会话 Cookie、独立 CSRF、唯一 Idempotency-Key、≤2KiB application/json，无 query |
+
+POST 显式 action、string expected_revision、reason；恢复另需 string expected_config_version 和 expected_desired_state，关闭必须省略这两个字段。拒绝数字型版本、null、重复/未知字段、别名、尾随数据及非规范整数。规范化后的原原因和确认字段完整送达交易事务，不从浏览器角色或本地显示推断授权。单次 HTTP 下游调用至多 3 秒，响应 no-store；Location 指向当前风险 GET，收据本身仍是历史事实。
+
+当前状态包含独立管理 revision、Enabled、quote_asset、精确 string 额度/预留、实际状态/desired 目标、requested 配置版本/所选来源及预算行 updated_at_ms；金额、ID、修订、版本和毫秒均按 Proto JSON string 输出。预算更新时间可能随普通资金变化，不能替代管理版本。缺少既有预算返回 404，不自动开通；超额、错误身份/状态/来源/确认字段的成功响应被拒绝为 503，无部分业务数据。
+
+当前权限/CSRF错误为401/403，非法请求400，确认版本冲突409 CONFLICT；恢复条件未满足为gRPC FailedPrecondition、HTTP409 RECOVERY_DENIED及固定公开原因，内部诊断不返回。查询能力未开时无该接口；只有查询能力时无修改RPC，HTTP同路径POST返回405。接口尚不提供平仓或独立管理撤单，完整管理页面与A27继续后续。
 
 ## 验证边界
 
