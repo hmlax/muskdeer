@@ -60,8 +60,18 @@ async function run() {
         stage = 'publication-actual-conflict'; await form.getByRole('button', { name: '确认发布新版本', exact: true }).click();
         await form.getByText('配置或修订已变化，请刷新并重新载入当前请求后确认。').waitFor();
         await form.getByText('实例已更新，编辑基线需要重新载入。').waitFor();
-        await form.getByRole('button', { name: '载入当前请求', exact: true }).click();
-        assert.equal(await form.getByLabel(field, { exact: true }).inputValue(), original);
+        let releaseFeed;
+        const feedGate = new Promise(resolve => { releaseFeed = resolve; });
+        const feedPattern = '**/api/v1/instruments/*/market-feeds?*';
+        await page.route(feedPattern, async route => { await feedGate; await route.continue(); });
+        try {
+          stage = 'publication-reload-start'; await form.getByRole('button', { name: '载入当前请求', exact: true }).click();
+          await form.getByText('正在读取所选模式的来源…', { exact: true }).waitFor();
+          assert.ok(await form.getByLabel('新版本行情来源', { exact: true }).isDisabled());
+          stage = 'publication-reload-parameters'; assert.equal(await form.getByLabel(field, { exact: true }).inputValue(), original);
+        } finally { releaseFeed(); await page.unrouteAll({ behavior: 'wait' }); }
+        stage = 'publication-reload-source-ready';
+        await form.getByLabel('新版本行情来源', { exact: true }).locator(`option[value="${entry.source}"]`).waitFor({ state: 'attached' });
         assert.equal(await form.getByLabel('新版本行情来源', { exact: true }).inputValue(), entry.source);
         await form.getByLabel(field, { exact: true }).fill(precise);
         await form.getByLabel('总预算（报价资产）', { exact: true }).fill('35.000000000000000003');
