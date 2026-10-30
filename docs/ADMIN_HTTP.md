@@ -2,6 +2,8 @@
 
 已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)、[订单列表/详情](ADMIN_ORDERS.md)、[指定订单撤单](ADMIN_CANCELLATIONS.md)和[行情监控](ADMIN_MARKETS.md)的typed接口和实际页面。成交/持仓等其余能力及完整 R08/A27 尚未完成。
 
+[成交查询](ADMIN_TRADES.md)已增加typed只读gRPC/HTTP入口，以核心成交为准，按首次提交命令保留可空原OMS关联，并单独显示持仓侧事实是否收录；成交页面及持仓等能力继续后续步骤。
+
 [行情监控](ADMIN_MARKETS.md)已提供GET /api/v1/markets和/api/v1/markets/:feedID的具体查询合同与/markets、/markets/:feedID页面；列表必须明确LIVE/REPLAY，可按来源/交易对筛选，当前viewer、no-store和3秒原生期限。历史发布诊断与当前失效/过期结果分别返回，无写入口或行情/风险授权。HTML路径校验规范ID并遵守查询开关，登录后恢复深链接；页面过期提示不隐式换源，`make admin-market-browser`进入CI/e2e第十组。
 
 ## 开启入口
@@ -57,6 +59,8 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 | GET /api/v1/audits/:auditID | GetAuditReply | 正规范int64审计ID，无query |
 | GET /api/v1/strategies/:strategyID/orders | ListStrategyOrdersReply | 明确策略；after_id/limit同上，可选state/open_only，见订单合同 |
 | GET /api/v1/strategies/:strategyID/orders/:orderID | GetStrategyOrderReply | 正规范int64策略及OMS订单ID，无query |
+| GET /api/v1/strategies/:strategyID/trades | ListStrategyTradesReply | 明确策略；after_id/limit同上，可选原OMS order_id及BUY/SELL side，见成交合同 |
+| GET /api/v1/strategies/:strategyID/trades/:tradeID | GetStrategyTradeReply | 正规范int64策略及核心成交ID，无query |
 | GET /api/v1/strategies/:strategyID/order-cancellations/:cancellationID | OrderCancellationReceipt | 正规范int64策略及收据ID，无body/query；当前viewer |
 
 调用使用唯一现有会话Cookie，API自行构造AdminSession，业务服务在同一只读快照内重新验证viewer权利；没有将API身份结果当作业务授权。拒绝GET body、重复/未知参数、非规范整数、溢出/负游标。不存在资源404、会话无效401并清cookie、角色拒绝403、依赖/协议故障503；后端私有错误不返回。路由不开放POST等写操作，也不启动交易。

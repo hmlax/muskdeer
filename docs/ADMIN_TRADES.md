@@ -1,6 +1,6 @@
 # 管理成交查询
 
-P07.41提供[AdminTrades](../internal/domain/admin_trades.go)只读仓储，尚未注册RPC、HTTP或管理页面。数据主集合为模拟核心的真实成交，不能用持仓投影是否收到回报决定成交是否存在。
+P07.41提供[AdminTrades](../internal/domain/admin_trades.go)只读仓储，P07.42增加具体typed gRPC/HTTP；管理页面继续后续步骤。数据主集合为模拟核心的真实成交，不能用持仓投影是否收到回报决定成交是否存在。
 
 ## 范围与身份
 
@@ -23,3 +23,18 @@ Go金额使用decimal.Decimal，后续传输必须使用十进制string。读取
 关联字段损坏、缺失依赖、存储错误或父取消均拒绝整页/详情，不返回部分数据或游标；公开错误固定，内部保留诊断链。数据库拒绝快照中的实际UPDATE。查询不修改核心账本、OMS、持仓、inbox/outbox、额度、风险或审计；未确认OMS即使核心已全部成交仍保持原预留。
 
 真实PostgreSQL/资金/精度/并发/权限证据见[P07.41](validation/P07-41.md)。无新增持久模型或迁移，不能据此声明完整R08/A27或L1完成。
+
+## typed传输边界
+
+[成交Proto](../api/strategy/v1/trades.proto)的StrategyTradeQuery提供ListStrategyTrades和GetStrategyTrade，只有strategy.management_enabled开启才注册，继续验证API-peer mTLS、当前viewer会话、≤5秒原生截止及≤2KiB请求。API复用原有唯一strategy连接及strategy_queries_enabled开关，单次3秒并继承更早父取消；不要求控制权限，不创建新交易任务或客户端资源。
+
+| GET路径 | 输入与返回 |
+|---|---|
+| /api/v1/strategies/:strategyID/trades | ListStrategyTradesReply；limit默认50、1–100；after_id默认0；可选规范正int64 order_id及精确BUY/SELL side |
+| /api/v1/strategies/:strategyID/trades/:tradeID | GetStrategyTradeReply；核心成交ID，详情不接受query |
+
+只接受唯一会话Cookie、规范正策略/成交ID和至多1024字节query；GET body、重复/未知键、空筛选、非规范数字及写方法拒绝，未开启查询路由404。错误固定400/401/403/404/503，响应no-store，不泄露存储原因或部分数据。
+
+所有身份、游标、版本、毫秒和小数均为JSON string。原订单ID采用proto3 optional int64：原始关联不存在时ProtoJSON省略order_id，不伪造0；缺收录message为portfolio_fact:null。收录仅有精确事实ID及记录时间，不带“已对账”或风险许可。具体StrategyTrade每项验证身份/历史来源/方向、十进制范围、价格乘数量、费用非负且小于名义额、可空关联及收录时间；列表同时绑定原策略、订单/方向过滤、升序exclusive cursor和页长。未知Proto字段或下游错误成功整页/详情503。
+
+跨进程资金与只读验证见[P07.42](validation/P07-42.md)。当前只提供模拟成交场所；后续真实交易适配须按实际场所的成交身份、时间及费用合同独立验收。

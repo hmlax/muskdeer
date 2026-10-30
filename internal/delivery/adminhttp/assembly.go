@@ -58,6 +58,7 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 		routes.catalog = strategyv1.NewStrategyCatalogClient(connection)
 		routes.audits = strategyv1.NewStrategyAuditClient(connection)
 		routes.orders = strategyv1.NewStrategyOrderQueryClient(connection)
+		routes.trades = strategyv1.NewStrategyTradeQueryClient(connection)
 		routes.markets = strategyv1.NewStrategyMarketQueryClient(connection)
 		routes.riskQueries = strategyv1.NewStrategyRiskQueryClient(connection)
 		routes.cancellationQueries = strategyv1.NewStrategyOrderCancellationQueryClient(connection)

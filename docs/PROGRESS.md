@@ -1059,3 +1059,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 资金：99买/101卖各1BTC，费用0.099/0.101、USDT1001.8且OMS200预留保持；实际费率0.001234567890123456，两笔99.99各1BTC费用各0.12344444333344436544，USDT799.77311111333311126912/零冻结，OMS199.98预留保持，可空身份指针不共享。原始未关联成交不认领同客户端OMS100预留；读取不投递/重建/确认或开放风险。
 - 检查：最终完整make verify/Go1.27.3/44生成/Hertz/fmt/lint含govet 0 issues/政策/22工具/全包单元/race/三个命令构建通过，repository race1.356秒；极端指数在算术前拒绝，180文档/412本地链接/差异及逐文件复审通过，独有PG容器/卷已清理。本地未重复默认全部交易/十浏览器/镜像/持久开发/固定30分钟。
 - 远程/后续：fc2623b已推送main并核对SHA，其[CI41029358740](https://github.com/hmlax/muskdeer/actions/runs/41029358740)四job全部success（checks7分38秒/integration12分32秒/browsers9分46秒/汇总3秒），新拓扑及十浏览器获得线上证据；P07.40本地三worker同时deadline_exceeded的具体触发仍待P09/P10定位，不冒称已修复。本步检查后独立提交并立即推送核对SHA，继续成交typed入口及页面/持仓及P07–P10，完整A27/L1未完成，P11缺真实合同与环境。
+
+## 2026-10-30：P07.42 成交typed gRPC/HTTP及实际跨进程读取
+
+- 改动：具体StrategyTradeQuery ListStrategyTrades/GetStrategyTrade与独立收录presence，46生成/33模型/schema30；管理查询opt-in、API-peer mTLS/当前viewer/5秒/2KiB、API原唯一连接/3秒/no-store及严格只读路径/筛选。原始未关联order_id在ProtoJSON省略，未收录message为null，不制造0或对账许可；全字段/精确名义额/费用/过滤/游标/未知字段及详情身份绑定，错误成功整页503。无新权限/任务/持久化/依赖/资产，见[成交合同](ADMIN_TRADES.md)、[P07.42](validation/P07-42.md)。
+- 诊断：两入口先编译红测；初HTTP错误要求optional标量null，按标准ProtoJSON严格验证缺席和message null；lint复杂度31拒绝后拆装配。首轮夹具先投递后序成交再发布配置被既有依赖检查正确拒绝，改为先发布再投递；第二轮临时runner在构建结束前调用旧.cache/bin/muskdeer，unknown service证据保留，最终构建后原四场景全部通过，无扩大期限或放宽业务断言。
+- 验证：最终完整make verify/Go1.27.3/46生成/Hertz/fmt/lint含govet 0 issues/政策/22工具/全部单元/race/三个命令构建通过；HTTP/gRPC race1.661/1.327秒，高位ID/18位价格/超过18位手续费/Proto往返/极端指数/未知及错配成功拒绝通过，181文档/418本地链接/差异及逐文件审查通过。
+- 原生：最终实际API/strategy/PG/Nacos/mTLS四场景/race9.541秒，新成交HTTP1.39/原订单1.31/行情2.09/仅查询注册3.32秒。当前viewer真实登录、非API有效证书拒绝、控制RPC未注册、历史Binance v1保持、两权威成交及可空收录/后序卖出未完整、分页/原OMS/方向/兄弟范围、Logout旧Cookie401通过。策略/持仓Proto全字段不变，200预留/USDT1001.8/零冻结及2核心单/2成交/1收录/1inbox保持，自有资源清理完成。
+- 远程/范围：a221edbfe15810a67152bddeee212941e21681e4已推送main并核对SHA，其CI41032981260最近in_progress，未预报。本步独立提交并立即推送核对SHA后，继续成交页面/持仓等P07及P08–P10；本地未重复默认全量交易/十浏览器/镜像/持久开发/固定30分钟，完整A27/L1未完成，P11仍缺真实合同与环境。

@@ -84,12 +84,7 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		if err := assembleStrategyCancellations(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
 			return nil, err
 		}
-		orders, err := repository.NewAdminOrders(db)
-		if err != nil {
-			return nil, err
-		}
-		runtime.strategyOrders, err = strategygrpc.NewOrderQuery(orders)
-		if err != nil {
+		if err := assembleStrategyOrderQueries(db, runtime); err != nil {
 			return nil, err
 		}
 		if err := assembleStrategyMarkets(db, runtime); err != nil {
@@ -181,6 +176,23 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 	}
 	runtime.workers = append(runtime.workers, workers...)
 	return runtime, nil
+}
+
+func assembleStrategyOrderQueries(db *gorm.DB, runtime *Runtime) error {
+	orders, err := repository.NewAdminOrders(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyOrders, err = strategygrpc.NewOrderQuery(orders)
+	if err != nil {
+		return err
+	}
+	trades, err := repository.NewAdminTrades(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyTrades, err = strategygrpc.NewTradeQuery(trades)
+	return err
 }
 
 func assembleStrategyMarkets(db *gorm.DB, runtime *Runtime) error {

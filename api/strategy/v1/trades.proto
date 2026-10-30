@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyTradeQuery observes authoritative fills without applying deliveries.
+service StrategyTradeQuery {
+  rpc ListStrategyTrades(ListStrategyTradesRequest) returns (ListStrategyTradesReply);
+  rpc GetStrategyTrade(GetStrategyTradeRequest) returns (GetStrategyTradeReply);
+}
+
+message ListStrategyTradesRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+  int64 after_id = 3;
+  int32 limit = 4;
+  // Zero means no order filter; only the original submit's OMS link qualifies.
+  int64 order_id = 5;
+  string side = 6;
+}
+
+message ListStrategyTradesReply {
+  repeated StrategyTrade trades = 1;
+  int64 next_after_id = 2;
+}
+
+message GetStrategyTradeRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+  int64 trade_id = 3;
+}
+
+message GetStrategyTradeReply {
+  StrategyTrade trade = 1;
+}
+
+message StrategyTrade {
+  int64 id = 1;
+  string execution_venue = 2;
+  string trade_id = 3;
+  int64 strategy_id = 4;
+  string account_id = 5;
+  int64 instrument_id = 6;
+  int64 config_version = 7;
+  string market_data_source = 8;
+  int64 core_order_id = 9;
+  string client_order_id = 10;
+  // Absent for an originally unlinked privileged simulator submit.
+  optional int64 order_id = 11;
+  string side = 12;
+  string price = 13;
+  string quantity = 14;
+  string quote_notional = 15;
+  string fee_amount = 16;
+  string fee_asset = 17;
+  // Database recording time; not an exchange execution timestamp.
+  int64 recorded_at_ms = 18;
+  // Presence means this exact fact was collected, not reconciled positions.
+  TradePortfolioFact portfolio_fact = 19;
+}
+
+message TradePortfolioFact {
+  int64 id = 1;
+  int64 recorded_at_ms = 2;
+}
