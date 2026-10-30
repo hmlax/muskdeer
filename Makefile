@@ -123,9 +123,13 @@ admin-cancellation-browser: build
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-cancellation-browser.py
 
-e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser
+admin-market-browser: build
+	python3 scripts/web.py browser-install
+	python3 scripts/admin-market-browser.py
 
-.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser
+e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser
+
+.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser
 
 .PHONY: soak soak-smoke
 soak: build

@@ -25,8 +25,17 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.cancellationQueries != nil {
 		paths = append(paths, "/strategies/:strategyID/order-cancellations/:cancellationID")
 	}
+	if r.markets != nil {
+		paths = append(paths, "/markets", "/markets/:feedID")
+	}
 	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
+			if path == "/markets/:feedID" {
+				if _, valid := marketPathID(request.Param("feedID")); !valid {
+					request.String(http.StatusNotFound, "not found")
+					return
+				}
+			}
 			if path == "/strategies/:strategyID/order-cancellations/:cancellationID" {
 				_, strategyValid := strategyID(request)
 				_, idValid := cancellationPathID(request.Param("cancellationID"))

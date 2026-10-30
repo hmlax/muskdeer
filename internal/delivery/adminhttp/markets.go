@@ -42,9 +42,8 @@ func (r *Routes) listMarkets(ctx context.Context, request *app.RequestContext) {
 }
 
 func (r *Routes) getMarket(ctx context.Context, request *app.RequestContext) {
-	raw := request.Param("feedID")
-	id, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil || id <= 0 || strconv.FormatInt(id, 10) != raw || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
+	id, valid := marketPathID(request.Param("feedID"))
+	if !valid || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
@@ -62,6 +61,11 @@ func (r *Routes) getMarket(ctx context.Context, request *app.RequestContext) {
 		err = status.Error(codes.Unavailable, domain.MessageAdminUnavailable)
 	}
 	r.strategyReply(request, reply, err)
+}
+
+func marketPathID(raw string) (int64, bool) {
+	id, err := strconv.ParseInt(raw, 10, 64)
+	return id, err == nil && id > 0 && strconv.FormatInt(id, 10) == raw
 }
 
 func marketFilterQuery(request *app.RequestContext) (domain.AdminMarketFilter, bool) {

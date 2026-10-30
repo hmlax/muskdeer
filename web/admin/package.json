@@ -18,7 +18,8 @@
     "browser-audits": "node e2e/audits.mjs",
     "browser-risk": "node e2e/risk.mjs",
     "browser-orders": "node e2e/orders.mjs",
-    "browser-cancellations": "node e2e/cancellations.mjs"
+    "browser-cancellations": "node e2e/cancellations.mjs",
+    "browser-markets": "node e2e/markets.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

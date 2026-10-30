@@ -77,3 +77,20 @@ func TestCancellationPagesRequireQueriesAndBothCanonicalIdentities(t *testing.T)
 		t.Fatal("disabled cancellation query exposed a page", reply.Code)
 	}
 }
+
+func TestMarketPagesRequireQueriesAndCanonicalFeedIdentity(t *testing.T) {
+	hertz := marketHTTPFixture(t, &marketHTTPClient{})
+	for _, path := range []string{"/markets", "/markets/9007199254740993"} {
+		if reply := perform(hertz, "GET", path, ""); reply.Code != 200 || !strings.HasPrefix(string(reply.Header().Peek("Content-Type")), "text/html") {
+			t.Fatal("market route refresh did not serve the application", reply.Code)
+		}
+	}
+	for _, path := range []string{"/markets/0", "/markets/01", "/markets/9223372036854775808"} {
+		if reply := perform(hertz, "GET", path, ""); reply.Code != 404 {
+			t.Fatal("noncanonical feed identity served market page", reply.Code)
+		}
+	}
+	if reply := perform(marketHTTPFixture(t, nil), "GET", "/markets", ""); reply.Code != 404 {
+		t.Fatal("disabled market query exposed its page", reply.Code)
+	}
+}
