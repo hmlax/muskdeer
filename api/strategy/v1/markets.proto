@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+import "api/strategy/v1/catalog.proto";
+
+// StrategyMarketQuery observes provisioned sources; reads grant no authority.
+service StrategyMarketQuery {
+  rpc ListMarkets(ListMarketsRequest) returns (ListMarketsReply);
+  rpc GetMarket(GetMarketRequest) returns (GetMarketReply);
+}
+
+message ListMarketsRequest {
+  AdminSession session = 1;
+  string source = 2;
+  int64 instrument_id = 3;
+  // LIVE or REPLAY is mandatory; neither is an implicit default.
+  string mode = 4;
+  int64 after_id = 5;
+  int32 limit = 6;
+}
+
+message ListMarketsReply {
+  repeated MarketMonitor markets = 1;
+  int64 next_after_id = 2;
+}
+
+message GetMarketRequest {
+  AdminSession session = 1;
+  int64 feed_id = 2;
+}
+
+message GetMarketReply {
+  MarketMonitor market = 1;
+}
+
+message MarketMonitor {
+  CatalogMarketFeed feed = 1;
+  CatalogInstrument instrument = 2;
+  int64 evaluated_at_ms = 3;
+  // Absence is no observation, never evidence of health.
+  MarketMonitorSnapshot snapshot = 4;
+}
+
+message MarketMonitorSnapshot {
+  int64 revision = 1;
+  int64 publisher_epoch = 2;
+  bool publisher_current = 3;
+  // Current visible lease expiry; not proof this snapshot has that authority.
+  int64 publisher_expires_at_ms = 4;
+  int64 published_at_ms = 5;
+  int64 published_valid_until_ms = 6;
+  string published_quality = 7;
+  string published_reason = 8;
+  // Rechecked at evaluated_at_ms; unavailable/stale prices are zero.
+  MarketMonitorReading reading = 9;
+}
+
+message MarketMonitorReading {
+  int64 connection = 1;
+  int64 generation = 2;
+  int64 sequence = 3;
+  string quality = 4;
+  string reason = 5;
+  // Price: quote asset/base unit; quantity: base asset. Decimal strings only.
+  string bid_price = 6;
+  string bid_quantity = 7;
+  string ask_price = 8;
+  string ask_quantity = 9;
+  // Exact arithmetic mid, up to 36 fractional digits.
+  string mid_price = 10;
+  int64 event_time_ms = 11;
+  int64 received_at_ms = 12;
+  int64 evaluated_at_ms = 13;
+  int64 valid_until_ms = 14;
+}

@@ -2,6 +2,8 @@
 
 已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)、[订单列表/详情](ADMIN_ORDERS.md)及[指定订单撤单](ADMIN_CANCELLATIONS.md)的typed接口和实际页面。行情/成交/持仓等其余能力及完整 R08/A27 尚未完成。
 
+[行情监控](ADMIN_MARKETS.md)已提供GET /api/v1/markets和/api/v1/markets/:feedID的具体查询合同；列表必须明确LIVE/REPLAY，可按来源/交易对筛选，当前viewer、no-store和3秒原生期限，实际页面尚未接入。历史发布诊断与当前失效/过期结果分别返回，无写入口或行情/风险授权。
+
 ## 开启入口
 
 `admin_http`是显式可选配置，仅允许api角色、PostgreSQL及字面量loopback HTTP监听。启动借用Deer已有连接，只检查迁移历史，不迁移、不创建用户、不启用交易任务。`cmd/doctor`和实际入口执行同样的管理配置检查。

@@ -92,6 +92,9 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		if err != nil {
 			return nil, err
 		}
+		if err := assembleStrategyMarkets(db, runtime); err != nil {
+			return nil, err
+		}
 	}
 	if cfg.Strategy.ControlEnabled {
 		if err := assembleStrategyControl(db, cfg, runtime); err != nil {
@@ -178,6 +181,15 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 	}
 	runtime.workers = append(runtime.workers, workers...)
 	return runtime, nil
+}
+
+func assembleStrategyMarkets(db *gorm.DB, runtime *Runtime) error {
+	markets, err := repository.NewAdminMarkets(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyMarkets, err = strategygrpc.NewMarketQuery(markets)
+	return err
 }
 
 func assembleStrategyRisk(db *gorm.DB, controlEnabled bool, runtime *Runtime) error {
