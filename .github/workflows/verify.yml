@@ -41,6 +41,8 @@ jobs:
         run: make admin-risk-browser
       - name: Verify actual funded order query browser workflow
         run: make admin-orders-browser
+      - name: Verify actual funded order cancellation browser workflow
+        run: make admin-cancellation-browser
       - name: Verify persistent development resources
         run: make dev-test
       - name: Build pinned toolchain image and verify runtime

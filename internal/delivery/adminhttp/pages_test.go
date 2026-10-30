@@ -56,3 +56,24 @@ func TestAuditPagesRequireOptInAndCanonicalHistoryIdentity(t *testing.T) {
 		t.Fatal("audit page ignored query opt-in")
 	}
 }
+
+func TestCancellationPagesRequireQueriesAndBothCanonicalIdentities(t *testing.T) {
+	hertz := cancellationHTTPFixture(t, &cancellationHTTPClient{}, nil)
+	path := "/strategies/9007199254740994/order-cancellations/9007199254740993"
+	if reply := perform(hertz, "GET", path, ""); reply.Code != 200 || !strings.HasPrefix(string(reply.Header().Peek("Content-Type")), "text/html") {
+		t.Fatal("query-only cancellation deep route refresh did not serve the application", reply.Code)
+	}
+	for _, invalid := range []string{
+		"/strategies/01/order-cancellations/1",
+		"/strategies/1/order-cancellations/0",
+		"/strategies/1/order-cancellations/01",
+		"/strategies/1/order-cancellations/9223372036854775808",
+	} {
+		if reply := perform(hertz, "GET", invalid, ""); reply.Code != 404 {
+			t.Fatal("cancellation page accepted noncanonical scope or identity", reply.Code)
+		}
+	}
+	if reply := perform(cancellationHTTPFixture(t, nil, nil), "GET", path, ""); reply.Code != 404 {
+		t.Fatal("disabled cancellation query exposed a page", reply.Code)
+	}
+}
