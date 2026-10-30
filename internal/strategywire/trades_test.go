@@ -50,6 +50,18 @@ func TestTradeWireKeepsEighteenPlacePricesAndRequiresOriginalPageBindings(t *tes
 	if !ValidTradePage(page, filter) {
 		t.Fatal("exact core fill page rejected")
 	}
+	// Recording timestamps come from different service processes. Their wall
+	// clocks do not establish delivery order; the exact immutable fact does.
+	collected := proto.CloneOf(trade)
+	id := int64(9007199254740997)
+	collected.OrderId = &id
+	collected.PortfolioFact = &strategyv1.TradePortfolioFact{
+		Id:           9007199254740998,
+		RecordedAtMs: collected.RecordedAtMs - 1000,
+	}
+	if !ValidTrade(collected, filter.StrategyID) {
+		t.Fatal("different node clocks hid an otherwise valid collected fact")
+	}
 	for _, change := range []func(*strategyv1.ListStrategyTradesReply){
 		func(p *strategyv1.ListStrategyTradesReply) { p.Trades[0].Id = filter.Page.AfterID },
 		func(p *strategyv1.ListStrategyTradesReply) { p.Trades[0].Side = string(domain.SideBuy) },

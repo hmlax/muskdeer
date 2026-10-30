@@ -454,9 +454,10 @@ func (x *StrategyTrade) GetPortfolioFact() *TradePortfolioFact {
 }
 
 type TradePortfolioFact struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	RecordedAtMs  int64                  `protobuf:"varint,2,opt,name=recorded_at_ms,json=recordedAtMs,proto3" json:"recorded_at_ms,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	// Independent node recording clock; do not infer causality from its ordering.
+	RecordedAtMs  int64 `protobuf:"varint,2,opt,name=recorded_at_ms,json=recordedAtMs,proto3" json:"recorded_at_ms,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }

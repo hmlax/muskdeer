@@ -76,7 +76,7 @@ func ValidTrade(value *strategyv1.StrategyTrade, strategyID int64) bool {
 		return false
 	}
 	if fact := value.PortfolioFact; fact != nil {
-		return value.OrderId != nil && len(fact.ProtoReflect().GetUnknown()) == 0 && fact.Id > 0 && fact.RecordedAtMs >= value.RecordedAtMs
+		return value.OrderId != nil && len(fact.ProtoReflect().GetUnknown()) == 0 && fact.Id > 0 && fact.RecordedAtMs > 0
 	}
 	return true
 }

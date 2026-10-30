@@ -64,5 +64,6 @@ message StrategyTrade {
 
 message TradePortfolioFact {
   int64 id = 1;
+  // Independent node recording clock; do not infer causality from its ordering.
   int64 recorded_at_ms = 2;
 }

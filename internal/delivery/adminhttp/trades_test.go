@@ -79,6 +79,23 @@ func tradeHTTPFixture(t *testing.T, client strategyv1.StrategyTradeQueryClient) 
 	return hertz
 }
 
+func TestTradeHTMLPathsRequireQueryCapabilityAndCanonicalIdentities(t *testing.T) {
+	const prefix = "/strategies/9007199254740995/trades"
+	for _, path := range []string{prefix, prefix + "/9007199254740993"} {
+		if reply := perform(tradeHTTPFixture(t, &tradeHTTPClient{}), "GET", path, ""); reply.Code != 200 || !strings.Contains(reply.Body.String(), "<html") {
+			t.Fatal("trade query page or deep refresh missing", path, reply.Code)
+		}
+		if reply := perform(tradeHTTPFixture(t, nil), "GET", path, ""); reply.Code != 404 {
+			t.Fatal("disabled trade query exposed HTML", reply.Code)
+		}
+	}
+	for _, path := range []string{"/strategies/01/trades", "/strategies/0/trades/1", prefix + "/01", prefix + "/0", prefix + "/9223372036854775808"} {
+		if reply := perform(tradeHTTPFixture(t, &tradeHTTPClient{}), "GET", path, ""); reply.Code != 404 {
+			t.Fatal("noncanonical trade page identity accepted", path, reply.Code)
+		}
+	}
+}
+
 func TestTradeHTTPPreservesStringIdentityExactFeeAndOptionalFacts(t *testing.T) {
 	client := &tradeHTTPClient{}
 	hertz := tradeHTTPFixture(t, client)
@@ -150,7 +167,7 @@ func TestTradeHTTPRejectsCorruptSuccessfulResponsesWithoutPartialData(t *testing
 		func(r *strategyv1.ListStrategyTradesReply) { r.Trades[0].Price = "1e2147483647" },
 		func(r *strategyv1.ListStrategyTradesReply) { r.Trades[0].QuoteNotional = "100" },
 		func(r *strategyv1.ListStrategyTradesReply) { r.Trades[0].FeeAmount = "-1" },
-		func(r *strategyv1.ListStrategyTradesReply) { r.Trades[0].GetPortfolioFact().RecordedAtMs = 1 },
+		func(r *strategyv1.ListStrategyTradesReply) { r.Trades[0].GetPortfolioFact().RecordedAtMs = 0 },
 		func(r *strategyv1.ListStrategyTradesReply) {
 			r.Trades[0].GetPortfolioFact().ProtoReflect().SetUnknown([]byte{0xf8, 7, 1})
 		},

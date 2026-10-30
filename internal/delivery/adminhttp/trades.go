@@ -43,9 +43,8 @@ func (r *Routes) listStrategyTrades(ctx context.Context, request *app.RequestCon
 
 func (r *Routes) getStrategyTrade(ctx context.Context, request *app.RequestContext) {
 	strategy, valid := strategyID(request)
-	raw := request.Param("tradeID")
-	id, err := strconv.ParseInt(raw, 10, 64)
-	if !valid || err != nil || id <= 0 || strconv.FormatInt(id, 10) != raw || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
+	id, idValid := tradePathID(request.Param("tradeID"))
+	if !valid || !idValid || len(request.URI().QueryString()) != 0 || len(request.Request.Body()) != 0 {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
@@ -64,6 +63,11 @@ func (r *Routes) getStrategyTrade(ctx context.Context, request *app.RequestConte
 		err = status.Error(codes.Unavailable, domain.MessageAdminUnavailable)
 	}
 	r.strategyReply(request, reply, err)
+}
+
+func tradePathID(raw string) (int64, bool) {
+	id, err := strconv.ParseInt(raw, 10, 64)
+	return id, err == nil && id > 0 && strconv.FormatInt(id, 10) == raw
 }
 
 func tradeFilterQuery(request *app.RequestContext) (domain.AdminTradeFilter, bool) {

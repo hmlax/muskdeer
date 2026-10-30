@@ -73,6 +73,8 @@ jobs:
         run: make admin-cancellation-browser
       - name: Verify actual independent market monitoring browser workflow
         run: make admin-market-browser
+      - name: Verify actual authoritative trades browser workflow
+        run: make admin-trades-browser
   verify:
     needs: [checks, integration, browsers]
     if: always()
