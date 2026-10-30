@@ -25,6 +25,7 @@ make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；�
 `make admin-cancellation-browser`验证指定订单撤单的确认表单、真实提交后丢回包的原键重试、只读收据深链接，以及撤单待确认期间成交和最终资金结算，见[撤单合同](docs/ADMIN_CANCELLATIONS.md)。
 `make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test及九组管理浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
 指定订单的[管理撤单仓储、控制器、typed API及页面](docs/ADMIN_CANCELLATIONS.md)已交付：持久请求/审计、有效执行者沿原键处理及OMS终态结果。受理不代表订单终止，仍运行的策略可能重新报价；暂停、停止、关闭新风险及平仓语义分别处理。
+管理[行情监控只读仓储](docs/ADMIN_MARKETS.md)已提供来源/交易对/模式隔离、快照与发布者健康的数据库时间重检；具体管理API及页面继续接入，不将绑定存在或历史HEALTHY当作当前健康。
 数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本30含交易对/实例/配置来源身份、typed做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS意图/预算/撤单/outbox、成交inbox/持仓、行情快照/定价基准、最终所选行情门禁、平台/交易对额度、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及[管理操作收据/结果](docs/ADMIN_CONTROL.md)、[策略创建事务收据](docs/ADMIN_CREATION.md)、激活预算同步、[配置发布事务/待激活门禁](docs/ADMIN_PUBLICATION.md)及[策略风险控制仓储/最终开关](docs/ADMIN_RISK.md)，交易表继续增加，见[迁移说明](docs/MIGRATIONS.md)和[参数说明](docs/STRATEGY_PARAMETERS.md)。
 `make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。
 在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 检查现有实现与 PROGRESS，从首个未完成任务持续推进至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。
