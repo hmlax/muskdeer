@@ -8,7 +8,7 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -23,8 +23,36 @@ jobs:
         run: make web-install web-check web-generated-check
       - name: Verify generated code, lint, unit tests and build
         run: make verify
+      - name: Verify persistent development resources
+        run: make dev-test
+      - name: Build pinned toolchain image and verify runtime
+        run: make image-test
+  integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Install pinned generators
+        run: make tools
       - name: Verify isolated infrastructure contracts
         run: make integration
+  browsers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: .go-version
+          cache: false
+      - name: Install pinned generators
+        run: make tools
+      - name: Install pinned administration browser dependencies
+        run: make web-install
       - name: Verify actual administration browser workflow
         run: make admin-browser
       - name: Verify actual strategy administration browser workflow
@@ -43,7 +71,18 @@ jobs:
         run: make admin-orders-browser
       - name: Verify actual funded order cancellation browser workflow
         run: make admin-cancellation-browser
-      - name: Verify persistent development resources
-        run: make dev-test
-      - name: Build pinned toolchain image and verify runtime
-        run: make image-test
+  verify:
+    needs: [checks, integration, browsers]
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Require every verification suite to succeed
+        env:
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+          BROWSERS_RESULT: ${{ needs.browsers.result }}
+        run: |
+          test "$CHECKS_RESULT" = success
+          test "$INTEGRATION_RESULT" = success
+          test "$BROWSERS_RESULT" = success
