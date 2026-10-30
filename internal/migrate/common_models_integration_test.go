@@ -26,6 +26,7 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 		&modelv1.AdminStrategyCreation{},
 		&modelv1.AdminStrategyPublication{},
 		&modelv1.AdminStrategyRiskChange{},
+		&modelv1.AdminOrderCancellation{},
 		&modelv1.Instrument{},
 		&modelv1.StrategyInstance{},
 		&modelv1.StrategyConfigVersion{},

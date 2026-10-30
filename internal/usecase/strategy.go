@@ -12,12 +12,13 @@ import (
 // StrategyDependencies are borrowed business ports. No constructor opens a
 // resource, spawns work, initializes funds or grants trading permissions.
 type StrategyDependencies struct {
-	Leases      domain.LeaseRepository
-	Lifecycle   domain.StrategyLifecycle
-	Environment domain.StrategyEnvironment
-	Actions     domain.StrategyActions
-	Execution   domain.StrategyExecution
-	Market      domain.MarketReader
+	Leases        domain.LeaseRepository
+	Lifecycle     domain.StrategyLifecycle
+	Environment   domain.StrategyEnvironment
+	Actions       domain.StrategyActions
+	Execution     domain.StrategyExecution
+	Market        domain.MarketReader
+	Cancellations domain.StrategyOrderCancellations
 }
 
 // StrategySettings binds one instance to a fresh process incarnation.
@@ -30,9 +31,10 @@ type StrategySettings struct {
 // StrategyController is called serially by its owning Deer worker. Its cursor
 // only schedules observations; all effect authority and uncertainty are durable.
 type StrategyController struct {
-	deps        StrategyDependencies
-	settings    StrategySettings
-	afterAction int64
+	deps              StrategyDependencies
+	settings          StrategySettings
+	afterAction       int64
+	afterCancellation int64
 }
 
 const messageStrategyReobserve = "strategy state observation changed"
@@ -113,6 +115,19 @@ func (s *StrategyController) tick(ctx context.Context) (worked bool, resultErr e
 	handled, err := s.recoverActions(ctx, current, authority)
 	if err != nil || handled {
 		return false, err
+	}
+	// A newly created instance has no order authority until its first config
+	// activation. Existing orders always retain a positive active version.
+	if s.deps.Cancellations != nil && authority.ConfigVersion > 0 {
+		stage = domain.StrategyStageManagementCancel
+		work, err := s.deps.Cancellations.Prepare(ctx, authority, s.afterCancellation)
+		if err != nil {
+			return false, localStrategyFailure(ctx, err)
+		}
+		s.afterCancellation = work.ReceiptID
+		if work.Action != nil {
+			return false, s.dispatch(ctx, *work.Action, authority)
+		}
 	}
 	stage = domain.StrategyStageOrders
 	orders, err := s.currentOrders(ctx, current)

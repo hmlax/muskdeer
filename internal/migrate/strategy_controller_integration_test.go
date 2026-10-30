@@ -296,13 +296,18 @@ func strategyControllerWith(ctx context.Context, t *testing.T, db *gorm.DB, subm
 	if err != nil {
 		t.Fatal(err)
 	}
+	cancellations, err := repository.NewStrategyOrderCancellations(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 	controller, err := usecase.NewStrategyController(usecase.StrategyDependencies{
-		Leases:      leases,
-		Lifecycle:   lifecycle,
-		Environment: environment,
-		Actions:     actions,
-		Execution:   execution,
-		Market:      market,
+		Leases:        leases,
+		Lifecycle:     lifecycle,
+		Environment:   environment,
+		Actions:       actions,
+		Execution:     execution,
+		Market:        market,
+		Cancellations: cancellations,
 	}, usecase.StrategySettings{
 		StrategyID: submit.Input.Authority.StrategyID,
 		OwnerID:    owner,

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// AdminOrderCancellation retains an explicit management request and its proof.
+message AdminOrderCancellation {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 actor_user_id = 5 [(tagger.tags) = "gorm:\"column:actor_user_id;type:bigint;not null;uniqueIndex:uk_admin_order_cancellation_key\""];
+  int64 actor_session_id = 6 [(tagger.tags) = "gorm:\"column:actor_session_id;type:bigint;not null\""];
+  int64 strategy_instance_id = 7 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null\""];
+  int64 order_intent_id = 8 [(tagger.tags) = "gorm:\"column:order_intent_id;type:bigint;not null\""];
+  int64 audit_id = 9 [(tagger.tags) = "gorm:\"column:audit_id;type:bigint;not null;uniqueIndex:uk_admin_order_cancellation_audit\""];
+  string idempotency_key = 10 [(tagger.tags) = "gorm:\"column:idempotency_key;type:varchar(64);not null;uniqueIndex:uk_admin_order_cancellation_key\""];
+  string request_fingerprint = 11 [(tagger.tags) = "gorm:\"column:request_fingerprint;type:char(64);not null\""];
+  int64 expected_order_revision = 12 [(tagger.tags) = "gorm:\"column:expected_order_revision;type:bigint;not null\""];
+  string reason = 13 [(tagger.tags) = "gorm:\"column:reason;type:varchar(256);not null\""];
+  string state = 14 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+  string outcome_code = 15 [(tagger.tags) = "gorm:\"column:outcome_code;type:varchar(32);not null\""];
+  int64 revision = 16 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  optional int64 action_id = 17 [(tagger.tags) = "gorm:\"column:action_id;type:bigint\""];
+  optional int64 completed_at = 18 [(tagger.tags) = "gorm:\"column:completed_at;type:bigint\""];
+  optional int64 observed_order_revision = 19 [(tagger.tags) = "gorm:\"column:observed_order_revision;type:bigint\""];
+  optional string observed_order_state = 20 [(tagger.tags) = "gorm:\"column:observed_order_state;type:varchar(24)\""];
+}
