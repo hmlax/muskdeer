@@ -60,21 +60,23 @@ type sessionReply struct {
 
 // Routes owns immutable delivery values and borrows the sole auth instance.
 type Routes struct {
-	auth          domain.AdminAuth
-	strategies    strategyv1.StrategyManagementClient
-	catalog       strategyv1.StrategyCatalogClient
-	audits        strategyv1.StrategyAuditClient
-	orders        strategyv1.StrategyOrderQueryClient
-	riskQueries   strategyv1.StrategyRiskQueryClient
-	riskControls  strategyv1.StrategyRiskControlClient
-	controls      strategyv1.StrategyControlClient
-	creation      strategyv1.StrategyCreationClient
-	publication   strategyv1.StrategyPublicationClient
-	origin        string
-	host          string
-	secure        bool
-	sessionCookie string
-	csrfCookie    string
+	auth                 domain.AdminAuth
+	strategies           strategyv1.StrategyManagementClient
+	catalog              strategyv1.StrategyCatalogClient
+	audits               strategyv1.StrategyAuditClient
+	orders               strategyv1.StrategyOrderQueryClient
+	riskQueries          strategyv1.StrategyRiskQueryClient
+	riskControls         strategyv1.StrategyRiskControlClient
+	cancellationQueries  strategyv1.StrategyOrderCancellationQueryClient
+	cancellationControls strategyv1.StrategyOrderCancellationControlClient
+	controls             strategyv1.StrategyControlClient
+	creation             strategyv1.StrategyCreationClient
+	publication          strategyv1.StrategyPublicationClient
+	origin               string
+	host                 string
+	secure               bool
+	sessionCookie        string
+	csrfCookie           string
 }
 
 // New constructs authentication routes from an already resolved fixed origin.
@@ -142,6 +144,12 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	}
 	if r.riskControls != nil {
 		hertz.POST("/api/v1/strategies/:strategyID/risk", r.changeStrategyRisk)
+	}
+	if r.cancellationQueries != nil {
+		hertz.GET("/api/v1/strategies/:strategyID/order-cancellations/:cancellationID", r.getOrderCancellation)
+	}
+	if r.cancellationControls != nil {
+		hertz.POST("/api/v1/strategies/:strategyID/orders/:orderID/cancellations", r.requestOrderCancellation)
 	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {

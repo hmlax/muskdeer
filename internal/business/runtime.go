@@ -35,18 +35,20 @@ const (
 
 // Runtime owns only assembled values. Deer owns every connection and task.
 type Runtime struct {
-	execution           *executiongrpc.Server
-	market              *marketgrpc.Server
-	strategy            *strategygrpc.Server
-	strategyCatalog     *strategygrpc.CatalogServer
-	strategyAudit       *strategygrpc.AuditServer
-	strategyOrders      *strategygrpc.OrderQueryServer
-	strategyRiskQuery   *strategygrpc.RiskQueryServer
-	strategyRiskControl *strategygrpc.RiskControlServer
-	strategyControl     *strategygrpc.ControlServer
-	strategyCreation    *strategygrpc.CreationServer
-	strategyPublication *strategygrpc.PublicationServer
-	workers             []deer.Worker
+	execution                   *executiongrpc.Server
+	market                      *marketgrpc.Server
+	strategy                    *strategygrpc.Server
+	strategyCatalog             *strategygrpc.CatalogServer
+	strategyAudit               *strategygrpc.AuditServer
+	strategyOrders              *strategygrpc.OrderQueryServer
+	strategyRiskQuery           *strategygrpc.RiskQueryServer
+	strategyRiskControl         *strategygrpc.RiskControlServer
+	strategyCancellationQuery   *strategygrpc.CancellationQueryServer
+	strategyCancellationControl *strategygrpc.CancellationControlServer
+	strategyControl             *strategygrpc.ControlServer
+	strategyCreation            *strategygrpc.CreationServer
+	strategyPublication         *strategygrpc.PublicationServer
+	workers                     []deer.Worker
 }
 
 // New assembles explicit L1 mode and only reads the exact migration ledger.
@@ -116,6 +118,12 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	}
 	if r.strategyRiskControl != nil {
 		strategyv1.RegisterStrategyRiskControlServer(registrar, r.strategyRiskControl)
+	}
+	if r.strategyCancellationQuery != nil {
+		strategyv1.RegisterStrategyOrderCancellationQueryServer(registrar, r.strategyCancellationQuery)
+	}
+	if r.strategyCancellationControl != nil {
+		strategyv1.RegisterStrategyOrderCancellationControlServer(registrar, r.strategyCancellationControl)
 	}
 	if r.strategyCreation != nil {
 		strategyv1.RegisterStrategyCreationServer(registrar, r.strategyCreation)

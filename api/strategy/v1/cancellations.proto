@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// Query remains available to current viewers when management reads are enabled.
+service StrategyOrderCancellationQuery {
+  rpc GetOrderCancellation(GetOrderCancellationRequest) returns (OrderCancellationReceipt);
+}
+
+// Control is registered only with explicit management write opt-in.
+service StrategyOrderCancellationControl {
+  rpc RequestOrderCancellation(RequestOrderCancellationRequest) returns (OrderCancellationReceipt);
+}
+
+message OrderCancellationInput {
+  int64 expected_order_revision = 1;
+  string reason = 2;
+}
+
+message RequestOrderCancellationRequest {
+  AdminSession session = 1;
+  string csrf_token = 2;
+  string idempotency_key = 3;
+  int64 strategy_id = 4;
+  int64 order_id = 5;
+  OrderCancellationInput input = 6;
+}
+
+message GetOrderCancellationRequest {
+  AdminSession session = 1;
+  int64 strategy_id = 2;
+  int64 cancellation_id = 3;
+}
+
+// Acceptance is distinct from completion. Observation is absent until terminal.
+message OrderCancellationReceipt {
+  int64 id = 1;
+  int64 actor_user_id = 2;
+  int64 strategy_id = 3;
+  int64 order_id = 4;
+  int64 expected_order_revision = 5;
+  string reason = 6;
+  string state = 7;
+  string outcome_code = 8;
+  int64 revision = 9;
+  int64 created_at_ms = 10;
+  optional int64 completed_at_ms = 11;
+  OrderCancellationObservation observation = 12;
+}
+
+// FILLED satisfies the terminal objective but does not assert a canceled fill.
+message OrderCancellationObservation {
+  int64 order_revision = 1;
+  string state = 2;
+}

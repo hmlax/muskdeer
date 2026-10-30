@@ -1,6 +1,6 @@
 # 管理页面与身份 HTTP
 
-已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)及[订单列表/详情](ADMIN_ORDERS.md)的typed接口和实际页面。独立撤单、行情/成交/持仓等其余能力及完整 R08/A27 尚未完成。
+已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)及[订单列表/详情](ADMIN_ORDERS.md)的typed接口和实际页面。[指定订单撤单](ADMIN_CANCELLATIONS.md)已有typed接口，管理页面、行情/成交/持仓等其余能力及完整 R08/A27 尚未完成。
 
 ## 开启入口
 
@@ -55,6 +55,7 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 | GET /api/v1/audits/:auditID | GetAuditReply | 正规范int64审计ID，无query |
 | GET /api/v1/strategies/:strategyID/orders | ListStrategyOrdersReply | 明确策略；after_id/limit同上，可选state/open_only，见订单合同 |
 | GET /api/v1/strategies/:strategyID/orders/:orderID | GetStrategyOrderReply | 正规范int64策略及OMS订单ID，无query |
+| GET /api/v1/strategies/:strategyID/order-cancellations/:cancellationID | OrderCancellationReceipt | 正规范int64策略及收据ID，无body/query；当前viewer |
 
 调用使用唯一现有会话Cookie，API自行构造AdminSession，业务服务在同一只读快照内重新验证viewer权利；没有将API身份结果当作业务授权。拒绝GET body、重复/未知参数、非规范整数、溢出/负游标。不存在资源404、会话无效401并清cookie、角色拒绝403、依赖/协议故障503；后端私有错误不返回。路由不开放POST等写操作，也不启动交易。
 
@@ -74,6 +75,7 @@ P07.28的`/audits`和`/audits/:auditID`与策略页面共用embed资产和查询
 |---|---|---|
 | POST /api/v1/strategies/:strategyID/control | 新受理202；已终态原键回放200；Location指向具体操作 | 固定Origin、唯一Cookie/独立X-CSRF-Token/Idempotency-Key、严格JSON、当前operator及revision |
 | GET /api/v1/operations/:operationID | 200，typed StrategyOperation及可空持久观察 | 唯一会话Cookie、当前viewer；不隐式执行控制或写结果 |
+| POST /api/v1/strategies/:strategyID/orders/:orderID/cancellations | ACCEPTED为202，终态原键重放200；Location指向收据API | 明确单订单及确认revision；唯一Cookie/CSRF/幂等键及当前operator/admin，见撤单合同 |
 
 POST JSON只接受action、expected_revision、reason三个字符串。动作使用strategy.start/resume/pause/stop；revision为正规范int64字符串，原因规范化后1–256 UTF-8字节，幂等键16–64个已允许ASCII字符。拒绝数字revision、重复/未知/null字段、尾随数据、超过2048字节body及任何query；会话/CSRF不能通过业务JSON伪造。操作ID同样要求正规范int64，无GET body/query。停止不等于平仓或取消流程完成，实际业务证明见[管理控制](ADMIN_CONTROL.md)。
 

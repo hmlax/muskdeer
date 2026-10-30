@@ -67,6 +67,8 @@ accountIds为1–16个不重复的已有模拟账户，启动只读检查账户�
 
 management_enabled开启typed查询；额外control_enabled才注册管理控制gRPC及strategy.operations结果工作器。该工作器按页公平观测已受理结果，不下单/改资金，不以控制节点在线代替当前运行owner。可在无accountIds的独立管理节点开启；交易账户循环仍必须显式绑定。详见[管理控制](ADMIN_CONTROL.md)。
 
+P07.36沿同一开关分别注册指定订单撤单查询/提交服务，复用原数据库和API连接；不增加工作器或账户授权。无账户管理节点保存的请求由实际账户控制器在当前所有权下处理，已尝试动作沿原幂等键恢复；追踪ID与决策键分别表达关联元数据和业务身份，见[撤单合同](ADMIN_CANCELLATIONS.md)。
+
 运行中新建实例自动被下一轮发现，进程内controller map只保存计划/观察游标，不提供独占授权；每轮以真实lease/fence为准。缺配置/投影/预算/健康来源保持恢复，不制造资源。交易调用通过当前execution owner的Nacos/mTLS客户端；所选行情读取不换源。状态/配置revision并发冲突等待下一轮重新读取，交易业务键冲突不因此重发。策略详情见 [控制器](STRATEGY_CONTROLLER.md)。
 
 ## 启动与交易路径

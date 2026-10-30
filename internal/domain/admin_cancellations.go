@@ -69,7 +69,17 @@ type AdminCancellationReceipt struct {
 
 // AdminOrderCancellations authenticates management requests and historical reads.
 type AdminOrderCancellations interface {
+	AdminCancellationWriter
+	AdminCancellationReader
+}
+
+// AdminCancellationWriter revalidates mutation authority inside the transaction.
+type AdminCancellationWriter interface {
 	Request(context.Context, string, string, AdminCancellationRequest) (AdminCancellationReceipt, error)
+}
+
+// AdminCancellationReader observes durable results with current viewer authority.
+type AdminCancellationReader interface {
 	Receipt(context.Context, string, int64, int64) (AdminCancellationReceipt, error)
 }
 

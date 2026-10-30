@@ -5,12 +5,16 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
-const maxActionObservationsPerTick = 8
+const (
+	maxActionObservationsPerTick = 8
+	strategyActionRequestPrefix  = "strategy.action."
+)
 
 func (s *StrategyController) recoverActions(ctx context.Context, spec domain.StrategySpec, authority domain.StrategyAuthority) (bool, error) {
 	actions, err := s.deps.Actions.Active(ctx, spec.ID)
@@ -76,9 +80,12 @@ func (s *StrategyController) dispatch(ctx context.Context, pending domain.Strate
 	if err != nil {
 		return localStrategyFailure(ctx, err)
 	}
+	// Decision keys may contain ':' or exceed correlation metadata bounds.
+	// Trace the stable journal identity without changing any business RPC key.
+	requestID := strategyActionRequestPrefix + strconv.FormatInt(action.ID, 10)
 	if action.Plan.Kind == domain.StrategyActionSubmit {
 		_, err = s.deps.Execution.Submit(ctx, domain.OrderInput{
-			RequestID:      action.Plan.Key,
+			RequestID:      requestID,
 			IdempotencyKey: action.IdempotencyKey,
 			Authority:      authority,
 			AccountID:      action.Plan.AccountID,
@@ -92,7 +99,7 @@ func (s *StrategyController) dispatch(ctx context.Context, pending domain.Strate
 		})
 	} else {
 		_, err = s.deps.Execution.Cancel(ctx, domain.CancelInput{
-			RequestID:      action.Plan.Key,
+			RequestID:      requestID,
 			IdempotencyKey: action.IdempotencyKey,
 			Authority:      authority,
 			AccountID:      action.Plan.AccountID,

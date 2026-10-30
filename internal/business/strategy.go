@@ -81,6 +81,9 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		if err := assembleStrategyRisk(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
 			return nil, err
 		}
+		if err := assembleStrategyCancellations(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
+			return nil, err
+		}
 		orders, err := repository.NewAdminOrders(db)
 		if err != nil {
 			return nil, err
@@ -187,6 +190,19 @@ func assembleStrategyRisk(db *gorm.DB, controlEnabled bool, runtime *Runtime) er
 		return err
 	}
 	runtime.strategyRiskControl, err = strategygrpc.NewRiskControl(risks)
+	return err
+}
+
+func assembleStrategyCancellations(db *gorm.DB, controlEnabled bool, runtime *Runtime) error {
+	requests, err := repository.NewAdminOrderCancellations(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyCancellationQuery, err = strategygrpc.NewCancellationQuery(requests)
+	if err != nil || !controlEnabled {
+		return err
+	}
+	runtime.strategyCancellationControl, err = strategygrpc.NewCancellationControl(requests)
 	return err
 }
 
