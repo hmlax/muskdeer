@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyPortfolioQuery is the management node's account read model. It does
+// not run the portfolio consumer, rebuild accounts, or authorize new risk.
+service StrategyPortfolioQuery {
+  rpc ListPortfolios(ListPortfoliosRequest) returns (ListPortfoliosReply);
+  rpc GetPortfolio(GetPortfolioRequest) returns (GetPortfolioReply);
+}
+
+message ListPortfoliosRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+  string account_id = 4;
+  int64 instrument_id = 5;
+}
+
+message ListPortfoliosReply {
+  repeated AccountPortfolio portfolios = 1;
+  int64 next_after_id = 2;
+}
+
+message GetPortfolioRequest {
+  AdminSession session = 1;
+  int64 portfolio_id = 2;
+}
+
+message GetPortfolioReply {
+  AccountPortfolio portfolio = 1;
+}
+
+// AccountPortfolio covers all strategies sharing the account, without invented
+// per-strategy attribution. Independent observations share one read snapshot.
+message AccountPortfolio {
+  int64 id = 1;
+  string execution_venue = 2;
+  string symbol = 3;
+  string account_id = 4;
+  int64 instrument_id = 5;
+  string base_asset = 6;
+  string quote_asset = 7;
+  bool account_enabled = 8;
+  int64 account_revision = 9;
+  StoredPortfolioProjection projection = 10;
+  PortfolioFactProgress source = 11;
+  PortfolioFactProgress collected = 12;
+  // Missing core rows stay absent, never synthetic zero funds.
+  PortfolioCoreBalance core_base_balance = 13;
+  PortfolioCoreBalance core_quote_balance = 14;
+  int64 created_at_ms = 15;
+  int64 updated_at_ms = 16;
+}
+
+message StoredPortfolioProjection {
+  string opening_quantity = 1;
+  string opening_cash_quote = 2;
+  string opening_cost_quote = 3;
+  string quantity = 4;
+  string cash_quote = 5;
+  string cost_quote = 6;
+  string realized_pnl_quote = 7;
+  string fees_quote = 8;
+  int64 last_source_sequence = 9;
+  // Last producer diagnostic; it may predate current source/core observations.
+  // It is neither a current reconciliation certificate nor a risk permit.
+  bool stored_reconciled = 10;
+  int64 revision = 11;
+  string error_code = 12;
+}
+
+// PortfolioFactProgress is a count and a global source ID, which may have gaps.
+// Equality between source and collected counts does not prove reconciliation.
+message PortfolioFactProgress {
+  int64 count = 1;
+  int64 latest_source_sequence = 2;
+}
+
+message PortfolioCoreBalance {
+  int64 id = 1;
+  string asset = 2;
+  string available = 3;
+  string frozen = 4;
+  int64 revision = 5;
+  // An independent node recording clock, without cross-node time ordering.
+  int64 updated_at_ms = 6;
+}
