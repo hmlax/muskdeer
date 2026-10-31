@@ -21,7 +21,8 @@
     "browser-cancellations": "node e2e/cancellations.mjs",
     "browser-markets": "node e2e/markets.mjs",
     "browser-trades": "node e2e/trades.mjs",
-    "browser-portfolios": "node e2e/portfolios.mjs"
+    "browser-portfolios": "node e2e/portfolios.mjs",
+    "browser-risk-events": "node e2e/risk-events.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

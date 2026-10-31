@@ -77,6 +77,8 @@ jobs:
         run: make admin-trades-browser
       - name: Verify actual account portfolio browser workflow
         run: make admin-portfolios-browser
+      - name: Verify actual immutable risk history browser workflow
+        run: make admin-risk-events-browser
   verify:
     needs: [checks, integration, browsers]
     if: always()

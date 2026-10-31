@@ -34,56 +34,14 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.portfolios != nil {
 		paths = append(paths, "/portfolios", "/portfolios/:portfolioID")
 	}
+	if r.riskEvents != nil {
+		paths = append(paths, "/risk-events", "/risk-events/:eventID")
+	}
 	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
-			if path == "/portfolios/:portfolioID" {
-				if _, valid := portfolioPathID(request.Param("portfolioID")); !valid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
-			}
-			if strings.HasPrefix(path, "/strategies/:strategyID/trades") {
-				_, strategyValid := strategyID(request)
-				idValid := true
-				if path == "/strategies/:strategyID/trades/:tradeID" {
-					_, idValid = tradePathID(request.Param("tradeID"))
-				}
-				if !strategyValid || !idValid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
-			}
-			if path == "/markets/:feedID" {
-				if _, valid := marketPathID(request.Param("feedID")); !valid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
-			}
-			if path == "/strategies/:strategyID/order-cancellations/:cancellationID" {
-				_, strategyValid := strategyID(request)
-				_, idValid := cancellationPathID(request.Param("cancellationID"))
-				if !strategyValid || !idValid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
-			}
-			if path == "/strategies/:strategyID" {
-				if _, valid := strategyID(request); !valid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
-			}
-			if path == "/operations/:operationID" {
-				if _, valid := operationID(request); !valid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
-			}
-			if path == "/audits/:auditID" {
-				if _, valid := auditID(request); !valid {
-					request.String(http.StatusNotFound, "not found")
-					return
-				}
+			if !validPageIdentity(path, request) {
+				request.String(http.StatusNotFound, "not found")
+				return
 			}
 			page, err := adminui.File("index.html")
 			if err != nil {
@@ -109,4 +67,40 @@ func (r *Routes) pages(hertz *server.Hertz) {
 		}
 		request.Data(http.StatusOK, contentType, data)
 	})
+}
+
+func validPageIdentity(path string, request *app.RequestContext) bool {
+	switch path {
+	case "/risk-events/:eventID":
+		_, valid := riskEventPathID(request.Param("eventID"))
+		return valid
+	case "/portfolios/:portfolioID":
+		_, valid := portfolioPathID(request.Param("portfolioID"))
+		return valid
+	case "/markets/:feedID":
+		_, valid := marketPathID(request.Param("feedID"))
+		return valid
+	case "/strategies/:strategyID/trades", "/strategies/:strategyID/trades/:tradeID":
+		_, strategyValid := strategyID(request)
+		idValid := true
+		if path == "/strategies/:strategyID/trades/:tradeID" {
+			_, idValid = tradePathID(request.Param("tradeID"))
+		}
+		return strategyValid && idValid
+	case "/strategies/:strategyID/order-cancellations/:cancellationID":
+		_, strategyValid := strategyID(request)
+		_, idValid := cancellationPathID(request.Param("cancellationID"))
+		return strategyValid && idValid
+	case "/strategies/:strategyID":
+		_, valid := strategyID(request)
+		return valid
+	case "/operations/:operationID":
+		_, valid := operationID(request)
+		return valid
+	case "/audits/:auditID":
+		_, valid := auditID(request)
+		return valid
+	default:
+		return true
+	}
 }

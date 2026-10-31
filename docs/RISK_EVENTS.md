@@ -1,6 +1,6 @@
 # 风险快照诊断变更历史
 
-P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；尚无风险历史页面，不把当前快照拼成未曾保存的过去。
+P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；P07.50交付风险历史页面，不把当前快照拼成未曾保存的过去。
 
 ## 记录含义
 
@@ -49,4 +49,12 @@ Hertz只读入口：
 
 JSON沿标准ProtoJSON输出，所有int64身份、修订、序列、时长与毫秒时间均为string；可空market_feed_id缺席时省略，不制造0或null标量。记录许可位和对账位仍为bool，旧READY/已过期记录按原样传输。所有权、会话、请求键和内部错误均不作为事件业务字段返回。风险历史没有写入口或从旧记录恢复许可的能力。
 
-来源测试见[P07.47](validation/P07-47.md)，仓储见[P07.48](validation/P07-48.md)，传输见[P07.49](validation/P07-49.md)。51个生成文件/34个持久模型/schema31，后续继续页面；完整R08/A27/L1未完成。
+## 风险历史页面
+
+P07.50提供`/risk-events`列表及`/risk-events/:eventID`独立详情、查询导航和策略详情入口。viewer/operator/admin共用当前后端查询权限；风险历史没有写按钮。六种精确筛选显式应用，1/20/50条分页，筛选及页长写URL并支持刷新，详情支持未登录深链接恢复。源移除或策略退役不隐藏历史，未知历史范围显示空页，详情不存在明确提示。
+
+页面分别展示记录起点/诊断变化/源移除、记录时间与源快照/配置/来源，记录许可位/对账位/原因和观察/截止时间，以及当时的行情引用。旧READY显示“曾判为就绪”，保留true/false原文与“历史诊断/不授予当前风险”提示。无绑定显示“未记录”，高位身份/序列仍为string/BigInt；超出安全日期范围按原数字显示，不做风险时效判断。
+
+六秒取消、错误清空旧数据、401回登录，读取不自动轮询、不存储业务数据或恢复许可。1440/800/390宽度及高位字符串截图验证无整页溢出；导航按完整链接换行。第13组`make admin-risk-events-browser`已接CI/e2e，真实浏览器验证与范围见[P07.50](validation/P07-50.md)。
+
+来源测试见[P07.47](validation/P07-47.md)，仓储见[P07.48](validation/P07-48.md)，传输见[P07.49](validation/P07-49.md)。51个生成文件/34个持久模型/schema31保持，运行概览及其余P07–P10继续；完整R08/A27/L1未完成。

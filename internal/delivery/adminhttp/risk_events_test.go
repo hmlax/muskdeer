@@ -76,6 +76,22 @@ func riskEventHTTPFixture(t *testing.T, client strategyv1.StrategyRiskEventQuery
 	return hertz
 }
 
+func TestRiskEventHTMLPathsRequireQueryCapabilityAndCanonicalIdentity(t *testing.T) {
+	for _, path := range []string{"/risk-events", "/risk-events/9007199254740993"} {
+		if reply := perform(riskEventHTTPFixture(t, &riskEventHTTPClient{}), "GET", path, ""); reply.Code != 200 || !strings.Contains(reply.Body.String(), "<html") {
+			t.Fatal("risk history page or deep refresh missing", path, reply.Code)
+		}
+		if reply := perform(riskEventHTTPFixture(t, nil), "GET", path, ""); reply.Code != 404 {
+			t.Fatal("disabled risk history exposed HTML", reply.Code)
+		}
+	}
+	for _, path := range []string{"/risk-events/01", "/risk-events/0", "/risk-events/9223372036854775808"} {
+		if reply := perform(riskEventHTTPFixture(t, &riskEventHTTPClient{}), "GET", path, ""); reply.Code != 404 {
+			t.Fatal("invalid history HTML identity accepted", path, reply.Code)
+		}
+	}
+}
+
 func TestRiskEventHTTPKeepsHighIdentityOldFlagsAndOptionalBinding(t *testing.T) {
 	client := &riskEventHTTPClient{}
 	path := riskEventHTTPPath + "?limit=1&after_id=9007199254740992&strategy_id=2&account_id=risk.account&instrument_id=1&market_data_source=okx&kind=CHANGED&reason_code=READY"
