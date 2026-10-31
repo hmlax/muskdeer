@@ -25,6 +25,17 @@ const (
 	StrategyStateError      StrategyState = "ERROR"
 )
 
+// ValidStrategyState accepts stored lifecycle identifiers, not execution grants.
+func ValidStrategyState(state StrategyState) bool {
+	switch state {
+	case StrategyStateCreated, StrategyStateStarting, StrategyStateRecovering, StrategyStateRunning,
+		StrategyStatePausing, StrategyStatePaused, StrategyStateStopping, StrategyStateStopped, StrategyStateError:
+		return true
+	default:
+		return false
+	}
+}
+
 // Instrument metadata and simulated execution identifiers.
 const (
 	InstrumentStatusTrading = "TRADING"
