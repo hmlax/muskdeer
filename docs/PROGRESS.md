@@ -1203,3 +1203,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 红测/检查：入口先红404；API覆盖明确仍是31个/api/v1操作，文档路径有独立delivery覆盖。首lint要求测试分支用tagged switch，修正而不降低门禁。完整make verify通过：Go1.27.3/doctor/contract/生成/Hertz/fmt/lint/govet 0 issues/政策/22工具/全包单元/race/构建，HTTP0.514/race4.152秒、schema race2.119秒；拒绝歧义/禁用/私有依赖/坏身份/拒绝及撤销会话均通过。
 - 原生：16项实际基础设施/独立API和strategy/Nacos/mTLS/race22.950秒全过，新合同1.65秒。下载字节与生成物相同；24类GET分别为19类200和5类按缺资源/关闭controls的404，登录/会话/无体Logout及参数400也验证。真实两模板/两源、审计、持仓、行情、概览与风险符合下载schema；修改实际载荷副本的数值类型分别被拒绝，非真实服务故障。撤销后恢复旧Cookie下载401且不泄露文档；两策略/风险Proto、USDT1000/冻结0、0OMS预留/订单/成交保持，自有资源清理。
 - 交付/后续：e0c01438f419ae42ddab69f2fdef2680d7f1b608已推送main并核对SHA，基线[CI41186979697](https://github.com/hmlax/muskdeer/actions/runs/41186979697)最近in_progress。文档/链接/逐文件复审及独立暂存检查通过后立即提交推送核对SHA，再继续紧急撤单范围、独立受限平仓及其余P07/P08–P10。完整A27/L1未完成；本地未重复默认全量交易/14浏览器/镜像/持久开发/固定30分钟，P11仍缺真实合同/环境，无生产迁移、真实资金或部署。
+
+
+## 2026-10-31：P07.58 策略紧急撤单领域请求与进度
+
+- 改动：应用domain-modeling，明确strategy范围及独立风险修订确认、目标收录和pending_submissions；Normalize拒绝缺省/账户/全局扩展，State区分未收录完、无OMS身份提交、待确认目标、已归结失败与全终态。UNKNOWN不计成功/失败，FILLED不冒称CANCELED或平仓，历史结果不授予风险；见[范围合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.58](validation/P07-58.md)。仅领域组件，无持久化/接口/执行能力，54生成/34模型/schema31和OpenAPI/前端资产保持。
+- 红测/验证：缺领域定义先编译失败；选择性单元0.276秒、字段复审改为涵盖全部提交的PendingSubmissions后完整domain单元0.236秒通过。高位身份/风险修订、原因UTF-8字节、明确范围及计数一致性/最大边界/溢出测试通过。完整make verify通过：Go1.27.3/doctor/contract/生成/Hertz/fmt/lint/govet 0 issues/政策/22工具/全包单元/race/构建，domain race1.345秒；改名后另做最终lint，四资产SHA不变。
+- 交付/后续：f535c1b5f374e18c5b1e381f3abcd3d2f9ef105d已推送main并核对SHA，[CI41187483413](https://github.com/hmlax/muskdeer/actions/runs/41187483413)最近in_progress，未预报。文档/链接/逐文件复审及独立暂存检查通过后单独提交推送并核对SHA，继续原子关闭风险与批次持久化、范围执行和独立受限平仓。原生/浏览器/镜像/全量integration/持久开发/固定30分钟本步未运行，P07/A27/L1未完成；P08–P10继续，P11缺真实合同/环境，无生产迁移或真实资金。
