@@ -1,6 +1,6 @@
 # 运行概览
 
-P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；概览页面和服务健康仍待后续。服务健康另接现有Deer实际gRPC readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
+P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，其HTTP及概览页面继续后续。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
 
 ## 策略数据库观测
 
@@ -32,4 +32,18 @@ api在strategy_queries_enabled下借用既有strategy连接提供GET `/api/v1/ov
 
 gRPC映射与HTTP两端校验统计和、正的已知状态分组及升序唯一性/溢出、每页状态/请求目标的计数下界、筛选绑定/ID游标和可空生效配置、租约零槽/期限/匹配代次。第一页宽度和后续游标须与全范围统计一致；后页可为空且total仍大于零。精确毫秒转换前拒绝亚毫秒时间，非法/未知成功整页拒绝，不泄露部分计数。原生进程、精度和边界证据见[P07.52](validation/P07-52.md)。
 
-下一步接真实服务观测和概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。
+## 服务观测读取器
+
+AdminServices.Observe按api/market/strategy/execution/portfolio/cron固定角色读取，不接受任意主机或RPC目标。每页1–4个实例，按实例ID升序游标；总数独立于游标，不把当前页探测结果外推为全部服务健康。读取前后都调用当前持久会话Identity，校验viewer及同一user/session；撤销、角色丢失、会话替换或父取消整次丢弃，不返回部分成员和时间。
+
+api来源LOCAL_API仅代表处理请求的这个API，total=1，不枚举全部API副本。借用其唯一Deer.CheckReady，包含实际监听、工作器及已配置依赖检查；不使用仅表示生命周期的Ready。其他角色来源NACOS_HEALTHY_GRPC，借用既有发现客户端按当前namespace/group/cluster读取健康、启用的gRPC注册；total不包含注册系统排除的节点，也不是部署的进程总数。
+
+仅对既有RPC allowlist明确允许的角色，通过既有factory及指定InstanceID调用标准gRPC health Check；每次RPC由factory再次新鲜解析所需实例、执行现有mTLS服务身份校验、关闭该次自有socket，实例消失不回退其他节点。不自动增加allowlist、替换证书或构造新连接池。未配置的探测为PROBE_NOT_CONFIGURED且无ProbedAt，仍保留发现元数据。
+
+READY/NOT_READY/UNKNOWN分别来自实际readiness结果，失败、子期限、权限拒绝及RPC容量限制分别为PROBE_FAILED/PROBE_TIMEOUT/PROBE_DENIED/PROBE_CAPACITY；未知协议字段/状态不标就绪，原始provider错误/地址不公开。本API readiness的依赖失败为NOT_READY，子期限仍单独标示。READY只表示该次readiness检查，不能替代行情、对账、风险或最终下单fencing。
+
+整个观测最长3秒，前后身份各400毫秒、发现400毫秒、每次探测350毫秒；逐项顺序检查且最多4项，无goroutine、后台轮询、订阅、缓存或保留请求上下文。全局资源容量/清理仍归Deer及原factory。构造只校验/快照元数据与allowlist，不联网、迁移或启动工作。
+
+MembershipObservedAt和各ProbedAt来自API本地时钟、独立采样到毫秒；成员读取与后续RPC不是原子集群快照，时钟也不作租约依据。DeclaredVersion只是注册/本地配置声明，不是RPC认证的构建版本；mTLS验证服务身份，不证明某实例名对应的进程incarnation。原记录在探测期间可能改变，不将注册ID与策略runtime owner前缀关联为当前所有权。
+
+实现、原生进程与检查范围见[P07.53](validation/P07-53.md)。下一步接服务观测HTTP和概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。
