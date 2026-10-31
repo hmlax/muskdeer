@@ -63,7 +63,7 @@ func TestStrategyDesiredTargetUpgradeRetainsLegacyPauseAndRunRequests(t *testing
 			t.Fatal(err)
 		}
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 30 {
+	if version, err := Apply(ctx, db); err != nil || version != 31 {
 		var databaseError *pgconn.PgError
 		if errors.As(err, &databaseError) {
 			t.Logf("upgrade database failure: code=%s constraint=%s routine=%s", databaseError.Code, databaseError.ConstraintName, databaseError.Routine)

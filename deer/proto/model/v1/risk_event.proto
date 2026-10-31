@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// RiskSnapshotEvent is immutable diagnostic history recorded in the source
+// transaction. Flags/expiry are historical inputs, never a current risk permit.
+message RiskSnapshotEvent {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement;index:idx_risk_event_strategy,priority:2;index:idx_risk_event_account,priority:2;index:idx_risk_event_snapshot,priority:2\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 risk_snapshot_id = 5 [(tagger.tags) = "gorm:\"column:risk_snapshot_id;type:bigint;not null;index:idx_risk_event_snapshot,priority:1\""];
+  int64 risk_snapshot_revision = 6 [(tagger.tags) = "gorm:\"column:risk_snapshot_revision;type:bigint;not null\""];
+  // BASELINE is an observed recording start, not an invented old transition.
+  string kind = 7 [(tagger.tags) = "gorm:\"column:kind;type:varchar(16);not null\""];
+  int64 strategy_instance_id = 8 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;index:idx_risk_event_strategy,priority:1\""];
+  string account_id = 9 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;index:idx_risk_event_account,priority:1\""];
+  int64 instrument_id = 10 [(tagger.tags) = "gorm:\"column:instrument_id;type:bigint;not null\""];
+  int64 config_version = 11 [(tagger.tags) = "gorm:\"column:config_version;type:bigint;not null\""];
+  string market_data_source = 12 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null\""];
+  optional int64 market_feed_id = 13 [(tagger.tags) = "gorm:\"column:market_feed_id;type:bigint\""];
+  int64 market_epoch = 14 [(tagger.tags) = "gorm:\"column:market_epoch;type:bigint;not null\""];
+  int64 market_sequence = 15 [(tagger.tags) = "gorm:\"column:market_sequence;type:bigint;not null\""];
+  int64 market_revision = 16 [(tagger.tags) = "gorm:\"column:market_revision;type:bigint;not null\""];
+  int64 market_source_version = 17 [(tagger.tags) = "gorm:\"column:market_source_version;type:bigint;not null\""];
+  int64 market_maximum_age_ms = 18 [(tagger.tags) = "gorm:\"column:market_maximum_age_ms;type:bigint;not null\""];
+  int64 observed_at = 19 [(tagger.tags) = "gorm:\"column:observed_at;type:bigint;not null\""];
+  int64 expires_at = 20 [(tagger.tags) = "gorm:\"column:expires_at;type:bigint;not null\""];
+  bool reconciled = 21 [(tagger.tags) = "gorm:\"column:reconciled;type:boolean;not null\""];
+  bool allow_new_risk = 22 [(tagger.tags) = "gorm:\"column:allow_new_risk;type:boolean;not null\""];
+  string reason_code = 23 [(tagger.tags) = "gorm:\"column:reason_code;type:varchar(32);not null\""];
+  bool snapshot_deleted = 24 [(tagger.tags) = "gorm:\"column:snapshot_deleted;type:boolean;not null\""];
+}

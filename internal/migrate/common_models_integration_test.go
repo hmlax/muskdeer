@@ -41,6 +41,7 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 		&modelv1.AccountBudget{},
 		&modelv1.StrategyBudget{},
 		&modelv1.RiskSnapshot{},
+		&modelv1.RiskSnapshotEvent{},
 		&modelv1.RiskBudget{},
 		&modelv1.OrderIntent{},
 		&modelv1.OutboxEvent{},

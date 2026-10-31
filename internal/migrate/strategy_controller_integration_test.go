@@ -25,8 +25,9 @@ func TestStrategyControllerQuotesProtectsAndWaitsForTerminalStop(t *testing.T) {
 	_, submit := admissionFixture(ctx, t, db)
 	portfolioFixture(ctx, t, db, submit)
 	controller, execution, market := strategyControllerFixture(ctx, t, db, submit)
-	for range 8 {
+	for tick := range 8 {
 		strategyControllerTick(ctx, t, controller, market)
+		t.Logf("healthy tick %d: submit=%d cancel=%d", tick, execution.submits, execution.cancels)
 		time.Sleep(110 * time.Millisecond)
 	}
 	open, _, err := execution.Orders(ctx, domain.ExecutionFilter{
@@ -48,8 +49,9 @@ func TestStrategyControllerQuotesProtectsAndWaitsForTerminalStop(t *testing.T) {
 		t.Fatal("one side of the funded quote book is missing")
 	}
 	market.unavailable = true
-	for range 6 {
+	for tick := range 6 {
 		strategyControllerTick(ctx, t, controller, market)
+		t.Logf("unavailable tick %d: submit=%d cancel=%d", tick, execution.submits, execution.cancels)
 	}
 	var state modelv1.StrategyInstance
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&state, submit.Input.Authority.StrategyID).Error; err != nil {
