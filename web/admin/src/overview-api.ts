@@ -82,4 +82,3 @@ export function overviewTime(value: string): string {
   if (BigInt(value) > 8640000000000000n) return value;
   return new Date(Number(value)).toISOString();
 }
-
