@@ -1,6 +1,6 @@
 # 运行概览
 
-P07.51先交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)的策略数据库观测；尚无本功能RPC、HTTP或页面。服务健康另接现有Deer实际gRPC readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
+P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；概览页面和服务健康仍待后续。服务健康另接现有Deer实际gRPC readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
 
 ## 策略数据库观测
 
@@ -22,4 +22,14 @@ Total、RequestedRunning及StoredStates分别记录策略数、请求运行标�
 
 数据库故障、非法数据、取消或权限失效不返回部分计数、时间或页；公开错误固定，私有原因只保留内部错误链。观察不做网络探测、读取配置秘密或动态服务装配；公共资源继续由每进程唯一Deer提供。源码/真实PG/race证据及未运行范围见[P07.51](validation/P07-51.md)。
 
-下一步接typed查询、真实服务观测和概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。
+## typed查询
+
+StrategyOverviewQuery.GetStrategyOverview仅在strategy的management_enabled下注册，可运行于无账户worker的管理查询节点；当前viewer在仓储事务重新授权。复用API-peer mTLS、最长5秒、2KiB和未知字段/嵌套会话校验，不注册新的写方法。
+
+api在strategy_queries_enabled下借用既有strategy连接提供GET `/api/v1/overview/strategies`，三秒超时、Cookie会话、no-store。可选`account_id`及`requested_market_data_source=binance|okx`精确筛选，`after_id`为非负规范十进制、`limit`为1–100（默认50）；明确请求来源，`market_data_source`等未知参数拒绝。重复、空参数、非规范ID、GET体和非法来源400，写方法405，禁用404，失效会话401，权限拒绝403，依赖/异常成功503。
+
+返回`observed_at_ms`、`total`、`requested_running`、`stored_states`、`items`与`next_after_id`，所有int64按ProtoJSON为string。每项包含已有Strategy元数据与可空`lease`；未持久化租约为JSON null，实际epoch0槽为非空对象，释放槽保留正代次/owner_recorded及期限"0"。不输出新造的健康/可交易布尔值。
+
+gRPC映射与HTTP两端校验统计和、正的已知状态分组及升序唯一性/溢出、每页状态/请求目标的计数下界、筛选绑定/ID游标和可空生效配置、租约零槽/期限/匹配代次。第一页宽度和后续游标须与全范围统计一致；后页可为空且total仍大于零。精确毫秒转换前拒绝亚毫秒时间，非法/未知成功整页拒绝，不泄露部分计数。原生进程、精度和边界证据见[P07.52](validation/P07-52.md)。
+
+下一步接真实服务观测和概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。

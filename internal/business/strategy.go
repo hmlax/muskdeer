@@ -185,7 +185,19 @@ func assembleStrategyManagement(db *gorm.DB, controlEnabled bool, runtime *Runti
 	if err := assembleStrategyPortfolios(db, runtime); err != nil {
 		return err
 	}
-	return assembleStrategyRiskEvents(db, runtime)
+	if err := assembleStrategyRiskEvents(db, runtime); err != nil {
+		return err
+	}
+	return assembleStrategyOverview(db, runtime)
+}
+
+func assembleStrategyOverview(db *gorm.DB, runtime *Runtime) error {
+	overview, err := repository.NewAdminOverview(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyOverview, err = strategygrpc.NewOverviewQuery(overview)
+	return err
 }
 
 func assembleStrategyPortfolios(db *gorm.DB, runtime *Runtime) error {

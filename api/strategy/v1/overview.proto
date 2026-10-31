@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyOverviewQuery observes stored metadata, never live trading authority.
+service StrategyOverviewQuery {
+  rpc GetStrategyOverview(GetStrategyOverviewRequest) returns (GetStrategyOverviewReply);
+}
+
+message GetStrategyOverviewRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+  string account_id = 4;
+  string requested_market_data_source = 5;
+}
+
+// Counts cover the full filtered scope independently of the page cursor.
+message GetStrategyOverviewReply {
+  int64 observed_at_ms = 1;
+  int64 total = 2;
+  int64 requested_running = 3;
+  repeated StoredStrategyStateCount stored_states = 4;
+  repeated StrategyRuntimeObservation items = 5;
+  int64 next_after_id = 6;
+}
+
+message StoredStrategyStateCount {
+  string state = 1;
+  int64 count = 2;
+}
+
+message StrategyRuntimeObservation {
+  Strategy strategy = 1;
+  // Absent when no retained lease row exists, distinct from an unclaimed slot.
+  StrategyLeaseObservation lease = 2;
+}
+
+// A released holder retains owner/epoch and expiry zero. These observations
+// neither prove process health nor replace final execution fencing.
+message StrategyLeaseObservation {
+  int64 epoch = 1;
+  bool owner_recorded = 2;
+  int64 expires_at_ms = 3;
+  bool unexpired_at_observation = 4;
+  bool runtime_matches_lease = 5;
+}
