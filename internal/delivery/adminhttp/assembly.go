@@ -54,6 +54,9 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 		if err != nil {
 			return err
 		}
+		if err := routes.assembleServices(cfg, owner, factory); err != nil {
+			return err
+		}
 		routes.strategies = strategyv1.NewStrategyManagementClient(connection)
 		routes.catalog = strategyv1.NewStrategyCatalogClient(connection)
 		routes.audits = strategyv1.NewStrategyAuditClient(connection)

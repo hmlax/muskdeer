@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package muskdeer.admin.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/admin/v1;adminv1";
+
+// ServiceOverview is the management HTTP observation. Membership and each
+// readiness check are independent samples, not an atomic cluster snapshot.
+// Local API membership covers this API only; registry membership covers healthy
+// enabled gRPC advertisements in the configured discovery scope only.
+message ServiceOverview {
+  string role = 1;
+  string membership_source = 2;
+  int64 membership_observed_at_ms = 3;
+  int64 total = 4;
+  bool probe_configured = 5;
+  repeated ServiceInstanceObservation items = 6;
+  string next_after_instance_id = 7;
+}
+
+message ServiceInstanceObservation {
+  string instance_id = 1;
+  // Config/registry declaration, not a build version attested by the RPC peer.
+  string declared_version = 2;
+  string status = 3;
+  // Absent when no probe was configured, never a fabricated timestamp zero.
+  optional int64 probed_at_ms = 4;
+}

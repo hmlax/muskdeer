@@ -1,6 +1,6 @@
 # 运行概览
 
-P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，其HTTP及概览页面继续后续。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
+P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](../api/admin/v1/services.proto)，概览页面继续后续。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
 
 ## 策略数据库观测
 
@@ -46,4 +46,16 @@ READY/NOT_READY/UNKNOWN分别来自实际readiness结果，失败、子期限、
 
 MembershipObservedAt和各ProbedAt来自API本地时钟、独立采样到毫秒；成员读取与后续RPC不是原子集群快照，时钟也不作租约依据。DeclaredVersion只是注册/本地配置声明，不是RPC认证的构建版本；mTLS验证服务身份，不证明某实例名对应的进程incarnation。原记录在探测期间可能改变，不将注册ID与策略runtime owner前缀关联为当前所有权。
 
-实现、原生进程与检查范围见[P07.53](validation/P07-53.md)。下一步接服务观测HTTP和概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。
+实现、原生进程与检查范围见[P07.53](validation/P07-53.md)。
+
+## 服务观测HTTP
+
+P07.54在既有strategy_queries_enabled下提供GET `/api/v1/overview/services`，借用同一AdminAuth、Deer发现客户端、RPC factory及CheckReady；没有新RPC业务服务、配置开关、池、worker或权限。远程就绪仍为标准typed gRPC health Check，不以API直接访问业务表代替业务RPC。
+
+可选`role=api|market|strategy|execution|portfolio|cron`（默认strategy）、`limit=1..4`（默认4）及`after_instance_id`。游标为最多128字节的规范UTF-8显示身份，按实例ID比较，不当作探测地址；实际远程ID仍按既有命名目标字母表验证。未知/空/重复参数、非规范页长、非法角色/游标、GET体400，写方法405，查询禁用404。Cookie仅用于读取器当前身份校验，401/403/503返回固定错误，不附部分成员/时间或私有地址。
+
+ServiceOverview按ProtoJSON提供role、membership_source、membership_observed_at_ms、total、probe_configured、items及next_after_instance_id；int64全为string。每项含instance_id、declared_version、status及可选probed_at_ms。未配置探测按标准ProtoJSON省略时间字段，既不为null也不为"0"；失败探测仍是有效200诊断项，不标整体服务健康。
+
+typed映射拒绝角色/来源/本地total与权限不一致、非规范实际远程ID、非法状态/版本、探测配置/状态/时间错配、亚毫秒/零时间及分页/排序错配。当前API只允许实际CheckReady可产生的就绪/未就绪/子期限状态，不制造网络权限结果；游标耗尽仍保留全成员数。证据及未运行范围见[P07.54](validation/P07-54.md)。
+
+下一步接概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。

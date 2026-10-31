@@ -311,26 +311,13 @@ func validInventory(instances []nacos.Instance, service string) bool {
 	}
 	seen := make(map[string]struct{}, len(instances))
 	for _, item := range instances {
-		if item.Service != service || !remoteInstanceID(item.ID) || !domain.ValidAdminServiceLabel(item.Version) {
+		if item.Service != service || !domain.ValidAdminRemoteInstanceID(item.ID) || !domain.ValidAdminServiceLabel(item.Version) {
 			return false
 		}
 		if _, exists := seen[item.ID]; exists {
 			return false
 		}
 		seen[item.ID] = struct{}{}
-	}
-	return true
-}
-
-func remoteInstanceID(id string) bool {
-	if len(id) == 0 || len(id) > 128 {
-		return false
-	}
-	for _, c := range id {
-		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' {
-			continue
-		}
-		return false
 	}
 	return true
 }

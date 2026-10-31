@@ -54,6 +54,20 @@ func ValidAdminServiceLabel(value string) bool {
 	return len(value) > 0 && len(value) <= 128 && utf8.ValidString(value) && strings.TrimSpace(value) == value && !strings.ContainsAny(value, "\x00\r\n")
 }
 
+// ValidAdminRemoteInstanceID matches the existing named gRPC target alphabet.
+func ValidAdminRemoteInstanceID(id string) bool {
+	if len(id) == 0 || len(id) > 128 {
+		return false
+	}
+	for _, c := range id {
+		if c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '-' || c == '_' || c == '.' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 // AdminServiceObservationSource describes where membership was sampled.
 type AdminServiceObservationSource string
 
@@ -77,6 +91,17 @@ const (
 	AdminServiceProbeDenied        AdminServiceProbeStatus = "PROBE_DENIED"
 	AdminServiceProbeCapacity      AdminServiceProbeStatus = "PROBE_CAPACITY"
 )
+
+// Valid accepts known diagnostic outcomes, without assigning trading rights.
+func (s AdminServiceProbeStatus) Valid() bool {
+	switch s {
+	case AdminServiceReady, AdminServiceNotReady, AdminServiceUnknown, AdminServiceProbeNotConfigured,
+		AdminServiceProbeFailed, AdminServiceProbeTimeout, AdminServiceProbeDenied, AdminServiceProbeCapacity:
+		return true
+	default:
+		return false
+	}
+}
 
 // AdminServiceInstance keeps declared version and actual readiness separate.
 type AdminServiceInstance struct {
