@@ -1210,3 +1210,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 改动：应用domain-modeling，明确strategy范围及独立风险修订确认、目标收录和pending_submissions；Normalize拒绝缺省/账户/全局扩展，State区分未收录完、无OMS身份提交、待确认目标、已归结失败与全终态。UNKNOWN不计成功/失败，FILLED不冒称CANCELED或平仓，历史结果不授予风险；见[范围合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.58](validation/P07-58.md)。仅领域组件，无持久化/接口/执行能力，54生成/34模型/schema31和OpenAPI/前端资产保持。
 - 红测/验证：缺领域定义先编译失败；选择性单元0.276秒、字段复审改为涵盖全部提交的PendingSubmissions后完整domain单元0.236秒通过。高位身份/风险修订、原因UTF-8字节、明确范围及计数一致性/最大边界/溢出测试通过。完整make verify通过：Go1.27.3/doctor/contract/生成/Hertz/fmt/lint/govet 0 issues/政策/22工具/全包单元/race/构建，domain race1.345秒；改名后另做最终lint，四资产SHA不变。
 - 交付/后续：f535c1b5f374e18c5b1e381f3abcd3d2f9ef105d已推送main并核对SHA，[CI41187483413](https://github.com/hmlax/muskdeer/actions/runs/41187483413)最近in_progress，未预报。文档/链接/逐文件复审及独立暂存检查通过后单独提交推送并核对SHA，继续原子关闭风险与批次持久化、范围执行和独立受限平仓。原生/浏览器/镜像/全量integration/持久开发/固定30分钟本步未运行，P07/A27/L1未完成；P08–P10继续，P11缺真实合同/环境，无生产迁移或真实资金。
+
+
+## 2026-10-31：P07.59 紧急撤单不可变受理结构与schema32
+
+- 改动：Proto唯一生成AdminEmergencyCancellation及版本32，55生成/35模型/schema32；显式strategy范围、风险独立修订、唯一风险关闭和独立范围审计，提交时重新检查当前operator/admin/会话、同一策略/操作者/原因和实际关闭；历史不可改删，不回填请求或修改旧资金/风险/目标。受理证据与未来可变分页进度分开；仍无受理仓储/接口/执行，见[范围合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.59](validation/P07-59.md)。
+- 红测/诊断：缺生成模型先编译失败。首PostgreSQL整批失败，CLI旧二进制输出31而断言32，临时入口遗漏预构建；失败13.556秒及日志保留。完整verify/构建后在全新PG重跑，未把断言改回旧版本或放宽期限；未来版本/回滚探针同步为33，其他升级起点和资金断言保持。
+- 检查：完整make verify通过，Go1.27.3/doctor/contract/55生成及OpenAPI/Hertz/fmt/lint/govet 0 issues/政策/22工具/全包单元/race/构建，migrate0.272/race1.431秒；OpenAPI/四资产不变。最终23项实际PG/race15.023秒全过，新结构/旧31升级/撤销提交回滚/重开风险及viewer拒绝分别0.56/0.43/0.46/0.50秒，指定约束验证；35模型真实公共列、迁移CLI两次32、并发/锁/DDL回滚/旧升级及资金/激活/UNKNOWN义务均通过，自有容器网络清理。
+- 交付/后续：f127b43c051670c83e1284b20ada52577e85a2bb已推送main并核对SHA，[CI41187757436](https://github.com/hmlax/muskdeer/actions/runs/41187757436)最近in_progress，未预报。文档/链接/逐文件复审及独立暂存检查通过后单独提交立即推送核对SHA，继续分页进度、原子关闭风险与受理、fencing执行及独立受限平仓。只有隔离测试schema迁移，生产/真实资金/部署未执行；业务HTTP/14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未重复，P07/A27/L1及P08–P10未完成，P11缺真实合同/环境。

@@ -39,7 +39,7 @@ func TestRiskSnapshotEventUpgradeStartsBaselineWithoutInventingOldTransitions(t 
 	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Order("id ASC").Find(&before).Error; err != nil {
 		t.Fatal(err)
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 31 {
+	if version, err := Apply(ctx, db); err != nil || version != 32 {
 		t.Fatal("risk diagnostic recording upgrade failed", err)
 	}
 	for _, source := range before {
@@ -51,7 +51,7 @@ func TestRiskSnapshotEventUpgradeStartsBaselineWithoutInventingOldTransitions(t 
 			t.Fatal("history upgrade mutated an existing risk source")
 		}
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 31 {
+	if version, err := Apply(ctx, db); err != nil || version != 32 {
 		t.Fatal("checked migration replay failed", err)
 	}
 	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshotEvent{}, 2)
