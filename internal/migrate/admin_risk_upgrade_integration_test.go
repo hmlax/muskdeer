@@ -66,7 +66,7 @@ func TestAdminRiskUpgradeRetainsExistingBudgetAndIndependentInitialRevision(t *t
 		t.Fatal(err)
 	}
 	before := activationBudget(ctx, t, db, instance.Id)
-	if version, err := Apply(ctx, db); err != nil || version != 32 {
+	if version, err := Apply(ctx, db); err != nil || version != 33 {
 		t.Fatal("risk control upgrade failed", err)
 	}
 	if !proto.Equal(before, activationBudget(ctx, t, db, instance.Id)) || !proto.Equal(instance, publicationInstance(ctx, t, db, instance.Id)) {

@@ -80,7 +80,7 @@ func TestAdminEmergencyAcceptanceUpgradeDoesNotInventRequestsOrRewriteExistingRi
 	if len(events) != 1 {
 		t.Fatal("schema31 fixture lacks its real risk event")
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 32 {
+	if version, err := Apply(ctx, db); err != nil || version != 33 {
 		t.Fatal("emergency schema upgrade failed", err)
 	}
 	if !proto.Equal(source, riskEventSourceRow(ctx, t, db, source.StrategyInstanceId)) {
@@ -91,7 +91,7 @@ func TestAdminEmergencyAcceptanceUpgradeDoesNotInventRequestsOrRewriteExistingRi
 		t.Fatal("acceptance upgrade invented risk history")
 	}
 	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellation{}, 0)
-	if version, err := Apply(ctx, db); err != nil || version != 32 {
+	if version, err := Apply(ctx, db); err != nil || version != 33 {
 		t.Fatal("checked acceptance upgrade replay failed", err)
 	}
 }

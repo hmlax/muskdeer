@@ -21,6 +21,9 @@ func validateAdminRiskRecovery(ctx context.Context, tx *gorm.DB, instance *model
 	if !reserved.IsZero() {
 		return time.Time{}, domain.ErrAdminRiskRecoveryDenied
 	}
+	if err := requireEmergencyScopeClear(ctx, tx, instance.Id); err != nil {
+		return time.Time{}, err
+	}
 	if err := requireStrategyClear(ctx, tx, instance.Id); err != nil {
 		return time.Time{}, adminRiskRecoveryFailure(err)
 	}

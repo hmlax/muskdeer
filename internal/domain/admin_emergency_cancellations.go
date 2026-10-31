@@ -1,9 +1,11 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"math"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -36,6 +38,26 @@ type AdminEmergencyCancelRequest struct {
 	StrategyID           int64
 	ExpectedRiskRevision int64
 	Reason               string
+}
+
+// AdminEmergencyCancelAcceptance is immutable proof of scope acceptance and
+// risk closure, never evidence of execution completion or current authority.
+type AdminEmergencyCancelAcceptance struct {
+	ID                   int64
+	ActorUserID          int64
+	StrategyID           int64
+	Scope                AdminEmergencyCancelScope
+	ExpectedRiskRevision int64
+	RiskRevision         int64
+	Reason               string
+	CreatedAt            time.Time
+}
+
+// AdminEmergencyCancellations borrows persistent authority and records scoped
+// work without sending commands. Reads revalidate the current viewer.
+type AdminEmergencyCancellations interface {
+	Request(context.Context, string, string, AdminEmergencyCancelRequest) (AdminEmergencyCancelAcceptance, error)
+	Acceptance(context.Context, string, int64, int64) (AdminEmergencyCancelAcceptance, error)
 }
 
 // Normalize rejects implicit scope expansion and keeps exact integer identity.
