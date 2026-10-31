@@ -31,8 +31,17 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.trades != nil {
 		paths = append(paths, "/strategies/:strategyID/trades", "/strategies/:strategyID/trades/:tradeID")
 	}
+	if r.portfolios != nil {
+		paths = append(paths, "/portfolios", "/portfolios/:portfolioID")
+	}
 	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
+			if path == "/portfolios/:portfolioID" {
+				if _, valid := portfolioPathID(request.Param("portfolioID")); !valid {
+					request.String(http.StatusNotFound, "not found")
+					return
+				}
+			}
 			if strings.HasPrefix(path, "/strategies/:strategyID/trades") {
 				_, strategyValid := strategyID(request)
 				idValid := true

@@ -1,10 +1,10 @@
 # 管理页面与身份 HTTP
 
-已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)、[订单列表/详情](ADMIN_ORDERS.md)、[指定订单撤单](ADMIN_CANCELLATIONS.md)、[成交查询](ADMIN_TRADES.md)和[行情监控](ADMIN_MARKETS.md)的typed接口和实际页面。持仓等其余能力及完整 R08/A27 尚未完成。
+已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)、[订单列表/详情](ADMIN_ORDERS.md)、[指定订单撤单](ADMIN_CANCELLATIONS.md)、[成交查询](ADMIN_TRADES.md)、[账户持仓](ADMIN_PORTFOLIOS.md)和[行情监控](ADMIN_MARKETS.md)的typed接口和实际页面。风险事件、运行概览等及完整 R08/A27 尚未完成。
 
 [成交查询](ADMIN_TRADES.md)已增加typed只读gRPC/HTTP入口及策略详情链接的成交列表/独立详情页面，以核心成交为准，按首次提交命令保留可空原OMS关联，并单独显示持仓侧事实是否收录；持仓等能力继续后续步骤。/strategies/:strategyID/trades及/:tradeID按查询能力开放，校验规范路径身份并支持登录恢复/刷新；`make admin-trades-browser`进入CI/e2e第十一组。
 
-[账户持仓](ADMIN_PORTFOLIOS.md)已提供GET /api/v1/portfolios及/:portfolioID的typed查询，按精确账户/交易对过滤；存储投影、生产者诊断、源/收录统计及可空核心余额分开，覆盖共享账户所有策略，读取不补账或授予风险许可。管理页面继续后续步骤。
+[账户持仓](ADMIN_PORTFOLIOS.md)已提供GET /api/v1/portfolios及/:portfolioID的typed查询和/portfolios、/portfolios/:portfolioID页面，按精确账户/交易对过滤；存储投影、生产者诊断、源/收录统计及可空核心余额分开，覆盖共享账户所有策略，读取不补账或授予风险许可。页面只随查询能力开放，支持登录深链接、筛选刷新恢复；第十二组`make admin-portfolios-browser`进入CI/e2e。
 
 [行情监控](ADMIN_MARKETS.md)已提供GET /api/v1/markets和/api/v1/markets/:feedID的具体查询合同与/markets、/markets/:feedID页面；列表必须明确LIVE/REPLAY，可按来源/交易对筛选，当前viewer、no-store和3秒原生期限。历史发布诊断与当前失效/过期结果分别返回，无写入口或行情/风险授权。HTML路径校验规范ID并遵守查询开关，登录后恢复深链接；页面过期提示不隐式换源，`make admin-market-browser`进入CI/e2e第十组。
 

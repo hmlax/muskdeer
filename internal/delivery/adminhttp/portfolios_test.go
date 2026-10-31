@@ -92,6 +92,22 @@ func portfolioHTTPFixture(t *testing.T, client strategyv1.StrategyPortfolioQuery
 	return hertz
 }
 
+func TestPortfolioHTMLPathsRequireQueryCapabilityAndCanonicalIdentity(t *testing.T) {
+	for _, path := range []string{"/portfolios", "/portfolios/9007199254740993"} {
+		if reply := perform(portfolioHTTPFixture(t, &portfolioHTTPClient{}), "GET", path, ""); reply.Code != 200 || !strings.Contains(reply.Body.String(), "<html") {
+			t.Fatal("portfolio page or independent deep refresh missing", path, reply.Code)
+		}
+		if reply := perform(portfolioHTTPFixture(t, nil), "GET", path, ""); reply.Code != 404 {
+			t.Fatal("disabled portfolio queries exposed HTML", reply.Code)
+		}
+	}
+	for _, path := range []string{"/portfolios/01", "/portfolios/0", "/portfolios/9223372036854775808"} {
+		if reply := perform(portfolioHTTPFixture(t, &portfolioHTTPClient{}), "GET", path, ""); reply.Code != 404 {
+			t.Fatal("invalid portfolio HTML identity accepted", path, reply.Code)
+		}
+	}
+}
+
 func TestPortfolioHTTPPreservesExactPnLAndIndependentStoredAndCoreFacts(t *testing.T) {
 	client := &portfolioHTTPClient{}
 	reply := perform(portfolioHTTPFixture(t, client), "GET", portfolioHTTPPath+"?limit=1&after_id=9007199254740992&account_id=portfolio.account&instrument_id=1", "", orderHTTPCookie())

@@ -75,6 +75,8 @@ jobs:
         run: make admin-market-browser
       - name: Verify actual authoritative trades browser workflow
         run: make admin-trades-browser
+      - name: Verify actual account portfolio browser workflow
+        run: make admin-portfolios-browser
   verify:
     needs: [checks, integration, browsers]
     if: always()

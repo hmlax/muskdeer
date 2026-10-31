@@ -131,9 +131,13 @@ admin-trades-browser: build
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-trades-browser.py
 
-e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser
+admin-portfolios-browser: build
+	python3 scripts/web.py browser-install
+	python3 scripts/admin-portfolios-browser.py
 
-.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser
+e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser admin-portfolios-browser
+
+.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser admin-portfolios-browser
 
 .PHONY: soak soak-smoke
 soak: build
