@@ -15,6 +15,7 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol"
 
 	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
+	"github.com/hmlax/muskdeer/internal/adminopenapi"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
@@ -83,6 +84,7 @@ type Routes struct {
 	secure               bool
 	sessionCookie        string
 	csrfCookie           string
+	openAPI              []byte
 }
 
 // New constructs authentication routes from an already resolved fixed origin.
@@ -105,6 +107,10 @@ func New(auth domain.AdminAuth, origin string, secure bool) (*Routes, error) {
 	if secure {
 		result.sessionCookie, result.csrfCookie = secureSessionCookie, secureCSRFCookie
 	}
+	result.openAPI, err = adminopenapi.Generate()
+	if err != nil {
+		return nil, err
+	}
 	return result, nil
 }
 
@@ -118,6 +124,7 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	hertz.GET("/api/v1/auth/session", r.session)
 	hertz.POST("/api/v1/auth/logout", r.logout)
 	if r.strategies != nil {
+		hertz.GET("/openapi.json", r.downloadOpenAPI)
 		hertz.GET("/api/v1/strategies", r.listStrategies)
 		hertz.GET("/api/v1/strategies/:strategyID", r.getStrategy)
 		hertz.GET("/api/v1/strategies/:strategyID/versions", r.listStrategyVersions)

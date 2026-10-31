@@ -44,8 +44,13 @@ func TestDocumentCoversActualManagementRoutes(t *testing.T) {
 			return true
 		}
 		path, err := strconv.Unquote(literal.Value)
-		if err != nil || !strings.HasPrefix(path, "/api/v1/") {
+		if err != nil {
 			t.Fatalf("invalid management registration: %s", literal.Value)
+		}
+		// HTML/assets and the authenticated document download are outside the
+		// /api/v1 business contract, and have dedicated delivery tests.
+		if !strings.HasPrefix(path, "/api/v1/") {
+			return true
 		}
 		for _, part := range strings.Split(path, "/") {
 			if strings.HasPrefix(part, ":") {
