@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package muskdeer.strategy.v1;
+
+option go_package = "github.com/hmlax/muskdeer/api/strategy/v1;strategyv1";
+
+import "api/strategy/v1/management.proto";
+
+// StrategyRiskEventQuery reads immutable diagnostics. It neither evaluates
+// current risk nor runs a portfolio consumer or grants trading permission.
+service StrategyRiskEventQuery {
+  rpc ListRiskEvents(ListRiskEventsRequest) returns (ListRiskEventsReply);
+  rpc GetRiskEvent(GetRiskEventRequest) returns (GetRiskEventReply);
+}
+
+message ListRiskEventsRequest {
+  AdminSession session = 1;
+  int64 after_id = 2;
+  int32 limit = 3;
+  int64 strategy_id = 4;
+  string account_id = 5;
+  int64 instrument_id = 6;
+  string market_data_source = 7;
+  string kind = 8;
+  string reason_code = 9;
+}
+
+message ListRiskEventsReply {
+  repeated RiskDiagnosticEvent events = 1;
+  int64 next_after_id = 2;
+}
+
+message GetRiskEventRequest {
+  AdminSession session = 1;
+  int64 event_id = 2;
+}
+
+message GetRiskEventReply {
+  RiskDiagnosticEvent event = 1;
+}
+
+// RiskDiagnosticEvent preserves original recorded inputs. READY, old expiry
+// and recorded flags never certify present reconciliation or permission.
+message RiskDiagnosticEvent {
+  int64 id = 1;
+  int64 recorded_at_ms = 2;
+  string kind = 3;
+  int64 snapshot_id = 4;
+  int64 snapshot_revision = 5;
+  int64 strategy_id = 6;
+  string account_id = 7;
+  int64 instrument_id = 8;
+  int64 config_version = 9;
+  string market_data_source = 10;
+  optional int64 market_feed_id = 11;
+  int64 publisher_epoch = 12;
+  int64 market_sequence = 13;
+  int64 publication_revision = 14;
+  int64 source_version = 15;
+  int64 market_maximum_age_ms = 16;
+  int64 observed_at_ms = 17;
+  int64 expires_at_ms = 18;
+  bool recorded_reconciled = 19;
+  bool recorded_allow_new_risk = 20;
+  string reason_code = 21;
+  bool snapshot_deleted = 22;
+}

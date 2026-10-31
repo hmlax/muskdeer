@@ -67,6 +67,7 @@ type Routes struct {
 	orders               strategyv1.StrategyOrderQueryClient
 	trades               strategyv1.StrategyTradeQueryClient
 	portfolios           strategyv1.StrategyPortfolioQueryClient
+	riskEvents           strategyv1.StrategyRiskEventQueryClient
 	markets              strategyv1.StrategyMarketQueryClient
 	riskQueries          strategyv1.StrategyRiskQueryClient
 	riskControls         strategyv1.StrategyRiskControlClient
@@ -143,6 +144,10 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	if r.portfolios != nil {
 		hertz.GET("/api/v1/portfolios", r.listPortfolios)
 		hertz.GET("/api/v1/portfolios/:portfolioID", r.getPortfolio)
+	}
+	if r.riskEvents != nil {
+		hertz.GET("/api/v1/risk-events", r.listRiskEvents)
+		hertz.GET("/api/v1/risk-events/:eventID", r.getRiskEvent)
 	}
 	if r.markets != nil {
 		hertz.GET("/api/v1/markets", r.listMarkets)

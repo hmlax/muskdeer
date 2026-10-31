@@ -1,6 +1,6 @@
 # 风险快照诊断变更历史
 
-P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；尚无RPC、HTTP或页面，不把当前快照拼成未曾保存的过去。
+P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；尚无风险历史页面，不把当前快照拼成未曾保存的过去。
 
 ## 记录含义
 
@@ -36,4 +36,17 @@ P07.48的[AdminRiskEvents](../internal/domain/admin_risk_events.go)复用当前v
 
 分页用于交互式历史浏览，不是持久消息投递游标；独立事务可能按不同顺序分配和提交自增ID，刷新查询才重新观察当前完整可见范围，不据此声称业务恰好一次或历史完整对账。
 
-来源测试见[P07.47](validation/P07-47.md)，查询测试见[P07.48](validation/P07-48.md)。49个生成文件/34个持久模型/schema31保持，后续继续typed接口与页面；完整R08/A27/L1未完成。
+## typed gRPC与HTTP
+
+P07.49提供[StrategyRiskEventQuery](../api/strategy/v1/risk_events.proto)的ListRiskEvents/GetRiskEvent及具体RiskDiagnosticEvent。仅在strategy的management_enabled时注册，要求已验证API服务身份、当前viewer会话、最大5秒调用和2KiB请求；读取节点不注册控制写RPC。API在strategy_queries_enabled下使用既有唯一strategy连接，不启动事件生产者、投影消费或其他工作器。
+
+Hertz只读入口：
+
+- `GET /api/v1/risk-events`：可选`strategy_id`、`account_id`、`instrument_id`、`market_data_source`、`kind`、`reason_code`及`after_id`、`limit`。
+- `GET /api/v1/risk-events/:eventID`：精确记录详情，不接受查询参数或请求体。
+
+策略/产品/记录身份为规范正十进制int64；页长默认20、上限100，after_id可为0。未知、重复、空筛选、非法枚举、非规范ID、超1024字节查询或GET请求体为400；无会话401、权限拒绝403、详情不存在404、依赖或非法成功数据503。历史范围没有记录返回200空列表，不能据此判断当前资源存在。请求有三秒预算，响应no-store；全字段检查记录/分页/过滤及详情身份绑定，任何错误拒绝整页业务数据。
+
+JSON沿标准ProtoJSON输出，所有int64身份、修订、序列、时长与毫秒时间均为string；可空market_feed_id缺席时省略，不制造0或null标量。记录许可位和对账位仍为bool，旧READY/已过期记录按原样传输。所有权、会话、请求键和内部错误均不作为事件业务字段返回。风险历史没有写入口或从旧记录恢复许可的能力。
+
+来源测试见[P07.47](validation/P07-47.md)，仓储见[P07.48](validation/P07-48.md)，传输见[P07.49](validation/P07-49.md)。51个生成文件/34个持久模型/schema31，后续继续页面；完整R08/A27/L1未完成。

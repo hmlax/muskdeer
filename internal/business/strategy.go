@@ -54,43 +54,7 @@ func validateStrategyConfig(cfg *configv1.ServiceConfig) error {
 func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation string, cfg *configv1.BusinessRuntime) (*Runtime, error) {
 	runtime := &Runtime{}
 	if cfg.Strategy.ManagementEnabled {
-		queries, err := repository.NewAdminStrategies(db)
-		if err != nil {
-			return nil, err
-		}
-		runtime.strategy, err = strategygrpc.New(queries)
-		if err != nil {
-			return nil, err
-		}
-		catalog, err := repository.NewAdminCatalog(db)
-		if err != nil {
-			return nil, err
-		}
-		runtime.strategyCatalog, err = strategygrpc.NewCatalog(catalog)
-		if err != nil {
-			return nil, err
-		}
-		audits, err := repository.NewAdminAudits(db)
-		if err != nil {
-			return nil, err
-		}
-		runtime.strategyAudit, err = strategygrpc.NewAudit(audits)
-		if err != nil {
-			return nil, err
-		}
-		if err := assembleStrategyRisk(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
-			return nil, err
-		}
-		if err := assembleStrategyCancellations(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
-			return nil, err
-		}
-		if err := assembleStrategyOrderQueries(db, runtime); err != nil {
-			return nil, err
-		}
-		if err := assembleStrategyMarkets(db, runtime); err != nil {
-			return nil, err
-		}
-		if err := assembleStrategyPortfolios(db, runtime); err != nil {
+		if err := assembleStrategyManagement(db, cfg.Strategy.ControlEnabled, runtime); err != nil {
 			return nil, err
 		}
 	}
@@ -181,12 +145,64 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 	return runtime, nil
 }
 
+func assembleStrategyManagement(db *gorm.DB, controlEnabled bool, runtime *Runtime) error {
+	queries, err := repository.NewAdminStrategies(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategy, err = strategygrpc.New(queries)
+	if err != nil {
+		return err
+	}
+	catalog, err := repository.NewAdminCatalog(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyCatalog, err = strategygrpc.NewCatalog(catalog)
+	if err != nil {
+		return err
+	}
+	audits, err := repository.NewAdminAudits(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyAudit, err = strategygrpc.NewAudit(audits)
+	if err != nil {
+		return err
+	}
+	if err := assembleStrategyRisk(db, controlEnabled, runtime); err != nil {
+		return err
+	}
+	if err := assembleStrategyCancellations(db, controlEnabled, runtime); err != nil {
+		return err
+	}
+	if err := assembleStrategyOrderQueries(db, runtime); err != nil {
+		return err
+	}
+	if err := assembleStrategyMarkets(db, runtime); err != nil {
+		return err
+	}
+	if err := assembleStrategyPortfolios(db, runtime); err != nil {
+		return err
+	}
+	return assembleStrategyRiskEvents(db, runtime)
+}
+
 func assembleStrategyPortfolios(db *gorm.DB, runtime *Runtime) error {
 	portfolios, err := repository.NewAdminPortfolios(db)
 	if err != nil {
 		return err
 	}
 	runtime.strategyPortfolios, err = strategygrpc.NewPortfolioQuery(portfolios)
+	return err
+}
+
+func assembleStrategyRiskEvents(db *gorm.DB, runtime *Runtime) error {
+	events, err := repository.NewAdminRiskEvents(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyRiskEvents, err = strategygrpc.NewRiskEventQuery(events)
 	return err
 }
 

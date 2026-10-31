@@ -43,6 +43,7 @@ type Runtime struct {
 	strategyOrders              *strategygrpc.OrderQueryServer
 	strategyTrades              *strategygrpc.TradeQueryServer
 	strategyPortfolios          *strategygrpc.PortfolioQueryServer
+	strategyRiskEvents          *strategygrpc.RiskEventQueryServer
 	strategyMarkets             *strategygrpc.MarketQueryServer
 	strategyRiskQuery           *strategygrpc.RiskQueryServer
 	strategyRiskControl         *strategygrpc.RiskControlServer
@@ -121,6 +122,9 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
 	}
 	if r.strategyPortfolios != nil {
 		strategyv1.RegisterStrategyPortfolioQueryServer(registrar, r.strategyPortfolios)
+	}
+	if r.strategyRiskEvents != nil {
+		strategyv1.RegisterStrategyRiskEventQueryServer(registrar, r.strategyRiskEvents)
 	}
 	if r.strategyMarkets != nil {
 		strategyv1.RegisterStrategyMarketQueryServer(registrar, r.strategyMarkets)
