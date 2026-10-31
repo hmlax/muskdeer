@@ -37,6 +37,9 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.riskEvents != nil {
 		paths = append(paths, "/risk-events", "/risk-events/:eventID")
 	}
+	if r.overview != nil && r.services != nil {
+		paths = append(paths, "/overview")
+	}
 	for _, path := range paths {
 		hertz.GET(path, func(_ context.Context, request *app.RequestContext) {
 			if !validPageIdentity(path, request) {

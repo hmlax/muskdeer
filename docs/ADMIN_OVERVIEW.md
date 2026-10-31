@@ -1,6 +1,6 @@
 # 运行概览
 
-P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](../api/admin/v1/services.proto)，概览页面继续后续。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
+P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](../api/admin/v1/services.proto)，P07.55提供[运行概览页面](../web/admin/src/overview.tsx)。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
 
 ## 策略数据库观测
 
@@ -58,4 +58,16 @@ ServiceOverview按ProtoJSON提供role、membership_source、membership_observed_
 
 typed映射拒绝角色/来源/本地total与权限不一致、非规范实际远程ID、非法状态/版本、探测配置/状态/时间错配、亚毫秒/零时间及分页/排序错配。当前API只允许实际CheckReady可产生的就绪/未就绪/子期限状态，不制造网络权限结果；游标耗尽仍保留全成员数。证据及未运行范围见[P07.54](validation/P07-54.md)。
 
-下一步接概览页面；P07及完整R08/A27/L1尚未完成，P08–P10继续，P11真实合同与测试环境仍待资料。
+## 管理页面
+
+查询导航的“运行概览”进入`/overview`，Hertz仅在策略概览与服务观测两能力均已装配时托管页面。初始深链接匿名访问先显示真实登录，登录后保留原路径和筛选，刷新直接打开；只读页面没有启动、撤单或资金写操作。源码沿用锁定React/Node/npm及既有Go embed资产流程，无新前端依赖。
+
+服务和策略两区域各自加载、刷新、筛选和升序游标，服务角色/每页1或4节点，策略精确账户/请求来源及每页1、20、50。URL保存各自的已应用条件与游标，不把一个区域的游标用于另一区域。统计覆盖整个筛选范围，分别展示请求运行计数和存储状态，列表只是当前页；两区域各自明确采样时间，无自动轮询或当前许可推断。
+
+策略卡分开展示请求/生效配置与来源、存储状态/请求目标和运行owner/epoch。没有租约槽、未领取零代次槽、已释放但保留owner/epoch的槽分别展示；未领取的期限0为“未设置”，已释放的期限0为“已清零”。数据库采样时未到期与存储运行匹配各自显示，不推断现在持有执行权。可跳转既有策略详情。
+
+服务卡保留实例ID/声明版本、原始诊断及独立探测时间，未配置明确“未探测”；本API、筛选后的注册成员及部署总数含义分别说明。就绪只对应这次readiness，成员与后续RPC不冒充同一原子时刻。
+
+ID/统计/版本/epoch/时间保留string，比较及统计使用BigInt；只有有限整数页长与可安全表示的UTC毫秒使用Number/Date，超日期范围原值显示。非法成功响应/计数或筛选错配、未知状态/不一致租约整区拒绝；读取错误清除该区旧数据，权限拒绝有明确提示，会话失效清除整个工作台并返回登录。请求六秒取消且卸载中止，不保存浏览器存储。
+
+新增`make admin-overview-browser`进入CI/e2e第十四浏览器流程；实际双节点/停机、三种租约记录、精度与原十三组共享资产回归范围见[P07.55](validation/P07-55.md)。P07及完整R08/A27/L1尚未完成，OpenAPI等剩余验收继续；P08–P10继续，P11真实合同与测试环境仍待资料。

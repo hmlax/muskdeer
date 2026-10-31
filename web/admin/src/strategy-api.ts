@@ -106,7 +106,7 @@ function boolean(value: unknown): boolean {
   if (typeof value !== 'boolean') throw new ApiError('INVALID_RESPONSE');
   return value;
 }
-function strategy(value: unknown): Strategy {
+export function strategy(value: unknown): Strategy {
   const p = object(value);
   if ((p.template !== 'market_maker' && p.template !== 'grid') || !['RUNNING', 'PAUSED', 'STOPPED'].includes(text(p.desired_state)) || (p.market_mode !== 'LIVE' && p.market_mode !== 'REPLAY')) throw new ApiError('INVALID_RESPONSE');
   const activeVersion = p.active_config_version == null ? null : integer(p.active_config_version);

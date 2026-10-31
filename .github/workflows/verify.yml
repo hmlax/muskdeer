@@ -79,6 +79,8 @@ jobs:
         run: make admin-portfolios-browser
       - name: Verify actual immutable risk history browser workflow
         run: make admin-risk-events-browser
+      - name: Verify actual runtime overview browser workflow
+        run: make admin-overview-browser
   verify:
     needs: [checks, integration, browsers]
     if: always()
