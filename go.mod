@@ -12,6 +12,7 @@ require (
 	github.com/nats-io/nats.go v1.55.0
 	github.com/prometheus/common v0.32.1
 	github.com/redis/go-redis/v9 v9.23.0
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/shopspring/decimal v1.6.0
 	github.com/srikrsna/protoc-gen-gotag v1.0.2
 	go.uber.org/goleak v1.3.0

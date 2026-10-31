@@ -39,6 +39,7 @@ make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；�
 每个最小步骤完成并通过相关测试/检查后，立即提交并推送到该远程仓库，确认同步后继续下一步。文档步骤验证文档与文件完整性，不宣称业务测试已通过。
 
 ## 文档导航
+- [管理 OpenAPI 与生成门禁](docs/OPENAPI.md)
 - [需求与默认范围](docs/PRD.md)
 - [架构及状态归属](docs/ARCHITECTURE.md)
 - [公共 Deer、DeerApi 与日志规范](docs/DEER.md)
