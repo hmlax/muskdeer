@@ -6,9 +6,11 @@ type RiskSnapshotEventKind string
 
 // A baseline starts available history without inventing earlier transitions.
 const (
-	RiskSnapshotEventBaseline RiskSnapshotEventKind = "BASELINE"
-	RiskSnapshotEventChanged  RiskSnapshotEventKind = "CHANGED"
-	RiskSnapshotEventRemoved  RiskSnapshotEventKind = "REMOVED"
+	// RiskSnapshotEventUnspecified is a query wildcard, never persisted.
+	RiskSnapshotEventUnspecified RiskSnapshotEventKind = ""
+	RiskSnapshotEventBaseline    RiskSnapshotEventKind = "BASELINE"
+	RiskSnapshotEventChanged     RiskSnapshotEventKind = "CHANGED"
+	RiskSnapshotEventRemoved     RiskSnapshotEventKind = "REMOVED"
 )
 
 // ValidRiskSnapshotEventKind accepts only defined persisted recording kinds.

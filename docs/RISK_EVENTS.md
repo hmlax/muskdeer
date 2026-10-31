@@ -1,6 +1,6 @@
 # 风险快照诊断变更历史
 
-P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。此步尚无RPC、HTTP或页面，不把当前快照拼成未曾保存的过去。
+P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；尚无RPC、HTTP或页面，不把当前快照拼成未曾保存的过去。
 
 ## 记录含义
 
@@ -26,4 +26,14 @@ PostgreSQL源表AFTER触发器在快照INSERT/UPDATE/DELETE的同一事务写历
 
 这是内部快照诊断历史，不替代管理操作的[权限审计与操作收据](ADMIN_RISK.md)，也没有新增JetStream发布或业务恰好一次声明。后续管理读取仍须当前viewer、明确范围、只读快照和原始字段校验；不能从历史“恢复风险”。
 
-测试与范围见[P07.47](validation/P07-47.md)。49个生成文件/34个持久模型/schema31，后续继续风险事件仓储、typed接口与页面；完整R08/A27/L1未完成。
+## 只读管理查询
+
+P07.48的[AdminRiskEvents](../internal/domain/admin_risk_events.go)复用当前viewer及以上角色鉴权，在同一PostgreSQL只读Repeatable Read事务中提供列表/详情。列表可按策略ID、业务账户、交易对ID、Binance/OKX来源、记录类型与八种已定义原因精确组合筛选；页长1–100、事件ID升序及after_id游标。过滤值缺席表示不限，未知历史范围返回空页；详情身份不存在为not found。历史范围不要求当前快照、活动策略、核心账户或行情绑定存在，不把已退役记录隐藏在当前目录后面。
+
+结果直接保留事件ID、记录时间、源快照ID/修订、配置/来源/可空绑定、发布者代次/序列/修订/政策、观察与截止时间，以及明确命名的RecordedReconciled/RecordedAllowNewRisk、原原因和源退役标志。过期记录仍可阅读；不会与当前时间比较后改写为新的风险事件，不依据旧READY/许可位授予交易权限。可空绑定保持缺席，所有身份/版本保持int64精度；读取对象不共享生成模型的可变指针。
+
+查询只读已保存历史，不调用RiskEvaluator或Portfolio Get/Rebuild，不取得租约、初始化资金、更新源风险位或释放预留。非法持久字段、数据库错误或取消整页失败，不返回部分记录/游标；私有数据库原因保留在内部错误链，公开文本为固定安全错误。每次读取均验证当前会话；真实Logout撤销后拒绝列表及详情。
+
+分页用于交互式历史浏览，不是持久消息投递游标；独立事务可能按不同顺序分配和提交自增ID，刷新查询才重新观察当前完整可见范围，不据此声称业务恰好一次或历史完整对账。
+
+来源测试见[P07.47](validation/P07-47.md)，查询测试见[P07.48](validation/P07-48.md)。49个生成文件/34个持久模型/schema31保持，后续继续typed接口与页面；完整R08/A27/L1未完成。

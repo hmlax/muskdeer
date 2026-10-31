@@ -10,6 +10,8 @@ type RiskReason string
 
 // Persisted eligibility reasons do not replace per-order authorization.
 const (
+	// RiskReasonUnspecified is a query wildcard, never a persisted reason.
+	RiskReasonUnspecified          RiskReason = ""
 	RiskReasonNotEvaluated         RiskReason = "NOT_EVALUATED"
 	RiskReasonReady                RiskReason = "READY"
 	RiskReasonStopped              RiskReason = "STRATEGY_STOPPED"
@@ -19,6 +21,17 @@ const (
 	RiskReasonMarket               RiskReason = "MARKET_UNAVAILABLE"
 	RiskReasonConfigurationPending RiskReason = "CONFIGURATION_PENDING"
 )
+
+// ValidRiskReason accepts only the defined persisted eligibility diagnostics.
+func ValidRiskReason(reason RiskReason) bool {
+	switch reason {
+	case RiskReasonNotEvaluated, RiskReasonReady, RiskReasonStopped, RiskReasonParameters,
+		RiskReasonBudget, RiskReasonUnreconciled, RiskReasonMarket, RiskReasonConfigurationPending:
+		return true
+	default:
+		return false
+	}
+}
 
 // RiskDecision is eligibility only; every order still needs atomic limits,
 // funds and final strategy/execution/market fencing at its actual target.
