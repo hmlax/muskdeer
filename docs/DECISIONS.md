@@ -15,6 +15,7 @@ api 用作平台管理界面，用户已确认包含可操作的管理前端页�
 | API 封装 | DeerApi 组合复用 Deer，构造函数 deer.NewDeerApi | 落实用户增加 DeerApi 的要求，结合已有 Hertz/Kratos 架构采用此装配方式；具体参数/返回类型由 P02 实现 |
 | 仓库结构 | 单 go.mod | 统一使用已确定的 module github.com/hmlax/muskdeer |
 | 产品 | 内部自营现货 | 合约/客户策略改变风险模型，需另行明确 |
+| 首版受限平仓 | 模拟现货，明确账户/交易对且账户仅关联一个策略 | P07.67的可逆实现选择；避免虚构共享账户的策略持仓份额，当前仅领域候选，持久/执行/页面继续后续步骤，见[平仓合同](ADMIN_FLATTENINGS.md) |
 | 策略 | 做市 + 网格 | 先两模板验平台化，未声称用户已选择网格 |
 | 管理前端布局 | web/admin源码与锁定构建产物，由api/Hertz嵌入托管 | 用户已确认管理页面与后端接口；精确版本已锁定，身份纵向切片见ADMIN_HTTP，完整策略管理继续P07 |
 | 所有权 | PostgreSQL lease + epoch | 提供可审计 CAS；最终网关仍需 fencing |
@@ -30,6 +31,8 @@ P01 最小 Proto 生成结构已直接通过 GORM/PostgreSQL 的精确小数与 
 如果最终交易网关无 fencing、幂等查询或失联撤单能力，明确能力缺口和改造建议；模拟开发继续，但真实接管保证及生产准备不能宣称完成。
 
 ## 变更记录
+2026-11-02：P07.67将平仓首版收敛为当前admin对唯一策略关联模拟账户/交易对的独立确认，先验证已完成范围撤单、当前风险关闭及权威余额/对账/全部义务。此为实现时的受限默认选择，不标为用户额外批准；共享账户其他交易能力保持。领域候选不授予执行权，持久互斥、最终fencing及管理入口尚未交付。
+
 2026-10-28：P07管理前端采用React 19.3.1、TypeScript 7.0.2、Vite 8.3.5；构建使用Node.js 24.22.1 LTS/npm 11.19.1，浏览器测试Playwright 1.64.1。版本已从[React注册表](https://registry.npmjs.org/react/19.3.1)、[TypeScript注册表](https://registry.npmjs.org/typescript/7.0.2)、[Vite注册表](https://registry.npmjs.org/vite/8.3.5)、[Node官方发布索引](https://nodejs.org/dist/index.json)及[Playwright注册表](https://registry.npmjs.org/@playwright/test/1.64.1)核验，具体lockfile/构建与浏览器命令随前端代码交付；不将版本选定当作页面验收完成。Go继续精确1.27.3，不受前端工具链影响。
 2026-10-26：创建准备基线；尚未核验本地仓库与任何现有接口。新决策须记录来源、日期、状态及受影响验收，助手建议不标用户批准。
 2026-10-26：按用户本轮明确指令，将四个必备数据库字段与 Model 数据访问规则设为强制规范，覆盖 AGENTS、Proto/ORM、deer、启动指令、实施计划及 A01/A22；Proto/数据库采用 snake_case 字段映射属于本次实现约定。已检查当前工作目录，仅有准备包，无业务代码或实际数据库可供验证。
