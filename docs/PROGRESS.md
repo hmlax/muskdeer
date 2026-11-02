@@ -1243,3 +1243,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 原生诊断：首23项63.293秒两项失败，旧HTTP遇Nacos一秒查询超时，新夹具漏执行账户所有权worker导致路由lease_lost；补齐既有账户配置，不改fencing/期限。第二批44.633秒完成链路后因夹具numeric文本比较失败，改用typed仓储/decimal同值比较；保留全部证据。Nacos旧故障仍无根因结论，继续P09/P10，复测通过不宣称修复。
 - 最终原生：相同23项实际PG/Nacos/NATS/独立业务进程/race44.336秒全过，自有资源清理。新范围6.40秒自动处理注销后的已授权工作与未激活空实例；双策略PID、原owner退出/更高epoch接管、原取消请求仍1，确认前USDT799.8/冻结200.2/预留200。核心竞态成交1后确认撤单，自动持久成功、CANCELED/成交1/预留0、USDT899.9/冻结0；OMS/核心/收据/动作/取消请求/成交各1，无额外提交，风险仍关闭。旧HTTP4.16、单笔接管0.88、暂停恢复停止9.37、普通双进程策略9.16秒及原范围权限/回滚/未知/分页/DDL/升级均过。
 - 交付/后续：679bf449e9ab9870b9df1518d842a2efea41dc17已推送main并核对SHA，[CI41373329806](https://github.com/hmlax/muskdeer/actions/runs/41373329806)最近in_progress。206文档/543本地链接/逐文件审查、独立暂存检查后单独提交立即推送核对SHA，再继续viewer进度读取和typed管理入口/页面及独立受限平仓。P07/A27/L1与P08–P10未完成，P11缺真实合同/环境；生产/真实资金/部署未执行，14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未重复。
+
+
+## 2026-11-02：P07.63 当前viewer范围历史与只读进度
+
+- 改动：writer/reader窄端口，当前viewer的明确策略/1–100游标历史与单范围观测；原只读RR内统一身份/受理/任务/计数/数据库时间，有界任务批量查询。读取不Prepare/推进/发送，缺任务/不一致证明不可用；存储结果与当前计数分开，历史FAILED后来成交不改写结果。56生成/36模型/schema34、OpenAPI/四资产保持，无公开传输/页面/新资源，见[合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.63](validation/P07-63.md)。
+- 红测/工程：缺Observation/History先编译失败；完整make verify通过，Go1.27.3/doctor/contract/生成/Hertz/fmt/lint/govet0 issues/政策/22工具/全包单元/race/三命令构建，domain0.559/race1.596、repository0.116/race1.412秒。补测试后lint拒绝复杂度34，提取原断言helper、不改门禁，最终fmt/lint0 issues；高位身份/修订、非法/缺失证明单元通过。最终生产代码在原生前已构建，verify后只补测试。
+- 原生：22项实际PG/race16.479秒全过，自有资源清理。新空范围读取2.12秒保持Task，仅显式worker后见完成；历史分页0.61秒隔离共享账户兄弟，观测/历史跨事务变化0.51/0.47秒保留同授权快照，后续才见新任务/目标及注销拒绝。两个读取路径真实UPDATE账户均获25006（0.97秒），零部分结果/时间、账户/Task保持。原失败用例1.32秒保留NOT_ACCEPTED/冻结/预留断言，后来真实全成交+OMS Recover使当前terminal1/failed0，存储FAILED及修订/完成时间保持；原受理/权限/并发/回滚/UNKNOWN/最终约束/升级通过。
+- 交付/后续：4f08f51718845926ea17d435158a887ffcdde28e已推送main并核对SHA，[CI41374338063](https://github.com/hmlax/muskdeer/actions/runs/41374338063)最近in_progress。文档/链接/逐文件复审及独立暂存检查后单独提交立即推送核对SHA，继续typed管理RPC/HTTP和确认页面、受限平仓。P07/A27与P08–P10/L1未完成，P11缺真实合同/环境；旧Nacos等故障留待矩阵，本步不宣称修复。生产/真实资金/部署、独立业务HTTP/14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未执行。

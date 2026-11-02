@@ -84,6 +84,9 @@ func TestAdminEmergencyKnownCancelFailureDoesNotResolveUnknownSubmissionOrReleas
 			assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
 			assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 1)
 			assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+			if submitted {
+				assertEmergencyHistoricalFailureAfterFill(ctx, t, db, actor, accepted, order, core, intents)
+			}
 		})
 	}
 }

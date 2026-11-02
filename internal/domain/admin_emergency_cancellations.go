@@ -57,8 +57,46 @@ type AdminEmergencyCancelAcceptance struct {
 // AdminEmergencyCancellations borrows persistent authority and records scoped
 // work without sending commands. Reads revalidate the current viewer.
 type AdminEmergencyCancellations interface {
+	AdminEmergencyWriter
+	AdminEmergencyReader
+}
+
+// AdminEmergencyWriter revalidates current mutation authority atomically.
+type AdminEmergencyWriter interface {
 	Request(context.Context, string, string, AdminEmergencyCancelRequest) (AdminEmergencyCancelAcceptance, error)
+}
+
+// AdminEmergencyReader never enrolls targets, dispatches or advances a task.
+type AdminEmergencyReader interface {
 	Acceptance(context.Context, string, int64, int64) (AdminEmergencyCancelAcceptance, error)
+	Observation(context.Context, string, int64, int64) (AdminEmergencyCancelObservation, error)
+	History(context.Context, string, int64, AdminPage) (AdminEmergencyCancelPage, error)
+}
+
+// AdminEmergencyCancelRecord combines immutable acceptance with stored task
+// proof. State is historical; it is never inferred from the current counters.
+type AdminEmergencyCancelRecord struct {
+	Acceptance         AdminEmergencyCancelAcceptance
+	State              AdminEmergencyCancelState
+	Revision           int64
+	EnrollmentComplete bool
+	CompletedAt        time.Time
+}
+
+// AdminEmergencyCancelObservation samples current target facts and stored proof
+// in one authorized read-only snapshot. Later resolution can change counters
+// while a previously stored FAILED result remains historical and immutable.
+type AdminEmergencyCancelObservation struct {
+	Record     AdminEmergencyCancelRecord
+	Progress   AdminEmergencyCancelProgress
+	ObservedAt time.Time
+}
+
+// AdminEmergencyCancelPage is a bounded strategy history with durable ID cursor.
+type AdminEmergencyCancelPage struct {
+	Items       []AdminEmergencyCancelRecord
+	NextAfterID int64
+	ObservedAt  time.Time
 }
 
 // AdminEmergencyWork is persisted task progress, not an execution permission.
