@@ -78,6 +78,31 @@ func TestCancellationPagesRequireQueriesAndBothCanonicalIdentities(t *testing.T)
 	}
 }
 
+func TestEmergencyPagesRequireQueriesAndCanonicalStrategyScope(t *testing.T) {
+	hertz := emergencyHTTPFixture(t, &emergencyHTTPClient{}, nil)
+	for _, path := range []string{
+		"/strategies/9007199254740994/emergency-cancellations",
+		"/strategies/9007199254740994/emergency-cancellations/9007199254740993",
+	} {
+		if reply := perform(hertz, "GET", path, ""); reply.Code != 200 || !strings.HasPrefix(string(reply.Header().Peek("Content-Type")), "text/html") {
+			t.Fatal("query-only emergency deep link did not serve the application", reply.Code)
+		}
+	}
+	for _, path := range []string{
+		"/strategies/01/emergency-cancellations",
+		"/strategies/1/emergency-cancellations/0",
+		"/strategies/1/emergency-cancellations/01",
+		"/strategies/1/emergency-cancellations/9223372036854775808",
+	} {
+		if reply := perform(hertz, "GET", path, ""); reply.Code != 404 {
+			t.Fatal("emergency page accepted a noncanonical scope", reply.Code)
+		}
+	}
+	if reply := perform(emergencyHTTPFixture(t, nil, nil), "GET", "/strategies/1/emergency-cancellations", ""); reply.Code != 404 {
+		t.Fatal("disabled emergency queries exposed a page", reply.Code)
+	}
+}
+
 func TestMarketPagesRequireQueriesAndCanonicalFeedIdentity(t *testing.T) {
 	hertz := marketHTTPFixture(t, &marketHTTPClient{})
 	for _, path := range []string{"/markets", "/markets/9007199254740993"} {

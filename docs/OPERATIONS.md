@@ -42,6 +42,8 @@ make build
 
 ## 镜像与容器探针
 
+`make integration`的迁移包测试从实际Go可运行清单生成两个顺序批次，每项只执行一次，保留race、count=1与每批10分钟上限。清单错误、重复/空清单或任一批失败都使命令失败并保存本次隔离资源诊断；不重试失败测试，不放宽单项业务期限。P07.65的CI曾因累计测试超过Go默认整包10分钟被中断，分批原因和完整覆盖验证见[P07.66](validation/P07-66.md)。
+
 `make image` 从固定 `golang:1.27.3-bookworm` manifest digest 构建 `muskdeer:local`，构建阶段检查实际 GOVERSION 精确等于 go1.27.3，禁用工具链自动切换和 CGO。Dockerfile 的 toolchain target 可用 `docker build --target toolchain -t muskdeer:toolchain .` 构建为开发工具镜像；runtime 仅包含静态服务、CA 根证书及所链接模块的顶层许可证文件，使用 UID/GID 65532，无 shell。构建 context 使用白名单，不包含 .cache、git、配置/凭据及本地准备包；依赖通过锁定 go.mod/go.sum 下载。
 
 运行时显式传 `-role` 和只读挂载的 `-config`，配置文件必须允许容器 UID 读取。monitoring 仅绑定容器 loopback，因此应使用 exec 探针，不能把它当成已发布的宿主端口：

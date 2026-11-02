@@ -15,6 +15,61 @@ spec.loader.exec_module(runner)
 
 
 class IntegrationFailureTest(unittest.TestCase):
+    def test_migration_batches_cover_every_runnable_entry_once(self):
+        inventory = '\n'.join([
+            'TestSecond', 'TestFirst', 'FuzzDecimal', 'ExampleBalance',
+            'BenchmarkNotRunByDefault', 'ok\tgithub.com/hmlax/muskdeer/internal/migrate\t0.1s',
+        ])
+        batches = runner.migration_batches(inventory)
+        flattened = [name for batch in batches for name in batch]
+        self.assertEqual(len(batches), 2)
+        self.assertEqual(sorted(flattened), ['ExampleBalance', 'FuzzDecimal', 'TestFirst', 'TestSecond'])
+        self.assertEqual(len(flattened), len(set(flattened)))
+        for bad in ['', 'TestSame\nTestSame', 'TestUnexpected/child', 'unexpected-output']:
+            with self.subTest(inventory=bad):
+                with self.assertRaises(ValueError):
+                    runner.migration_batches(bad)
+
+    def test_migration_batch_failure_preserves_exit_and_never_runs_later_batch(self):
+        calls = []
+
+        def execute(arguments, **kwargs):
+            calls.append(arguments)
+            self.assertEqual(kwargs['env'], {'test': 'owned-only'})
+            if '-list' in arguments:
+                return subprocess.CompletedProcess(arguments, 0, stdout='TestSecond\nTestFirst\n')
+            self.assertIn('-race', arguments)
+            self.assertIn('-count=1', arguments)
+            self.assertIn('-timeout=10m', arguments)
+            self.assertEqual(arguments[arguments.index('-run') + 1], '^(TestFirst)$')
+            return subprocess.CompletedProcess(arguments, 17)
+
+        with patch.object(runner.subprocess, 'run', side_effect=execute):
+            self.assertEqual(runner.run_migration_tests({'test': 'owned-only'}), 17)
+        self.assertEqual(len(calls), 2)
+
+    def test_migration_inventory_failure_prevents_any_test_batch(self):
+        result = subprocess.CompletedProcess([], 19, stdout='TestPartial\n', stderr='inventory failed\n')
+        with patch.object(runner.subprocess, 'run', return_value=result) as execute:
+            self.assertEqual(runner.run_migration_tests({}), 19)
+        self.assertEqual(execute.call_count, 1)
+
+    def test_migration_batches_execute_exact_full_names_with_original_limits(self):
+        calls = []
+
+        def execute(arguments, **kwargs):
+            calls.append(arguments)
+            if '-list' in arguments:
+                return subprocess.CompletedProcess(arguments, 0, stdout='TestSecond\nTestFirst\n')
+            self.assertEqual(kwargs['env'], {'test': 'owned-only'})
+            self.assertIn('-timeout=10m', arguments)
+            self.assertIn('-race', arguments)
+            return subprocess.CompletedProcess(arguments, 0)
+
+        with patch.object(runner.subprocess, 'run', side_effect=execute):
+            self.assertEqual(runner.run_migration_tests({'test': 'owned-only'}), 0)
+        self.assertEqual([call[call.index('-run') + 1] for call in calls[1:]], ['^(TestFirst)$', '^(TestSecond)$'])
+
     def test_naming_admission_recovers_only_bounded_startup_transport_failure(self):
         response = io.BytesIO(b'{"hosts":[]}')
         with patch.object(runner.urllib.request, 'urlopen', side_effect=[TimeoutError(), response]) as lookup:
@@ -84,13 +139,15 @@ class IntegrationFailureTest(unittest.TestCase):
                 return subprocess.CompletedProcess(arguments, 0, stdout=bindings[arguments[-2]] + '\n')
             if len(arguments) > 1 and arguments[1].endswith('/scripts/go.py'):
                 environments.append(kwargs['env'])
+            if '-list' in arguments:
+                return subprocess.CompletedProcess(arguments, 0, stdout='TestFirst\nTestSecond\n')
             return subprocess.CompletedProcess(arguments, 0)
 
         with patch.object(runner.subprocess, 'run', side_effect=execute):
             with patch.object(runner, 'initialize_naming') as initialize:
                 self.assertEqual(runner.run(), 0)
         initialize.assert_called_once_with(bindings['nacos'])
-        self.assertEqual(len(environments), 2)
+        self.assertEqual(len(environments), 5)
         for environment in environments:
             self.assertIn('port=60101 ', environment['MUSKDEER_TEST_POSTGRES_DSN'])
             self.assertEqual(environment['MUSKDEER_TEST_POSTGRES_PORT'], '60101')
@@ -141,6 +198,8 @@ class IntegrationFailureTest(unittest.TestCase):
 
                 def execute(arguments, **_kwargs):
                     calls.append(arguments)
+                    if '-list' in arguments:
+                        return subprocess.CompletedProcess(arguments, 0, stdout='TestFirst\nTestSecond\n')
                     return subprocess.CompletedProcess(arguments, 17 if failed_package in arguments else 0)
 
                 with patch.object(runner.subprocess, 'run', side_effect=execute):

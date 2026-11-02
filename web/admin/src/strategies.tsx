@@ -115,6 +115,7 @@ function StrategyDetails({ id, onExpired, session }: { id: string; onExpired: ()
     <QueryState loading={query.loading} error={query.error} retry={query.reload} />
     <StrategyControls strategy={strategy} loading={query.loading || query.error !== ''} session={session} onExpired={onExpired} onRefresh={query.reload} />
     <RiskPanel id={id} current={strategy} loading={query.loading || query.error !== ''} session={session} onExpired={onExpired} onRefresh={query.reload} />
+    {strategy && <a className="button secondary" href={`/strategies/${id}/emergency-cancellations`}>查看范围紧急撤单 ↗</a>}
     <OrderPanel id={id} available={strategy !== undefined} session={session} onExpired={onExpired} />
     {strategy && <a className="button secondary" href={`/strategies/${id}/trades`}>查看策略成交 ↗</a>}
     {strategy && <a className="button secondary" href={`/portfolios?account_id=${encodeURIComponent(strategy.account_id)}`}>查看账户持仓 ↗</a>}

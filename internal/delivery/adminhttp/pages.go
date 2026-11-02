@@ -25,6 +25,9 @@ func (r *Routes) pages(hertz *server.Hertz) {
 	if r.cancellationQueries != nil {
 		paths = append(paths, "/strategies/:strategyID/order-cancellations/:cancellationID")
 	}
+	if r.emergencyQueries != nil {
+		paths = append(paths, "/strategies/:strategyID/emergency-cancellations", "/strategies/:strategyID/emergency-cancellations/:cancellationID")
+	}
 	if r.markets != nil {
 		paths = append(paths, "/markets", "/markets/:feedID")
 	}
@@ -94,6 +97,8 @@ func validPageIdentity(path string, request *app.RequestContext) bool {
 		_, strategyValid := strategyID(request)
 		_, idValid := cancellationPathID(request.Param("cancellationID"))
 		return strategyValid && idValid
+	case "/strategies/:strategyID/emergency-cancellations", "/strategies/:strategyID/emergency-cancellations/:cancellationID":
+		return validEmergencyPageIdentity(request)
 	case "/strategies/:strategyID":
 		_, valid := strategyID(request)
 		return valid
@@ -106,4 +111,13 @@ func validPageIdentity(path string, request *app.RequestContext) bool {
 	default:
 		return true
 	}
+}
+
+func validEmergencyPageIdentity(request *app.RequestContext) bool {
+	_, valid := strategyID(request)
+	if id := request.Param("cancellationID"); id != "" {
+		_, idValid := cancellationPathID(id)
+		return valid && idValid
+	}
+	return valid
 }

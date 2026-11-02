@@ -3,6 +3,7 @@
 
 import os
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -133,6 +134,47 @@ def test_environment(compose: list[str]) -> dict[str, str]:
     return environment
 
 
+def migration_batches(inventory: str) -> list[list[str]]:
+    """Partition Go's complete runnable inventory, without widening deadlines."""
+    names = []
+    for line in inventory.splitlines():
+        if line.startswith(('Test', 'Example', 'Fuzz')):
+            if not re.fullmatch(r'(?:Test|Example|Fuzz)\w*', line):
+                raise ValueError('migration inventory contains an invalid runnable name')
+            names.append(line)
+        elif line and not line.startswith(('Benchmark', 'ok\t', 'ok ', '?\t', '? ')):
+            raise ValueError('migration inventory contains unexpected output')
+    if not names or len(names) != len(set(names)):
+        raise ValueError('migration inventory is empty or contains duplicate entries')
+    names.sort()
+    return [names[index::2] for index in range(min(2, len(names)))]
+
+
+def run_migration_tests(environment: dict[str, str]) -> int:
+    """Keep every test and race check within two sequential ten-minute batches."""
+    command = [sys.executable, str(ROOT / 'scripts/go.py'), 'test',
+               '-tags=integration', '-race', '-count=1']
+    inventory = subprocess.run(
+        [*command, '-list', '.', './internal/migrate'],
+        cwd=ROOT, env=environment, capture_output=True, text=True, check=False,
+    )
+    if inventory.returncode:
+        print(inventory.stderr, file=sys.stderr, end='')
+        return inventory.returncode
+    batches = migration_batches(inventory.stdout)
+    for index, names in enumerate(batches, 1):
+        print(f'Migration integration batch {index}/{len(batches)}: '
+              f'{len(names)} runnable entries; race enabled; deadline 10m', flush=True)
+        pattern = '^(' + '|'.join(re.escape(name) for name in names) + ')$'
+        result = subprocess.run(
+            [*command, '-v', '-timeout=10m', '-run', pattern, './internal/migrate'],
+            cwd=ROOT, env=environment, check=False,
+        )
+        if result.returncode:
+            return result.returncode
+    return 0
+
+
 def run() -> int:
     project = 'muskdeer-p01-' + uuid.uuid4().hex[:10]
     compose = ['docker', 'compose', '-p', project, '-f', str(ROOT / 'compose.test.yml')]
@@ -150,11 +192,15 @@ def run() -> int:
             return result.returncode
         result = subprocess.run([
             sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
-            '-race', '-count=1', '-v', './internal/infrastructureprobe', './internal/migrate',
+            '-race', '-count=1', '-v', './internal/infrastructureprobe',
         ], cwd=ROOT, env=environment, check=False)
         if result.returncode:
             capture_diagnostics(compose)
-        return result.returncode
+            return result.returncode
+        code = run_migration_tests(environment)
+        if code:
+            capture_diagnostics(compose)
+        return code
     except (OSError, ValueError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
         # These are disposable services with explicit test credentials. Capture
         # only this project's bounded logs before finally removes the evidence.

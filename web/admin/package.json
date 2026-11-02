@@ -19,6 +19,7 @@
     "browser-risk": "node e2e/risk.mjs",
     "browser-orders": "node e2e/orders.mjs",
     "browser-cancellations": "node e2e/cancellations.mjs",
+    "browser-emergencies": "node e2e/emergencies.mjs",
     "browser-markets": "node e2e/markets.mjs",
     "browser-trades": "node e2e/trades.mjs",
     "browser-portfolios": "node e2e/portfolios.mjs",

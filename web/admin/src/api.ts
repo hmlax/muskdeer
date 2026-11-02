@@ -1,6 +1,7 @@
 import type { CreationInput } from './creation-api';
 import type { PublicationInput } from './publication-api';
 import type { CancellationInput } from './cancellation-api';
+import type { EmergencyInput } from './emergency-api';
 
 export type Role = 'viewer' | 'operator' | 'admin';
 
@@ -90,7 +91,7 @@ export async function logout(): Promise<void> {
   await request('auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': proof } });
 }
 
-export async function managementWriteJSON(path: string, key: string, body: { action: string; expected_revision: string; reason: string } | CreationInput | PublicationInput | CancellationInput, signal: AbortSignal): Promise<unknown> {
+export async function managementWriteJSON(path: string, key: string, body: { action: string; expected_revision: string; reason: string } | CreationInput | PublicationInput | CancellationInput | EmergencyInput, signal: AbortSignal): Promise<unknown> {
   const response = await request(path, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfProof(), 'Idempotency-Key': key },

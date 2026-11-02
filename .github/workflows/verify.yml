@@ -71,6 +71,8 @@ jobs:
         run: make admin-orders-browser
       - name: Verify actual funded order cancellation browser workflow
         run: make admin-cancellation-browser
+      - name: Verify actual scoped emergency cancellation browser workflow
+        run: make admin-emergency-browser
       - name: Verify actual independent market monitoring browser workflow
         run: make admin-market-browser
       - name: Verify actual authoritative trades browser workflow
