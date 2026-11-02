@@ -1,5 +1,7 @@
 # Muskdeer
 
+本地管理界面使用既有 Docker infra：`make compose-up`，启动后访问 http://127.0.0.1:59000。只部署 admin/operator 两个应用；随机登录密码、准备条件与停止命令见[两应用运行说明](docs/TWO_APPS.md)。
+
 基于既有撮合引擎的自营做市与可配置策略平台。
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 

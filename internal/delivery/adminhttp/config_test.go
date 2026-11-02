@@ -107,3 +107,40 @@ func TestStrategyHTTPRequiresExplicitDiscoveryAndBoundedAllowedClient(t *testing
 		}
 	}
 }
+
+func TestContainerListenerRequiresExplicitLocalOriginOptIn(t *testing.T) {
+	cfg := &configv1.ServiceConfig{
+		Name:     "admin",
+		Postgres: &configv1.Postgres{},
+		Http:     &configv1.Listener{Address: "0.0.0.0:59000"},
+		AdminHttp: &configv1.AdminHTTP{
+			Enabled:                true,
+			PublicOrigin:           "http://127.0.0.1:59000",
+			AllowInsecureLoopback:  true,
+			AllowContainerListener: true,
+		},
+	}
+	if err := ValidateConfig(cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, mutate := range []func(*configv1.ServiceConfig){
+		func(v *configv1.ServiceConfig) { v.AdminHttp.AllowContainerListener = false },
+		func(v *configv1.ServiceConfig) { v.AdminHttp.Enabled = false },
+		func(v *configv1.ServiceConfig) { v.AdminHttp.AllowInsecureLoopback = false },
+		func(v *configv1.ServiceConfig) { v.AdminHttp.PublicOrigin = "http://192.0.2.1:59000" },
+		func(v *configv1.ServiceConfig) { v.AdminHttp.PublicOrigin = "http://127.0.0.1:0" },
+		func(v *configv1.ServiceConfig) { v.Http.Address = "0.0.0.0:0" },
+		func(v *configv1.ServiceConfig) { v.Http.Address = "192.0.2.1:59000" },
+		func(v *configv1.ServiceConfig) { v.Name = "api" },
+	} {
+		changed := proto.CloneOf(cfg)
+		mutate(changed)
+		if err := ValidateConfig(changed); err == nil {
+			t.Fatal("unsafe container management configuration accepted")
+		}
+	}
+	origin, secure, err := resolvedOrigin(cfg.AdminHttp, &net.TCPAddr{Port: 59000})
+	if err != nil || secure || origin != cfg.AdminHttp.PublicOrigin {
+		t.Fatal("container binding changed the pinned browser origin")
+	}
+}

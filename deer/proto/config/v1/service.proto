@@ -40,6 +40,9 @@ message AdminHTTP {
   bool strategy_queries_enabled = 4;
   // Separate opt-in for management writes/results; requires strategy queries.
   bool strategy_controls_enabled = 5;
+  // Local Docker only: permit 0.0.0.0 with a fixed literal-loopback HTTP
+  // public_origin. The published host port must bind to 127.0.0.1.
+  bool allow_container_listener = 6;
 }
 
 // BusinessRuntime configures owned business work without migrating

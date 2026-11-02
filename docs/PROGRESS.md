@@ -1350,3 +1350,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 诊断保留：旧认证失败夹具、独立入口的取消/超时诊断及 Nacos 异步用户缓存均已修复并重验。宿主磁盘耗尽导致共享 Docker 只读，清理约 39 GB 本项目 Go 缓存，经授权重启 Docker Desktop，确认原容器恢复后重验通过。真实凭据及运行证据仅在忽略的本地缓存。
 - 原有未提交平仓代码、生成物与相关事件测试失败保持，不纳入本步提交；固定三十分钟、全部十五组历史浏览器及生产环境未运行。P07/A27 及后续 MVP 层级仍未完成；CI 集成/浏览器任务需已有 infra 的自托管 runner，不冒充远程 CI 通过。
 - 文档基线 6df6cea 已推送 codex/two-apps 并核验；本步独立暂存、提交后立即推送同一分支，提交 SHA 与远程核验见交付报告及 Git 历史。
+
+## 2026-11-02：P12.5 Docker Compose 复用 infra 并实际启动
+
+- 根据用户要求增加应用专用 compose.yml，仅启动 admin/operator；连接既有 infra-network 和 PostgreSQL/Redis/Nacos，不部署基础服务。创建有所有权标记的独立数据库/角色及 Nacos 命名空间，配置/凭据/本地 mTLS 仅保存于忽略缓存。显式用同源码镜像中的 migrate/adminuser 完成 schema 37 和一次管理员初始化，重复运行不重置密码。
+- 管理服务新增显式本地 Docker 监听选项，仍固定 loopback 浏览器来源且宿主仅发布 127.0.0.1:59000；operator 经 Nacos/mTLS 通信，无宿主端口。当前仅管理模块，无账户/资金/行情执行工作和消息流，不产生交易；消息工作后续继续复用 infra-nats 独立开发账户。
+- 验证：独立源码的 fmt/生成检查/lint/govet（0 issues）/全包单元通过，相关 race 与 28 脚本测试通过；最终两镜像构建、显式迁移重放、Compose up --wait、两容器 healthy、真实 HTTP 登录/Origin 拒绝/Nacos→operator 查询及真实 React/Chromium 概览通过。既有四个 infra 容器 ID 与启动时间保持。详见 [P12.5 验证](validation/P12-05.md)。
+- 诊断：ProtoJSON 持续时间 500ms 改为 0.5s 后实际启动通过；监听校验复杂度拆分后静态检查通过。Buildx/Chromium 沙箱限制经工具审批重验。既有 NATS unhealthy 不属于本步修复，管理模式不连接 NATS。保留原有平仓未提交修改；运行镜像使用独立 schema 37 源码，未借本步提交该功能。完整集成/历史浏览器/三十分钟/生产本步未运行。
+- 地址 http://127.0.0.1:59000，用户名 admin，密码见忽略的 .cache/compose/credentials.json。基线 2b69495 已同步 codex/two-apps；本步验证后立即独立提交、推送并核验远程 SHA，交付报告记录结果。

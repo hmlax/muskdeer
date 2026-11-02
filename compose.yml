@@ -1,0 +1,73 @@
+name: muskdeer
+
+x-runtime: &runtime
+  restart: unless-stopped
+  user: "${MUSKDEER_UID:?run scripts/compose.py prepare}:${MUSKDEER_GID:?run scripts/compose.py prepare}"
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 128
+  mem_limit: 384m
+  cpus: 1.0
+  stop_grace_period: 15s
+  env_file: ["${MUSKDEER_RUNTIME_DIR:?run scripts/compose.py prepare}/secrets.env"]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  operator:
+    <<: *runtime
+    image: muskdeer-operator:infra-local
+    build:
+      context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      target: runtime-operator
+    command: [-config, /app/config/operator.json]
+    volumes:
+      - type: bind
+        source: "${MUSKDEER_RUNTIME_DIR}/config/operator"
+        target: /app/config
+        read_only: true
+    networks:
+      infra: {}
+      app:
+        ipv4_address: 172.31.240.10
+    healthcheck:
+      test: [CMD, /operator, -config, /app/config/operator.json, -check-ready]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+  admin:
+    <<: *runtime
+    image: muskdeer-admin:infra-local
+    build:
+      context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      target: runtime-admin
+    command: [-config, /app/config/admin.json]
+    volumes:
+      - type: bind
+        source: "${MUSKDEER_RUNTIME_DIR}/config/admin"
+        target: /app/config
+        read_only: true
+    ports: ["127.0.0.1:59000:59000"]
+    networks: [infra, app]
+    depends_on:
+      operator:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, /admin, -config, /app/config/admin.json, -check-ready]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+networks:
+  infra:
+    external: true
+    name: "${MUSKDEER_INFRA_NETWORK:-infra-network}"
+  app:
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.31.240.0/24

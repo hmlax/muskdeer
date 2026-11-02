@@ -16,7 +16,7 @@ import (
 )
 
 // MessageInvalidConfig never includes an untrusted origin or configuration.
-const MessageInvalidConfig = "management HTTP requires admin, PostgreSQL, a loopback listener and an explicit canonical origin"
+const MessageInvalidConfig = "management HTTP requires admin, PostgreSQL, a local listener and an explicit canonical origin"
 
 // ErrInvalidConfig rejects incomplete management opt-in before serving requests.
 var ErrInvalidConfig = errors.New(MessageInvalidConfig)
@@ -31,7 +31,7 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		return nil
 	}
 	if !admin.Enabled {
-		if admin.PublicOrigin != "" || admin.AllowInsecureLoopback || admin.StrategyQueriesEnabled || admin.StrategyControlsEnabled {
+		if admin.PublicOrigin != "" || admin.AllowInsecureLoopback || admin.StrategyQueriesEnabled || admin.StrategyControlsEnabled || admin.AllowContainerListener {
 			return ErrInvalidConfig
 		}
 		return nil
@@ -47,9 +47,15 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		cfg.GrpcClients.RequestTimeout.CheckValid() != nil || cfg.GrpcClients.RequestTimeout.AsDuration() <= 0 || cfg.GrpcClients.RequestTimeout.AsDuration() > 5*time.Second) {
 		return ErrInvalidConfig
 	}
+	return validateManagementListener(cfg)
+}
+
+func validateManagementListener(cfg *configv1.ServiceConfig) error {
+	admin := cfg.AdminHttp
 	bindHost, bindPort, err := net.SplitHostPort(cfg.Http.Address)
 	bindIP, parseErr := netip.ParseAddr(bindHost)
-	if err != nil || parseErr != nil || !bindIP.IsLoopback() {
+	allowedListener := bindIP.IsLoopback() || admin.AllowContainerListener && bindHost == "0.0.0.0"
+	if err != nil || parseErr != nil || !allowedListener {
 		return ErrInvalidConfig
 	}
 	if _, err := strconv.ParseUint(bindPort, 10, 16); err != nil {
@@ -58,6 +64,13 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	origin, err := parseOrigin(admin.PublicOrigin, admin.AllowInsecureLoopback)
 	if err != nil {
 		return err
+	}
+	if admin.AllowContainerListener {
+		originIP, err := netip.ParseAddr(origin.Hostname())
+		if cfg.Name != "admin" || bindHost != "0.0.0.0" || bindPort == "0" ||
+			err != nil || !originIP.IsLoopback() || origin.Scheme != "http" || !admin.AllowInsecureLoopback || origin.Port() == "0" {
+			return ErrInvalidConfig
+		}
 	}
 	if origin.Port() == "0" && (origin.Scheme != "http" || bindPort != "0" || origin.Hostname() != bindHost) {
 		return ErrInvalidConfig

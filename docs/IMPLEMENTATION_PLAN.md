@@ -7,6 +7,7 @@
 - P12.2：提供两个独立应用入口；operator 在同一 Deer 中装配行情/策略/执行/投影工作；更新构建、配置、开发入口及运行文档，验证生命周期与业务闭环。
 - P12.3：admin 完成会话、角色及 CSRF 校验，operator 仅接收审计身份；验证未授权请求不调用 RPC，业务操作、精度及幂等保持。
 - P12.4：按用户后续要求，每个服务使用独立入口，移除共用 cmd/role 分发；测试及开发连接复用现有 Docker infra，仅创建隔离逻辑资源，不部署额外基础服务。
+- P12.5：按用户后续要求提供应用专用 Docker Compose，复用现有 infra，显式迁移/初始化本地管理身份后实际启动 admin/operator，验证健康、React 登录及 HTTP→gRPC 查询。
 
 验收：React 为唯一页面实现；默认构建和开发配置只含 admin/operator 两种应用；HTTP→gRPC 的实际查询/写入通过；无会话密钥/CSRF 跨业务 RPC；多节点租约与最终 fencing 保持。完成状态以 PROGRESS 及实际验证为准。
 

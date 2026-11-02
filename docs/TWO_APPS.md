@@ -4,6 +4,34 @@
 
 ## 构建与启动
 
+### Docker Compose 连接既有 infra
+
+`compose.yml` 只部署 admin/operator，连接已存在的 `infra-network`；PostgreSQL、Redis、Nacos 容器分别默认为 infra-postgres、infra-redis、infra-nacos。不会运行仓库中已停用的 compose.dev.yml/compose.test.yml，不创建或停止任何基础服务。准备脚本需要 Python 3.11+、Docker Compose、OpenSSL；前端使用项目固定工具链。
+
+```sh
+make compose-up
+docker compose --env-file .cache/compose/compose.env ps
+```
+
+首次准备从 `.cache/infra/nacos-credentials.json` 读取既有 Nacos 登录（username/password），从既有容器读取 PostgreSQL/Redis 本地凭据。仅创建项目专属 PostgreSQL 数据库/角色 muskdeer_local、Nacos 命名空间 muskdeer-local、本地 mTLS CA/服务证书和随机管理密码；本地文件被 Git 忽略，权限 0600。数据库/角色以随机所有权标记识别，拒绝接管无标记的同名资源，重复准备不重置密码。
+
+镜像内的 `/migrate` 与应用来自同一 Go 1.27.3 源码；启动前显式执行迁移，再用 `/adminuser` 初始化一次本地管理员，服务自身不迁移或开户。浏览器地址为 **http://127.0.0.1:59000**，用户名 admin，随机密码在 `.cache/compose/credentials.json` 的 password 字段。该文件还含本地数据库密码，请勿提交或分享。
+
+当前启动管理查询/控制模块，不配置交易账户、资金、行情工作循环或策略执行者，因此新数据库页面为空。没有新增风险或实际下单；消息发布/消费尚未启用，不需要 NATS 流。后续启用交易消息时继续使用既有 infra-nats，需独立持久开发账户及预置流，不能复用会被测试清理的 muskdeer-test 账户。
+
+admin 的 `allow_container_listener` 仅显式允许本地 Docker 的 0.0.0.0 监听，public_origin 仍必须固定为 literal-loopback HTTP；宿主发布端口只绑定 127.0.0.1。operator 不发布宿主端口，admin 通过 Nacos 发现并使用 mTLS 调用 operator.grpc。应用内部网络固定 172.31.240.0/24（operator .10），准备阶段拒绝与其他 Docker 网络重叠；基础服务仍走外部 infra-network。运行用户为准备者的非 root UID/GID，使只读挂载的 0600 配置/密钥可读；每个容器只挂载自己的配置和服务私钥，CA 私钥不挂载。容器只读、移除 capabilities，并限制日志轮转、内存和进程数。
+
+```sh
+# 已完成准备、构建、迁移和账户初始化后的再次启动
+docker compose --env-file .cache/compose/compose.env up -d --wait
+# 仅停止/移除这两个应用，持久数据和既有 infra 保留
+make compose-down
+```
+
+本次工作区保留未完成的平仓修改，运行镜像由已提交版本加本步修改的独立源码构建（schema 37），源码保存在被忽略的 `.cache/compose/source`，具体路径见 compose.env。普通干净检出默认直接构建仓库；要明确改用当前工作区，可运行 `python3 scripts/compose.py prepare --source .` 后重新构建。不要让未提交 schema 38 与 schema 37 运行镜像混用。证书为本地开发用途，有效期不足一天时准备脚本拒绝继续，需明确轮换后重建/重启应用。
+
+### 原生构建
+
 使用 Go 1.27.3，工具测试和前端工具脚本需 Python 3.11 或以上。运行 `make build`，产物为 `.cache/bin/operator`、`.cache/bin/admin`，以及独立工具 migrate/adminuser。初始化账户命令由原 admin 更名为 adminuser，避免与 HTTP 应用混淆。
 
 ```sh

@@ -15,9 +15,11 @@ COPY web/admin/dist ./web/admin/dist
 COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     go build -mod=readonly -trimpath -o /out/admin ./cmd/admin && \
-    go build -mod=readonly -trimpath -o /out/operator ./cmd/operator
+    go build -mod=readonly -trimpath -o /out/operator ./cmd/operator && \
+    go build -mod=readonly -trimpath -o /out/migrate ./cmd/migrate && \
+    go build -mod=readonly -trimpath -o /out/adminuser ./cmd/adminuser
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/admin ./cmd/operator > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/admin ./cmd/operator ./cmd/migrate ./cmd/adminuser > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
@@ -38,6 +40,8 @@ WORKDIR /app
 STOPSIGNAL SIGTERM
 FROM runtime-base AS runtime-admin
 COPY --from=build /out/admin /admin
+COPY --from=build /out/migrate /migrate
+COPY --from=build /out/adminuser /adminuser
 ENTRYPOINT ["/admin"]
 
 FROM runtime-base AS runtime-operator

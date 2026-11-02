@@ -180,3 +180,18 @@ soak-smoke: build-fixtures
 two-apps-test: build web-install
 	python3 scripts/web.py browser-install
 	python3 scripts/two-apps-test.py
+
+.PHONY: compose-prepare compose-up compose-down compose-status
+compose-prepare:
+	python3 scripts/compose.py prepare
+
+compose-up: web-build compose-prepare
+	docker compose --env-file .cache/compose/compose.env build
+	python3 scripts/compose.py bootstrap
+	docker compose --env-file .cache/compose/compose.env up -d --wait --wait-timeout 60
+
+compose-down:
+	docker compose --env-file .cache/compose/compose.env down
+
+compose-status:
+	docker compose --env-file .cache/compose/compose.env ps
