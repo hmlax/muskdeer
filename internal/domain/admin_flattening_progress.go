@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 // AdminFlattenTaskState describes durable work, separately from confirmation.
 type AdminFlattenTaskState string
@@ -26,4 +29,10 @@ type AdminFlattenProgress struct {
 	ClaimedAt    time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
+}
+
+// AdminFlattenWork claims pending work using current persisted ownership and
+// original financial confirmation. A claim never authorizes an order send.
+type AdminFlattenWork interface {
+	Claim(context.Context, LeaseToken, int64) (AdminFlattenProgress, error)
 }
