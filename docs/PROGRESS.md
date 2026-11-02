@@ -1375,3 +1375,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：独立 schema 37 源码的 fmt/60 Proto 与 OpenAPI 生成检查/lint/govet（0 issues）/全包单元/四核心构建通过；六个相关包 race 通过；make core-test 四项实际 infra/race 13.796 秒全过，成交投影/预算闭环 2.31 秒、幂等资源 0.43 秒、broker 冲突 0.02 秒、策略接管/报价/终态停止 9.45 秒。新增四服务身份/管理拒绝测试先因缺本地 runService 编译失败，拆分后通过；导入分组问题修正后最终静态检查通过。
 - 运行：四个最终镜像重新构建并重建应用容器，Compose up --wait 全部 healthy；四镜像非 root/只读/禁网的 readiness、JSON 身份及 SIGTERM 通过。实际四 Nacos 健康身份、两路未过期 HEALTHY 回放与 99.99/100.01 精确价格、execution 空订单查询经 mTLS 通过。原 49 个未提交平仓路径保留，运行构建来源为忽略的 .cache/service-entry/source；旧管理原生/浏览器、完整历史集成、三十分钟及生产本步未运行。详见 [P13.2 验证](validation/P13-02.md)。
 - 工作分支 codex/two-apps，基线 1dbfd50 已同步；本步验证后单独提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。
+
+## 2026-11-02：P13.3 核心服务无参数、Nacos 业务配置
+
+- 根据用户后续要求，四个核心命令移除 flag/-config/-check-ready 和本地 JSON 路径；保持各自独立 runService，env 提供 Nacos 连接/认证/范围/TLS/期限，启动读取对应 Data ID 的严格 Proto JSON。拒绝错误身份、未知内容及远程连接覆盖，不回退本地文件。启动快照变更需显式重启，账本/持久版本仍由 PostgreSQL 管理。
+- 新独立无参数 readycheck；维护工具默认读取 Nacos，migrate 保留 -apply，历史维护文件选项兼容。Compose 只挂自身证书，通过 env 启动；显式首次准备只发布缺失项，不覆盖控制台业务配置。tools profile 避免维护与运行服务争用固定 IP，显式 schema 37 迁移和 coreinit 重放通过，不注资、不启用交易。
+- 验证：相关包 race 通过；独立 schema 37 源码的 fmt/60 Proto 与 OpenAPI 生成检查/lint/govet（0 issues）/全包单元/核心构建通过；core-test 四项实际 infra/Nacos/race 15.033 秒通过，包含真实独立命令成交投影/预算、幂等初始化、broker 冲突与策略接管/终态停止。dev-test 真实 Nacos 启动及重复关联/退出通过；最终 30 项工具测试、四个最终镜像非 root/只读/无参数/无 JSON 挂载的 readiness/日志/SIGTERM 通过。
+- 运行：四个最终镜像 Compose up --wait 全部 healthy，实际核实 Nacos 四配置/四健康身份、双源未过期 HEALTHY 回放及精确 99.99/100.01、execution 空订单；没有新增或重启共享基础容器。原 49 个未提交平仓路径保持，构建来源 .cache/nacos-config/source。详见 [配置说明](NACOS_CONFIG.md) 和 [P13.3 验证](validation/P13-03.md)。旧全量集成/管理浏览器/固定三十分钟及生产本步未运行。
+- 工作分支 codex/two-apps，基线 84fd86c 已同步；本步验证后独立提交、立即推送并核验 SHA，结果见交付报告和 Git 历史。

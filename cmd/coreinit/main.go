@@ -11,6 +11,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/postgres"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/internal/corelocal"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/migrate"
@@ -29,10 +30,16 @@ func main() {
 func run(ctx context.Context) (result error) {
 	path := flag.String("config", "", "local execution service configuration")
 	flag.Parse()
-	if *path == "" || flag.NArg() != 0 {
+	if flag.NArg() != 0 {
 		return corelocal.ErrResources
 	}
-	cfg, err := deer.LoadConfig(ctx, *path)
+	var cfg *configv1.ServiceConfig
+	var err error
+	if *path == "" {
+		cfg, err = deer.LoadNacosConfig(ctx, "execution")
+	} else {
+		cfg, err = deer.LoadConfig(ctx, *path)
+	}
 	if err != nil {
 		return err
 	}

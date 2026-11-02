@@ -2,12 +2,14 @@
 
 核心服务复用既有 Docker infra：`make compose-up` 分别启动 market、strategy、execution、portfolio 四个 Kratos 进程；不启动管理后台。入口、端口及验证见[核心服务运行说明](docs/CORE_SERVICES.md)。
 
+四个服务均无命令行参数：Nacos 连接信息从 env 获取，服务及业务运行配置从 Nacos 的各自配置项读取，不读取本地 JSON。字段及示例见 [Nacos 配置](docs/NACOS_CONFIG.md)。
+
 基于既有撮合引擎的自营做市与可配置策略平台。
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
 
-2026-11-02 后续架构调整：用户取消管理后台范围，核心模块分别独立进程。`make build` 默认构建 `.cache/bin/{market,strategy,execution,portfolio,migrate,coreinit}`，Compose 启动四个业务进程，各自独立 cmd/Nacos 身份/端口；构建不需要 React 或管理资产。单仓库、单 go.mod、Go 1.27.3、Deer 及交易正确性保持。`make core-test` 用实际核心命令验证回放、执行、成交投影及策略接管/停止，复用既有 infra。
+2026-11-02 后续架构调整：用户取消管理后台范围，核心模块分别独立进程。`make build` 默认构建 `.cache/bin/{market,strategy,execution,portfolio,migrate,coreinit,readycheck}`，Compose 启动四个业务进程，各自独立 cmd/Nacos 身份/端口；构建不需要 React 或管理资产。单仓库、单 go.mod、Go 1.27.3、Deer 及交易正确性保持。`make core-test` 用实际核心命令验证回放、执行、成交投影及策略接管/停止，复用既有 infra。
 
 以下管理功能记录属于历史交付；管理包、前端和旧验证命令保留，不属于当前默认构建/部署或当前验收范围。
 P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、策略创建/查询/启停及参数发布/换源、审计列表/详情、策略风险与额度页面和HTTP/gRPC及网格控制循环已分步交付；做市/网格的浏览器发布换源、模拟资金冻结/释放及暂停/停止目标保留通过，策略风险页面的资金关闭/恢复闭环也已验证。风险历史及运行概览页面也已分步交付；剩余P07验收、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
@@ -18,8 +20,8 @@ P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及�
 运行 make tools 安装固定版本 protoc 与插件，make generate 生成模型及 RPC，make verify 执行生成一致性、hz 生成/编译、格式、lint、工具链测试、Go 单元/race 测试与构建。make integration 复用现有 Docker infra 的 PostgreSQL/Redis/NATS/Nacos，仅创建和清理独立逻辑测试资源，执行模型、客户端/池/超时/TTL/生命周期、JetStream 确认丢失、Nacos 认证与 namespace 隔离测试；仅绑定 127.0.0.1，由 Docker 动态分配端口并传给本次测试进程，本机需 Docker 可用。Nacos 使用现有凭据和独立测试命名空间，不初始化管理员或启动新基础服务镜像。
 
 make doctor 同时验证精确工具链及服务/API 示例配置；其他文件使用 `python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json`。严格 Proto JSON、相对路径与校验范围见 [配置说明](docs/CONFIGURATION.md)。
-make build 生成 `.cache/bin/admin`、`.cache/bin/operator`、迁移和 adminuser 账户开通命令；例如 `.cache/bin/operator -config configs/local/operator.json` 启动 operator 进程，SIGTERM/CTRL-C 有序停止。`configs/local/admin.json` 和 `operator.json` 提供无外部依赖的本地配置及独立 loopback 端口；运行与日志边界见 [运维说明](docs/OPERATIONS.md)。api可显式开启[管理登录/会话页面与身份接口](docs/ADMIN_HTTP.md)及下述管理页面；完整P07仍待剩余验收。
-`make dev-up` 连接已有 infra，生成 `.cache/dev` 地址、环境引用和两份配置；`make dev-down` 只解除本工作区关联，保留共享服务。`make dev-test` 在独立临时工作区验证重复启动、配置、实际依赖就绪和数据保留，结束只清理该测试资源。详见 [开发环境](docs/OPERATIONS.md#开发资源)。
+`make build` 构建四个独立核心命令及维护/探针工具。设置 Nacos env 后直接运行 `.cache/bin/market` 等命令，SIGTERM/CTRL-C 有序停止；默认实际业务启动使用 `make compose-up`，见 [核心服务运行说明](docs/CORE_SERVICES.md)。下述管理页面文档保留为历史实现记录，当前核心部署不启用。
+`make dev-up` 连接已有 infra，将四个基础设施探针配置发布到工作区专属 Nacos 分组，并生成 `.cache/dev/environment.sh`；source 后可无参数启动各核心命令。该开发探针模式不准备交易业务。`make dev-down` 只解除本工作区关联，保留共享服务。`make dev-test` 验证重复关联、实际依赖就绪和数据保留，结束只清理该测试资源。
 
 可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费、market工作器/行情RPC和strategy账户控制循环；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令、双来源market及双strategy接管/报价/终态停止的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
 `make soak-smoke` 检查12秒真实策略驱动；`make soak` 使用独有测试基础设施执行固定30分钟场景，保存资金/预算/成交投影采样及实际业务进程日志。短场景不能计为30分钟验收，见 [长运行说明](docs/STRATEGY_SOAK.md)。

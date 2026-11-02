@@ -6,6 +6,7 @@
 
 - 提供 market/strategy/execution/portfolio 各自独立 cmd、镜像和 Compose 服务，默认构建不依赖 React/admin/operator。
 - P13.2：按后续要求继续拆分共享启动方法，各 cmd/service.go 独立维护服务装配，直接构造对应业务类型，核心路径不使用 name 分发；保留健康/取消小工具和旧回归兼容。
+- P13.3：按后续要求移除核心入口 flags/本地配置，Nacos 连接从 env 引导，服务/业务运行配置从 Nacos 读取；调整显式维护工具、独立探针、Compose 和真实 Nacos 回归，不覆盖已有配置。
 - 复用既有 PostgreSQL/Redis/Nacos/NATS，独立持久消息账户/流，显式迁移和本地资源初始化；不创建基础服务。
 - 核心工作循环不依赖管理开启；本地回放双源行情，交易账户未注资且禁止新增风险。
 - 验收：四容器健康、四个独立 Nacos 身份、实际 RPC 和工作循环、数据/消息幂等、真实独立进程业务与停止/接管回归通过。无具体业务的 cron 不部署。

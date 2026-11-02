@@ -9,6 +9,7 @@
 - 外部 HTTP 使用 Hertz，服务生命周期使用 Kratos，内部通信使用 gRPC；注册发现使用 Nacos。禁止替换成 Kitex、Gin 或 Kratos HTTP。
 - 2026-11-02 后续明确指令优先：当前仅交付核心 Kratos 服务，各模块分别独立进程、独立 cmd 入口，不使用共用命令加 role 参数。已实现的 market、strategy、execution、portfolio 分别使用 Deer 提供 gRPC/业务工作循环；默认构建和 Compose 不再部署 admin、operator 或管理前端。保留单仓库、单 go.mod；每进程公共依赖只装配一次。此项替代此前两应用部署约定。
 - 各核心服务在自己的 cmd/<service>/service.go 独立维护配置、Deer 生命周期、业务构造和 RPC/worker 注册；直接使用对应的 typed 构造函数。禁止用共用 Run(ctx, name, ...) 或按服务名分发的业务工厂装配核心进程。coreentry 只保留健康/取消小工具，历史组合装配仅供旧入口与回归兼容。
+- 核心服务无命令行参数：不使用 flag、-config 或 -check-ready，不从本地 JSON 启动。Nacos 连接地址、命名空间、分组、cluster、认证和 TLS 从 env 获取；服务/业务运行配置使用 Proto JSON 存放 Nacos，启动时读取并校验，不回退本地文件。配置变更显式重启，不隐式热切换交易状态；健康探针为独立无参数 readycheck。
 - 管理后台、HTTP 管理接口、React 和管理开户退出当前交付范围；已有源码、历史验收及用户未提交修改保留，核心构建不依赖管理 HTTP 入口或前端资产。核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。

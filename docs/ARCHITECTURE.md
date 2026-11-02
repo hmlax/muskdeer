@@ -14,6 +14,8 @@
 
 各 `cmd/<service>/service.go` 独立拥有启动装配，直接调用对应 `business.NewMarket/NewStrategy/NewExecution/NewPortfolio` typed 构造函数。公共 Deer 管理基础设施，服务只注册自身 RPC/worker；不使用共用 Run 的 name 分发。coreentry 仅保留健康/取消工具，通用 business.Runtime 只供历史组合入口兼容。
 
+核心入口无 flags 或本地 JSON：Nacos 连接从 env 引导，服务及业务运行参数从 Nacos 严格解析为 Proto 配置，启动时读取并校验；变更显式重启。持仓、订单、资金与业务版本的存储权威仍按下文执行。具体环境变量见 [Nacos 配置](NACOS_CONFIG.md)。
+
 ## 旧管理范围与部署对应（历史说明）
 | 服务 | 公共封装 | 职责 | 扩容与所有权 |
 |---|---|---|---|
@@ -25,7 +27,7 @@
 | cron | deer.Deer | 日历周期触发、清理、报表 | 单实例，仍做任务唯一键/锁 |
 
 公共模块统一为 deer；market、strategy、execution、portfolio、cron 各自通过 deer.NewDeer 构造独立 Deer，统一 Kratos 应用、gRPC、注册发现、日志、健康与公共依赖。各服务保留独立进程、服务名、实例 ID 和端口。
-api 通过 deer.NewDeerApi 构造 DeerApi，组合复用一个 Deer，增加 Hertz Server、HTTP 路由/中间件及业务 gRPC 客户端；Hertz 适配后由同一 Deer 的 Kratos 生命周期托管。每进程公共依赖只初始化和清理一次，详细契约见 DEER.md。Nacos 只做注册发现。不得假设注册发现会将有状态 RPC 自动路由到 owner。
+api 通过 deer.NewDeerApi 构造 DeerApi，组合复用一个 Deer，增加 Hertz Server、HTTP 路由/中间件及业务 gRPC 客户端；Hertz 适配后由同一 Deer 的 Kratos 生命周期托管。每进程公共依赖只初始化和清理一次，详细契约见 DEER.md。Nacos 当前同时承担服务配置与注册发现，不得假设注册发现会将有状态 RPC 自动路由到 owner。
 
 管理人员在浏览器访问 api 托管的管理前端，前端调用同源 /api/v1 管理接口，再由 api 通过 gRPC 编排业务服务。前端源码规划放 web/admin，构建产物由 api 的 Hertz 托管；这是实施布局约定，前端框架及构建版本待实现时锁定。页面路由刷新与静态资源缓存由 api 处理，/api/v1 的错误响应保留接口语义。策略执行和行情处理继续由各业务服务负责，管理页面范围见 PRD 的 R08。
 

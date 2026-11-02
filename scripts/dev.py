@@ -11,6 +11,7 @@ from pathlib import Path
 import shlex
 
 from infra import ROOT, endpoint, inventory, values
+from nacos_config import ConfigStore
 
 
 class Environment:
@@ -18,6 +19,9 @@ class Environment:
         self.workspace = Path(workspace).resolve()
         self.project = 'muskdeer-' + hashlib.sha256(str(self.workspace).encode()).hexdigest()[:12]
         self.directory = self.workspace / '.cache/dev'
+
+    def config_store(self):
+        return ConfigStore(group='MUSKDEER_DEV_' + self.project.removeprefix('muskdeer-'))
 
     def up(self):
         snapshots = {service: inventory(service) for service in ('postgres', 'redis', 'nats', 'nacos')}
@@ -27,7 +31,10 @@ class Environment:
         redis_password = os.environ.get('MUSKDEER_INFRA_REDIS_PASSWORD', '')
         if '--requirepass' in redis_args:
             redis_password = redis_args[redis_args.index('--requirepass') + 1]
-        secrets = {
+        store = self.config_store()
+        store.ensure_namespace()
+        secrets = store.environment() | {
+            'NACOS_DATA_ID': '',
             'MUSKDEER_DEV_POSTGRES_PASSWORD': postgres['POSTGRES_PASSWORD'],
             'MUSKDEER_DEV_REDIS_PASSWORD': redis_password,
             'MUSKDEER_DEV_NACOS_PASSWORD': os.environ.get('MUSKDEER_INFRA_NACOS_PASSWORD', ''),
@@ -55,9 +62,9 @@ class Environment:
                 'command_timeout': '1s', 'max_idle_time': '60s', 'max_lifetime': '300s',
                 'key_prefix': self.project + ':' + role,
             }
-            # Discovery and business require an explicitly provisioned namespace,
-            # credentials and TLS configuration. Attachment never grants them.
+            # This attachment only enables infrastructure probes, never trading.
             self.write(role + '.json', json.dumps(config, indent=2) + '\n')
+            store.publish(role + '.json', config)
         print('Attached existing infra; no container or volume was created', flush=True)
         return state
 

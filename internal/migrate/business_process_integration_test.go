@@ -317,7 +317,15 @@ func startBusinessProcessFor(ctx context.Context, t *testing.T, cfg *configv1.Se
 		t.Fatal(err)
 	}
 	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), lifetime)
-	command := testprocess.Command(run, cfg.Name, configPath)
+	command, configCleanup, configErr := testprocess.Command(run, cfg.Name, configPath)
+	if configErr != nil {
+		t.Fatal(configErr)
+	}
+	t.Cleanup(func() {
+		if err := configCleanup(); err != nil {
+			t.Error(err)
+		}
+	})
 
 	command.Stdout, command.Stderr = output, output
 	finished := make(chan error, 1)

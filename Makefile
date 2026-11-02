@@ -55,6 +55,7 @@ build:
 	mkdir -p .cache/bin
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
+	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
 	@for name in market strategy execution portfolio; do \
 		python3 scripts/go.py build -o .cache/bin/$$name ./cmd/$$name || exit $$?; \
 	done

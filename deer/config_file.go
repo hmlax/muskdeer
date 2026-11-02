@@ -62,6 +62,25 @@ func LoadConfig(ctx context.Context, path string) (*configv1.ServiceConfig, erro
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	cfg, err := decodeConfig(ctx, data)
+	if err != nil {
+		return nil, err
+	}
+	resolveConfigPaths(cfg, filepath.Dir(absolute))
+	validated, err := validateConfig(cfg, cfg.Http != nil)
+	if err != nil {
+		return nil, configFailure("validation", err)
+	}
+	return validated, nil
+}
+
+func decodeConfig(ctx context.Context, data []byte) (*configv1.ServiceConfig, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if len(data) == 0 || len(data) > maximumConfigBytes {
+		return nil, configFailure("decode", errors.New("configuration content is empty or exceeds its limit"))
+	}
 	cfg := &configv1.ServiceConfig{}
 	decoder := protojson.UnmarshalOptions{
 		DiscardUnknown: false,
@@ -71,15 +90,10 @@ func LoadConfig(ctx context.Context, path string) (*configv1.ServiceConfig, erro
 	if err := decoder.Unmarshal(data, cfg); err != nil {
 		return nil, configFailure("decode", err)
 	}
-	resolveConfigPaths(cfg, filepath.Dir(absolute))
-	validated, err := validateConfig(cfg, cfg.Http != nil)
-	if err != nil {
-		return nil, configFailure("validation", err)
-	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	return validated, nil
+	return cfg, nil
 }
 
 func configFailure(stage string, cause error) error {

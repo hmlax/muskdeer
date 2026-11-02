@@ -1,6 +1,6 @@
 # 运行与故障处理基线
 
-2026-11-02 后续用户要求默认仅部署 market/strategy/execution/portfolio 四个独立核心进程，管理后台不再启动。当前构建、Compose、端口和准备步骤以 [核心服务运行说明](CORE_SERVICES.md) 为准；下文旧六角色/管理入口/开发容器命令均保留作历史记录，不能用于当前共享 infra 的启停。当前 dev-up 只生成四份核心基础设施探针配置，dev-down 不停止共享容器。
+2026-11-02 后续用户要求默认仅部署 market/strategy/execution/portfolio 四个独立核心进程，管理后台不再启动。当前构建、Compose、端口和准备步骤以 [核心服务运行说明](CORE_SERVICES.md) 为准；下文旧六角色/管理入口/开发容器命令均保留作历史记录，不能用于当前共享 infra 的启停。四个核心命令无参数，env 连接 Nacos 后读取远程业务配置，健康探针为独立 `/readycheck`，见 [Nacos 配置](NACOS_CONFIG.md)。当前 dev-up 将四份基础设施探针配置发布到专属 Nacos 分组，dev-down 不停止共享容器。
 
 
 状态：P02 已提供服务进程及公共运维入口；交易恢复、管理业务与 P10 故障处理仍按后续任务完善。

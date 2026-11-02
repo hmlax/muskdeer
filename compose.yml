@@ -10,23 +10,39 @@ x-runtime: &runtime
   mem_limit: 384m
   cpus: 1.0
   stop_grace_period: 15s
-  env_file: ["${MUSKDEER_RUNTIME_DIR:?run scripts/compose.py prepare}/secrets.env"]
+  env_file:
+    - "${MUSKDEER_RUNTIME_DIR:?run scripts/compose.py prepare}/secrets.env"
+    - "${MUSKDEER_RUNTIME_DIR}/nacos.env"
   logging:
     driver: json-file
     options: {max-size: 10m, max-file: "3"}
 
 services:
+  tools:
+    <<: *runtime
+    profiles: [tools]
+    image: muskdeer-execution:infra-local
+    restart: "no"
+    environment:
+      NACOS_DATA_ID: execution.json
+    volumes:
+      - type: bind
+        source: "${MUSKDEER_RUNTIME_DIR}/config/execution/certs"
+        target: /app/config/certs
+        read_only: true
+    networks: [infra]
   market:
     <<: *runtime
     image: muskdeer-market:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-market
-    command: [-config, /app/config/market.json]
+    environment:
+      NACOS_DATA_ID: market.json
     volumes:
       - type: bind
-        source: "${MUSKDEER_RUNTIME_DIR}/config/market"
-        target: /app/config
+        source: "${MUSKDEER_RUNTIME_DIR}/config/market/certs"
+        target: /app/config/certs
         read_only: true
     ports: ["127.0.0.1:59002:59002"]
     networks:
@@ -34,9 +50,9 @@ services:
       app:
         ipv4_address: 172.31.240.10
     healthcheck:
-      test: [CMD, /market, -config, /app/config/market.json, -check-ready]
+      test: [CMD, /readycheck]
       interval: 10s
-      timeout: 3s
+      timeout: 8s
       retries: 5
       start_period: 15s
   strategy:
@@ -45,11 +61,12 @@ services:
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-strategy
-    command: [-config, /app/config/strategy.json]
+    environment:
+      NACOS_DATA_ID: strategy.json
     volumes:
       - type: bind
-        source: "${MUSKDEER_RUNTIME_DIR}/config/strategy"
-        target: /app/config
+        source: "${MUSKDEER_RUNTIME_DIR}/config/strategy/certs"
+        target: /app/config/certs
         read_only: true
     ports: ["127.0.0.1:59003:59003"]
     networks:
@@ -57,9 +74,9 @@ services:
       app:
         ipv4_address: 172.31.240.11
     healthcheck:
-      test: [CMD, /strategy, -config, /app/config/strategy.json, -check-ready]
+      test: [CMD, /readycheck]
       interval: 10s
-      timeout: 3s
+      timeout: 8s
       retries: 5
       start_period: 15s
     depends_on:
@@ -73,11 +90,12 @@ services:
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-execution
-    command: [-config, /app/config/execution.json]
+    environment:
+      NACOS_DATA_ID: execution.json
     volumes:
       - type: bind
-        source: "${MUSKDEER_RUNTIME_DIR}/config/execution"
-        target: /app/config
+        source: "${MUSKDEER_RUNTIME_DIR}/config/execution/certs"
+        target: /app/config/certs
         read_only: true
     ports: ["127.0.0.1:59004:59004"]
     networks:
@@ -85,9 +103,9 @@ services:
       app:
         ipv4_address: 172.31.240.12
     healthcheck:
-      test: [CMD, /execution, -config, /app/config/execution.json, -check-ready]
+      test: [CMD, /readycheck]
       interval: 10s
-      timeout: 3s
+      timeout: 8s
       retries: 5
       start_period: 15s
   portfolio:
@@ -96,11 +114,12 @@ services:
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-portfolio
-    command: [-config, /app/config/portfolio.json]
+    environment:
+      NACOS_DATA_ID: portfolio.json
     volumes:
       - type: bind
-        source: "${MUSKDEER_RUNTIME_DIR}/config/portfolio"
-        target: /app/config
+        source: "${MUSKDEER_RUNTIME_DIR}/config/portfolio/certs"
+        target: /app/config/certs
         read_only: true
     ports: ["127.0.0.1:59005:59005"]
     networks:
@@ -108,9 +127,9 @@ services:
       app:
         ipv4_address: 172.31.240.13
     healthcheck:
-      test: [CMD, /portfolio, -config, /app/config/portfolio.json, -check-ready]
+      test: [CMD, /readycheck]
       interval: 10s
-      timeout: 3s
+      timeout: 8s
       retries: 5
       start_period: 15s
     depends_on:

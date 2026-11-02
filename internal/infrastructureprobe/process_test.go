@@ -93,7 +93,15 @@ func startServiceProcess(t *testing.T, ca *testcert.Authority, id string) (int, 
 	// Keep the original 15s hard process bound without a premature Go-test
 	// cancellation killing the child before its owned cleanup can run.
 	ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 15*time.Second)
-	command := testprocess.Command(ctx, "market", path)
+	command, configCleanup, configErr := testprocess.Command(ctx, "market", path)
+	if configErr != nil {
+		t.Fatal(configErr)
+	}
+	t.Cleanup(func() {
+		if err := configCleanup(); err != nil {
+			t.Error(err)
+		}
+	})
 	command.Stdout = output
 	command.Stderr = diagnostic
 	completed := make(chan struct{})

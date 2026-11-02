@@ -12,11 +12,11 @@ COPY deer ./deer
 COPY internal ./internal
 COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    for name in market strategy execution portfolio migrate coreinit; do \
+    for name in market strategy execution portfolio migrate coreinit readycheck; do \
       go build -mod=readonly -trimpath -o /out/$name ./cmd/$name || exit $?; \
     done
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/market ./cmd/strategy ./cmd/execution ./cmd/portfolio ./cmd/migrate ./cmd/coreinit > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/market ./cmd/strategy ./cmd/execution ./cmd/portfolio ./cmd/migrate ./cmd/coreinit ./cmd/readycheck > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
@@ -34,6 +34,7 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=build /out/licenses /licenses
 COPY --from=build /out/migrate /migrate
 COPY --from=build /out/coreinit /coreinit
+COPY --from=build /out/readycheck /readycheck
 USER 65532:65532
 WORKDIR /app
 STOPSIGNAL SIGTERM

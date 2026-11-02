@@ -15,6 +15,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/postgres"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/internal/migrate"
 )
 
@@ -46,13 +47,19 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 		}
 		return failure(diagnostic, "invalid migration arguments", 2)
 	}
-	if !*apply || *path == "" || flags.NArg() != 0 {
-		return failure(diagnostic, "migrate requires -apply and -config with no positional arguments", 2)
+	if !*apply || flags.NArg() != 0 {
+		return failure(diagnostic, "migrate requires -apply with no positional arguments", 2)
 	}
 	if runtime.Version() != "go1.27.3" {
 		return failure(diagnostic, "Go 1.27.3 is required", 1)
 	}
-	cfg, err := deer.LoadConfig(ctx, *path)
+	var cfg *configv1.ServiceConfig
+	var err error
+	if *path == "" {
+		cfg, err = deer.LoadNacosConfig(ctx, "")
+	} else {
+		cfg, err = deer.LoadConfig(ctx, *path)
+	}
 	if err != nil || cfg.GetPostgres() == nil {
 		return failure(diagnostic, "migration requires valid PostgreSQL configuration", 1)
 	}

@@ -241,7 +241,15 @@ func startNativeAdminAPIFor(ctx context.Context, t *testing.T, path, directory s
 	if err := protojson.Unmarshal(data, &configured); err != nil {
 		t.Fatal(err)
 	}
-	command := testprocess.Command(run, configured.Name, path)
+	command, configCleanup, configErr := testprocess.Command(run, configured.Name, path)
+	if configErr != nil {
+		t.Fatal(configErr)
+	}
+	t.Cleanup(func() {
+		if err := configCleanup(); err != nil {
+			t.Error(err)
+		}
+	})
 	command.Stdout, command.Stderr = output, output
 	finished := make(chan error, 1)
 	if err := command.Start(); err != nil {

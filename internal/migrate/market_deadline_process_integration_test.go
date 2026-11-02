@@ -49,7 +49,15 @@ CREATE TRIGGER test_delayed_publication BEFORE UPDATE ON market_snapshots
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	command := testprocess.Command(ctx, cfg.Name, path)
+	command, configCleanup, configErr := testprocess.Command(ctx, cfg.Name, path)
+	if configErr != nil {
+		t.Fatal(configErr)
+	}
+	t.Cleanup(func() {
+		if err := configCleanup(); err != nil {
+			t.Error(err)
+		}
+	})
 	output, runErr := command.CombinedOutput()
 	var exit *exec.ExitError
 	if !errors.As(runErr, &exit) || exit.ExitCode() != 1 || !hasDeadlineProcessDiagnostic(output) {

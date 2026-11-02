@@ -1,5 +1,7 @@
 # 配置加载与本地检查
 
+当前四个核心服务从 env 引导 Nacos，启动无参数，不读取本地 JSON；环境变量和远程 Proto JSON 合同见 [Nacos 配置](NACOS_CONFIG.md)。下文文件加载接口仍供 doctor、历史测试及显式维护兼容使用。
+
 服务配置以 [ServiceConfig Proto](../deer/proto/config/v1/service.proto) 为唯一结构来源，文件使用 protobuf JSON。`deer.LoadConfig(ctx, path)` 返回独立的生成配置类型，并执行公共生命周期及启用组件的结构/范围校验。
 
 `monitoring` 可配置独立的本地 Hertz 健康监听，使用 address/request_timeout；当前 address 必须为字面量 loopback，示例绑定 59002/59003。它与 API 的 http listener 各有端口和 drain 生命周期，单独暴露 /livez、/readyz；详见 DEER。

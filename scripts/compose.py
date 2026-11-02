@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 
 from infra import ROOT, endpoint, inventory, literal, values
+from nacos_config import ConfigStore, remote_content
 
 DIRECTORY = ROOT / '.cache/compose'
 DATABASE = 'muskdeer_local'
@@ -226,9 +227,13 @@ def prepare(source):
     certificates()
     resources_path = DIRECTORY / 'resources.json'
     resources = json.loads(resources_path.read_text()) if resources_path.exists() else None
+    store = ConfigStore(NAMESPACE)
     for role in CORES:
         own_config = DIRECTORY / 'config' / role
-        write(own_config / (role + '.json'), json.dumps(config(role, snapshots, credential, nats, resources), indent=2) + '\n')
+        desired = config(role, snapshots, credential, nats, resources)
+        write(DIRECTORY / 'nacos-drafts' / (role + '.json'), json.dumps(remote_content(desired), indent=2) + '\n')
+        if role != 'market' or resources is not None:
+            store.publish(role + '.json', desired)
         for name in ('ca.pem', role + '.pem', role + '.key'):
             write(own_config / 'certs' / name, (DIRECTORY / 'config/certs' / name).read_text())
     environment = {'MUSKDEER_POSTGRES_PASSWORD': state['database_password'],
@@ -240,6 +245,7 @@ def prepare(source):
             raise ValueError('local env value contains unsupported characters')
         return "'" + value + "'"
     write(DIRECTORY / 'secrets.env', ''.join(key + '=' + env_value(value) + '\n' for key, value in environment.items()))
+    write(DIRECTORY / 'nacos.env', ''.join(key + '=' + env_value(value) + '\n' for key, value in store.environment(container=True).items()))
     compose_environment = {'MUSKDEER_RUNTIME_DIR': str(DIRECTORY), 'MUSKDEER_UID': str(os.getuid()),
                            'MUSKDEER_GID': str(os.getgid()), 'MUSKDEER_BUILD_CONTEXT': state['source']}
     write(DIRECTORY / 'compose.env', ''.join(key + '=' + env_value(value) + '\n' for key, value in compose_environment.items()))
@@ -248,10 +254,9 @@ def prepare(source):
 
 def bootstrap():
     compose = ['docker', 'compose', '--env-file', str(DIRECTORY / 'compose.env'), '-f', str(ROOT / 'compose.yml')]
-    subprocess.run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/migrate', 'execution',
-                    '-apply', '-config', '/app/config/execution.json'], check=True, timeout=60)
-    output = run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/coreinit', 'execution',
-                  '-config', '/app/config/execution.json'])
+    subprocess.run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/migrate', 'tools',
+                    '-apply'], check=True, timeout=60)
+    output = run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/coreinit', 'tools'])
     resources = json.loads(output)
     required = ('account_id', 'instrument_id', 'binance_feed_id', 'okx_feed_id')
     if set(resources) != set(required) or resources['account_id'] != ACCOUNT or any(

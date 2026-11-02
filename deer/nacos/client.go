@@ -111,6 +111,16 @@ type instancesResponse struct {
 // New validates/copies configuration and probes authenticated naming within the
 // caller/connect budget. The configured namespace must be explicitly provisioned.
 func New(ctx context.Context, cfg *configv1.Nacos) (*Client, error) {
+	return newClient(ctx, cfg, true)
+}
+
+// NewConfigClient opens a configuration transport without requiring naming access.
+// Authentication is performed by the first explicit configuration operation.
+func NewConfigClient(ctx context.Context, cfg *configv1.Nacos) (*Client, error) {
+	return newClient(ctx, cfg, false)
+}
+
+func newClient(ctx context.Context, cfg *configv1.Nacos, probeNaming bool) (*Client, error) {
 	if ctx == nil {
 		return nil, errors.New("nacos context is required")
 	}
@@ -158,10 +168,12 @@ func New(ctx context.Context, cfg *configv1.Nacos) (*Client, error) {
 		authGate: make(chan struct{}, 1),
 		active:   make(map[uint64]context.CancelFunc),
 	}
-	connect, cancel := context.WithTimeout(ctx, cfg.ConnectTimeout.AsDuration())
-	defer cancel()
-	if err := client.Ping(connect); err != nil {
-		return nil, errors.Join(err, client.Close())
+	if probeNaming {
+		connect, cancel := context.WithTimeout(ctx, cfg.ConnectTimeout.AsDuration())
+		defer cancel()
+		if err := client.Ping(connect); err != nil {
+			return nil, errors.Join(err, client.Close())
+		}
 	}
 	return client, nil
 }
@@ -332,7 +344,7 @@ func (c *Client) authenticate(ctx context.Context) (*authToken, error) {
 func (c *Client) request(ctx context.Context, method, path string, values url.Values, token string) (data []byte, err error) {
 	address := c.base + path
 	var body io.Reader
-	if method == http.MethodGet {
+	if method == http.MethodGet || method == http.MethodDelete {
 		address += "?" + values.Encode()
 	} else {
 		body = strings.NewReader(values.Encode())

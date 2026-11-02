@@ -20,6 +20,7 @@ def service_smoke(environment):
     config['monitoring']['address'] = '127.0.0.1:0'
     config['grpc']['address'] = '127.0.0.1:0'
     path.write_text(json.dumps(config))
+    environment.config_store().publish('market.json', config, replace=True)
     values = os.environ.copy()
     for line in (environment.directory / 'environment.sh').read_text().splitlines():
         import shlex
@@ -27,7 +28,7 @@ def service_smoke(environment):
         values[key] = shlex.split(value)[0] if value else ''
     with tempfile.NamedTemporaryFile(mode='w+') as output, tempfile.TemporaryFile(mode='w+') as diagnostic:
         process = subprocess.Popen([
-            str(ROOT / '.cache/bin/market'), '-config', str(path),
+            str(ROOT / '.cache/bin/market'),
         ], env=values, stdout=output, stderr=diagnostic)
         try:
             deadline = time.monotonic() + 8
@@ -69,17 +70,23 @@ def service_smoke(environment):
 def main():
     with tempfile.TemporaryDirectory(prefix='muskdeer-dev-attachment-') as directory:
         environment = Environment(Path(directory))
-        first = environment.up()
-        second = environment.up()
-        if first['containers'] != second['containers']:
-            raise ValueError('attachment replaced an existing infra container')
-        service_smoke(environment)
-        environment.down()
-        from infra import inventory
-        current = {service: inventory(service)[1]['Id'] for service in first['containers']}
-        if current != first['containers']:
-            raise ValueError('detaching changed shared infra containers')
-        print('Existing infra attachment, independent market and detach passed')
+        try:
+            first = environment.up()
+            second = environment.up()
+            if first['containers'] != second['containers']:
+                raise ValueError('attachment replaced an existing infra container')
+            service_smoke(environment)
+            environment.down()
+            from infra import inventory
+            current = {service: inventory(service)[1]['Id'] for service in first['containers']}
+            if current != first['containers']:
+                raise ValueError('detaching changed shared infra containers')
+            print('Existing infra, Nacos-only configuration and independent market passed')
+        finally:
+            store = environment.config_store()
+            for role in ('market', 'strategy', 'execution', 'portfolio'):
+                if store.get(role + '.json') is not None:
+                    store.delete(role + '.json')
     return 0
 
 
