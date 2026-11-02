@@ -169,7 +169,7 @@ func TestAdminFlatteningUpgradeAddsNoRequestsAndKeepsSchema34RiskFacts(t *testin
 	}
 	source := riskEventLegacySource(ctx, t, db, instrument.Id, false)
 	before := riskEventRows(ctx, t, db, source.StrategyInstanceId)
-	if version, err := Apply(ctx, db); err != nil || version != 35 {
+	if version, err := Apply(ctx, db); err != nil || version != 36 {
 		t.Fatal("schema34 flatten upgrade failed", err)
 	}
 	after := riskEventRows(ctx, t, db, source.StrategyInstanceId)
@@ -177,7 +177,7 @@ func TestAdminFlatteningUpgradeAddsNoRequestsAndKeepsSchema34RiskFacts(t *testin
 		t.Fatal("flatten schema rewrote existing risk facts")
 	}
 	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 0)
-	if version, err := Apply(ctx, db); err != nil || version != 35 {
+	if version, err := Apply(ctx, db); err != nil || version != 36 {
 		t.Fatal("checked flatten upgrade replay failed", err)
 	}
 }

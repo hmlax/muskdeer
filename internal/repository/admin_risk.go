@@ -226,7 +226,7 @@ func adminRiskFailure(err error) error {
 		switch databaseError.ConstraintName {
 		case "admin_risk_authority":
 			return domain.ErrUnauthenticated
-		case "admin_risk_recovery":
+		case "admin_risk_recovery", "admin_flatten_pending":
 			return domain.ErrAdminRiskRecoveryDenied
 		}
 	}

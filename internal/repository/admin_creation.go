@@ -182,6 +182,9 @@ func adminCreationFailure(err error) error {
 	}
 	var databaseError *pgconn.PgError
 	if errors.As(err, &databaseError) {
+		if databaseError.Code == "23514" && databaseError.ConstraintName == "admin_flatten_pending" {
+			return domain.ErrAdminConflict
+		}
 		if databaseError.ConstraintName == "admin_creation_authority" {
 			return domain.ErrUnauthenticated
 		}
