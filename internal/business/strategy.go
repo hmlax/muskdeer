@@ -181,6 +181,9 @@ func assembleStrategyManagement(db *gorm.DB, controlEnabled bool, runtime *Runti
 	if err := assembleStrategyCancellations(db, controlEnabled, runtime); err != nil {
 		return err
 	}
+	if err := assembleStrategyEmergencies(db, controlEnabled, runtime); err != nil {
+		return err
+	}
 	if err := assembleStrategyOrderQueries(db, runtime); err != nil {
 		return err
 	}
@@ -272,6 +275,19 @@ func assembleStrategyCancellations(db *gorm.DB, controlEnabled bool, runtime *Ru
 		return err
 	}
 	runtime.strategyCancellationControl, err = strategygrpc.NewCancellationControl(requests)
+	return err
+}
+
+func assembleStrategyEmergencies(db *gorm.DB, controlEnabled bool, runtime *Runtime) error {
+	requests, err := repository.NewAdminEmergencyCancellations(db)
+	if err != nil {
+		return err
+	}
+	runtime.strategyEmergencyQuery, err = strategygrpc.NewEmergencyQuery(requests)
+	if err != nil || !controlEnabled {
+		return err
+	}
+	runtime.strategyEmergencyControl, err = strategygrpc.NewEmergencyControl(requests)
 	return err
 }
 

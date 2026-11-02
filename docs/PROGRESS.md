@@ -1251,3 +1251,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 红测/工程：缺Observation/History先编译失败；完整make verify通过，Go1.27.3/doctor/contract/生成/Hertz/fmt/lint/govet0 issues/政策/22工具/全包单元/race/三命令构建，domain0.559/race1.596、repository0.116/race1.412秒。补测试后lint拒绝复杂度34，提取原断言helper、不改门禁，最终fmt/lint0 issues；高位身份/修订、非法/缺失证明单元通过。最终生产代码在原生前已构建，verify后只补测试。
 - 原生：22项实际PG/race16.479秒全过，自有资源清理。新空范围读取2.12秒保持Task，仅显式worker后见完成；历史分页0.61秒隔离共享账户兄弟，观测/历史跨事务变化0.51/0.47秒保留同授权快照，后续才见新任务/目标及注销拒绝。两个读取路径真实UPDATE账户均获25006（0.97秒），零部分结果/时间、账户/Task保持。原失败用例1.32秒保留NOT_ACCEPTED/冻结/预留断言，后来真实全成交+OMS Recover使当前terminal1/failed0，存储FAILED及修订/完成时间保持；原受理/权限/并发/回滚/UNKNOWN/最终约束/升级通过。
 - 交付/后续：4f08f51718845926ea17d435158a887ffcdde28e已推送main并核对SHA，[CI41374338063](https://github.com/hmlax/muskdeer/actions/runs/41374338063)最近in_progress。文档/链接/逐文件复审及独立暂存检查后单独提交立即推送核对SHA，继续typed管理RPC/HTTP和确认页面、受限平仓。P07/A27与P08–P10/L1未完成，P11缺真实合同/环境；旧Nacos等故障留待矩阵，本步不宣称修复。生产/真实资金/部署、独立业务HTTP/14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未执行。
+
+
+## 2026-11-02：P07.64 范围紧急撤单typed管理gRPC
+
+- 改动：明确scope/策略/独立风险修订/原因/键的Request只返不可变受理；Query读存储Record/当前Progress/数据库时间及有界历史。API-peer mTLS/当前权限/CSRF、5秒/2KiB/未知字段/单次调用保留，Management查询与Control写服务分开注册，借用同一Deer数据库；无HTTP/页面/新模型/迁移/资源。58生成/36模型/schema34，OpenAPI31操作/65schema及四资产保持，见[合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.64](validation/P07-64.md)。纠正INTERFACES将已有OpenAPI列为未交付的过时概述，概念接口仍不视作实现清单。
+- 红测/检查：缺typed消息/入口先编译失败；实际生成新增两个生成物，首lint拒绝copy遮蔽builtin后改名。最终完整make verify通过：Go1.27.3/doctor/contract/58生成/OpenAPI/Hertz/fmt/lint/govet0 issues/政策/22工具/全包单元/race/三命令构建，strategygrpc0.654/race1.914、strategywire/race1.891秒。高位身份/修订、Proto往返、16种嵌套/范围/计数损坏、历史结果与当前计数、分页/精确毫秒、期限/权限/私有故障通过。
+- 原生：最终13项实际PG/Nacos/NATS/独立业务进程/race29.950秒全过，自有资源清理。新实际管理RPC受理/同键、独立风险1→2、异内容/旧修订冲突、viewer/CSRF/非API证书拒绝及真实注销通过；Get/List不推进任务，LIVE/策略Proto及预留200保持，USDT799.8/冻结200.2，受理/风险各1、动作/取消请求0。只读进程不注册写服务，空范围不伪造成功；旧HTTP撤单、控制/查询管理、范围双进程接管及只读查询/历史失败后来成交全过，未变期限/断言。
+- 交付/后续：6ff7cd6b397902eb52ecf1818df44cdae4659abe已推送main并核对SHA，[CI41374888508](https://github.com/hmlax/muskdeer/actions/runs/41374888508)最近in_progress。文档/链接/逐文件审查及独立暂存检查后单独提交立即推送核对SHA，继续Hertz HTTP/确认页面及受限平仓。完整P07/A27和P08–P10/L1未完成，P11缺真实合同/环境；生产/真实资金/部署、14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未重复。旧Nacos等故障继续矩阵，本次通过不宣称根因已修复。
