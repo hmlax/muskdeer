@@ -204,11 +204,11 @@ func adminEmergencyFailure(err error) error {
 }
 
 func requireEmergencyScopeClear(ctx context.Context, tx *gorm.DB, strategyID int64) error {
-	// Until completion proofs are implemented, every accepted scope is pending.
-	// Keep this identical to the versioned final database recovery predicate.
+	// Missing progress remains pending; only stored final proof can clear scope.
 	var pending int64
 	if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).
-		Where("strategy_instance_id = ? AND delete_at IS NULL", strategyID).Count(&pending).Error; err != nil {
+		Where("strategy_instance_id = ? AND delete_at IS NULL", strategyID).
+		Where("id NOT IN (?)", completedEmergencyScopes(ctx, tx, strategyID)).Count(&pending).Error; err != nil {
 		return err
 	}
 	if pending != 0 {

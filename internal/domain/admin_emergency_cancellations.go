@@ -24,6 +24,7 @@ const (
 	AdminEmergencyCancelFailed         AdminEmergencyCancelState = "FAILED"
 	AdminEmergencyCancelAction                                   = "strategy.emergency_cancel"
 	MessageInvalidAdminEmergencyCancel                           = "invalid strategy emergency cancellation request or progress"
+	MaxEmergencyTargetsPerStep                                   = 16
 )
 
 // ErrInvalidAdminEmergencyCancel never includes submitted identities or reasons.
@@ -58,6 +59,24 @@ type AdminEmergencyCancelAcceptance struct {
 type AdminEmergencyCancellations interface {
 	Request(context.Context, string, string, AdminEmergencyCancelRequest) (AdminEmergencyCancelAcceptance, error)
 	Acceptance(context.Context, string, int64, int64) (AdminEmergencyCancelAcceptance, error)
+}
+
+// AdminEmergencyWork is persisted task progress, not an execution permission.
+// A zero AcceptanceID means no pending scope after the requested cursor.
+type AdminEmergencyWork struct {
+	AcceptanceID int64
+	TaskID       int64
+	State        AdminEmergencyCancelState
+	Progress     AdminEmergencyCancelProgress
+	Revision     int64
+	CompletedAt  time.Time
+}
+
+// StrategyEmergencyCancellations only enrolls already authorized cancel work.
+// It sends no command and borrows no executor authority. Actual dispatch remains
+// in the existing fenced StrategyOrderCancellations/StrategyActions path.
+type StrategyEmergencyCancellations interface {
+	Prepare(context.Context, int64, int64) (AdminEmergencyWork, error)
 }
 
 // Normalize rejects implicit scope expansion and keeps exact integer identity.

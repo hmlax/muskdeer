@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// AdminEmergencyCancellationTask stores bounded enrollment and final proof.
+// It does not carry or grant execution ownership; the existing sender fences it.
+message AdminEmergencyCancellationTask {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 emergency_cancellation_id = 5 [(tagger.tags) = "gorm:\"column:emergency_cancellation_id;type:bigint;not null;uniqueIndex:uk_admin_emergency_task_batch\""];
+  int64 strategy_instance_id = 6 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;not null;index:idx_admin_emergency_task_strategy\""];
+  optional int64 enrollment_upper_id = 7 [(tagger.tags) = "gorm:\"column:enrollment_upper_id;type:bigint\""];
+  int64 enrollment_after_id = 8 [(tagger.tags) = "gorm:\"column:enrollment_after_id;type:bigint;not null\""];
+  bool enrollment_complete = 9 [(tagger.tags) = "gorm:\"column:enrollment_complete;type:boolean;not null\""];
+  string state = 10 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+  int64 revision = 11 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  optional int64 completed_at = 12 [(tagger.tags) = "gorm:\"column:completed_at;type:bigint\""];
+}

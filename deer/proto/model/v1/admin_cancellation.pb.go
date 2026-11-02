@@ -45,8 +45,10 @@ type AdminOrderCancellation struct {
 	CompletedAt           *int64                 `protobuf:"varint,18,opt,name=completed_at,json=completedAt,proto3,oneof" json:"completed_at,omitempty" gorm:"column:completed_at;type:bigint"`
 	ObservedOrderRevision *int64                 `protobuf:"varint,19,opt,name=observed_order_revision,json=observedOrderRevision,proto3,oneof" json:"observed_order_revision,omitempty" gorm:"column:observed_order_revision;type:bigint"`
 	ObservedOrderState    *string                `protobuf:"bytes,20,opt,name=observed_order_state,json=observedOrderState,proto3,oneof" json:"observed_order_state,omitempty" gorm:"column:observed_order_state;type:varchar(24)"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Only durable accepted scopes can delegate creation after session expiry.
+	EmergencyCancellationId *int64 `protobuf:"varint,21,opt,name=emergency_cancellation_id,json=emergencyCancellationId,proto3,oneof" json:"emergency_cancellation_id,omitempty" gorm:"column:emergency_cancellation_id;type:bigint;index:idx_admin_cancellation_emergency"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AdminOrderCancellation) Reset() {
@@ -219,11 +221,18 @@ func (x *AdminOrderCancellation) GetObservedOrderState() string {
 	return ""
 }
 
+func (x *AdminOrderCancellation) GetEmergencyCancellationId() int64 {
+	if x != nil && x.EmergencyCancellationId != nil {
+		return *x.EmergencyCancellationId
+	}
+	return 0
+}
+
 var File_deer_proto_model_v1_admin_cancellation_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_admin_cancellation_proto_rawDesc = "" +
 	"\n" +
-	",deer/proto/model/v1/admin_cancellation.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\xdc\x10\n" +
+	",deer/proto/model/v1/admin_cancellation.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\x9d\x12\n" +
 	"\x16AdminOrderCancellation\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -245,14 +254,16 @@ const file_deer_proto_model_v1_admin_cancellation_proto_rawDesc = "" +
 	"\taction_id\x18\x11 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:action_id;type:bigint\"H\x01R\bactionId\x88\x01\x01\x12S\n" +
 	"\fcompleted_at\x18\x12 \x01(\x03B+\x9a\x84\x9e\x03&gorm:\"column:completed_at;type:bigint\"H\x02R\vcompletedAt\x88\x01\x01\x12s\n" +
 	"\x17observed_order_revision\x18\x13 \x01(\x03B6\x9a\x84\x9e\x031gorm:\"column:observed_order_revision;type:bigint\"H\x03R\x15observedOrderRevision\x88\x01\x01\x12o\n" +
-	"\x14observed_order_state\x18\x14 \x01(\tB8\x9a\x84\x9e\x033gorm:\"column:observed_order_state;type:varchar(24)\"H\x04R\x12observedOrderState\x88\x01\x01B\f\n" +
+	"\x14observed_order_state\x18\x14 \x01(\tB8\x9a\x84\x9e\x033gorm:\"column:observed_order_state;type:varchar(24)\"H\x04R\x12observedOrderState\x88\x01\x01\x12\xa0\x01\n" +
+	"\x19emergency_cancellation_id\x18\x15 \x01(\x03B_\x9a\x84\x9e\x03Zgorm:\"column:emergency_cancellation_id;type:bigint;index:idx_admin_cancellation_emergency\"H\x05R\x17emergencyCancellationId\x88\x01\x01B\f\n" +
 	"\n" +
 	"_delete_atB\f\n" +
 	"\n" +
 	"_action_idB\x0f\n" +
 	"\r_completed_atB\x1a\n" +
 	"\x18_observed_order_revisionB\x17\n" +
-	"\x15_observed_order_stateB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
+	"\x15_observed_order_stateB\x1c\n" +
+	"\x1a_emergency_cancellation_idB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
 var (
 	file_deer_proto_model_v1_admin_cancellation_proto_rawDescOnce sync.Once

@@ -28,4 +28,6 @@ message AdminOrderCancellation {
   optional int64 completed_at = 18 [(tagger.tags) = "gorm:\"column:completed_at;type:bigint\""];
   optional int64 observed_order_revision = 19 [(tagger.tags) = "gorm:\"column:observed_order_revision;type:bigint\""];
   optional string observed_order_state = 20 [(tagger.tags) = "gorm:\"column:observed_order_state;type:varchar(24)\""];
+  // Only durable accepted scopes can delegate creation after session expiry.
+  optional int64 emergency_cancellation_id = 21 [(tagger.tags) = "gorm:\"column:emergency_cancellation_id;type:bigint;index:idx_admin_cancellation_emergency\""];
 }
