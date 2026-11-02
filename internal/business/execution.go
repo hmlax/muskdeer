@@ -1,0 +1,144 @@
+package business
+
+import (
+	"context"
+	"slices"
+
+	"google.golang.org/grpc"
+	"gorm.io/gorm"
+
+	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
+	"github.com/hmlax/muskdeer/deer"
+	"github.com/hmlax/muskdeer/deer/jetstream"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/internal/delivery/executiongrpc"
+	"github.com/hmlax/muskdeer/internal/outbox"
+	"github.com/hmlax/muskdeer/internal/repository"
+	"github.com/hmlax/muskdeer/internal/usecase"
+)
+
+const workerExecutionOutbox = "execution.outbox"
+
+// Execution contains only the execution RPC and its owned work plan.
+type Execution struct {
+	handler *executiongrpc.Server
+	workers []deer.Worker
+}
+
+// NewExecution assembles the execution service without starting tasks.
+func NewExecution(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Execution, error) {
+	if cfg.GetName() != "execution" {
+		return nil, ErrInvalidConfig
+	}
+	db, incarnation, err := runtimeData(ctx, cfg, owner)
+	if err != nil {
+		return nil, err
+	}
+	events, err := owner.JetStream()
+	if err != nil {
+		return nil, err
+	}
+	return assembleExecution(ctx, db, events, incarnation, cfg.Business)
+}
+
+// Workers returns a private execution work plan.
+func (s *Execution) Workers() []deer.Worker { return slices.Clone(s.workers) }
+
+// RegisterGRPC registers only the execution contract.
+func (s *Execution) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	executionv1.RegisterExecutionServer(registrar, s.handler)
+	return nil
+}
+
+func newExecution(ctx context.Context, db *gorm.DB, events *jetstream.Client, incarnation string, cfg *configv1.BusinessRuntime) (*Runtime, error) {
+	service, err := assembleExecution(ctx, db, events, incarnation, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Runtime{
+		execution: service.handler,
+		workers:   service.Workers(),
+	}, nil
+}
+
+func assembleExecution(ctx context.Context, db *gorm.DB, events *jetstream.Client, incarnation string, cfg *configv1.BusinessRuntime) (*Execution, error) {
+	leases, err := repository.NewLeases(db)
+	if err != nil {
+		return nil, err
+	}
+	authority, err := usecase.NewExecutionOwner(leases, incarnation, executionLeaseTTL(cfg))
+	if err != nil {
+		return nil, err
+	}
+	handler, err := executionHandler(db, authority)
+	if err != nil {
+		return nil, err
+	}
+	store, err := repository.NewOutbox(db)
+	if err != nil {
+		return nil, err
+	}
+	publisher, err := outbox.NewPublisher(events)
+	if err != nil {
+		return nil, err
+	}
+	worker, err := outbox.New(store, publisher, incarnation)
+	if err != nil {
+		return nil, err
+	}
+	additional, err := newRiskWorkers(ctx, db, authority, cfg)
+	if err != nil {
+		return nil, err
+	}
+	scenarios, err := newSimulatorWorkers(ctx, db, authority, cfg)
+	if err != nil {
+		return nil, err
+	}
+	poll, timeout := cfg.PollInterval.AsDuration(), cfg.OperationTimeout.AsDuration()
+	workers := []deer.Worker{
+		{
+			Name: workerExecutionOutbox,
+			Run:  func(ctx context.Context) error { return runLoop(ctx, poll, timeout, worker.RunOne) },
+		},
+	}
+	workers = append(workers, additional...)
+	workers = append(workers, scenarios...)
+	return &Execution{
+		handler: handler,
+		workers: workers,
+	}, nil
+}
+
+func executionHandler(db *gorm.DB, authority *usecase.ExecutionOwner) (*executiongrpc.Server, error) {
+	core, err := repository.NewSimulator(db)
+	if err != nil {
+		return nil, err
+	}
+	intents, err := repository.NewSimulatorIntents(db)
+	if err != nil {
+		return nil, err
+	}
+	orders, err := usecase.NewIntentService(intents, core)
+	if err != nil {
+		return nil, err
+	}
+	requests, err := repository.NewSimulatorCancellations(db)
+	if err != nil {
+		return nil, err
+	}
+	cancellations, err := usecase.NewCancellationService(requests, intents, core)
+	if err != nil {
+		return nil, err
+	}
+	queries, err := repository.NewExecutionQueries(db)
+	if err != nil {
+		return nil, err
+	}
+	return executiongrpc.New(executiongrpc.Dependencies{
+		Intents:       orders,
+		IntentStore:   intents,
+		Cancellations: cancellations,
+		Queries:       queries,
+		Authority:     authority,
+	})
+}

@@ -12,6 +12,8 @@
 
 保留单仓库、单 go.mod，各服务通过独立 cmd/镜像/端口/Nacos 身份运行，每个进程装配一次公共依赖。核心入口拒绝 HTTP 管理配置及管理 RPC 开启标志，不构造管理身份或加载 React。服务间保留 mTLS 身份及超时，实例/账户/行情继续用持久租约和最终 fencing 支持多节点。当前本地启动使用回放行情及禁用、未注资的模拟账户；定期报表/归档尚无实现，不部署空 cron。启动说明见 [核心服务](CORE_SERVICES.md)。
 
+各 `cmd/<service>/service.go` 独立拥有启动装配，直接调用对应 `business.NewMarket/NewStrategy/NewExecution/NewPortfolio` typed 构造函数。公共 Deer 管理基础设施，服务只注册自身 RPC/worker；不使用共用 Run 的 name 分发。coreentry 仅保留健康/取消工具，通用 business.Runtime 只供历史组合入口兼容。
+
 ## 旧管理范围与部署对应（历史说明）
 | 服务 | 公共封装 | 职责 | 扩容与所有权 |
 |---|---|---|---|

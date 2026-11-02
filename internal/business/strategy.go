@@ -51,6 +51,28 @@ func validateStrategyConfig(cfg *configv1.ServiceConfig) error {
 	return nil
 }
 
+// Strategy owns only account controllers; it exposes no management RPCs.
+type Strategy struct{ workers []deer.Worker }
+
+// NewStrategy assembles independent strategy workers without management delivery.
+func NewStrategy(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Strategy, error) {
+	if cfg.GetName() != "strategy" || cfg.GetBusiness().GetStrategy().GetManagementEnabled() || cfg.GetBusiness().GetStrategy().GetControlEnabled() {
+		return nil, ErrInvalidConfig
+	}
+	db, incarnation, err := runtimeData(ctx, cfg, owner)
+	if err != nil {
+		return nil, err
+	}
+	workers, err := assembleStrategyWorkers(ctx, db, owner, incarnation, cfg.Business)
+	if err != nil {
+		return nil, err
+	}
+	return &Strategy{workers: workers}, nil
+}
+
+// Workers returns a private strategy work plan.
+func (s *Strategy) Workers() []deer.Worker { return slices.Clone(s.workers) }
+
 func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation string, cfg *configv1.BusinessRuntime) (*Runtime, error) {
 	runtime := &Runtime{}
 	if cfg.Strategy.ManagementEnabled {
@@ -63,9 +85,18 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 			return nil, err
 		}
 	}
+	workers, err := assembleStrategyWorkers(ctx, db, owner, incarnation, cfg)
+	if err != nil {
+		return nil, err
+	}
+	runtime.workers = append(runtime.workers, workers...)
+	return runtime, nil
+}
+
+func assembleStrategyWorkers(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation string, cfg *configv1.BusinessRuntime) ([]deer.Worker, error) {
 	accounts := slices.Clone(cfg.Strategy.AccountIds)
 	if len(accounts) == 0 {
-		return runtime, nil
+		return nil, nil
 	}
 	for _, entity := range []any{&modelv1.SimulatorAccount{}, &modelv1.AccountBudget{}} {
 		var count int64
@@ -146,8 +177,7 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 			},
 		})
 	}
-	runtime.workers = append(runtime.workers, workers...)
-	return runtime, nil
+	return workers, nil
 }
 
 func assembleStrategyManagement(db *gorm.DB, controlEnabled bool, runtime *Runtime) error {

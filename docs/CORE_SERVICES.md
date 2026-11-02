@@ -11,6 +11,19 @@
 
 每个进程使用一个 Deer/Kratos 生命周期和自己的 mTLS 身份，Nacos group 为 MUSKDEER_CORE、namespace 为 muskdeer-local。gRPC 是认证的内部接口；strategy/portfolio 当前主要提供后台工作循环及标准健康 RPC，不把管理接口当核心接口重新开启。
 
+## 独立装配位置
+
+每个服务在自己的 `cmd/<service>/service.go` 维护配置检查、Deer 生命周期、依赖及工作计划。market/execution 只注册自身业务 RPC；strategy/portfolio 装配自己的后台工作循环。四个 main 只解析参数和调用本服务 `runService`，没有服务名参数或公共启动分发。
+
+| 服务装配 | 直接业务构造 | 工作计划实现 |
+|---|---|---|
+| [market](../cmd/market/service.go) | business.NewMarket → *Market | [market.go](../internal/business/market.go) |
+| [strategy](../cmd/strategy/service.go) | business.NewStrategy → *Strategy | [strategy.go](../internal/business/strategy.go) |
+| [execution](../cmd/execution/service.go) | business.NewExecution → *Execution | [execution.go](../internal/business/execution.go) |
+| [portfolio](../cmd/portfolio/service.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../internal/business/portfolio.go) |
+
+公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。通用 `business.New/Runtime` 留给历史组合入口/管理回归，四个核心进程不再调用它；业务工作器的算法、超时、注册发现与资金合同保持。
+
 ## 启动
 
 需要已运行的 infra-postgres、infra-redis、infra-nacos、infra-nats 和 infra-network，以及 Docker Compose、Python 3.11+、OpenSSL。Go 精确为 1.27.3；核心 Docker 构建不读取前端资产，不需要 Node。
@@ -37,4 +50,4 @@ make compose-down
 make core-test
 ```
 
-本工作区保留尚未验收的 schema 38 平仓修改。本次镜像使用已提交代码加核心拆分修改的独立 schema 37 源码，保存在忽略的 `.cache/core/source`；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。原管理容器已移除，其历史数据保留。
+本工作区保留尚未验收的 schema 38 平仓修改。本次镜像使用已提交代码加独立服务装配修改的 schema 37 源码，保存在忽略的 `.cache/service-entry/source`；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。原管理容器已移除，其历史数据保留。

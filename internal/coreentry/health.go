@@ -1,3 +1,4 @@
+// Package coreentry contains only executable readiness and cancellation helpers.
 package coreentry
 
 import (

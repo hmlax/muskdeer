@@ -1,12 +1,10 @@
-// Package coreentry runs independent Kratos business processes without web delivery.
-package coreentry
+package main
 
 import (
 	"context"
 	"errors"
 	"io"
 	"log/slog"
-	"slices"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
@@ -14,15 +12,16 @@ import (
 	"github.com/hmlax/muskdeer/internal/business"
 	"github.com/hmlax/muskdeer/internal/processlog"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
-// Run owns exactly one Deer and joins all business workers before cleanup.
-func Run(ctx context.Context, name string, cfg *configv1.ServiceConfig, output io.Writer) (result error) {
-	if ctx == nil || cfg == nil || !slices.Contains([]string{"market", "strategy", "execution", "portfolio"}, name) ||
-		cfg.Name != name || cfg.Http != nil || cfg.AdminHttp != nil || cfg.Monitoring == nil || cfg.Grpc == nil ||
+// runService owns the execution process, its dependencies and its work plan.
+func runService(ctx context.Context, cfg *configv1.ServiceConfig, output io.Writer) (result error) {
+	if ctx == nil || cfg == nil || cfg.Name != "execution" || cfg.Http != nil || cfg.AdminHttp != nil || cfg.Monitoring == nil || cfg.Grpc == nil ||
 		cfg.GetBusiness().GetStrategy().GetManagementEnabled() || cfg.GetBusiness().GetStrategy().GetControlEnabled() {
-		return errors.New("core entry requires a matching independent gRPC service without administration")
+		return errors.New("execution service requires its own gRPC configuration without administration")
 	}
+	cfg = proto.CloneOf(cfg)
 	if err := business.ValidateConfig(cfg); err != nil {
 		return err
 	}
@@ -34,7 +33,7 @@ func Run(ctx context.Context, name string, cfg *configv1.ServiceConfig, output i
 			return processlog.Install(ctx, owned)
 		},
 		Resources: []deer.Initializer{{
-			Name: "core.lifecycle",
+			Name: "execution.lifecycle",
 			Open: func(context.Context) (deer.Cleanup, error) {
 				return func(ctx context.Context) error {
 					return logger.LogAttrs(ctx, slog.LevelInfo, "service.transports_stopped")
@@ -43,10 +42,10 @@ func Run(ctx context.Context, name string, cfg *configv1.ServiceConfig, output i
 		}},
 	}
 	if cfg.GetBusiness().GetEnabled() {
-		var runtime *business.Runtime
+		var runtime *business.Execution
 		spec.Workers = func(ctx context.Context, owner *deer.Deer) ([]deer.Worker, error) {
 			var err error
-			runtime, err = business.New(ctx, cfg, owner)
+			runtime, err = business.NewExecution(ctx, cfg, owner)
 			if err != nil {
 				return nil, err
 			}

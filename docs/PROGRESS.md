@@ -1367,3 +1367,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 运行：最终四镜像构建及非 root/只读/禁网 readiness、JSON 日志和 SIGTERM 通过；Compose up --wait 四容器全部 healthy，四个独立 Nacos 健康身份。实际 grpcurl/mTLS 双源行情均 HEALTHY、99.99/100.01 精确返回，execution 订单列表为空。端口分别 59002–59005，仅本机发布。详见 [核心运行说明](CORE_SERVICES.md) 和 [P13 验证](validation/P13-01.md)。
 - 默认 doctor/dev 配置、e2e 和 CI 同步为核心服务；管理资产/浏览器退出默认 CI，历史管理回归仅显式 legacy-admin-e2e。dev-test 用独立临时目录验证实际 market 进程连接既有 PG/Redis、重复关联和解除后共享容器保持；未声称远程 CI 已通过。
 - 诊断：首次消息前缀不满足三级合同已修正；真实 PG 测试复现嵌套 GORM 事务选表错误，初始化改为单事务显式生成 Model 操作后通过，未放宽资金/幂等断言。首测试夹具补实际迁移与有界 context，静态检查问题修复后重验。完整历史集成/浏览器/三十分钟及生产本步未运行，运行数据为回放和禁用模拟账户，不宣称外部实连或实盘。工作分支 codex/two-apps，验证后独立提交、立即推送并核验 SHA。
+
+## 2026-11-02：P13.2 各服务独立启动装配
+
+- 按用户针对共享 Run 方法的后续要求，移除 coreentry.Run 及 name 分发；market/strategy/execution/portfolio 各自 cmd/service.go 独立维护配置快照、Deer 生命周期、初始化/清理及工作计划。直接调用 NewMarket/NewStrategy/NewExecution/NewPortfolio，返回各自业务类型；行情/执行只注册自身 RPC，策略/投影只装配自己的工作循环。coreentry 只保留健康与取消工具。
+- 业务装配按服务分文件；公共 runtimeData 只借用 Deer 依赖并检查迁移，不选择或启动服务。通用 New/Runtime 仅为历史组合入口保留适配，核心启动不再调用；原工作算法、事务、预算、fencing、超时及清理合同保持，未增加基础服务、迁移或资金。
+- 验证：独立 schema 37 源码的 fmt/60 Proto 与 OpenAPI 生成检查/lint/govet（0 issues）/全包单元/四核心构建通过；六个相关包 race 通过；make core-test 四项实际 infra/race 13.796 秒全过，成交投影/预算闭环 2.31 秒、幂等资源 0.43 秒、broker 冲突 0.02 秒、策略接管/报价/终态停止 9.45 秒。新增四服务身份/管理拒绝测试先因缺本地 runService 编译失败，拆分后通过；导入分组问题修正后最终静态检查通过。
+- 运行：四个最终镜像重新构建并重建应用容器，Compose up --wait 全部 healthy；四镜像非 root/只读/禁网的 readiness、JSON 身份及 SIGTERM 通过。实际四 Nacos 健康身份、两路未过期 HEALTHY 回放与 99.99/100.01 精确价格、execution 空订单查询经 mTLS 通过。原 49 个未提交平仓路径保留，运行构建来源为忽略的 .cache/service-entry/source；旧管理原生/浏览器、完整历史集成、三十分钟及生产本步未运行。详见 [P13.2 验证](validation/P13-02.md)。
+- 工作分支 codex/two-apps，基线 1dbfd50 已同步；本步验证后单独提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。

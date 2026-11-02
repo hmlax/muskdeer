@@ -39,7 +39,7 @@ func run() int {
 		if *ready {
 			err = coreentry.CheckReady(ctx, cfg.Monitoring)
 		} else {
-			err = coreentry.Run(ctx, "strategy", cfg, os.Stdout)
+			err = runService(ctx, cfg, os.Stdout)
 		}
 	}
 	if err != nil && !coreentry.IsCancellation(err) {

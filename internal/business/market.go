@@ -2,11 +2,14 @@ package business
 
 import (
 	"context"
+	"slices"
 	"strconv"
 	"time"
 
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
+	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/internal/delivery/marketgrpc"
@@ -17,7 +20,45 @@ import (
 
 const marketWorkerPrefix = "market.feed."
 
+// Market contains only the market-data RPC and feed workers.
+type Market struct {
+	handler *marketgrpc.Server
+	workers []deer.Worker
+}
+
+// NewMarket assembles the market service without starting tasks.
+func NewMarket(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Market, error) {
+	if cfg.GetName() != "market" {
+		return nil, ErrInvalidConfig
+	}
+	db, incarnation, err := runtimeData(ctx, cfg, owner)
+	if err != nil {
+		return nil, err
+	}
+	return assembleMarket(ctx, db, incarnation, cfg.Business)
+}
+
+// Workers returns a private market work plan.
+func (s *Market) Workers() []deer.Worker { return slices.Clone(s.workers) }
+
+// RegisterGRPC registers only the market-data contract.
+func (s *Market) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	marketv1.RegisterMarketDataServer(registrar, s.handler)
+	return nil
+}
+
 func newMarket(ctx context.Context, db *gorm.DB, incarnation string, cfg *configv1.BusinessRuntime) (*Runtime, error) {
+	service, err := assembleMarket(ctx, db, incarnation, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Runtime{
+		market:  service.handler,
+		workers: service.Workers(),
+	}, nil
+}
+
+func assembleMarket(ctx context.Context, db *gorm.DB, incarnation string, cfg *configv1.BusinessRuntime) (*Market, error) {
 	feeds, err := repository.NewMarketFeeds(db)
 	if err != nil {
 		return nil, err
@@ -66,8 +107,8 @@ func newMarket(ctx context.Context, db *gorm.DB, incarnation string, cfg *config
 			Run:  worker.Run,
 		})
 	}
-	return &Runtime{
-		market:  handler,
+	return &Market{
+		handler: handler,
 		workers: workers,
 	}, nil
 }
