@@ -19,6 +19,7 @@ type StrategyDependencies struct {
 	Execution     domain.StrategyExecution
 	Market        domain.MarketReader
 	Cancellations domain.StrategyOrderCancellations
+	Emergencies   domain.StrategyEmergencyCancellations
 }
 
 // StrategySettings binds one instance to a fresh process incarnation.
@@ -35,6 +36,7 @@ type StrategyController struct {
 	settings          StrategySettings
 	afterAction       int64
 	afterCancellation int64
+	afterEmergency    int64
 }
 
 const messageStrategyReobserve = "strategy state observation changed"
@@ -115,6 +117,14 @@ func (s *StrategyController) tick(ctx context.Context) (worked bool, resultErr e
 	handled, err := s.recoverActions(ctx, current, authority)
 	if err != nil || handled {
 		return false, err
+	}
+	if s.deps.Emergencies != nil {
+		stage = domain.StrategyStageManagementEmergency
+		work, err := s.deps.Emergencies.Prepare(ctx, current.ID, s.afterEmergency)
+		if err != nil {
+			return false, localStrategyFailure(ctx, err)
+		}
+		s.afterEmergency = work.AcceptanceID
 	}
 	// A newly created instance has no order authority until its first config
 	// activation. Existing orders always retain a positive active version.

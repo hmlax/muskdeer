@@ -1234,3 +1234,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 红测/检查：缺Model/端口先编译失败，不存在helper及clear遮蔽builtin由编译/lint拒绝后明确修正，未降低门禁。完整make verify通过，Go1.27.3/doctor/contract/56生成及OpenAPI/Hertz/fmt/lint/govet 0 issues/政策/22工具/全包单元/race/构建，domain0.356/race1.558、repository0.365/race1.416、migrate0.357/race1.380秒；最新34/未来探针35，旧断言和资产保持。
 - 原生：最终52项PG/race38.303秒全过：空范围显式完成0.48、17真实预留两页/注销后限范围0.93、实际取消丢回复/owner接管/部分成交0.83、未发动作屏障0.46、写失败原子回滚0.48、跳目标/前缀拒绝0.49、旧33只补待处理0.40秒。物理取消1/新增提交0，核心确认后USDT899.9/冻结0/预留0；原单笔权限/故障/未知/并发/资金、36模型和升级/CLI34均过。收尾独立失败证明两个子场景1.40/包3.192秒：真正NOT_ACCEPTED不解决未知原提交，已知LIVE可FAILED但冻结200.2/预留200保持；最终lint0 issues，未称同批执行，自有资源清理。
 - 交付/后续：9400cc8395334978fd4186dc39da3d28a188e8d3已推送main并核对SHA，[CI41189557498](https://github.com/hmlax/muskdeer/actions/runs/41189557498)已completed success；P07.56–P07.59的CI也均已success。文档/链接/逐文件复审及独立暂存检查后独立提交立即推送核对SHA，再接实际策略周期/原生进程及管理入口/页面。P07/A27/L1及P08–P10未完成，P11缺真实合同/环境；仅隔离schema测试，生产/真实资金/部署未执行，HTTP/14浏览器/镜像/全量integration/持久开发/固定30分钟本地未重复。
+
+
+## 2026-11-02：P07.62 紧急撤单接入策略周期与独立进程
+
+- 改动：借用每进程唯一Deer数据库装配范围端口，现有account worker成功取得/续租并恢复原动作后，每周期最多一个范围，再走原单笔取消/最终fencing。游标耗尽回起点、备用不收录、未激活配置也能处理空范围；无新循环/资源/Proto/model/schema或管理入口，56生成/36模型/schema34和OpenAPI/四资产保持，见[合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.62](validation/P07-62.md)。
+- 红测/检查：缺依赖/游标/stage先编译失败；集成夹具误向仓储调用Submit由编译拒绝，改用既有IntentService。完整make verify通过，Go1.27.3/doctor/contract/生成/Hertz/fmt/lint/govet 0 issues/政策/22工具/全包单元/race/三命令构建，business0.446/race1.402、usecase0.269/race1.447秒；补测试后最终fmt/lint0 issues、usecase/race1.664秒通过。未使用旧二进制证明装配。
+- 原生诊断：首23项63.293秒两项失败，旧HTTP遇Nacos一秒查询超时，新夹具漏执行账户所有权worker导致路由lease_lost；补齐既有账户配置，不改fencing/期限。第二批44.633秒完成链路后因夹具numeric文本比较失败，改用typed仓储/decimal同值比较；保留全部证据。Nacos旧故障仍无根因结论，继续P09/P10，复测通过不宣称修复。
+- 最终原生：相同23项实际PG/Nacos/NATS/独立业务进程/race44.336秒全过，自有资源清理。新范围6.40秒自动处理注销后的已授权工作与未激活空实例；双策略PID、原owner退出/更高epoch接管、原取消请求仍1，确认前USDT799.8/冻结200.2/预留200。核心竞态成交1后确认撤单，自动持久成功、CANCELED/成交1/预留0、USDT899.9/冻结0；OMS/核心/收据/动作/取消请求/成交各1，无额外提交，风险仍关闭。旧HTTP4.16、单笔接管0.88、暂停恢复停止9.37、普通双进程策略9.16秒及原范围权限/回滚/未知/分页/DDL/升级均过。
+- 交付/后续：679bf449e9ab9870b9df1518d842a2efea41dc17已推送main并核对SHA，[CI41373329806](https://github.com/hmlax/muskdeer/actions/runs/41373329806)最近in_progress。206文档/543本地链接/逐文件审查、独立暂存检查后单独提交立即推送核对SHA，再继续viewer进度读取和typed管理入口/页面及独立受限平仓。P07/A27/L1与P08–P10未完成，P11缺真实合同/环境；生产/真实资金/部署未执行，14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未重复。

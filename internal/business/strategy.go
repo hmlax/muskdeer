@@ -112,6 +112,10 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 	if err != nil {
 		return nil, err
 	}
+	emergencies, err := repository.NewStrategyEmergencyCancellations(db)
+	if err != nil {
+		return nil, err
+	}
 	candidates, err := repository.NewStrategyCandidates(db)
 	if err != nil {
 		return nil, err
@@ -124,6 +128,7 @@ func newStrategy(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarnation
 		Execution:     execution,
 		Market:        market,
 		Cancellations: cancellations,
+		Emergencies:   emergencies,
 	}
 	poll, timeout, ttl := cfg.PollInterval.AsDuration(), cfg.OperationTimeout.AsDuration(), cfg.Strategy.LeaseTtl.AsDuration()
 	workers := make([]deer.Worker, 0, len(accounts))
