@@ -21,6 +21,7 @@ const (
 	AdminFlattenNoOrder                AdminFlattenPlanKind = "NO_ORDER"
 	AdminFlattenSell                   AdminFlattenPlanKind = "REDUCE_ONLY_SELL"
 	AdminFlattenAction                                      = "account.flatten"
+	AdminFlattenAuditResource                               = "account_instrument"
 	MessageInvalidAdminFlatten                              = "invalid account flattening confirmation"
 	MessageAdminFlattenDenied                               = "account flattening conditions are not met"
 )
