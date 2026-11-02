@@ -30,6 +30,7 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 		&modelv1.AdminEmergencyCancellation{},
 		&modelv1.AdminEmergencyCancellationTask{},
 		&modelv1.AdminAccountFlattening{},
+		&modelv1.AdminAccountFlatteningTask{},
 		&modelv1.Instrument{},
 		&modelv1.StrategyInstance{},
 		&modelv1.StrategyConfigVersion{},

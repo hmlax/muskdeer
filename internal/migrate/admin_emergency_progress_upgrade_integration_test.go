@@ -66,7 +66,7 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 	}
 	before := riskEventSourceRow(ctx, t, db, source.StrategyInstanceId)
 	budget := activationBudget(ctx, t, db, source.StrategyInstanceId)
-	if version, err := Apply(ctx, db); err != nil || version != 36 {
+	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatal("legacy accepted scope progress migration failed", err)
 	}
 	var task modelv1.AdminEmergencyCancellationTask
@@ -78,7 +78,7 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 	if !proto.Equal(before, riskEventSourceRow(ctx, t, db, source.StrategyInstanceId)) || !proto.Equal(budget, activationBudget(ctx, t, db, source.StrategyInstanceId)) {
 		t.Fatal("pending marker upgrade changed old risk or money")
 	}
-	if version, err := Apply(ctx, db); err != nil || version != 36 {
+	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatal("progress migration replay failed", err)
 	}
 	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellationTask{}, 1)

@@ -146,6 +146,13 @@ func gatewayCommandFixture(ctx context.Context, t *testing.T, db *gorm.DB) *mode
 	if _, err := Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
+	return gatewayCommandAfterSchema(ctx, t, db)
+}
+
+// gatewayCommandAfterSchema also seeds reviewed older schemas without silently
+// advancing an upgrade test to the latest embedded migration first.
+func gatewayCommandAfterSchema(ctx context.Context, t *testing.T, db *gorm.DB) *modelv1.SimulatorCommand {
+	t.Helper()
 	strategyID := leaseStrategyFixture(ctx, t, db)
 	var strategy modelv1.StrategyInstance
 	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&strategy, strategyID).Error; err != nil {

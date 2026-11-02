@@ -259,6 +259,11 @@ func TestCoreFinalFenceRollsBackAlreadyStagedFunds(t *testing.T) {
 func coreFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.Simulator, domain.GatewaySubmit) {
 	t.Helper()
 	command := gatewayCommandFixture(ctx, t, db)
+	return coreFixtureWithCommand(ctx, t, db, command)
+}
+
+func coreFixtureWithCommand(ctx context.Context, t *testing.T, db *gorm.DB, command *modelv1.SimulatorCommand) (domain.Simulator, domain.GatewaySubmit) {
+	t.Helper()
 	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ?", command.InstrumentId).UpdateColumn("min_notional", "1").Error; err != nil {
 		t.Fatal(err)
 	}

@@ -75,9 +75,10 @@ type AdminFlattenWriter interface {
 	Request(context.Context, string, string, AdminFlattenRequest) (AdminFlattenReceipt, error)
 }
 
-// AdminFlattenReader only reads immutable confirmation for a current viewer.
+// AdminFlattenReader observes confirmation and stored work for a current viewer.
 type AdminFlattenReader interface {
 	Confirmation(context.Context, string, int64, int64) (AdminFlattenReceipt, error)
+	Progress(context.Context, string, int64, int64) (AdminFlattenProgress, error)
 }
 
 // AdminAccountFlattenings shares borrowed storage across separate abilities.
