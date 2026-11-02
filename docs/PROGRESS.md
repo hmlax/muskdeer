@@ -1358,3 +1358,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：独立源码的 fmt/生成检查/lint/govet（0 issues）/全包单元通过，相关 race 与 28 脚本测试通过；最终两镜像构建、显式迁移重放、Compose up --wait、两容器 healthy、真实 HTTP 登录/Origin 拒绝/Nacos→operator 查询及真实 React/Chromium 概览通过。既有四个 infra 容器 ID 与启动时间保持。详见 [P12.5 验证](validation/P12-05.md)。
 - 诊断：ProtoJSON 持续时间 500ms 改为 0.5s 后实际启动通过；监听校验复杂度拆分后静态检查通过。Buildx/Chromium 沙箱限制经工具审批重验。既有 NATS unhealthy 不属于本步修复，管理模式不连接 NATS。保留原有平仓未提交修改；运行镜像使用独立 schema 37 源码，未借本步提交该功能。完整集成/历史浏览器/三十分钟/生产本步未运行。
 - 地址 http://127.0.0.1:59000，用户名 admin，密码见忽略的 .cache/compose/credentials.json。基线 2b69495 已同步 codex/two-apps；本步验证后立即独立提交、推送并核验远程 SHA，交付报告记录结果。
+
+## 2026-11-02：P13 独立核心 Kratos 服务并启动
+
+- 用户后续明确管理后台均不用、核心模块分别独立进程，替代 P12 两应用部署边界。新增 cmd/market、strategy、execution、portfolio，各有参数解析、入口、镜像、gRPC 端口和 Nacos 身份；独立 coreentry 只装配 Deer/业务工作循环，拒绝管理 HTTP/RPC 开启标志。默认构建及 Compose 移除 admin/operator 和 React 依赖，原管理容器已移除，历史源码及原有未提交平仓修改保留。未实现报表/归档不部署空 cron。
+- 继续复用既有 infra；经工具审批为 infra-nats 热加载独立持久 MUSKDEER_LOCAL 账户，原账户流/消费者保持，无基础容器部署或重启。显式迁移同源码 schema 37，由 coreinit 准备 16 MiB 流、durable、双源 REPLAY 绑定和禁用/未注资账户，不创建管理员、不注资或开策略。重复准备拒绝不兼容 broker、保留预算与资源 ID。
+- 验证：独立源码 fmt/60 Proto 与 OpenAPI 生成检查/lint/govet（0 issues）/全包单元及核心构建通过；28 脚本测试通过；coreentry/business 相关 race 通过；make core-test 四项实际 infra/race 14.335 秒全过，包含真正新核心命令的成交投影/预算闭环、策略双节点接管及终态停止、资源幂等及 broker 冲突不覆盖。
+- 运行：最终四镜像构建及非 root/只读/禁网 readiness、JSON 日志和 SIGTERM 通过；Compose up --wait 四容器全部 healthy，四个独立 Nacos 健康身份。实际 grpcurl/mTLS 双源行情均 HEALTHY、99.99/100.01 精确返回，execution 订单列表为空。端口分别 59002–59005，仅本机发布。详见 [核心运行说明](CORE_SERVICES.md) 和 [P13 验证](validation/P13-01.md)。
+- 默认 doctor/dev 配置、e2e 和 CI 同步为核心服务；管理资产/浏览器退出默认 CI，历史管理回归仅显式 legacy-admin-e2e。dev-test 用独立临时目录验证实际 market 进程连接既有 PG/Redis、重复关联和解除后共享容器保持；未声称远程 CI 已通过。
+- 诊断：首次消息前缀不满足三级合同已修正；真实 PG 测试复现嵌套 GORM 事务选表错误，初始化改为单事务显式生成 Model 操作后通过，未放宽资金/幂等断言。首测试夹具补实际迁移与有界 context，静态检查问题修复后重验。完整历史集成/浏览器/三十分钟及生产本步未运行，运行数据为回放和禁用模拟账户，不宣称外部实连或实盘。工作分支 codex/two-apps，验证后独立提交、立即推送并核验 SHA。

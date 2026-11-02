@@ -1,5 +1,7 @@
 # 两应用运行说明
 
+本文件为 P12 历史记录。用户后续取消管理后台并要求核心模块分别独立进程；当前构建/Compose 和启动说明以 [CORE_SERVICES.md](CORE_SERVICES.md) 为准。
+
 2026-11-02 用户要求：React 前端 + operator（Kratos/gRPC）+ admin（Hertz/HTTP），保留单仓库、单 go.mod。
 
 ## 构建与启动

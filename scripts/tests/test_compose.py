@@ -29,26 +29,33 @@ class ComposeResourcesTest(unittest.TestCase):
         self.assertEqual(run.call_count, 3)
         self.assertTrue(all(call.kwargs['input'].startswith('SELECT ') for call in run.call_args_list))
 
-    def test_bootstrap_replay_migrates_but_does_not_reprovision_user(self):
+    def test_bootstrap_replay_prepares_core_without_any_administrator(self):
         with tempfile.TemporaryDirectory() as directory:
             with mock.patch.object(compose, 'DIRECTORY', Path(directory)):
-                state = {'provisioned': True, 'username': 'admin', 'password': 'local-secret'}
+                state = {'ownership': 'local-token'}
                 compose.write(Path(directory) / 'credentials.json', json.dumps(state))
-                with mock.patch.object(compose.subprocess, 'run') as run:
+                resources = {'account_id': compose.ACCOUNT, 'instrument_id': '1', 'binance_feed_id': '2', 'okx_feed_id': '3'}
+                with mock.patch.object(compose.subprocess, 'run') as run, mock.patch.object(compose, 'run', return_value=json.dumps(resources)), mock.patch.object(compose, 'prepare'):
                     compose.bootstrap()
-                self.assertEqual(run.call_count, 1)
+                    compose.bootstrap()
+                self.assertEqual(run.call_count, 2)
                 self.assertIn('/migrate', run.call_args.args[0])
                 self.assertNotIn('/adminuser', run.call_args.args[0])
+                self.assertEqual(json.loads((Path(directory) / 'resources.json').read_text()), resources)
                 self.assertEqual(stat.S_IMODE((Path(directory) / 'credentials.json').stat().st_mode), 0o600)
 
-    def test_configs_enable_management_without_seeding_trading_workers(self):
-        snapshots = {service: ('infra-' + service, {}) for service in ('postgres', 'redis', 'nacos')}
-        operator = compose.config('operator', snapshots, {'username': 'local-nacos'})
-        admin = compose.config('admin', snapshots, {'username': 'local-nacos'})
-        self.assertEqual(operator['postgres'], admin['postgres'])
-        self.assertEqual(operator['postgres']['host'], 'infra-postgres')
-        self.assertNotIn('account_ids', operator['business']['strategy'])
-        self.assertEqual(operator['nacos']['registration']['advertise_ip'], '172.31.240.10')
-        self.assertTrue(admin['admin_http']['allow_container_listener'])
-        self.assertEqual(admin['admin_http']['public_origin'], 'http://127.0.0.1:59000')
-        self.assertEqual(admin['grpc_clients']['allowed_services'], ['operator.grpc'])
+    def test_configs_enable_four_distinct_core_processes_without_management(self):
+        snapshots = {service: ('infra-' + service, {}) for service in ('postgres', 'redis', 'nacos', 'nats')}
+        resources = {'binance_feed_id': '2', 'okx_feed_id': '3'}
+        configs = {role: compose.config(role, snapshots, {'username': 'local-nacos'}, {'username': 'muskdeer-local'}, resources) for role in compose.CORES}
+        self.assertEqual(len({value['nacos']['registration']['advertise_ip'] for value in configs.values()}), 4)
+        self.assertEqual(len({value['grpc']['address'] for value in configs.values()}), 4)
+        for role, value in configs.items():
+            self.assertEqual(value['name'], role)
+            self.assertNotIn('admin_http', value)
+            self.assertNotIn('http', value)
+            self.assertTrue(value['business']['enabled'])
+            self.assertFalse(value['business'].get('strategy', {}).get('management_enabled', False))
+        self.assertEqual(configs['strategy']['business']['strategy']['account_ids'], [compose.ACCOUNT])
+        self.assertEqual(configs['portfolio']['business']['portfolio_consumer'], 'portfolio_local')
+        self.assertEqual(len(configs['market']['business']['market']['feeds']), 2)

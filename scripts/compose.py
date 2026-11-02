@@ -20,6 +20,8 @@ DATABASE = 'muskdeer_local'
 NAMESPACE = 'muskdeer-local'
 NETWORK = 'infra-network'
 SUBNET = ipaddress.ip_network('172.31.240.0/24')
+CORES = ('market', 'strategy', 'execution', 'portfolio')
+ACCOUNT = 'muskdeer-local-unfunded'
 
 
 def write(path, content):
@@ -116,7 +118,7 @@ def certificates():
     if not ca_cert.exists():
         raise ValueError('existing local CA certificate is missing; refusing implicit replacement')
     run(['openssl', 'x509', '-in', str(ca_cert), '-checkend', '86400', '-noout'])
-    for role in ('admin', 'operator'):
+    for role in CORES:
         certificate = directory / (role + '.pem')
         key = directory / (role + '.key')
         if certificate.exists() and key.exists():
@@ -133,12 +135,14 @@ def certificates():
              '-out', str(certificate)])
 
 
-def config(role, snapshots, credential):
+def config(role, snapshots, credential, nats, resources=None):
+    index = CORES.index(role)
+    resources = resources or {}
     result = json.loads((ROOT / 'configs/local' / (role + '.json')).read_text())
-    result['instance_id'] = role + '-compose'
-    result['version'] = 'infra-local'
-    result['startup_timeout'] = '15s'
-    result['shutdown_timeout'] = '10s'
+    result.update({'instance_id': role + '-compose', 'version': 'infra-core-local',
+                   'startup_timeout': '15s', 'shutdown_timeout': '10s'})
+    result['grpc']['address'] = '0.0.0.0:' + str(59002 + index)
+    result['monitoring']['address'] = '127.0.0.1:' + str(59102 + index)
     result['postgres'] = {
         'host': snapshots['postgres'][0], 'port': 5432, 'database': DATABASE, 'username': DATABASE,
         'password_env': 'MUSKDEER_POSTGRES_PASSWORD', 'schema': 'public', 'ssl_mode': 'disable',
@@ -152,38 +156,57 @@ def config(role, snapshots, credential):
         'max_idle_time': '60s', 'max_lifetime': '300s',
     }
     result['nacos'] = {
-        'address': snapshots['nacos'][0] + ':8848', 'namespace_id': NAMESPACE, 'group': 'MUSKDEER',
+        'address': snapshots['nacos'][0] + ':8848', 'namespace_id': NAMESPACE, 'group': 'MUSKDEER_CORE',
         'cluster': 'LOCAL', 'username': credential['username'], 'password_env': 'MUSKDEER_NACOS_PASSWORD',
         'connect_timeout': '5s', 'command_timeout': '2s', 'tls_enabled': False, 'max_inflight': 8,
+        'registration': {'advertise_ip': '172.31.240.' + str(10 + index), 'heartbeat_interval': '1s'},
     }
     tls = {'certificate_file': '/app/config/certs/' + role + '.pem',
            'private_key_file': '/app/config/certs/' + role + '.key', 'root_cert_file': '/app/config/certs/ca.pem'}
-    if role == 'operator':
-        result['grpc']['address'] = '0.0.0.0:59002'
-        result['nacos']['registration'] = {'advertise_ip': '172.31.240.10', 'heartbeat_interval': '1s'}
-        result['grpc_security'] = {'mtls': tls, 'allowed_peer_services': ['admin.grpc']}
-        result['business'] = {'enabled': True, 'execution_venue': 'simulator', 'poll_interval': '0.5s',
-                              'operation_timeout': '2s',
-                              'strategy': {'management_enabled': True, 'control_enabled': True}}
-    else:
-        result['http']['address'] = '0.0.0.0:59000'
-        result['admin_http'] = {'enabled': True, 'public_origin': 'http://127.0.0.1:59000',
-                                'allow_insecure_loopback': True, 'allow_container_listener': True,
-                                'strategy_queries_enabled': True, 'strategy_controls_enabled': True}
-        result['grpc_clients'] = {'mtls': tls, 'allowed_services': ['operator.grpc'], 'connect_timeout': '2s',
-                                  'request_timeout': '2s', 'max_inflight': 16,
+    peers = {'market': ['strategy.grpc'], 'strategy': ['strategy.grpc'],
+             'execution': ['strategy.grpc', 'portfolio.grpc'], 'portfolio': ['execution.grpc']}
+    result['grpc_security'] = {'mtls': tls, 'allowed_peer_services': peers[role]}
+    result['business'] = {'enabled': True, 'execution_venue': 'simulator',
+                          'poll_interval': '0.5s', 'operation_timeout': '1s'}
+    if role == 'market':
+        result['business']['market'] = {'lease_ttl': '5s', 'feeds': [
+            {'feed_id': resources[key], 'replay_bid': '99.99', 'replay_ask': '100.01',
+             'replay_quantity': '1', 'replay_interval': '0.1s'}
+            for key in ('binance_feed_id', 'okx_feed_id') if key in resources]}
+    if role in ('execution', 'portfolio'):
+        result['jetstream'] = {
+            'address': snapshots['nats'][0] + ':4222', 'username': nats['username'],
+            'password_env': 'MUSKDEER_NATS_PASSWORD', 'stream': 'MUSKDEER_LOCAL',
+            'subject_prefix': 'muskdeer.local.core', 'tls_enabled': False, 'connect_timeout': '3s',
+            'command_timeout': '2s', 'max_inflight': 8, 'max_message_bytes': 65536,
+        }
+    if role in ('strategy', 'portfolio'):
+        result['grpc_clients'] = {'mtls': tls, 'allowed_services': ['execution.grpc'],
+                                  'connect_timeout': '2s', 'request_timeout': '2s', 'max_inflight': 16,
                                   'max_request_bytes': 1048576, 'max_response_bytes': 1048576}
+    if role == 'strategy':
+        result['grpc_clients']['allowed_services'].append('market.grpc')
+        result['business']['strategy'] = {'account_ids': [ACCOUNT], 'lease_ttl': '5s'}
+    if role == 'execution':
+        result['business']['execution_lease_ttl'] = '5s'
+        result['business']['risk'] = {'account_ids': [ACCOUNT]}
+        result['business']['simulator'] = {'account_ids': [ACCOUNT], 'cancel_delay': '0.1s'}
+    if role == 'portfolio':
+        result['business']['portfolio_consumer'] = 'portfolio_local'
     return result
 
 
 def prepare(source):
     if os.getuid() == 0:
         raise ValueError('run local preparation as a non-root user')
-    snapshots = {service: inventory(service) for service in ('postgres', 'redis', 'nacos')}
+    snapshots = {service: inventory(service) for service in ('postgres', 'redis', 'nacos', 'nats')}
     validate_network(snapshots)
     credential = json.loads((ROOT / '.cache/infra/nacos-credentials.json').read_text())
     if not credential.get('username') or not credential.get('password'):
         raise ValueError('local Nacos username/password are required')
+    nats = json.loads((ROOT / '.cache/infra/nats-local-credentials.json').read_text())
+    if nats.get('username') != 'muskdeer-local' or not nats.get('password'):
+        raise ValueError('dedicated persistent muskdeer-local NATS credentials are required; never use test account')
     redis_args = snapshots['redis'][1]['Config'].get('Cmd', []) or []
     redis_password = os.environ.get('MUSKDEER_INFRA_REDIS_PASSWORD', '')
     if '--requirepass' in redis_args:
@@ -193,8 +216,7 @@ def prepare(source):
     state_path = DIRECTORY / 'credentials.json'
     fresh = not state_path.exists()
     state = json.loads(state_path.read_text()) if not fresh else {
-        'database_password': secrets.token_hex(32), 'username': 'admin',
-        'password': secrets.token_urlsafe(32), 'provisioned': False, 'ownership': secrets.token_hex(16),
+        'database_password': secrets.token_hex(32), 'ownership': secrets.token_hex(16),
     }
     # Retain credentials after partial setup so a retry never resets a password.
     state['source'] = str(Path(source or state.get('source', ROOT)).resolve())
@@ -202,13 +224,16 @@ def prepare(source):
     prepare_database(snapshots['postgres'], state, fresh)
     prepare_namespace(snapshots['nacos'], credential)
     certificates()
-    for role in ('admin', 'operator'):
+    resources_path = DIRECTORY / 'resources.json'
+    resources = json.loads(resources_path.read_text()) if resources_path.exists() else None
+    for role in CORES:
         own_config = DIRECTORY / 'config' / role
-        write(own_config / (role + '.json'), json.dumps(config(role, snapshots, credential), indent=2) + '\n')
+        write(own_config / (role + '.json'), json.dumps(config(role, snapshots, credential, nats, resources), indent=2) + '\n')
         for name in ('ca.pem', role + '.pem', role + '.key'):
             write(own_config / 'certs' / name, (DIRECTORY / 'config/certs' / name).read_text())
     environment = {'MUSKDEER_POSTGRES_PASSWORD': state['database_password'],
-                   'MUSKDEER_REDIS_PASSWORD': redis_password, 'MUSKDEER_NACOS_PASSWORD': credential['password']}
+                   'MUSKDEER_REDIS_PASSWORD': redis_password, 'MUSKDEER_NACOS_PASSWORD': credential['password'],
+                   'MUSKDEER_NATS_PASSWORD': nats['password']}
     # Compose single-quoted values disable interpolation of credential characters.
     def env_value(value):
         if '\n' in value or '\r' in value or "'" in value:
@@ -222,20 +247,20 @@ def prepare(source):
 
 
 def bootstrap():
-    state_path = DIRECTORY / 'credentials.json'
-    state = json.loads(state_path.read_text())
     compose = ['docker', 'compose', '--env-file', str(DIRECTORY / 'compose.env'), '-f', str(ROOT / 'compose.yml')]
-    subprocess.run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/migrate', 'admin',
-                    '-apply', '-config', '/app/config/admin.json'], check=True, timeout=60)
-    if not state['provisioned']:
-        environment = os.environ | {'MUSKDEER_BOOTSTRAP_PASSWORD': state['password']}
-        subprocess.run([*compose, 'run', '--rm', '--no-deps', '-e', 'MUSKDEER_BOOTSTRAP_PASSWORD',
-                        '--entrypoint', '/adminuser', 'admin', '-config', '/app/config/admin.json',
-                        '-username', state['username'], '-role', 'admin', '-password-env', 'MUSKDEER_BOOTSTRAP_PASSWORD'],
-                       env=environment, check=True, timeout=60)
-        state['provisioned'] = True
-        write(state_path, json.dumps(state, indent=2) + '\n')
-    print('Local schema and administrator ready; credentials: .cache/compose/credentials.json')
+    subprocess.run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/migrate', 'execution',
+                    '-apply', '-config', '/app/config/execution.json'], check=True, timeout=60)
+    output = run([*compose, 'run', '--rm', '--no-deps', '--entrypoint', '/coreinit', 'execution',
+                  '-config', '/app/config/execution.json'])
+    resources = json.loads(output)
+    required = ('account_id', 'instrument_id', 'binance_feed_id', 'okx_feed_id')
+    if set(resources) != set(required) or resources['account_id'] != ACCOUNT or any(
+            not isinstance(resources[key], str) or not resources[key].isdigit() or int(resources[key]) <= 0
+            for key in required if key != 'account_id'):
+        raise ValueError('local core resource manifest is invalid')
+    write(DIRECTORY / 'resources.json', json.dumps(resources, indent=2) + '\n')
+    prepare(None)
+    print('Core schema, replay feeds and unfunded disabled account ready; no administrator provisioned')
 
 
 def main():
@@ -257,5 +282,5 @@ if __name__ == '__main__':
         main()
     except (OSError, ValueError, subprocess.CalledProcessError) as error:
         # Subprocess stderr can contain configuration; never echo it or secrets.
-        print('Local Compose setup failed: ' + type(error).__name__, file=sys.stderr)
+        print('Local Compose setup failed: ' + (str(error) if isinstance(error, ValueError) else type(error).__name__), file=sys.stderr)
         sys.exit(1)

@@ -16,51 +16,106 @@ x-runtime: &runtime
     options: {max-size: 10m, max-file: "3"}
 
 services:
-  operator:
+  market:
     <<: *runtime
-    image: muskdeer-operator:infra-local
+    image: muskdeer-market:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
-      target: runtime-operator
-    command: [-config, /app/config/operator.json]
+      target: runtime-market
+    command: [-config, /app/config/market.json]
     volumes:
       - type: bind
-        source: "${MUSKDEER_RUNTIME_DIR}/config/operator"
+        source: "${MUSKDEER_RUNTIME_DIR}/config/market"
         target: /app/config
         read_only: true
+    ports: ["127.0.0.1:59002:59002"]
     networks:
       infra: {}
       app:
         ipv4_address: 172.31.240.10
     healthcheck:
-      test: [CMD, /operator, -config, /app/config/operator.json, -check-ready]
+      test: [CMD, /market, -config, /app/config/market.json, -check-ready]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 15s
-  admin:
+  strategy:
     <<: *runtime
-    image: muskdeer-admin:infra-local
+    image: muskdeer-strategy:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
-      target: runtime-admin
-    command: [-config, /app/config/admin.json]
+      target: runtime-strategy
+    command: [-config, /app/config/strategy.json]
     volumes:
       - type: bind
-        source: "${MUSKDEER_RUNTIME_DIR}/config/admin"
+        source: "${MUSKDEER_RUNTIME_DIR}/config/strategy"
         target: /app/config
         read_only: true
-    ports: ["127.0.0.1:59000:59000"]
-    networks: [infra, app]
-    depends_on:
-      operator:
-        condition: service_healthy
+    ports: ["127.0.0.1:59003:59003"]
+    networks:
+      infra: {}
+      app:
+        ipv4_address: 172.31.240.11
     healthcheck:
-      test: [CMD, /admin, -config, /app/config/admin.json, -check-ready]
+      test: [CMD, /strategy, -config, /app/config/strategy.json, -check-ready]
       interval: 10s
       timeout: 3s
       retries: 5
       start_period: 15s
+    depends_on:
+      execution:
+        condition: service_healthy
+      market:
+        condition: service_healthy
+  execution:
+    <<: *runtime
+    image: muskdeer-execution:infra-local
+    build:
+      context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      target: runtime-execution
+    command: [-config, /app/config/execution.json]
+    volumes:
+      - type: bind
+        source: "${MUSKDEER_RUNTIME_DIR}/config/execution"
+        target: /app/config
+        read_only: true
+    ports: ["127.0.0.1:59004:59004"]
+    networks:
+      infra: {}
+      app:
+        ipv4_address: 172.31.240.12
+    healthcheck:
+      test: [CMD, /execution, -config, /app/config/execution.json, -check-ready]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+  portfolio:
+    <<: *runtime
+    image: muskdeer-portfolio:infra-local
+    build:
+      context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      target: runtime-portfolio
+    command: [-config, /app/config/portfolio.json]
+    volumes:
+      - type: bind
+        source: "${MUSKDEER_RUNTIME_DIR}/config/portfolio"
+        target: /app/config
+        read_only: true
+    ports: ["127.0.0.1:59005:59005"]
+    networks:
+      infra: {}
+      app:
+        ipv4_address: 172.31.240.13
+    healthcheck:
+      test: [CMD, /portfolio, -config, /app/config/portfolio.json, -check-ready]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      execution:
+        condition: service_healthy
 
 networks:
   infra:

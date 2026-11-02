@@ -2,9 +2,7 @@
 
 doctor:
 	python3 scripts/go.py version
-	python3 scripts/go.py run ./cmd/doctor -config configs/examples/service.json
-	python3 scripts/go.py run ./cmd/doctor -config configs/examples/api.json
-	@for role in admin operator; do \
+	@for role in market strategy execution portfolio; do \
 		python3 scripts/go.py run ./cmd/doctor -config configs/local/$$role.json || exit $$?; \
 	done
 
@@ -54,16 +52,19 @@ test-race:
 	python3 scripts/go.py test -race ./...
 
 build:
-	python3 scripts/go.py build ./...
 	mkdir -p .cache/bin
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
-	python3 scripts/go.py build -o .cache/bin/admin ./cmd/admin
-	python3 scripts/go.py build -o .cache/bin/operator ./cmd/operator
-	python3 scripts/go.py build -o .cache/bin/adminuser ./cmd/adminuser
+	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
+	@for name in market strategy execution portfolio; do \
+		python3 scripts/go.py build -o .cache/bin/$$name ./cmd/$$name || exit $$?; \
+	done
 
 verify: doctor contract-check generate-check hz-check fmt-check lint policy-test test-tooling test test-race build
 
 build-fixtures: build
+	python3 scripts/go.py build -o .cache/bin/admin ./cmd/admin
+	python3 scripts/go.py build -o .cache/bin/operator ./cmd/operator
+	python3 scripts/go.py build -o .cache/bin/adminuser ./cmd/adminuser
 	@for role in api market strategy execution portfolio cron; do \
 		python3 scripts/go.py build -o .cache/bin/module-$$role ./internal/testservice/$$role || exit $$?; \
 	done
@@ -84,8 +85,9 @@ dev-test: build
 	python3 scripts/dev-smoke.py
 
 image:
-	docker build --target runtime-admin -t muskdeer-admin:local .
-	docker build --target runtime-operator -t muskdeer-operator:local .
+	@for name in market strategy execution portfolio; do \
+		docker build --target runtime-$$name -t muskdeer-$$name:local . || exit $$?; \
+	done
 
 image-test: image
 	python3 scripts/image-smoke.py
@@ -165,7 +167,11 @@ admin-overview-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-overview-browser.py
 
-e2e: integration image-test two-apps-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-emergency-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
+e2e: core-test image-test
+
+# Historical administration regressions are explicit opt-in only.
+.PHONY: legacy-admin-e2e
+legacy-admin-e2e: integration image-test two-apps-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-emergency-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
 
 .PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
 
@@ -177,7 +183,7 @@ soak-smoke: build-fixtures
 	python3 scripts/soak.py --smoke
 
 .PHONY: build-fixtures two-apps-test
-two-apps-test: build web-install
+two-apps-test: build-fixtures web-install
 	python3 scripts/web.py browser-install
 	python3 scripts/two-apps-test.py
 
@@ -185,13 +191,17 @@ two-apps-test: build web-install
 compose-prepare:
 	python3 scripts/compose.py prepare
 
-compose-up: web-build compose-prepare
+compose-up: compose-prepare
 	docker compose --env-file .cache/compose/compose.env build
 	python3 scripts/compose.py bootstrap
-	docker compose --env-file .cache/compose/compose.env up -d --wait --wait-timeout 60
+	docker compose --env-file .cache/compose/compose.env up -d --remove-orphans --wait --wait-timeout 60
 
 compose-down:
 	docker compose --env-file .cache/compose/compose.env down
 
 compose-status:
 	docker compose --env-file .cache/compose/compose.env ps
+
+.PHONY: core-test
+core-test: build
+	python3 scripts/core-process-test.py

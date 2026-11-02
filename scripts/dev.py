@@ -36,8 +36,10 @@ class Environment:
                  'containers': {service: info['Id'] for service, (_, info) in snapshots.items()}}
         self.write('endpoints.json', json.dumps(state, indent=2) + '\n')
         self.write('environment.sh', ''.join('export ' + key + '=' + shlex.quote(value) + '\n' for key, value in secrets.items()))
-        for role in ('admin', 'operator'):
+        for index, role in enumerate(('market', 'strategy', 'execution', 'portfolio')):
             config = json.loads((ROOT / 'configs/local' / (role + '.json')).read_text())
+            config['grpc']['address'] = '127.0.0.1:' + str(59002 + index)
+            config['monitoring']['address'] = '127.0.0.1:' + str(59102 + index)
             config['postgres'] = {
                 'host': '127.0.0.1', 'port': int(addresses['postgres'].rsplit(':', 1)[1]),
                 'database': postgres.get('POSTGRES_DB', postgres.get('POSTGRES_USER', 'postgres')),

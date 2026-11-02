@@ -19,8 +19,6 @@ jobs:
           cache: false
       - name: Install pinned generators
         run: make tools
-      - name: Build and verify pinned administration assets
-        run: make web-install web-check web-generated-check
       - name: Verify generated code, lint, unit tests and build
         run: make verify
       - name: Build pinned toolchain image and verify runtime
@@ -36,53 +34,10 @@ jobs:
           cache: false
       - name: Install pinned generators
         run: make tools
-      - name: Verify isolated infrastructure contracts
-        run: make dev-test integration two-apps-test
-  browsers:
-    runs-on: [self-hosted, muskdeer-infra]
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
-        with:
-          go-version-file: .go-version
-          cache: false
-      - name: Install pinned generators
-        run: make tools
-      - name: Install pinned administration browser dependencies
-        run: make web-install
-      - name: Verify actual administration browser workflow
-        run: make admin-browser
-      - name: Verify actual strategy administration browser workflow
-        run: make admin-strategy-browser
-      - name: Verify actual funded control browser workflow
-        run: make admin-control-browser
-      - name: Verify actual strategy creation browser workflow
-        run: make admin-creation-browser
-      - name: Verify actual configuration publication browser workflow
-        run: make admin-publication-browser
-      - name: Verify actual audit history browser workflow
-        run: make admin-audit-browser
-      - name: Verify actual funded strategy risk browser workflow
-        run: make admin-risk-browser
-      - name: Verify actual funded order query browser workflow
-        run: make admin-orders-browser
-      - name: Verify actual funded order cancellation browser workflow
-        run: make admin-cancellation-browser
-      - name: Verify actual scoped emergency cancellation browser workflow
-        run: make admin-emergency-browser
-      - name: Verify actual independent market monitoring browser workflow
-        run: make admin-market-browser
-      - name: Verify actual authoritative trades browser workflow
-        run: make admin-trades-browser
-      - name: Verify actual account portfolio browser workflow
-        run: make admin-portfolios-browser
-      - name: Verify actual immutable risk history browser workflow
-        run: make admin-risk-events-browser
-      - name: Verify actual runtime overview browser workflow
-        run: make admin-overview-browser
+      - name: Verify independent core services on existing infra
+        run: make dev-test core-test
   verify:
-    needs: [checks, integration, browsers]
+    needs: [checks, integration]
     if: always()
     runs-on: ubuntu-24.04
     timeout-minutes: 1
@@ -91,8 +46,6 @@ jobs:
         env:
           CHECKS_RESULT: ${{ needs.checks.result }}
           INTEGRATION_RESULT: ${{ needs.integration.result }}
-          BROWSERS_RESULT: ${{ needs.browsers.result }}
         run: |
           test "$CHECKS_RESULT" = success
           test "$INTEGRATION_RESULT" = success
-          test "$BROWSERS_RESULT" = success

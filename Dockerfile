@@ -10,16 +10,13 @@ COPY api ./api
 COPY cmd ./cmd
 COPY deer ./deer
 COPY internal ./internal
-COPY web/admin/assets.go ./web/admin/assets.go
-COPY web/admin/dist ./web/admin/dist
 COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go build -mod=readonly -trimpath -o /out/admin ./cmd/admin && \
-    go build -mod=readonly -trimpath -o /out/operator ./cmd/operator && \
-    go build -mod=readonly -trimpath -o /out/migrate ./cmd/migrate && \
-    go build -mod=readonly -trimpath -o /out/adminuser ./cmd/adminuser
+    for name in market strategy execution portfolio migrate coreinit; do \
+      go build -mod=readonly -trimpath -o /out/$name ./cmd/$name || exit $?; \
+    done
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/admin ./cmd/operator ./cmd/migrate ./cmd/adminuser > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/market ./cmd/strategy ./cmd/execution ./cmd/portfolio ./cmd/migrate ./cmd/coreinit > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
@@ -35,15 +32,24 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 FROM scratch AS runtime-base
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/licenses /licenses
+COPY --from=build /out/migrate /migrate
+COPY --from=build /out/coreinit /coreinit
 USER 65532:65532
 WORKDIR /app
 STOPSIGNAL SIGTERM
-FROM runtime-base AS runtime-admin
-COPY --from=build /out/admin /admin
-COPY --from=build /out/migrate /migrate
-COPY --from=build /out/adminuser /adminuser
-ENTRYPOINT ["/admin"]
 
-FROM runtime-base AS runtime-operator
-COPY --from=build /out/operator /operator
-ENTRYPOINT ["/operator"]
+FROM runtime-base AS runtime-market
+COPY --from=build /out/market /market
+ENTRYPOINT ["/market"]
+
+FROM runtime-base AS runtime-strategy
+COPY --from=build /out/strategy /strategy
+ENTRYPOINT ["/strategy"]
+
+FROM runtime-base AS runtime-execution
+COPY --from=build /out/execution /execution
+ENTRYPOINT ["/execution"]
+
+FROM runtime-base AS runtime-portfolio
+COPY --from=build /out/portfolio /portfolio
+ENTRYPOINT ["/portfolio"]

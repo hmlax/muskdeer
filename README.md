@@ -1,13 +1,15 @@
 # Muskdeer
 
-本地管理界面使用既有 Docker infra：`make compose-up`，启动后访问 http://127.0.0.1:59000。只部署 admin/operator 两个应用；随机登录密码、准备条件与停止命令见[两应用运行说明](docs/TWO_APPS.md)。
+核心服务复用既有 Docker infra：`make compose-up` 分别启动 market、strategy、execution、portfolio 四个 Kratos 进程；不启动管理后台。入口、端口及验证见[核心服务运行说明](docs/CORE_SERVICES.md)。
 
 基于既有撮合引擎的自营做市与可配置策略平台。
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
 
-2026-11-02 架构调整：前端统一 React；后端收敛为 operator（Kratos/gRPC）和 admin（Hertz/HTTP），管理权限统一在 admin 校验。单仓库、单 go.mod 保持。两个应用入口已提供：`make build` 后使用 `.cache/bin/operator -config configs/local/operator.json` 和 `.cache/bin/admin -config configs/local/admin.json`。本地样例默认仅启用基础设施；实际业务需显式配置依赖和业务绑定，见 [两应用运行说明](docs/TWO_APPS.md)。每个应用各有独立 cmd 入口，旧 role 分发命令已移除；测试复用现有 Docker infra，不再额外部署基础服务。
+2026-11-02 后续架构调整：用户取消管理后台范围，核心模块分别独立进程。`make build` 默认构建 `.cache/bin/{market,strategy,execution,portfolio,migrate,coreinit}`，Compose 启动四个业务进程，各自独立 cmd/Nacos 身份/端口；构建不需要 React 或管理资产。单仓库、单 go.mod、Go 1.27.3、Deer 及交易正确性保持。`make core-test` 用实际核心命令验证回放、执行、成交投影及策略接管/停止，复用既有 infra。
+
+以下管理功能记录属于历史交付；管理包、前端和旧验证命令保留，不属于当前默认构建/部署或当前验收范围。
 P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、策略创建/查询/启停及参数发布/换源、审计列表/详情、策略风险与额度页面和HTTP/gRPC及网格控制循环已分步交付；做市/网格的浏览器发布换源、模拟资金冻结/释放及暂停/停止目标保留通过，策略风险页面的资金关闭/恢复闭环也已验证。风险历史及运行概览页面也已分步交付；剩余P07验收、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发

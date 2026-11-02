@@ -15,7 +15,7 @@ from dev import Environment, ROOT
 
 
 def service_smoke(environment):
-    path = environment.directory / 'operator.json'
+    path = environment.directory / 'market.json'
     config = json.loads(path.read_text())
     config['monitoring']['address'] = '127.0.0.1:0'
     config['grpc']['address'] = '127.0.0.1:0'
@@ -27,7 +27,7 @@ def service_smoke(environment):
         values[key] = shlex.split(value)[0] if value else ''
     with tempfile.NamedTemporaryFile(mode='w+') as output, tempfile.TemporaryFile(mode='w+') as diagnostic:
         process = subprocess.Popen([
-            str(ROOT / '.cache/bin/operator'), '-config', str(path),
+            str(ROOT / '.cache/bin/market'), '-config', str(path),
         ], env=values, stdout=output, stderr=diagnostic)
         try:
             deadline = time.monotonic() + 8
@@ -39,7 +39,7 @@ def service_smoke(environment):
                 for line in Path(output.name).read_text().splitlines(keepends=True):
                     if line.endswith('\n'):
                         record = json.loads(line)
-                        if record.get('msg') == 'service.initialized':
+                        if record.get('msg') == 'core.initialized':
                             address = record['monitoring_address']
                 if address:
                     try:
@@ -79,7 +79,7 @@ def main():
         current = {service: inventory(service)[1]['Id'] for service in first['containers']}
         if current != first['containers']:
             raise ValueError('detaching changed shared infra containers')
-        print('Existing infra attachment, independent operator and detach passed')
+        print('Existing infra attachment, independent market and detach passed')
     return 0
 
 

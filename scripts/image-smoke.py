@@ -55,7 +55,7 @@ def smoke(role):
             logs = subprocess.run(['docker', 'logs', name], check=True, capture_output=True, text=True)
             records = [json.loads(line) for line in logs.stdout.splitlines()]
             messages = {record.get('msg') for record in records}
-            if logs.stderr or not {'service.initialized', 'service.transports_stopped'} <= messages:
+            if logs.stderr or not {'core.initialized', 'service.transports_stopped'} <= messages:
                 raise ValueError('runtime did not produce its JSON lifecycle records')
             if not all(record.get('service') == role and record.get('instance') == name for record in records):
                 raise ValueError('runtime JSON lost its process identity')
@@ -66,5 +66,5 @@ def smoke(role):
 
 
 if __name__ == '__main__':
-    for role in ['admin', 'operator']:
+    for role in ['market', 'strategy', 'execution', 'portfolio']:
         smoke(role)
