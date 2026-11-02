@@ -72,7 +72,7 @@ func requestAdminFlattening(ctx context.Context, tx *gorm.DB, token, csrf string
 	if err != nil {
 		return domain.AdminFlattenReceipt{}, err
 	}
-	if user.Role != string(domain.AdminRoleAdmin) {
+	if !apiValidatedActor(ctx) && user.Role != string(domain.AdminRoleAdmin) {
 		return domain.AdminFlattenReceipt{}, domain.ErrForbidden
 	}
 	fingerprint := adminFlattenFingerprint(request)

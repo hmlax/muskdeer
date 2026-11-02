@@ -237,7 +237,7 @@ func (s *Server) GetAccount(ctx context.Context, request *executionv1.GetAccount
 }
 
 func authorized(ctx context.Context, write bool) error {
-	writer := rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) || rpcsecurity.HasService(ctx, rpcsecurity.ServiceCron)
+	writer := rpcsecurity.HasService(ctx, rpcsecurity.ServiceOperator) || rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) || rpcsecurity.HasService(ctx, rpcsecurity.ServiceCron)
 	reader := rpcsecurity.HasService(ctx, rpcsecurity.ServiceAPI) || rpcsecurity.HasService(ctx, rpcsecurity.ServicePortfolio)
 	if !writer && (write || !reader) {
 		return status.Error(codes.PermissionDenied, MessageDenied)

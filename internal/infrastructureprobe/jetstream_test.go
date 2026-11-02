@@ -24,7 +24,7 @@ import (
 )
 
 func TestJetStreamInfrastructure(t *testing.T) {
-	if os.Getenv("MUSKDEER_TEST_NATS_TOKEN") == "" {
+	if os.Getenv("MUSKDEER_TEST_NATS_TOKEN") == "" && os.Getenv("MUSKDEER_TEST_NATS_USERNAME") == "" {
 		t.Fatal("isolated NATS token is required; run make integration")
 	}
 	provisionStream(t, jetStreamConfig())
@@ -258,7 +258,11 @@ func testJetStreamAuthentication(t *testing.T) {
 	const reference = "MUSKDEER_TEST_INVALID_NATS_TOKEN"
 	t.Setenv(reference, token)
 	cfg := jetStreamConfig()
-	cfg.TokenEnv = reference
+	if cfg.Username != "" {
+		cfg.PasswordEnv = reference
+	} else {
+		cfg.TokenEnv = reference
+	}
 	client, err := jetstream.New(t.Context(), cfg, "invalid-token")
 	if client != nil || !errors.Is(err, nats.ErrAuthorization) {
 		t.Fatalf("authentication rejection = %v, %v", client, err)
@@ -306,7 +310,7 @@ func provisionStream(t *testing.T, cfg *configv1.JetStream) natsjs.Stream {
 func jetStreamAdmin(t *testing.T) natsjs.JetStream {
 	t.Helper()
 	conn, err := nats.Connect("nats://"+jetStreamConfig().Address,
-		nats.Token(os.Getenv("MUSKDEER_TEST_NATS_TOKEN")), nats.NoReconnect(), nats.Timeout(time.Second))
+		testNATSAuth(), nats.NoReconnect(), nats.Timeout(time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +327,9 @@ func jetStreamConfig() *configv1.JetStream {
 		Address:         os.Getenv("MUSKDEER_TEST_NATS_ADDRESS"),
 		Stream:          "MUSKDEER_TEST",
 		SubjectPrefix:   "muskdeer.integration.execution",
-		TokenEnv:        "MUSKDEER_TEST_NATS_TOKEN",
+		TokenEnv:        testNATSTokenEnv(),
+		Username:        os.Getenv("MUSKDEER_TEST_NATS_USERNAME"),
+		PasswordEnv:     testNATSPasswordEnv(),
 		ConnectTimeout:  durationpb.New(time.Second),
 		CommandTimeout:  durationpb.New(time.Second),
 		MaxInflight:     2,

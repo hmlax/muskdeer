@@ -17,7 +17,7 @@ def run(verify: bool) -> int:
     files = subprocess.check_output([
         'git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '*.go',
     ], cwd=ROOT).decode().split('\0')
-    files = [path for path in files if path]
+    files = [path for path in files if path and (ROOT / path).is_file()]
     if not files:
         raise ValueError('no Go source files found')
     arguments = [str(Path(goroot) / 'bin/gofmt')]

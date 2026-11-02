@@ -21,11 +21,11 @@ func (r *Routes) listStrategyTrades(ctx context.Context, request *app.RequestCon
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.trades.ListStrategyTrades(call, &strategyv1.ListStrategyTradesRequest{
 		Session:    session,
@@ -48,11 +48,11 @@ func (r *Routes) getStrategyTrade(ctx context.Context, request *app.RequestConte
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.trades.GetStrategyTrade(call, &strategyv1.GetStrategyTradeRequest{
 		Session:    session,

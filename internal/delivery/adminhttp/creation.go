@@ -33,7 +33,7 @@ func (r *Routes) createStrategy(ctx context.Context, request *app.RequestContext
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
@@ -43,11 +43,11 @@ func (r *Routes) createStrategy(ctx context.Context, request *app.RequestContext
 		return
 	}
 	input.Reason = command.Reason
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.creation.CreateStrategy(call, &strategyv1.CreateStrategyRequest{
 		Session:        session,
-		CsrfToken:      csrf[0],
+		CsrfToken:      r.rpcCSRF(csrf[0]),
 		IdempotencyKey: command.Key,
 		Input:          input,
 	})

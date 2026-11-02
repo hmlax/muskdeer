@@ -10,6 +10,8 @@ import (
 
 // Service identities are exact certificate DNS names, never request metadata.
 const (
+	ServiceAdmin     = "admin.grpc"
+	ServiceOperator  = "operator.grpc"
 	ServiceAPI       = "api.grpc"
 	ServiceMarket    = "market.grpc"
 	ServiceStrategy  = "strategy.grpc"

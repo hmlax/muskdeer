@@ -2,7 +2,7 @@ import { ApiError, managementJSON } from './api';
 import { integer, object, sources, states, strategy as strategyValue, text } from './strategy-api';
 import type { State, Strategy } from './strategy-api';
 
-export const serviceRoles = ['api', 'market', 'strategy', 'execution', 'portfolio', 'cron'] as const;
+export const serviceRoles = ['admin', 'operator', 'api', 'market', 'strategy', 'execution', 'portfolio', 'cron'] as const;
 export type ServiceRole = typeof serviceRoles[number];
 export const probeStatuses = ['READY', 'NOT_READY', 'UNKNOWN', 'PROBE_NOT_CONFIGURED', 'PROBE_FAILED', 'PROBE_TIMEOUT', 'PROBE_DENIED', 'PROBE_CAPACITY'] as const;
 export type ProbeStatus = typeof probeStatuses[number];
@@ -64,13 +64,14 @@ export async function getServiceOverview(after: string, filters: ServiceFilters,
   validateServiceFilters(filters); if (after) label(after); const query = new URLSearchParams({ role: filters.role, limit: String(filters.limit) }); if (after) query.set('after_instance_id', after);
   const p = object(await managementJSON(`overview/services?${query}`, signal)); const role = choice(p.role, serviceRoles); const source = choice(p.membership_source, ['LOCAL_API', 'NACOS_HEALTHY_GRPC']);
   const observed = integer(p.membership_observed_at_ms); const total = integer(p.total, true); const configured = bool(p.probe_configured); const next = text(p.next_after_instance_id);
-  if (role !== filters.role || BigInt(total) > 1024n || role === 'api' && (source !== 'LOCAL_API' || total !== '1' || !configured) || role !== 'api' && source !== 'NACOS_HEALTHY_GRPC' ||
+  const local = role === 'api' || role === 'admin';
+  if (role !== filters.role || BigInt(total) > 1024n || local && (source !== 'LOCAL_API' || total !== '1' || !configured) || !local && source !== 'NACOS_HEALTHY_GRPC' ||
     !Array.isArray(p.items) || p.items.length > filters.limit || BigInt(p.items.length) > BigInt(total)) invalid();
   let previous = after;
   const items = p.items.map(input => {
-    const v = object(input); const id = role === 'api' ? label(v.instance_id) : remoteID(v.instance_id); const version = label(v.declared_version); const status = choice(v.status, probeStatuses);
+    const v = object(input); const id = local ? label(v.instance_id) : remoteID(v.instance_id); const version = label(v.declared_version); const status = choice(v.status, probeStatuses);
     const probed = Object.hasOwn(v, 'probed_at_ms') ? integer(v.probed_at_ms) : null;
-    if (id <= previous || configured && (status === 'PROBE_NOT_CONFIGURED' || probed === null) || !configured && (status !== 'PROBE_NOT_CONFIGURED' || probed !== null) || role === 'api' && !['READY', 'NOT_READY', 'PROBE_TIMEOUT'].includes(status)) invalid();
+    if (id <= previous || configured && (status === 'PROBE_NOT_CONFIGURED' || probed === null) || !configured && (status !== 'PROBE_NOT_CONFIGURED' || probed !== null) || local && !['READY', 'NOT_READY', 'PROBE_TIMEOUT'].includes(status)) invalid();
     previous = id; return { instance_id: id, declared_version: version, status, probed_at_ms: probed };
   });
   if (after === '' && (BigInt(items.length) < BigInt(total) && items.length < filters.limit || (next !== '') !== (BigInt(total) > BigInt(items.length))) ||

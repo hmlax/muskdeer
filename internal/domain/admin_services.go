@@ -12,6 +12,8 @@ type AdminServiceRole string
 
 // Platform service roles exposed by the management observer.
 const (
+	AdminServiceAdmin        AdminServiceRole = "admin"
+	AdminServiceOperator     AdminServiceRole = "operator"
 	AdminServiceAPI          AdminServiceRole = "api"
 	AdminServiceMarket       AdminServiceRole = "market"
 	AdminServiceStrategy     AdminServiceRole = "strategy"
@@ -25,7 +27,7 @@ const (
 // Valid accepts only the six platform roles.
 func (r AdminServiceRole) Valid() bool {
 	switch r {
-	case AdminServiceAPI, AdminServiceMarket, AdminServiceStrategy, AdminServiceExecution, AdminServicePortfolio, AdminServiceCron:
+	case AdminServiceAdmin, AdminServiceOperator, AdminServiceAPI, AdminServiceMarket, AdminServiceStrategy, AdminServiceExecution, AdminServicePortfolio, AdminServiceCron:
 		return true
 	default:
 		return false

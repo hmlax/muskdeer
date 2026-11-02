@@ -27,7 +27,7 @@ func (s *PortfolioQueryServer) ListPortfolios(ctx context.Context, request *stra
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	filter := domain.AdminPortfolioFilter{
@@ -41,7 +41,7 @@ func (s *PortfolioQueryServer) ListPortfolios(ctx context.Context, request *stra
 	if err := filter.Validate(); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.portfolios.List(ctx, request.Session.Token, filter)
+	page, err := s.portfolios.List(ctx, request.GetSession().GetToken(), filter)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -70,13 +70,13 @@ func (s *PortfolioQueryServer) GetPortfolio(ctx context.Context, request *strate
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.PortfolioId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	portfolio, err := s.portfolios.Detail(ctx, request.Session.Token, request.PortfolioId)
+	portfolio, err := s.portfolios.Detail(ctx, request.GetSession().GetToken(), request.PortfolioId)
 	if err != nil {
 		return nil, rpcError(err)
 	}

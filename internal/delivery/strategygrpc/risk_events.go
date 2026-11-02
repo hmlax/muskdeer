@@ -27,7 +27,7 @@ func (s *RiskEventQueryServer) ListRiskEvents(ctx context.Context, request *stra
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	filter := domain.AdminRiskEventFilter{
@@ -45,7 +45,7 @@ func (s *RiskEventQueryServer) ListRiskEvents(ctx context.Context, request *stra
 	if err := filter.Validate(); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.events.List(ctx, request.Session.Token, filter)
+	page, err := s.events.List(ctx, request.GetSession().GetToken(), filter)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -74,13 +74,13 @@ func (s *RiskEventQueryServer) GetRiskEvent(ctx context.Context, request *strate
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.EventId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	event, err := s.events.Detail(ctx, request.Session.Token, request.EventId)
+	event, err := s.events.Detail(ctx, request.GetSession().GetToken(), request.EventId)
 	if err != nil {
 		return nil, rpcError(err)
 	}

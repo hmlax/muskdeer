@@ -24,6 +24,10 @@ import (
 type Role string
 
 const (
+	// RoleAdmin owns HTTP delivery and management authorization.
+	RoleAdmin Role = "admin"
+	// RoleOperator owns all business modules and gRPC.
+	RoleOperator Role = "operator"
 	// RoleAPI owns Hertz administration delivery; business routes arrive in P07.
 	RoleAPI Role = "api"
 	// RoleMarket owns market-data work introduced in P05.
@@ -38,11 +42,11 @@ const (
 	RoleCron Role = "cron"
 )
 
-// ParseRole accepts only the six explicit service identities.
+// ParseRole includes legacy identities used by isolated module test fixtures.
 func ParseRole(value string) (Role, error) {
 	role := Role(value)
 	switch role {
-	case RoleAPI, RoleMarket, RoleStrategy, RoleExecution, RolePortfolio, RoleCron:
+	case RoleAdmin, RoleOperator, RoleAPI, RoleMarket, RoleStrategy, RoleExecution, RolePortfolio, RoleCron:
 		return role, nil
 	default:
 		return "", errors.New("service role must be api, market, strategy, execution, portfolio or cron")
@@ -69,10 +73,10 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 	if cfg.Name != string(role) || cfg.Monitoring == nil {
 		return errors.New("service entry requires a matching name and local monitoring listener")
 	}
-	if role == RoleAPI && cfg.Http == nil || role != RoleAPI && cfg.Http != nil {
-		return errors.New("only api requires a business HTTP listener")
+	if (role == RoleAPI || role == RoleAdmin) && cfg.Http == nil || (role != RoleAPI && role != RoleAdmin) && cfg.Http != nil {
+		return errors.New("only admin requires a business HTTP listener")
 	}
-	if role != RoleAPI && role != RoleCron && cfg.Grpc == nil {
+	if role != RoleAPI && role != RoleAdmin && role != RoleCron && cfg.Grpc == nil {
 		return errors.New("business service roles require a gRPC listener")
 	}
 	var logger *logging.Logger
@@ -113,7 +117,7 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 		httpAddress string
 		err         error
 	)
-	if role == RoleAPI {
+	if role == RoleAPI || role == RoleAdmin {
 		var api *deer.DeerApi
 		api, cleanup, err = deer.NewDeerApi(ctx, cfg, deer.APISpec{
 			Service: spec,

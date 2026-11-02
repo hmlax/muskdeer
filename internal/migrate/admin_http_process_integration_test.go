@@ -26,6 +26,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
+	"github.com/hmlax/muskdeer/internal/testprocess"
 )
 
 type nativeSessionReply struct {
@@ -74,7 +75,7 @@ func nativeAdminFixture(ctx context.Context, t *testing.T) (*gorm.DB, string) {
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	bootstrap := exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", "admin"), "-config", path, "-username", "native-viewer", "-role", string(domain.AdminRoleViewer), "-password-env", "MUSKDEER_NATIVE_ADMIN_PASSWORD")
+	bootstrap := exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", "adminuser"), "-config", path, "-username", "native-viewer", "-role", string(domain.AdminRoleViewer), "-password-env", "MUSKDEER_NATIVE_ADMIN_PASSWORD")
 	bootstrap.Env = append(os.Environ(), "MUSKDEER_NATIVE_ADMIN_PASSWORD="+adminFixturePassword)
 	output, err := bootstrap.CombinedOutput()
 	if err != nil || bytes.Contains(output, []byte(adminFixturePassword)) {
@@ -232,7 +233,15 @@ func startNativeAdminAPIFor(ctx context.Context, t *testing.T, path, directory s
 		t.Fatal(err)
 	}
 	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), lifetime)
-	command := exec.CommandContext(run, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", "api", "-config", path)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var configured configv1.ServiceConfig
+	if err := protojson.Unmarshal(data, &configured); err != nil {
+		t.Fatal(err)
+	}
+	command := testprocess.Command(run, configured.Name, path)
 	command.Stdout, command.Stderr = output, output
 	finished := make(chan error, 1)
 	if err := command.Start(); err != nil {

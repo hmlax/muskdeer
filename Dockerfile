@@ -14,9 +14,10 @@ COPY web/admin/assets.go ./web/admin/assets.go
 COPY web/admin/dist ./web/admin/dist
 COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go build -mod=readonly -trimpath -o /out/muskdeer ./cmd/muskdeer
+    go build -mod=readonly -trimpath -o /out/admin ./cmd/admin && \
+    go build -mod=readonly -trimpath -o /out/operator ./cmd/operator
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/muskdeer > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/admin ./cmd/operator > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
@@ -29,11 +30,16 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
       esac; \
     done < /tmp/module-dirs-sorted
 
-FROM scratch AS runtime
+FROM scratch AS runtime-base
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-COPY --from=build /out/muskdeer /muskdeer
 COPY --from=build /out/licenses /licenses
 USER 65532:65532
 WORKDIR /app
 STOPSIGNAL SIGTERM
-ENTRYPOINT ["/muskdeer"]
+FROM runtime-base AS runtime-admin
+COPY --from=build /out/admin /admin
+ENTRYPOINT ["/admin"]
+
+FROM runtime-base AS runtime-operator
+COPY --from=build /out/operator /operator
+ENTRYPOINT ["/operator"]

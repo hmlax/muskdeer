@@ -15,15 +15,23 @@ import (
 
 func (r *Routes) getServiceOverview(ctx context.Context, request *app.RequestContext) {
 	filter, valid := serviceFilterQuery(request)
+	if r.centralAuth {
+		if request.Query("role") == "" {
+			filter.Role = domain.AdminServiceOperator
+		}
+		if filter.Role != domain.AdminServiceAdmin && filter.Role != domain.AdminServiceOperator {
+			valid = false
+		}
+	}
 	if !valid {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	value, err := r.services.Observe(call, session.Token, filter)
 	if err != nil {

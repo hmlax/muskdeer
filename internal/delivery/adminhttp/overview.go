@@ -20,11 +20,11 @@ func (r *Routes) getStrategyOverview(ctx context.Context, request *app.RequestCo
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.overview.GetStrategyOverview(call, &strategyv1.GetStrategyOverviewRequest{
 		Session:                   session,

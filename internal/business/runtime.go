@@ -17,6 +17,7 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/internal/adminactor"
 	"github.com/hmlax/muskdeer/internal/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/internal/delivery/marketgrpc"
 	"github.com/hmlax/muskdeer/internal/delivery/strategygrpc"
@@ -55,6 +56,8 @@ type Runtime struct {
 	strategyControl             *strategygrpc.ControlServer
 	strategyCreation            *strategygrpc.CreationServer
 	strategyPublication         *strategygrpc.PublicationServer
+	trustedAdmin                bool
+	modules                     []*Runtime
 	workers                     []deer.Worker
 }
 
@@ -78,6 +81,9 @@ func New(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*R
 	if err != nil {
 		return nil, err
 	}
+	if cfg.Name+".grpc" == rpcsecurity.ServiceOperator {
+		return newOperator(ctx, db, owner, incarnation, cfg.Business)
+	}
 	if cfg.Name+".grpc" == rpcsecurity.ServiceMarket {
 		return newMarket(ctx, db, incarnation, cfg.Business)
 	}
@@ -99,6 +105,14 @@ func (r *Runtime) Workers() []deer.Worker { return slices.Clone(r.workers) }
 
 // RegisterGRPC registers the explicitly assembled business capabilities.
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	if r.trustedAdmin {
+		registrar = adminactor.Registrar(registrar)
+	}
+	for _, module := range r.modules {
+		if err := module.RegisterGRPC(registrar); err != nil {
+			return err
+		}
+	}
 	if r.execution != nil {
 		executionv1.RegisterExecutionServer(registrar, r.execution)
 	}

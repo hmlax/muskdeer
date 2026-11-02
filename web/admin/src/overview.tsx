@@ -1,21 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { ApiError } from './api';
+import type { ServiceRole } from './api';
 import { integer, sources, states, templates } from './strategy-api';
-import { getServiceOverview, getStrategyOverview, overviewTime, serviceRoles, validateOverviewFilters, validateServiceFilters } from './overview-api';
+import { getServiceOverview, getStrategyOverview, overviewTime, validateOverviewFilters, validateServiceFilters } from './overview-api';
 import type { LeaseObservation, OverviewFilters, ServiceFilters, ServiceOverview, StrategyObservation, StrategyOverview } from './overview-api';
 
-const roleNames = { api: '本 API', market: '行情服务', strategy: '策略服务', execution: '执行服务', portfolio: '持仓服务', cron: '定期任务' };
+const roleNames = { admin: '管理 HTTP', operator: '业务 gRPC', api: '本 API', market: '行情服务', strategy: '策略服务', execution: '执行服务', portfolio: '持仓服务', cron: '定期任务' };
 const probeNames = { READY: '此次就绪', NOT_READY: '此次未就绪', UNKNOWN: '就绪情况未知', PROBE_NOT_CONFIGURED: '未配置探测', PROBE_FAILED: '探测失败', PROBE_TIMEOUT: '探测超时', PROBE_DENIED: '探测被拒绝', PROBE_CAPACITY: '探测容量不足' };
 interface Initial { strategies: OverviewFilters; services: ServiceFilters; strategyAfter: string; serviceAfter: string }
-function initial(): Initial {
+function initial(roles: ServiceRole[]): Initial {
   const q = new URLSearchParams(location.search);
   for (const [key, value] of q) if (!['account', 'source', 'strategy_limit', 'strategy_after', 'role', 'service_limit', 'service_after'].includes(key) || q.getAll(key).length !== 1 || !value) throw new Error();
   const strategyLimit = q.get('strategy_limit') ?? '20'; const serviceLimit = q.get('service_limit') ?? '4';
   if (!['1', '20', '50'].includes(strategyLimit) || !['1', '4'].includes(serviceLimit)) throw new Error();
   const strategies = { account: q.get('account') ?? '', source: q.get('source') ?? '', limit: Number(strategyLimit) };
-  const services = { role: (q.get('role') ?? 'strategy') as ServiceFilters['role'], limit: Number(serviceLimit) };
-  validateOverviewFilters(strategies); validateServiceFilters(services); const after = q.get('strategy_after') ?? '0'; integer(after, true);
+  const services = { role: (q.get('role') ?? (roles.includes('operator') ? 'operator' : 'strategy')) as ServiceFilters['role'], limit: Number(serviceLimit) };
+  validateOverviewFilters(strategies); validateServiceFilters(services); if (!roles.includes(services.role)) throw new Error(); const after = q.get('strategy_after') ?? '0'; integer(after, true);
   const serviceAfter = q.get('service_after') ?? ''; if (new TextEncoder().encode(serviceAfter).length > 128 || serviceAfter.trim() !== serviceAfter || /[\u0000\r\n]/.test(serviceAfter)) throw new Error();
   return { strategies, services, strategyAfter: after, serviceAfter };
 }
@@ -58,7 +59,7 @@ function StrategySummary({ value }: { value: StrategyOverview }) {
 function ServiceSummary({ value }: { value: ServiceOverview }) {
   return <><div className="overview-stats"><div><span>{value.membership_source === 'LOCAL_API' ? '当前 API 实例' : '符合条件的注册节点'}</span><strong data-service-total>{value.total}</strong></div><div><span>探测配置</span><strong className="overview-stat-label">{value.probe_configured ? '已配置' : '未配置'}</strong></div></div><p className="muted">成员采样（UTC）：<time>{overviewTime(value.membership_observed_at_ms)}</time></p><p className="notice">{value.membership_source === 'LOCAL_API' ? '仅表示处理此请求的 API，不枚举其他 API 副本。' : '仅包含当前发现范围内健康、启用的 gRPC 注册，不是全部部署进程数。'}</p></>;
 }
-function Content({ initialValue, onExpired }: { initialValue: Initial; onExpired: () => void }) {
+function Content({ initialValue, onExpired, roles }: { initialValue: Initial; onExpired: () => void; roles: ServiceRole[] }) {
   const [filters, setFilters] = useState(initialValue.strategies); const [draft, setDraft] = useState(filters); const [formError, setFormError] = useState('');
   const [services, setServices] = useState(initialValue.services); const [serviceDraft, setServiceDraft] = useState(services);
   const [strategyCursors, setStrategyCursors] = useState([initialValue.strategyAfter]); const [serviceCursors, setServiceCursors] = useState([initialValue.serviceAfter]);
@@ -79,7 +80,7 @@ function Content({ initialValue, onExpired }: { initialValue: Initial; onExpired
   return <><div className="workspace-heading"><div className="page-heading"><span className="eyebrow">RUNTIME OBSERVATIONS</span><h2>运行概览</h2><p>分开观察服务就绪、策略存储状态与运行目标。</p></div></div>
     <p className="notice overview-notice">以下均为各次采样。注册在线、存储 RUNNING 或匹配租约都不是当前交易许可；读取不会启动策略、续租或恢复风险。</p>
     <section className="card overview-card" aria-label="服务运行观测"><div className="card-heading"><h3>服务运行观测</h3><button className="button secondary compact" disabled={serviceQuery.loading} onClick={serviceQuery.reload}>刷新服务观测</button></div>
-      <form className="overview-service-filters" onSubmit={applyServices}><label>服务角色<select aria-label="服务角色" value={serviceDraft.role} onChange={event => setServiceDraft({ ...serviceDraft, role: event.target.value as ServiceFilters['role'] })}>{serviceRoles.map(role => <option key={role} value={role}>{roleNames[role]} · {role}</option>)}</select></label><label>每页节点<select aria-label="每页节点" value={serviceDraft.limit} onChange={event => setServiceDraft({ ...serviceDraft, limit: Number(event.target.value) })}>{[1, 4].map(limit => <option key={limit}>{limit}</option>)}</select></label><button className="button secondary" type="submit">查询服务角色</button></form>
+      <form className="overview-service-filters" onSubmit={applyServices}><label>服务角色<select aria-label="服务角色" value={serviceDraft.role} onChange={event => setServiceDraft({ ...serviceDraft, role: event.target.value as ServiceFilters['role'] })}>{roles.map(role => <option key={role} value={role}>{roleNames[role]} · {role}</option>)}</select></label><label>每页节点<select aria-label="每页节点" value={serviceDraft.limit} onChange={event => setServiceDraft({ ...serviceDraft, limit: Number(event.target.value) })}>{[1, 4].map(limit => <option key={limit}>{limit}</option>)}</select></label><button className="button secondary" type="submit">查询服务角色</button></form>
       <ReadStatus {...serviceQuery} name="服务观测" />{serviceQuery.data && <><ServiceSummary value={serviceQuery.data} />{serviceQuery.data.items.length === 0 ? <p className="empty-state">当前页没有符合条件的服务节点</p> : <div className="overview-node-grid">{serviceQuery.data.items.map(item => <article className="overview-node" key={item.instance_id} aria-label={`服务节点 ${item.instance_id}`}><div className="card-heading"><h4>{item.instance_id}</h4><span className={`badge probe-${item.status.toLowerCase()}`}>{probeNames[item.status]}</span></div><Fields values={[
         ['节点 ID', item.instance_id], ['声明版本', item.declared_version], ['探测结果', item.status], ['探测时间（UTC）', item.probed_at_ms === null ? '未探测' : overviewTime(item.probed_at_ms)],
       ]} /></article>)}</div>}<nav className="pagination" aria-label="服务节点分页"><button className="button secondary" disabled={serviceQuery.loading || serviceCursors.length === 1} onClick={() => setServiceCursors(serviceCursors.slice(0, -1))}>上一页节点</button><span>当前 {serviceQuery.data.items.length} 个节点</span><button className="button secondary" disabled={serviceQuery.loading || !serviceQuery.data.next_after_instance_id} onClick={() => setServiceCursors([...serviceCursors, serviceQuery.data!.next_after_instance_id])}>下一页节点</button></nav><p className="notice">版本为配置或注册声明。成员与探测分别采样，就绪结果不证明该实例持有策略执行权。</p></>}
@@ -89,8 +90,8 @@ function Content({ initialValue, onExpired }: { initialValue: Initial; onExpired
       {formError && <p className="error" role="alert">{formError}</p>}<ReadStatus {...strategyQuery} name="策略概览" />{strategyQuery.data && <><StrategySummary value={strategyQuery.data} />{strategyQuery.data.items.length === 0 ? <p className="empty-state">当前页没有匹配的策略</p> : <div className="overview-strategy-grid">{strategyQuery.data.items.map(value => <StrategyRow key={value.strategy.id} value={value} />)}</div>}<nav className="pagination" aria-label="概览策略分页"><button className="button secondary" disabled={strategyQuery.loading || strategyCursors.length === 1} onClick={() => setStrategyCursors(strategyCursors.slice(0, -1))}>上一页策略观测</button><span>当前 {strategyQuery.data.items.length} 个策略</span><button className="button secondary" disabled={strategyQuery.loading || strategyQuery.data.next_after_id === '0'} onClick={() => setStrategyCursors([...strategyCursors, strategyQuery.data!.next_after_id])}>下一页策略观测</button></nav><p className="notice">统计覆盖全部筛选范围，与当前页不同。请求目标、存储状态及租约事实分别记录，均不授予新增风险。</p></>}
     </section></>;
 }
-export function OverviewWorkspace({ onExpired }: { onExpired: () => void }) {
+export function OverviewWorkspace({ onExpired, serviceRoles }: { onExpired: () => void; serviceRoles: ServiceRole[] }) {
   let value: Initial;
-  try { if (location.pathname !== '/overview') throw new Error(); value = initial(); } catch { return <p className="error" role="alert">概览路径或筛选无效。</p>; }
-  return <div className="overview-workspace"><Content initialValue={value} onExpired={onExpired} /></div>;
+  try { if (location.pathname !== '/overview') throw new Error(); value = initial(serviceRoles); } catch { return <p className="error" role="alert">概览路径或筛选无效。</p>; }
+  return <div className="overview-workspace"><Content initialValue={value} onExpired={onExpired} roles={serviceRoles} /></div>;
 }

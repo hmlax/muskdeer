@@ -153,6 +153,9 @@ message JetStream {
   int32 max_message_bytes = 8;
   optional bool tls_enabled = 9;
   string root_cert_file = 10;
+  // Use either token_env or username/password_env, never both.
+  string username = 11;
+  string password_env = 12;
 }
 
 // Redis is a standalone, namespaced cache. Monetary authority remains in PostgreSQL.

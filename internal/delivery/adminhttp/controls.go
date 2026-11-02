@@ -52,7 +52,7 @@ func (r *Routes) controlStrategy(ctx context.Context, request *app.RequestContex
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
@@ -61,11 +61,11 @@ func (r *Routes) controlStrategy(ctx context.Context, request *app.RequestContex
 		r.failure(request, domain.ErrForbidden)
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.controls.ControlStrategy(call, &strategyv1.ControlStrategyRequest{
 		Session:          session,
-		CsrfToken:        string(csrf[0]),
+		CsrfToken:        r.rpcCSRF(string(csrf[0])),
 		IdempotencyKey:   command.Key,
 		StrategyId:       command.StrategyID,
 		ExpectedRevision: command.ExpectedRevision,
@@ -91,11 +91,11 @@ func (r *Routes) getOperation(ctx context.Context, request *app.RequestContext) 
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.controls.GetOperation(call, &strategyv1.GetOperationRequest{
 		Session:     session,

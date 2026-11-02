@@ -42,10 +42,10 @@ func (s *AuditServer) ListAudits(ctx context.Context, request *strategyv1.ListAu
 	if err := filter.Validate(); err != nil {
 		return nil, rpcError(err)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.audits.List(ctx, request.Session.Token, filter)
+	page, err := s.audits.List(ctx, request.GetSession().GetToken(), filter)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -82,10 +82,10 @@ func (s *AuditServer) GetAudit(ctx context.Context, request *strategyv1.GetAudit
 	if request.AuditId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	entry, err := s.audits.Detail(ctx, request.Session.Token, request.AuditId)
+	entry, err := s.audits.Detail(ctx, request.GetSession().GetToken(), request.AuditId)
 	if err != nil {
 		return nil, rpcError(err)
 	}

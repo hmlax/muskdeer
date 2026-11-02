@@ -47,7 +47,7 @@ func testCacheValues(t *testing.T) {
 		t.Fatalf("same namespace Get = %q, %v", value, err)
 	}
 	isolatedConfig := redisConfig()
-	isolatedConfig.KeyPrefix = "integration:other-service"
+	isolatedConfig.KeyPrefix = redisConfig().KeyPrefix + ":other-service"
 	isolated := openCache(t, isolatedConfig, "values-isolated")
 	if _, err := isolated.Get(t.Context(), key); !errors.Is(err, redis.ErrNotFound) {
 		t.Fatalf("other namespace Get = %v", err)
@@ -108,19 +108,10 @@ func testCacheValues(t *testing.T) {
 func testCacheDeadline(t *testing.T) {
 	cfg := redisConfig()
 	cfg.PoolSize = 1
+	address, block := delayedRedis(t, cfg.Address)
+	cfg.Address = address
 	client := openCache(t, cfg, "deadline")
-	admin := redisAdmin(t)
-	// This admin connection can affect only the dedicated temporary test server.
-	if err := admin.ClientPause(t.Context(), 400*time.Millisecond).Err(); err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), time.Second)
-		defer cancel()
-		if err := admin.ClientUnpause(ctx).Err(); err != nil {
-			t.Error(err)
-		}
-	}()
+	block()
 	ctx, cancel := context.WithTimeout(t.Context(), 40*time.Millisecond)
 	defer cancel()
 	started := time.Now()
@@ -140,11 +131,10 @@ func testCacheDeadline(t *testing.T) {
 func testCachePoolLimit(t *testing.T) {
 	cfg := redisConfig()
 	cfg.PoolSize = 1
+	address, block := delayedRedis(t, cfg.Address)
+	cfg.Address = address
 	client := openCache(t, cfg, "pool-limit")
-	admin := redisAdmin(t)
-	if err := admin.ClientPause(t.Context(), 400*time.Millisecond).Err(); err != nil {
-		t.Fatal(err)
-	}
+	block()
 	first, cancel := context.WithTimeout(t.Context(), 250*time.Millisecond)
 	result := make(chan error, 1)
 	go func() { result <- client.Ping(first) }()
@@ -153,11 +143,7 @@ func testCachePoolLimit(t *testing.T) {
 		if err := <-result; !errors.Is(err, context.DeadlineExceeded) {
 			t.Errorf("paused pool holder = %v", err)
 		}
-		ctx, stop := context.WithTimeout(context.WithoutCancel(t.Context()), time.Second)
-		defer stop()
-		if err := admin.ClientUnpause(ctx).Err(); err != nil {
-			t.Error(err)
-		}
+
 	}()
 	ticks := time.NewTicker(time.Millisecond)
 	defer ticks.Stop()
@@ -324,7 +310,7 @@ func redisConfig() *configv1.Redis {
 	return &configv1.Redis{
 		Address:        os.Getenv("MUSKDEER_TEST_REDIS_ADDRESS"),
 		PasswordEnv:    "MUSKDEER_TEST_REDIS_PASSWORD",
-		KeyPrefix:      "integration:cache",
+		KeyPrefix:      os.Getenv("MUSKDEER_TEST_REDIS_PREFIX"),
 		PoolSize:       2,
 		ConnectTimeout: durationpb.New(time.Second),
 		CommandTimeout: durationpb.New(time.Second),

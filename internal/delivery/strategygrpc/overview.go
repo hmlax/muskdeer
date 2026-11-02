@@ -28,7 +28,7 @@ func (s *OverviewQueryServer) GetStrategyOverview(ctx context.Context, request *
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	filter := domain.AdminOverviewFilter{
@@ -42,7 +42,7 @@ func (s *OverviewQueryServer) GetStrategyOverview(ctx context.Context, request *
 	if err := filter.Validate(); err != nil {
 		return nil, rpcError(err)
 	}
-	value, err := s.overview.Strategies(ctx, request.Session.Token, filter)
+	value, err := s.overview.Strategies(ctx, request.GetSession().GetToken(), filter)
 	if err != nil {
 		return nil, rpcError(err)
 	}

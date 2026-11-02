@@ -33,6 +33,7 @@ import (
 	"github.com/hmlax/muskdeer/internal/outbox"
 	"github.com/hmlax/muskdeer/internal/repository"
 	"github.com/hmlax/muskdeer/internal/testcert"
+	"github.com/hmlax/muskdeer/internal/testprocess"
 )
 
 func TestIndependentBusinessProcessesPublishConsumeAndReconcile(t *testing.T) {
@@ -169,7 +170,9 @@ func businessStreamWithLimits(ctx context.Context, t *testing.T, limits business
 	name := strings.ToLower(rand.Text())[:16]
 	cfg := &configv1.JetStream{
 		Address:         os.Getenv("MUSKDEER_TEST_NATS_ADDRESS"),
-		TokenEnv:        "MUSKDEER_TEST_NATS_TOKEN",
+		TokenEnv:        testNATSTokenEnv(),
+		Username:        os.Getenv("MUSKDEER_TEST_NATS_USERNAME"),
+		PasswordEnv:     testNATSPasswordEnv(),
 		Stream:          "MUSKDEER_BUSINESS_" + name,
 		SubjectPrefix:   "muskdeer.integration.business_" + name,
 		ConnectTimeout:  durationpb.New(time.Second),
@@ -178,7 +181,7 @@ func businessStreamWithLimits(ctx context.Context, t *testing.T, limits business
 		MaxMessageBytes: 64 * 1024,
 		TlsEnabled:      proto.Bool(false),
 	}
-	connection, err := nats.Connect("nats://"+cfg.Address, nats.Token(os.Getenv(cfg.TokenEnv)), nats.NoReconnect(), nats.Timeout(time.Second))
+	connection, err := nats.Connect("nats://"+cfg.Address, testNATSAuth(), nats.NoReconnect(), nats.Timeout(time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -219,12 +222,12 @@ func businessStreamWithLimits(ctx context.Context, t *testing.T, limits business
 func businessNaming() *configv1.Nacos {
 	return &configv1.Nacos{
 		Address:     os.Getenv("MUSKDEER_TEST_NACOS_ADDRESS"),
-		NamespaceId: "integration-naming",
+		NamespaceId: os.Getenv("MUSKDEER_TEST_NACOS_NAMESPACE"),
 		// infrastructureprobe runs concurrently with its own test CA and
 		// market.grpc processes. Never discover those unrelated fixtures.
 		Group:          "MUSKDEER_BUSINESS_TEST_" + rand.Text(),
 		Cluster:        "TEST",
-		Username:       "nacos",
+		Username:       os.Getenv("MUSKDEER_TEST_NACOS_USERNAME"),
 		PasswordEnv:    "MUSKDEER_TEST_NACOS_PASSWORD",
 		ConnectTimeout: durationpb.New(2 * time.Second),
 		CommandTimeout: durationpb.New(time.Second),
@@ -314,7 +317,8 @@ func startBusinessProcessFor(ctx context.Context, t *testing.T, cfg *configv1.Se
 		t.Fatal(err)
 	}
 	run, cancelRun := context.WithTimeout(context.WithoutCancel(t.Context()), lifetime)
-	command := exec.CommandContext(run, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", cfg.Name, "-config", configPath)
+	command := testprocess.Command(run, cfg.Name, configPath)
+
 	command.Stdout, command.Stderr = output, output
 	finished := make(chan error, 1)
 	t.Cleanup(func() {

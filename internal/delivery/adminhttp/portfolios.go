@@ -21,11 +21,11 @@ func (r *Routes) listPortfolios(ctx context.Context, request *app.RequestContext
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.portfolios.ListPortfolios(call, &strategyv1.ListPortfoliosRequest{
 		Session:      session,
@@ -46,11 +46,11 @@ func (r *Routes) getPortfolio(ctx context.Context, request *app.RequestContext) 
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.portfolios.GetPortfolio(call, &strategyv1.GetPortfolioRequest{
 		Session:     session,

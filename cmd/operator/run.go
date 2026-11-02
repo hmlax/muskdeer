@@ -1,4 +1,3 @@
-// Command muskdeer runs one independent, configured Deer service process.
 package main
 
 import (
@@ -7,10 +6,7 @@ import (
 	"errors"
 	"flag"
 	"io"
-	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/internal/domain"
@@ -34,17 +30,10 @@ const (
 	commandCauseInvalidOrder = "invalid_order"
 )
 
-func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	code := run(ctx, os.Args[1:], os.Stdout, os.Stderr)
-	stop()
-	os.Exit(code)
-}
-
 func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
-	flags := flag.NewFlagSet("muskdeer", flag.ContinueOnError)
+	const role = entry.RoleOperator
+	flags := flag.NewFlagSet(string(role), flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	roleName := flags.String("role", "", "api, market, strategy, execution, portfolio or cron")
 	path := flags.String("config", "", "local protobuf JSON configuration")
 	checkReady := flags.Bool("check-ready", false, "probe the configured local readiness endpoint and exit")
 	if err := flags.Parse(args); err != nil {
@@ -58,17 +47,8 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if *path == "" || flags.NArg() != 0 {
 		return report(diagnostic, "config is required and positional arguments are not accepted", nil, 2)
 	}
-	var role entry.Role
-	if *checkReady {
-		if *roleName != "" {
-			return report(diagnostic, "readiness probe does not accept a service role", nil, 2)
-		}
-	} else {
-		var err error
-		role, err = entry.ParseRole(*roleName)
-		if err != nil {
-			return report(diagnostic, "invalid service role", nil, 2)
-		}
+	if role != entry.RoleAdmin && role != entry.RoleOperator {
+		return report(diagnostic, "unsupported application", nil, 2)
 	}
 	if runtime.Version() != "go1.27.3" {
 		return report(diagnostic, "Go 1.27.3 is required", nil, 1)

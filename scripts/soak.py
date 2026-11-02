@@ -9,7 +9,7 @@ import subprocess
 import sys
 import uuid
 
-from integration import ROOT, capture_diagnostics, test_environment
+from infra import ROOT, Infra
 
 
 def stop_owned_process(process: subprocess.Popen) -> None:
@@ -61,8 +61,6 @@ def run(smoke: bool) -> int:
     identifier = uuid.uuid4().hex
     directory = ROOT / '.cache' / 'soak' / identifier
     directory.mkdir(mode=0o700, parents=True)
-    project = 'muskdeer-soak-' + identifier[:10]
-    compose = ['docker', 'compose', '-p', project, '-f', str(ROOT / 'compose.test.yml')]
     revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True))
     toolchain = subprocess.check_output([sys.executable, str(ROOT / 'scripts/go.py'), 'version'], cwd=ROOT, text=True).strip()
@@ -71,9 +69,9 @@ def run(smoke: bool) -> int:
         'kind': 'smoke' if smoke else 'thirty_minute', 'accepted': False,
     }
     print('Soak artifacts: ' + str(directory), flush=True)
+    infra = Infra()
     try:
-        subprocess.run([*compose, 'up', '-d', '--wait', '--wait-timeout', '120'], check=True)
-        environment = test_environment(compose)
+        environment = infra.__enter__().environment
         environment['MUSKDEER_SOAK_ARTIFACTS'] = str(directory)
         with (directory / 'run.log').open('x', encoding='utf-8') as log:
             code = execute_scenario(environment, log, smoke)
@@ -83,15 +81,13 @@ def run(smoke: bool) -> int:
         metadata['scenario_passed'] = success
         metadata['accepted'] = success and not smoke
         if not success:
-            capture_diagnostics(compose)
             return code or 1
         return 0
     except BaseException:
-        capture_diagnostics(compose)
         raise
     finally:
         try:
-            subprocess.run([*compose, 'down', '--volumes'], check=True)
+            infra.__exit__(None, None, None)
             metadata['infrastructure_cleaned'] = True
         except BaseException:
             metadata['accepted'] = False

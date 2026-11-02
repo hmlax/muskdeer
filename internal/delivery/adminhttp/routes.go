@@ -51,6 +51,7 @@ type sessionView struct {
 	Role                    domain.AdminRole `json:"role"`
 	SessionID               string           `json:"session_id"`
 	ExpiresAtMS             string           `json:"expires_at_ms"`
+	ServiceRoles            []string         `json:"service_roles,omitempty"`
 	StrategyQueriesEnabled  bool             `json:"strategy_queries_enabled"`
 	StrategyControlsEnabled bool             `json:"strategy_controls_enabled"`
 }
@@ -61,6 +62,7 @@ type sessionReply struct {
 
 // Routes owns immutable delivery values and borrows the sole auth instance.
 type Routes struct {
+	centralAuth          bool
 	auth                 domain.AdminAuth
 	strategies           strategyv1.StrategyManagementClient
 	catalog              strategyv1.StrategyCatalogClient
@@ -251,6 +253,9 @@ func (r *Routes) login(ctx context.Context, request *app.RequestContext) {
 		return
 	}
 	r.setCookies(request, login.Token, login.CSRF, int(domain.AdminSessionTTL/time.Second))
+	if r.centralAuth {
+		view.ServiceRoles = []string{string(domain.AdminServiceAdmin), string(domain.AdminServiceOperator)}
+	}
 	view.StrategyQueriesEnabled = r.strategies != nil
 	view.StrategyControlsEnabled = r.controls != nil
 	request.JSON(http.StatusOK, sessionReply{Session: view})
@@ -271,6 +276,9 @@ func (r *Routes) session(ctx context.Context, request *app.RequestContext) {
 	if !valid {
 		r.failure(request, domain.ErrAuthUnavailable)
 		return
+	}
+	if r.centralAuth {
+		view.ServiceRoles = []string{string(domain.AdminServiceAdmin), string(domain.AdminServiceOperator)}
 	}
 	view.StrategyQueriesEnabled = r.strategies != nil
 	view.StrategyControlsEnabled = r.controls != nil

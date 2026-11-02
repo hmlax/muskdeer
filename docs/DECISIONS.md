@@ -33,6 +33,7 @@ P01 最小 Proto 生成结构已直接通过 GORM/PostgreSQL 的精确小数与 
 如果最终交易网关无 fencing、幂等查询或失联撤单能力，明确能力缺口和改造建议；模拟开发继续，但真实接管保证及生产准备不能宣称完成。
 
 ## 变更记录
+2026-11-02：用户进一步明确所有服务独立入口，不共用一个 cmd；测试复用现有 Docker infra，不额外部署基础服务。admin/operator 分别拥有 cmd 入口；旧模块回归也分别编译独立夹具，取消 role 命令分发。CI 相关任务改为连接已有 infra 的 self-hosted、muskdeer-infra 标签 runner，实际 runner 可用性需由仓库环境提供。
 2026-11-02：P07.67将平仓首版收敛为当前admin对唯一策略关联模拟账户/交易对的独立确认，先验证已完成范围撤单、当前风险关闭及权威余额/对账/全部义务。此为实现时的受限默认选择，不标为用户额外批准；共享账户其他交易能力保持。领域候选不授予执行权，持久互斥、最终fencing及管理入口尚未交付。
 
 2026-10-28：P07管理前端采用React 19.3.1、TypeScript 7.0.2、Vite 8.3.5；构建使用Node.js 24.22.1 LTS/npm 11.19.1，浏览器测试Playwright 1.64.1。版本已从[React注册表](https://registry.npmjs.org/react/19.3.1)、[TypeScript注册表](https://registry.npmjs.org/typescript/7.0.2)、[Vite注册表](https://registry.npmjs.org/vite/8.3.5)、[Node官方发布索引](https://nodejs.org/dist/index.json)及[Playwright注册表](https://registry.npmjs.org/@playwright/test/1.64.1)核验，具体lockfile/构建与浏览器命令随前端代码交付；不将版本选定当作页面验收完成。Go继续精确1.27.3，不受前端工具链影响。

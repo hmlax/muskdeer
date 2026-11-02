@@ -37,7 +37,7 @@ func (r *Routes) requestOrderCancellation(ctx context.Context, request *app.Requ
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
@@ -47,11 +47,11 @@ func (r *Routes) requestOrderCancellation(ctx context.Context, request *app.Requ
 		return
 	}
 	input.Reason = command.Reason
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.cancellationControls.RequestOrderCancellation(call, &strategyv1.RequestOrderCancellationRequest{
 		Session:        session,
-		CsrfToken:      csrf[0],
+		CsrfToken:      r.rpcCSRF(csrf[0]),
 		IdempotencyKey: command.Key,
 		StrategyId:     command.StrategyID,
 		OrderId:        command.OrderID,
@@ -77,11 +77,11 @@ func (r *Routes) getOrderCancellation(ctx context.Context, request *app.RequestC
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.cancellationQueries.GetOrderCancellation(call, &strategyv1.GetOrderCancellationRequest{
 		Session:        session,

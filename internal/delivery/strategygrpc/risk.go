@@ -45,13 +45,13 @@ func (s *RiskQueryServer) GetStrategyRisk(ctx context.Context, request *strategy
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.StrategyId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	state, err := s.risks.State(ctx, request.Session.Token, request.StrategyId)
+	state, err := s.risks.State(ctx, request.GetSession().GetToken(), request.StrategyId)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -79,17 +79,17 @@ func (s *RiskControlServer) ChangeStrategyRisk(ctx context.Context, request *str
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, riskRPCError(err)
 	}
-	if !controlCSRFValid(request.CsrfToken) {
+	if !controlCSRFValid(ctx, request.CsrfToken) {
 		return nil, riskRPCError(domain.ErrForbidden)
 	}
 	command, err := strategywire.RiskCommand(request.Input, request.StrategyId, request.IdempotencyKey)
 	if err != nil {
 		return nil, riskRPCError(err)
 	}
-	receipt, err := s.risks.Change(ctx, request.Session.Token, request.CsrfToken, command)
+	receipt, err := s.risks.Change(ctx, request.GetSession().GetToken(), request.CsrfToken, command)
 	if err != nil {
 		return nil, riskRPCError(err)
 	}

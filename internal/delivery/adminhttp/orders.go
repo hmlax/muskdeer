@@ -21,11 +21,11 @@ func (r *Routes) listStrategyOrders(ctx context.Context, request *app.RequestCon
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.orders.ListStrategyOrders(call, &strategyv1.ListStrategyOrdersRequest{
 		Session:    session,
@@ -49,11 +49,11 @@ func (r *Routes) getStrategyOrder(ctx context.Context, request *app.RequestConte
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.orders.GetStrategyOrder(call, &strategyv1.GetStrategyOrderRequest{
 		Session:    session,

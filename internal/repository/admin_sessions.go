@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	"github.com/hmlax/muskdeer/internal/adminactor"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
@@ -86,6 +87,9 @@ func readAdminAuthority(ctx context.Context, tx *gorm.DB, token, csrf string, re
 // Mutations serialize actor-scoped keys at the user row before any session or
 // strategy lock. This also keeps credential change/logout outside the effect.
 func readAdminControlAuthority(ctx context.Context, tx *gorm.DB, token, csrf string) (*modelv1.AdminUser, *modelv1.AdminSession, error) {
+	if _, trusted := adminactor.From(ctx); trusted {
+		return readBusinessActor(ctx, tx, true)
+	}
 	if _, valid := adminSecretHash(csrf); !valid {
 		return nil, nil, domain.ErrForbidden
 	}
@@ -93,6 +97,9 @@ func readAdminControlAuthority(ctx context.Context, tx *gorm.DB, token, csrf str
 }
 
 func readAdminAuthorityLocks(ctx context.Context, tx *gorm.DB, token, csrf string, required domain.AdminRole, userStrength, sessionStrength string) (*modelv1.AdminUser, *modelv1.AdminSession, error) {
+	if _, trusted := adminactor.From(ctx); trusted {
+		return readBusinessActor(ctx, tx, userStrength != "")
+	}
 	hash, valid := adminSecretHash(token)
 	if !valid {
 		return nil, nil, domain.ErrUnauthenticated
@@ -136,3 +143,27 @@ func adminSessionLookupFailure(err error) error {
 	}
 	return err
 }
+
+func readBusinessActor(ctx context.Context, tx *gorm.DB, lock bool) (*modelv1.AdminUser, *modelv1.AdminSession, error) {
+	actor, ok := adminactor.From(ctx)
+	if !ok {
+		return nil, nil, domain.ErrInvalidAuth
+	}
+	if lock {
+		// Serialize actor-scoped idempotency keys, independently of session status.
+		var row modelv1.AdminUser
+		if err := tx.WithContext(ctx).Model(&modelv1.AdminUser{}).Select("Id").Where("id = ?", actor.UserID).Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&row).Error; err != nil {
+			return nil, nil, err
+		}
+	}
+	return &modelv1.AdminUser{
+		Id:       actor.UserID,
+		Username: actor.Username,
+		Role:     string(actor.Role),
+	}, &modelv1.AdminSession{
+		Id:     actor.SessionID,
+		UserId: actor.UserID,
+	}, nil
+}
+
+func apiValidatedActor(ctx context.Context) bool { _, ok := adminactor.From(ctx); return ok }

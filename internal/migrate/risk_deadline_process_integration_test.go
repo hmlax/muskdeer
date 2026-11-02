@@ -21,6 +21,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/internal/testcert"
+	"github.com/hmlax/muskdeer/internal/testprocess"
 )
 
 func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing.T) {
@@ -53,7 +54,7 @@ func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&strategy, submit.Input.Authority.StrategyID).Error; err != nil {
 			return err
 		}
-		command := exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", cfg.Name, "-config", path)
+		command := testprocess.Command(ctx, cfg.Name, path)
 		output, runErr := command.CombinedOutput()
 		var exit *exec.ExitError
 		if !errors.As(runErr, &exit) || exit.ExitCode() != 1 {

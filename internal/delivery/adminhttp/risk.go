@@ -25,11 +25,11 @@ func (r *Routes) getStrategyRisk(ctx context.Context, request *app.RequestContex
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.riskQueries.GetStrategyRisk(call, &strategyv1.GetStrategyRiskRequest{
 		Session:    session,
@@ -58,7 +58,7 @@ func (r *Routes) changeStrategyRisk(ctx context.Context, request *app.RequestCon
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
@@ -68,11 +68,11 @@ func (r *Routes) changeStrategyRisk(ctx context.Context, request *app.RequestCon
 		return
 	}
 	input.Reason = command.Reason
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.riskControls.ChangeStrategyRisk(call, &strategyv1.ChangeStrategyRiskRequest{
 		Session:        session,
-		CsrfToken:      csrf[0],
+		CsrfToken:      r.rpcCSRF(csrf[0]),
 		IdempotencyKey: command.Key,
 		StrategyId:     id,
 		Input:          input,

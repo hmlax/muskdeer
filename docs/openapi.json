@@ -1559,6 +1559,8 @@
                 "string"
               ],
               "enum": [
+                "admin",
+                "operator",
                 "api",
                 "market",
                 "strategy",

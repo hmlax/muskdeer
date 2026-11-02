@@ -31,17 +31,17 @@ func (s *CreationServer) CreateStrategy(ctx context.Context, request *strategyv1
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, controlRPCError(err)
 	}
-	if !controlCSRFValid(request.CsrfToken) {
+	if !controlCSRFValid(ctx, request.CsrfToken) {
 		return nil, controlRPCError(domain.ErrForbidden)
 	}
 	command, err := strategywire.Creation(request.Input, request.IdempotencyKey)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, domain.MessageInvalidAdminCreation)
 	}
-	receipt, err := s.creator.Create(ctx, request.Session.Token, request.CsrfToken, command)
+	receipt, err := s.creator.Create(ctx, request.GetSession().GetToken(), request.CsrfToken, command)
 	if errors.Is(err, domain.ErrInvalidAdminCreation) {
 		return nil, status.Error(codes.InvalidArgument, domain.MessageInvalidAdminCreation)
 	}

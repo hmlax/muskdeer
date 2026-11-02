@@ -5,12 +5,15 @@ import type { EmergencyInput } from './emergency-api';
 
 export type Role = 'viewer' | 'operator' | 'admin';
 
+export type ServiceRole = 'admin' | 'operator' | 'api' | 'market' | 'strategy' | 'execution' | 'portfolio' | 'cron';
+
 export interface Session {
   user_id: string;
   username: string;
   role: Role;
   session_id: string;
   expires_at_ms: string;
+  service_roles: ServiceRole[];
   strategy_queries_enabled: boolean;
   strategy_controls_enabled: boolean;
 }
@@ -33,8 +36,11 @@ function sessionValue(value: unknown): Session {
       !('expires_at_ms' in session) || typeof session.expires_at_ms !== 'string' || !/^[1-9][0-9]*$/.test(session.expires_at_ms)) {
     throw new ApiError('INVALID_RESPONSE');
   }
+  const roles = 'service_roles' in session ? session.service_roles : ['api', 'market', 'strategy', 'execution', 'portfolio', 'cron'];
+  if (!Array.isArray(roles) || roles.length === 0 || roles.some(role => typeof role !== 'string' || !['admin', 'operator', 'api', 'market', 'strategy', 'execution', 'portfolio', 'cron'].includes(role)) || new Set(roles).size !== roles.length) throw new ApiError('INVALID_RESPONSE');
   return {
     user_id: session.user_id,
+    service_roles: roles as ServiceRole[],
     username: session.username,
     role: session.role as Role,
     session_id: session.session_id,

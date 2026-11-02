@@ -302,7 +302,7 @@ func riskEventParameters() []Parameter {
 func serviceParameters() []Parameter {
 	minimum, maximum := int64(1), int64(domain.MaxAdminServicePage)
 	return []Parameter{
-		parameter("role", false, stringsEnum(string(domain.AdminServiceAPI), string(domain.AdminServiceMarket), string(domain.AdminServiceStrategy), string(domain.AdminServiceExecution), string(domain.AdminServicePortfolio), string(domain.AdminServiceCron))),
+		parameter("role", false, stringsEnum(string(domain.AdminServiceAdmin), string(domain.AdminServiceOperator), string(domain.AdminServiceAPI), string(domain.AdminServiceMarket), string(domain.AdminServiceStrategy), string(domain.AdminServiceExecution), string(domain.AdminServicePortfolio), string(domain.AdminServiceCron))),
 		parameter("after_instance_id", false, &Schema{
 			Type:        []string{"string"},
 			Description: "Exclusive instance label cursor, at most 128 UTF-8 bytes.",

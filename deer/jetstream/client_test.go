@@ -32,6 +32,22 @@ func TestInvalidConfigurationBeforeIO(t *testing.T) {
 		change func(*configv1.JetStream)
 	}{
 		{
+			name: "mixed authentication methods",
+			change: func(cfg *configv1.JetStream) {
+				cfg.TokenEnv = "TOKEN"
+				cfg.Username = "user"
+				cfg.PasswordEnv = "PASSWORD"
+			},
+		},
+		{
+			name:   "username without password reference",
+			change: func(cfg *configv1.JetStream) { cfg.Username = "user" },
+		},
+		{
+			name:   "password reference without username",
+			change: func(cfg *configv1.JetStream) { cfg.PasswordEnv = "PASSWORD" },
+		},
+		{
 			name:   "unbounded inflight",
 			change: func(cfg *configv1.JetStream) { cfg.MaxInflight = 0 },
 		},

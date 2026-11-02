@@ -16,11 +16,11 @@ def inspect(name):
     return json.loads(subprocess.run(['docker', 'inspect', name], check=True, capture_output=True, text=True).stdout)[0]
 
 
-def main():
+def smoke(role):
     name = 'muskdeer-image-test-' + uuid.uuid4().hex[:12]
     with tempfile.TemporaryDirectory(prefix='image-smoke-', dir=ROOT / '.cache') as directory:
         path = Path(directory) / 'service.json'
-        config = json.loads((ROOT / 'configs/local/cron.json').read_text())
+        config = json.loads((ROOT / ('configs/local/' + role + '.json')).read_text())
         config['instance_id'] = name
         path.write_text(json.dumps(config))
         path.chmod(0o644)  # This dependency-free fixture contains no credentials.
@@ -30,7 +30,7 @@ def main():
                 'docker', 'create', '--name', name, '--read-only', '--cap-drop', 'ALL',
                 '--security-opt', 'no-new-privileges', '--network', 'none',
                 '--mount', f'type=bind,src={path},dst=/app/service.json,readonly',
-                'muskdeer:local', '-role', 'cron', '-config', '/app/service.json',
+                'muskdeer-' + role + ':local', '-config', '/app/service.json',
             ], check=True)
             created = True
             subprocess.run(['docker', 'start', name], check=True)
@@ -40,7 +40,7 @@ def main():
             deadline = time.monotonic() + 15
             while time.monotonic() < deadline:
                 result = subprocess.run([
-                    'docker', 'exec', name, '/muskdeer', '-check-ready', '-config', '/app/service.json',
+                    'docker', 'exec', name, '/' + role, '-check-ready', '-config', '/app/service.json',
                 ], check=False, capture_output=True, text=True, timeout=5)
                 if result.returncode == 0:
                     break
@@ -57,7 +57,7 @@ def main():
             messages = {record.get('msg') for record in records}
             if logs.stderr or not {'service.initialized', 'service.transports_stopped'} <= messages:
                 raise ValueError('runtime did not produce its JSON lifecycle records')
-            if not all(record.get('service') == 'cron' and record.get('instance') == name for record in records):
+            if not all(record.get('service') == role and record.get('instance') == name for record in records):
                 raise ValueError('runtime JSON lost its process identity')
             print('Non-root read-only runtime: readiness, JSON logging and SIGTERM passed', flush=True)
         finally:
@@ -66,4 +66,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    for role in ['admin', 'operator']:
+        smoke(role)

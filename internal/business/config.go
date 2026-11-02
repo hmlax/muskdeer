@@ -40,6 +40,8 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 
 func validateBusinessRole(cfg *configv1.ServiceConfig) error {
 	switch cfg.Name + ".grpc" {
+	case rpcsecurity.ServiceOperator:
+		return validateOperatorConfig(cfg)
 	case rpcsecurity.ServiceExecution:
 		if cfg.Jetstream == nil || cfg.Business.PortfolioConsumer != "" || cfg.Business.Market != nil || cfg.Business.Strategy != nil || validateRiskConfig(cfg.Business) != nil || validateSimulatorConfig(cfg.Business) != nil {
 			return ErrInvalidConfig

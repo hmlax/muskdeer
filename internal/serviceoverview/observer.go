@@ -17,6 +17,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/nacos"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/internal/adminactor"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
@@ -116,6 +117,9 @@ func (o *observer) Observe(ctx context.Context, token string, filter domain.Admi
 }
 
 func (o *observer) authority(ctx context.Context, token string) (domain.AdminPrincipal, error) {
+	if actor, validated := adminactor.From(ctx); validated {
+		return actor, nil
+	}
 	if err := ctx.Err(); err != nil {
 		return domain.AdminPrincipal{}, err
 	}
@@ -148,7 +152,7 @@ func observationFailure(ctx context.Context, err error) error {
 }
 
 func (o *observer) observe(ctx context.Context, filter domain.AdminServiceFilter) (domain.AdminServiceOverview, error) {
-	if filter.Role == domain.AdminServiceAPI {
+	if filter.Role == domain.AdminServiceAPI || filter.Role == domain.AdminServiceAdmin {
 		return o.observeLocal(ctx, filter)
 	}
 	service := remoteService(filter.Role)
@@ -210,7 +214,7 @@ func (o *observer) observeLocal(ctx context.Context, filter domain.AdminServiceF
 		return domain.AdminServiceOverview{}, err
 	}
 	result := domain.AdminServiceOverview{
-		Role:                 domain.AdminServiceAPI,
+		Role:                 filter.Role,
 		Source:               domain.AdminServiceLocalAPI,
 		MembershipObservedAt: now,
 		Total:                1,
@@ -290,6 +294,8 @@ func healthStatus(value healthv1.HealthCheckResponse_ServingStatus) domain.Admin
 
 func remoteService(role domain.AdminServiceRole) string {
 	switch role {
+	case domain.AdminServiceOperator:
+		return rpcsecurity.ServiceOperator
 	case domain.AdminServiceMarket:
 		return rpcsecurity.ServiceMarket
 	case domain.AdminServiceStrategy:

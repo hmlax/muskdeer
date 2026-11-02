@@ -96,7 +96,7 @@ func testFreshNamingLookup(t *testing.T) {
 		}
 	}
 	other := namingConfig()
-	other.NamespaceId = "integration-other"
+	other.NamespaceId = os.Getenv("MUSKDEER_TEST_NACOS_OTHER_NAMESPACE")
 	isolated, err := nacos.New(t.Context(), other)
 	if err != nil {
 		t.Fatal(err)
@@ -124,6 +124,10 @@ func testNamingAuthentication(t *testing.T) {
 	const reference = "MUSKDEER_TEST_INVALID_NACOS_PASSWORD"
 	t.Setenv(reference, invalidPassword)
 	cfg := namingConfig()
+	cfg.Username = os.Getenv("MUSKDEER_TEST_NACOS_REJECT_USERNAME")
+	if cfg.Username == "" {
+		t.Fatal("temporary auth-probe identity required; run make integration")
+	}
 	cfg.PasswordEnv = reference
 	client, err := nacos.New(t.Context(), cfg)
 	var rejection *nacos.APIError
@@ -264,10 +268,10 @@ func namingFixtureRequest(ctx context.Context, t *testing.T, method, path string
 func namingConfig() *configv1.Nacos {
 	return &configv1.Nacos{
 		Address:        os.Getenv("MUSKDEER_TEST_NACOS_ADDRESS"),
-		NamespaceId:    "integration-naming",
+		NamespaceId:    os.Getenv("MUSKDEER_TEST_NACOS_NAMESPACE"),
 		Group:          "MUSKDEER_TEST",
 		Cluster:        "TEST",
-		Username:       "nacos",
+		Username:       os.Getenv("MUSKDEER_TEST_NACOS_USERNAME"),
 		PasswordEnv:    "MUSKDEER_TEST_NACOS_PASSWORD",
 		ConnectTimeout: durationpb.New(2 * time.Second),
 		CommandTimeout: durationpb.New(time.Second),

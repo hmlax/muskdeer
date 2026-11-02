@@ -1,6 +1,6 @@
 {
-  "name": "api",
-  "instance_id": "api-example",
+  "name": "admin",
+  "instance_id": "admin-example",
   "version": "local",
   "startup_timeout": "5s",
   "shutdown_timeout": "5s",

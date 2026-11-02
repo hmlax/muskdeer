@@ -63,8 +63,8 @@ type AdminLogin struct {
 }
 
 // AdminAuth borrows storage; provisioning is an explicit operator action.
-// Identity is a point-in-time observation. Management writes must revalidate
-// session and role inside their own transaction at the protected effect.
+// Identity is a point-in-time observation. The admin HTTP application validates
+// management writes with Authorize before forwarding an audit actor to operator.
 type AdminAuth interface {
 	Provision(context.Context, string, string, string, AdminRole) (AdminPrincipal, error)
 	Login(context.Context, string, string) (AdminLogin, error)

@@ -7,7 +7,7 @@
 - Go 版本固定为 1.27.3，开发、代码生成、测试、CI 与构建统一使用该精确版本；P01 核验官方工具链可获取性及依赖兼容并记录结果，不擅自更换版本。禁止 rc/beta，禁止使用 latest 或浮动版本代替。
 - 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；API 服务封装为 DeerApi，配套构造函数 deer.NewDeerApi，详见 docs/DEER.md。
 - 外部 HTTP 使用 Hertz，服务生命周期使用 Kratos，内部通信使用 gRPC；注册发现使用 Nacos。禁止替换成 Kitex、Gin 或 Kratos HTTP。
-- 后端仅两个应用：operator 使用 Deer/Kratos 提供 gRPC 并运行行情、策略、执行、投影和定期任务模块；admin 使用 DeerApi/Hertz 提供 HTTP 管理接口并调用 operator。保留单仓库、单 go.mod；每进程公共依赖只装配一次。此项按 2026-11-02 用户最新指令替代旧六服务部署约定。
+- 后端仅两个应用，各自独立 cmd 入口，不使用共用命令加 role 参数：operator 使用 Deer/Kratos 提供 gRPC 并运行行情、策略、执行、投影和定期任务模块；admin 使用 DeerApi/Hertz 提供 HTTP 管理接口并调用 operator。保留单仓库、单 go.mod；每进程公共依赖只装配一次。此项按 2026-11-02 用户最新指令替代旧六服务部署约定。
 - 前端只保留 web/admin 的 React 实现，由 admin 托管构建产物。登录、会话、角色权限及 CSRF 均在 admin/API 校验；operator 接收已校验的审计身份，保留业务风控、幂等、状态机和 fencing，不重复管理权限校验。按 R08/A27 验收。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
@@ -17,6 +17,8 @@
 - 数据库版本化迁移；禁止生产启动 AutoMigrate。不得在 protobuf 运行时内部字段上添加数据库语义。
 - 定期任务归 operator 内部模块，支持多节点；仍需任务幂等及防误部署重叠机制，不依赖进程内独占。
 - 外部行情首批必须接入 Binance、OKX；Bitget（用户原文 bitgit）、Bybit 为候选。每个策略实例通过 market_data_source 独立选择数据源，所选源失效不隐式换源；详细需求见 docs/PRD.md。
+
+- 测试复用现有 Docker infra 的 PostgreSQL、Redis、Nacos、NATS 等基础服务；只创建隔离的测试逻辑资源，不额外部署基础服务，不停止或删除共享容器。
 
 ## 阅读与迭代流程
 1. 检查 git status、远程、现有实现、就近 AGENTS.md；保留用户未提交修改。

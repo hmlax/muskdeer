@@ -60,7 +60,7 @@ func changeAdminRisk(ctx context.Context, tx *gorm.DB, token, csrf string, reque
 	if err != nil {
 		return domain.AdminRiskReceipt{}, err
 	}
-	if request.Action == domain.AdminRiskUnblock && !domain.AdminRole(user.Role).Allows(domain.AdminRoleAdmin) {
+	if !apiValidatedActor(ctx) && request.Action == domain.AdminRiskUnblock && !domain.AdminRole(user.Role).Allows(domain.AdminRoleAdmin) {
 		return domain.AdminRiskReceipt{}, domain.ErrForbidden
 	}
 	fingerprint := adminRiskFingerprint(request)

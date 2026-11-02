@@ -13,6 +13,7 @@ import (
 
 	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/internal/adminactor"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
@@ -44,10 +45,10 @@ func (s *Server) ListStrategies(ctx context.Context, request *strategyv1.ListStr
 	if !pageValid(request.AfterId, request.Limit) {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.queries.List(ctx, request.Session.Token, domain.AdminPage{
+	page, err := s.queries.List(ctx, request.GetSession().GetToken(), domain.AdminPage{
 		AfterID: request.AfterId,
 		Limit:   int(request.Limit),
 	})
@@ -72,10 +73,10 @@ func (s *Server) GetStrategy(ctx context.Context, request *strategyv1.GetStrateg
 	if request.StrategyId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	detail, err := s.queries.Detail(ctx, request.Session.Token, request.StrategyId)
+	detail, err := s.queries.Detail(ctx, request.GetSession().GetToken(), request.StrategyId)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -104,10 +105,10 @@ func (s *Server) ListConfigVersions(ctx context.Context, request *strategyv1.Lis
 	if request.StrategyId <= 0 || !pageValid(request.AfterId, request.Limit) {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.queries.Versions(ctx, request.Session.Token, request.StrategyId, domain.AdminPage{
+	page, err := s.queries.Versions(ctx, request.GetSession().GetToken(), request.StrategyId, domain.AdminPage{
 		AfterID: request.AfterId,
 		Limit:   int(request.Limit),
 	})
@@ -129,7 +130,7 @@ func (s *Server) ListConfigVersions(ctx context.Context, request *strategyv1.Lis
 }
 
 func boundary(ctx context.Context, request proto.Message) error {
-	if ctx == nil || !rpcsecurity.HasService(ctx, rpcsecurity.ServiceAPI) {
+	if ctx == nil || (!rpcsecurity.HasService(ctx, rpcsecurity.ServiceAPI) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceAdmin)) {
 		return status.Error(codes.PermissionDenied, MessageDenied)
 	}
 	if err := ctx.Err(); err != nil {
@@ -142,7 +143,10 @@ func boundary(ctx context.Context, request proto.Message) error {
 	return nil
 }
 
-func sessionValid(session *strategyv1.AdminSession) error {
+func sessionValid(ctx context.Context, session *strategyv1.AdminSession) error {
+	if _, trusted := adminactor.From(ctx); trusted {
+		return nil
+	}
 	if session == nil || len(session.ProtoReflect().GetUnknown()) != 0 {
 		return domain.ErrUnauthenticated
 	}

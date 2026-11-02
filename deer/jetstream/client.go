@@ -123,6 +123,16 @@ func New(ctx context.Context, cfg *configv1.JetStream, application string) (*Cli
 	if tlsConfig != nil {
 		options = append(options, nats.Secure(tlsConfig))
 	}
+	if cfg.Username != "" || cfg.PasswordEnv != "" {
+		if cfg.TokenEnv != "" || cfg.Username == "" || cfg.PasswordEnv == "" {
+			return nil, errors.New("jetstream requires exactly one authentication method")
+		}
+		password, exists := os.LookupEnv(cfg.PasswordEnv)
+		if !exists || password == "" {
+			return nil, errors.New("jetstream password environment reference is missing or empty")
+		}
+		options = append(options, nats.UserInfo(cfg.Username, password))
+	}
 	if cfg.TokenEnv != "" {
 		token, exists := os.LookupEnv(cfg.TokenEnv)
 		if !exists || token == "" {
@@ -297,6 +307,11 @@ func Validate(cfg *configv1.JetStream) error { return validate(cfg) }
 func validate(cfg *configv1.JetStream) error {
 	if cfg == nil {
 		return errors.New("jetstream configuration is required")
+	}
+	if cfg.Username != "" || cfg.PasswordEnv != "" {
+		if cfg.TokenEnv != "" || cfg.Username == "" || cfg.PasswordEnv == "" {
+			return errors.New("jetstream requires exactly one authentication method")
+		}
 	}
 	host, port, err := net.SplitHostPort(cfg.Address)
 	if err != nil || host == "" {

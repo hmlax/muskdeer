@@ -4,7 +4,7 @@ doctor:
 	python3 scripts/go.py version
 	python3 scripts/go.py run ./cmd/doctor -config configs/examples/service.json
 	python3 scripts/go.py run ./cmd/doctor -config configs/examples/api.json
-	@for role in api market strategy execution portfolio cron; do \
+	@for role in admin operator; do \
 		python3 scripts/go.py run ./cmd/doctor -config configs/local/$$role.json || exit $$?; \
 	done
 
@@ -56,13 +56,19 @@ test-race:
 build:
 	python3 scripts/go.py build ./...
 	mkdir -p .cache/bin
-	python3 scripts/go.py build -o .cache/bin/muskdeer ./cmd/muskdeer
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 	python3 scripts/go.py build -o .cache/bin/admin ./cmd/admin
+	python3 scripts/go.py build -o .cache/bin/operator ./cmd/operator
+	python3 scripts/go.py build -o .cache/bin/adminuser ./cmd/adminuser
 
 verify: doctor contract-check generate-check hz-check fmt-check lint policy-test test-tooling test test-race build
 
-integration: build
+build-fixtures: build
+	@for role in api market strategy execution portfolio cron; do \
+		python3 scripts/go.py build -o .cache/bin/module-$$role ./internal/testservice/$$role || exit $$?; \
+	done
+
+integration: build-fixtures
 	python3 scripts/integration.py
 
 dev-up:
@@ -78,7 +84,8 @@ dev-test: build
 	python3 scripts/dev-smoke.py
 
 image:
-	docker build --target runtime -t muskdeer:local .
+	docker build --target runtime-admin -t muskdeer-admin:local .
+	docker build --target runtime-operator -t muskdeer-operator:local .
 
 image-test: image
 	python3 scripts/image-smoke.py
@@ -95,76 +102,81 @@ web-check:
 web-generated-check: web-build
 	git diff --exit-code -- web/admin/dist
 
-admin-browser: build
+admin-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-browser.py
 
-admin-strategy-browser: build
+admin-strategy-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-strategy-browser.py
 
-admin-control-browser: build
+admin-control-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-control-browser.py
 
-admin-creation-browser: build
+admin-creation-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-creation-browser.py
 
-admin-publication-browser: build
+admin-publication-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-publication-browser.py
 
-admin-audit-browser: build
+admin-audit-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-audit-browser.py
 
-admin-risk-browser: build
+admin-risk-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-risk-browser.py
 
-admin-orders-browser: build
+admin-orders-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-orders-browser.py
 
-admin-cancellation-browser: build
+admin-cancellation-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-cancellation-browser.py
 
 .PHONY: admin-emergency-browser
-admin-emergency-browser: build
+admin-emergency-browser: build-fixtures
 	python3 scripts/web.py check
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-emergency-browser.py
 
-admin-market-browser: build
+admin-market-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-market-browser.py
 
-admin-trades-browser: build
+admin-trades-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-trades-browser.py
 
-admin-portfolios-browser: build
+admin-portfolios-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-portfolios-browser.py
 
-admin-risk-events-browser: build
+admin-risk-events-browser: build-fixtures
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-risk-events-browser.py
 
-admin-overview-browser: build
+admin-overview-browser: build-fixtures
 	python3 scripts/web.py check
 	python3 scripts/web.py browser-install
 	python3 scripts/admin-overview-browser.py
 
-e2e: integration image-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-emergency-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
+e2e: integration image-test two-apps-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-emergency-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
 
 .PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
 
 .PHONY: soak soak-smoke
-soak: build
+soak: build-fixtures
 	python3 scripts/soak.py
 
-soak-smoke: build
+soak-smoke: build-fixtures
 	python3 scripts/soak.py --smoke
+
+.PHONY: build-fixtures two-apps-test
+two-apps-test: build web-install
+	python3 scripts/web.py browser-install
+	python3 scripts/two-apps-test.py

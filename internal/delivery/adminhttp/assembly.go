@@ -9,7 +9,6 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
-	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/migrate"
 	"github.com/hmlax/muskdeer/internal/repository"
 )
@@ -45,12 +44,13 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 	if err != nil {
 		return err
 	}
+	routes.centralAuth = cfg.Name == "admin"
 	if cfg.AdminHttp.StrategyQueriesEnabled {
 		factory, err := owner.GRPCClients()
 		if err != nil {
 			return err
 		}
-		connection, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceStrategy})
+		connection, err := factory.Client(rpcclient.Target{Service: managementService(cfg)})
 		if err != nil {
 			return err
 		}

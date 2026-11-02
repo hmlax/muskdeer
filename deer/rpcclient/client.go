@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -131,6 +132,15 @@ func Validate(cfg *configv1.GRPCClients) error {
 // Client returns a typed-client-compatible unary facade without network I/O.
 // Each Invoke discovers again; the facade never exposes an owned raw connection.
 func (f *Factory) Client(target Target) (grpc.ClientConnInterface, error) {
+	// Internal module calls share the operator listener and service identity.
+	// An explicit instance remains mandatory for routed execution writes.
+	if slices.Contains(f.cfg.AllowedServices, rpcsecurity.ServiceOperator) {
+		switch target.Service {
+		case rpcsecurity.ServiceMarket, rpcsecurity.ServiceStrategy, rpcsecurity.ServiceExecution, rpcsecurity.ServicePortfolio:
+			target.Service = rpcsecurity.ServiceOperator
+		}
+	}
+
 	if _, exists := f.security[target.Service]; !exists || !validInstanceID(target.InstanceID) {
 		return nil, errors.New("RPC target requires an allowed service and bounded instance identity")
 	}

@@ -249,10 +249,10 @@ func outboxBrokerFixture(ctx context.Context, t *testing.T) (natsjs.Stream, *jet
 	t.Helper()
 	address := os.Getenv("MUSKDEER_TEST_NATS_ADDRESS")
 	token := os.Getenv("MUSKDEER_TEST_NATS_TOKEN")
-	if address == "" || token == "" {
+	if address == "" || token == "" && os.Getenv("MUSKDEER_TEST_NATS_USERNAME") == "" {
 		t.Fatal("isolated NATS environment is required; run make integration")
 	}
-	connection, err := nats.Connect("nats://"+address, nats.Token(token), nats.NoReconnect(), nats.Timeout(time.Second))
+	connection, err := nats.Connect("nats://"+address, testNATSAuth(), nats.NoReconnect(), nats.Timeout(time.Second))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -294,7 +294,9 @@ func outboxBrokerFixture(ctx context.Context, t *testing.T) (natsjs.Stream, *jet
 		Address:         address,
 		Stream:          name,
 		SubjectPrefix:   prefix,
-		TokenEnv:        "MUSKDEER_TEST_NATS_TOKEN",
+		TokenEnv:        testNATSTokenEnv(),
+		Username:        os.Getenv("MUSKDEER_TEST_NATS_USERNAME"),
+		PasswordEnv:     testNATSPasswordEnv(),
 		ConnectTimeout:  durationpb.New(time.Second),
 		CommandTimeout:  durationpb.New(time.Second),
 		MaxInflight:     1,

@@ -27,7 +27,7 @@ func (s *MarketQueryServer) ListMarkets(ctx context.Context, request *strategyv1
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	filter := domain.AdminMarketFilter{
@@ -42,7 +42,7 @@ func (s *MarketQueryServer) ListMarkets(ctx context.Context, request *strategyv1
 	if err := filter.Validate(); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.markets.List(ctx, request.Session.Token, filter)
+	page, err := s.markets.List(ctx, request.GetSession().GetToken(), filter)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -71,13 +71,13 @@ func (s *MarketQueryServer) GetMarket(ctx context.Context, request *strategyv1.G
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.FeedId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	market, err := s.markets.Detail(ctx, request.Session.Token, request.FeedId)
+	market, err := s.markets.Detail(ctx, request.GetSession().GetToken(), request.FeedId)
 	if err != nil {
 		return nil, rpcError(err)
 	}

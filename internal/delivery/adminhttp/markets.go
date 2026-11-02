@@ -21,11 +21,11 @@ func (r *Routes) listMarkets(ctx context.Context, request *app.RequestContext) {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.markets.ListMarkets(call, &strategyv1.ListMarketsRequest{
 		Session:      session,
@@ -47,11 +47,11 @@ func (r *Routes) getMarket(ctx context.Context, request *app.RequestContext) {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.markets.GetMarket(call, &strategyv1.GetMarketRequest{
 		Session: session,

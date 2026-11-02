@@ -1103,8 +1103,11 @@ type JetStream struct {
 	MaxMessageBytes int32                  `protobuf:"varint,8,opt,name=max_message_bytes,json=maxMessageBytes,proto3" json:"max_message_bytes,omitempty"`
 	TlsEnabled      *bool                  `protobuf:"varint,9,opt,name=tls_enabled,json=tlsEnabled,proto3,oneof" json:"tls_enabled,omitempty"`
 	RootCertFile    string                 `protobuf:"bytes,10,opt,name=root_cert_file,json=rootCertFile,proto3" json:"root_cert_file,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Use either token_env or username/password_env, never both.
+	Username      string `protobuf:"bytes,11,opt,name=username,proto3" json:"username,omitempty"`
+	PasswordEnv   string `protobuf:"bytes,12,opt,name=password_env,json=passwordEnv,proto3" json:"password_env,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *JetStream) Reset() {
@@ -1203,6 +1206,20 @@ func (x *JetStream) GetTlsEnabled() bool {
 func (x *JetStream) GetRootCertFile() string {
 	if x != nil {
 		return x.RootCertFile
+	}
+	return ""
+}
+
+func (x *JetStream) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *JetStream) GetPasswordEnv() string {
+	if x != nil {
+		return x.PasswordEnv
 	}
 	return ""
 }
@@ -1793,7 +1810,7 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\f_tls_enabled\"\x80\x01\n" +
 	"\x11NacosRegistration\x12!\n" +
 	"\fadvertise_ip\x18\x01 \x01(\tR\vadvertiseIp\x12H\n" +
-	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"\xb4\x03\n" +
+	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"\xf3\x03\n" +
 	"\tJetStream\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x16\n" +
 	"\x06stream\x18\x02 \x01(\tR\x06stream\x12%\n" +
@@ -1806,7 +1823,9 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\vtls_enabled\x18\t \x01(\bH\x00R\n" +
 	"tlsEnabled\x88\x01\x01\x12$\n" +
 	"\x0eroot_cert_file\x18\n" +
-	" \x01(\tR\frootCertFileB\x0e\n" +
+	" \x01(\tR\frootCertFile\x12\x1a\n" +
+	"\busername\x18\v \x01(\tR\busername\x12!\n" +
+	"\fpassword_env\x18\f \x01(\tR\vpasswordEnvB\x0e\n" +
 	"\f_tls_enabled\"\xd7\x04\n" +
 	"\x05Redis\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1a\n" +

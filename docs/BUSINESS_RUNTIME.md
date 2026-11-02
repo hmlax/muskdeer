@@ -1,5 +1,8 @@
 # L1 业务进程装配
 
+2026-11-02 当前部署与鉴权边界以 [两应用说明](TWO_APPS.md) 为准：admin/Hertz 在 HTTP 边界完成会话/角色/CSRF，operator/Kratos 仅接收审计身份，两个应用各有独立入口，测试复用已有 Docker infra。以下旧模块及验证记录保持历史含义。
+
+
 P04.10/P05.9/P06.16 把执行、发布、消费、持仓、行情及策略用例装配进现有 `muskdeer -role ... -config ...` 命令。market、strategy、execution和portfolio各为独立Deer进程；api管理页面继续P07，cron按后续阶段交付。
 
 ## 显式启用

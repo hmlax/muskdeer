@@ -21,7 +21,7 @@ func (r *Routes) downloadOpenAPI(ctx context.Context, request *app.RequestContex
 		r.failure(request, domain.ErrUnauthenticated)
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	principal, err := r.auth.Identity(call, token)
 	if err != nil {

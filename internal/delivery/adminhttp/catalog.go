@@ -18,11 +18,11 @@ func (r *Routes) listAccounts(ctx context.Context, request *app.RequestContext) 
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.catalog.ListAccounts(call, &strategyv1.ListAccountsRequest{
 		Session: session,
@@ -38,11 +38,11 @@ func (r *Routes) listInstruments(ctx context.Context, request *app.RequestContex
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.catalog.ListInstruments(call, &strategyv1.ListInstrumentsRequest{
 		Session: session,
@@ -58,11 +58,11 @@ func (r *Routes) listMarketFeeds(ctx context.Context, request *app.RequestContex
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.catalog.ListMarketFeeds(call, &strategyv1.ListMarketFeedsRequest{
 		Session:      session,

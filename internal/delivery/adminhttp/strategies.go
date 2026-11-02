@@ -25,11 +25,11 @@ func (r *Routes) listStrategies(ctx context.Context, request *app.RequestContext
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.strategies.ListStrategies(call, &strategyv1.ListStrategiesRequest{
 		Session: session,
@@ -45,11 +45,11 @@ func (r *Routes) getStrategy(ctx context.Context, request *app.RequestContext) {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.strategies.GetStrategy(call, &strategyv1.GetStrategyRequest{
 		Session:    session,
@@ -65,11 +65,11 @@ func (r *Routes) listStrategyVersions(ctx context.Context, request *app.RequestC
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.strategies.ListConfigVersions(call, &strategyv1.ListConfigVersionsRequest{
 		Session:    session,
@@ -80,11 +80,17 @@ func (r *Routes) listStrategyVersions(ctx context.Context, request *app.RequestC
 	r.strategyReply(request, reply, err)
 }
 
-func (r *Routes) strategySession(request *app.RequestContext) (*strategyv1.AdminSession, bool) {
+func (r *Routes) strategySession(ctx context.Context, request *app.RequestContext) (*strategyv1.AdminSession, bool) {
 	token, valid := singleCookie(request, r.sessionCookie)
 	if !valid {
 		r.failure(request, domain.ErrUnauthenticated)
 		return nil, false
+	}
+	if r.centralAuth {
+		if !r.authorizeBusiness(ctx, request, token) {
+			return nil, false
+		}
+		return &strategyv1.AdminSession{}, true
 	}
 	return &strategyv1.AdminSession{Token: token}, true
 }

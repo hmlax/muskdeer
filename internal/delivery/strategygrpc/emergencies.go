@@ -45,17 +45,17 @@ func (s *EmergencyControlServer) RequestEmergencyCancellation(ctx context.Contex
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, emergencyRPCError(err)
 	}
-	if !controlCSRFValid(request.CsrfToken) {
+	if !controlCSRFValid(ctx, request.CsrfToken) {
 		return nil, emergencyRPCError(domain.ErrForbidden)
 	}
 	command, err := strategywire.EmergencyCommand(request.Input, request.StrategyId, request.IdempotencyKey)
 	if err != nil {
 		return nil, emergencyRPCError(err)
 	}
-	value, err := s.writer.Request(ctx, request.Session.Token, request.CsrfToken, command)
+	value, err := s.writer.Request(ctx, request.GetSession().GetToken(), request.CsrfToken, command)
 	if err != nil {
 		return nil, emergencyRPCError(err)
 	}
@@ -71,13 +71,13 @@ func (s *EmergencyQueryServer) GetEmergencyCancellation(ctx context.Context, req
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.StrategyId <= 0 || request.CancellationId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	value, err := s.reader.Observation(ctx, request.Session.Token, request.StrategyId, request.CancellationId)
+	value, err := s.reader.Observation(ctx, request.GetSession().GetToken(), request.StrategyId, request.CancellationId)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -93,7 +93,7 @@ func (s *EmergencyQueryServer) ListEmergencyCancellations(ctx context.Context, r
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.StrategyId <= 0 || !pageValid(request.AfterId, request.Limit) {
@@ -103,7 +103,7 @@ func (s *EmergencyQueryServer) ListEmergencyCancellations(ctx context.Context, r
 		AfterID: request.AfterId,
 		Limit:   int(request.Limit),
 	}
-	value, err := s.reader.History(ctx, request.Session.Token, request.StrategyId, page)
+	value, err := s.reader.History(ctx, request.GetSession().GetToken(), request.StrategyId, page)
 	if err != nil {
 		return nil, rpcError(err)
 	}

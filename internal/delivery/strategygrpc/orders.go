@@ -27,7 +27,7 @@ func (s *OrderQueryServer) ListStrategyOrders(ctx context.Context, request *stra
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	filter := domain.AdminOrderFilter{
@@ -42,7 +42,7 @@ func (s *OrderQueryServer) ListStrategyOrders(ctx context.Context, request *stra
 	if err := filter.Validate(); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.orders.List(ctx, request.Session.Token, filter)
+	page, err := s.orders.List(ctx, request.GetSession().GetToken(), filter)
 	if err != nil {
 		return nil, rpcError(err)
 	}
@@ -71,13 +71,13 @@ func (s *OrderQueryServer) GetStrategyOrder(ctx context.Context, request *strate
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
 	if request.StrategyId <= 0 || request.OrderId <= 0 {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	order, err := s.orders.Detail(ctx, request.Session.Token, request.StrategyId, request.OrderId)
+	order, err := s.orders.Detail(ctx, request.GetSession().GetToken(), request.StrategyId, request.OrderId)
 	if err != nil {
 		return nil, rpcError(err)
 	}

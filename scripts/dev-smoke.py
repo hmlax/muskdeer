@@ -14,27 +14,20 @@ import urllib.request
 from dev import Environment, ROOT
 
 
-def redis(environment, *args):
-    return subprocess.run([
-        *environment.compose, 'exec', '-T', 'redis', 'redis-cli',
-        '--no-auth-warning', '-a', 'muskdeer_redis_dev_only', *args,
-    ], check=True, capture_output=True, text=True).stdout.strip()
-
-
 def service_smoke(environment):
-    path = environment.directory / 'cron.json'
+    path = environment.directory / 'operator.json'
     config = json.loads(path.read_text())
     config['monitoring']['address'] = '127.0.0.1:0'
+    config['grpc']['address'] = '127.0.0.1:0'
     path.write_text(json.dumps(config))
     values = os.environ.copy()
-    values.update({
-        'MUSKDEER_DEV_POSTGRES_PASSWORD': 'muskdeer_dev_only',
-        'MUSKDEER_DEV_REDIS_PASSWORD': 'muskdeer_redis_dev_only',
-        'MUSKDEER_DEV_NACOS_PASSWORD': 'muskdeer_nacos_dev_only',
-    })
+    for line in (environment.directory / 'environment.sh').read_text().splitlines():
+        import shlex
+        key, value = line.removeprefix('export ').split('=', 1)
+        values[key] = shlex.split(value)[0] if value else ''
     with tempfile.NamedTemporaryFile(mode='w+') as output, tempfile.TemporaryFile(mode='w+') as diagnostic:
         process = subprocess.Popen([
-            str(ROOT / '.cache/bin/muskdeer'), '-role', 'cron', '-config', str(path),
+            str(ROOT / '.cache/bin/operator'), '-config', str(path),
         ], env=values, stdout=output, stderr=diagnostic)
         try:
             deadline = time.monotonic() + 8
@@ -74,33 +67,20 @@ def service_smoke(environment):
 
 
 def main():
-    cache = ROOT / '.cache'
-    cache.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix='dev-smoke-', dir=cache) as directory:
+    with tempfile.TemporaryDirectory(prefix='muskdeer-dev-attachment-') as directory:
         environment = Environment(Path(directory))
-        try:
-            first = environment.up()
-            # A second up must preserve the existing Nacos admin/namespace.
-            again = environment.up()
-            if first != again:
-                raise ValueError('idempotent development up changed bindings')
-            for path in sorted(environment.directory.glob('*.json')):
-                if path.name != 'endpoints.json':
-                    subprocess.run([sys.executable, str(ROOT / 'scripts/go.py'), 'run', './cmd/doctor', '-config', str(path)], cwd=ROOT, check=True)
-            service_smoke(environment)
-            if redis(environment, 'SET', 'dev-smoke:retention', 'survives-down') != 'OK':
-                raise ValueError('could not write owned retention probe')
-            environment.down()
-            environment.up()
-            if redis(environment, 'GET', 'dev-smoke:retention') != 'survives-down':
-                raise ValueError('normal dev-down lost persistent Redis data')
-            if redis(environment, 'DEL', 'dev-smoke:retention') != '1':
-                raise ValueError('could not remove owned retention probe')
-            print(json.dumps({'project': environment.project, 'result': 'persistent development resource checks passed'}))
-        finally:
-            # Explicit deletion belongs only to this random smoke workspace;
-            # the public dev-down command never contains --volumes.
-            subprocess.run([*environment.compose, 'down', '--volumes'], check=True)
+        first = environment.up()
+        second = environment.up()
+        if first['containers'] != second['containers']:
+            raise ValueError('attachment replaced an existing infra container')
+        service_smoke(environment)
+        environment.down()
+        from infra import inventory
+        current = {service: inventory(service)[1]['Id'] for service in first['containers']}
+        if current != first['containers']:
+            raise ValueError('detaching changed shared infra containers')
+        print('Existing infra attachment, independent operator and detach passed')
+    return 0
 
 
 if __name__ == '__main__':

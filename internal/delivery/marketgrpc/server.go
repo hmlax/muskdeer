@@ -91,7 +91,7 @@ func (s *Server) GetReference(ctx context.Context, request *marketv1.GetReferenc
 }
 
 func authorized(ctx context.Context) bool {
-	for _, service := range []string{rpcsecurity.ServiceStrategy, rpcsecurity.ServiceExecution, rpcsecurity.ServicePortfolio, rpcsecurity.ServiceAPI, rpcsecurity.ServiceCron} {
+	for _, service := range []string{rpcsecurity.ServiceOperator, rpcsecurity.ServiceStrategy, rpcsecurity.ServiceExecution, rpcsecurity.ServicePortfolio, rpcsecurity.ServiceAPI, rpcsecurity.ServiceCron} {
 		if rpcsecurity.HasService(ctx, service) {
 			return true
 		}

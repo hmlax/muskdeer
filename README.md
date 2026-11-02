@@ -5,17 +5,17 @@
 
 ## 当前交付
 
-2026-11-02 架构调整：前端统一 React；后端收敛为 operator（Kratos/gRPC）和 admin（Hertz/HTTP），管理权限统一在 admin 校验。单仓库、单 go.mod 保持。调整进行中，以下六角色命令属于旧实现，新的启动方式随 P12 验证后更新。
+2026-11-02 架构调整：前端统一 React；后端收敛为 operator（Kratos/gRPC）和 admin（Hertz/HTTP），管理权限统一在 admin 校验。单仓库、单 go.mod 保持。两个应用入口已提供：`make build` 后使用 `.cache/bin/operator -config configs/local/operator.json` 和 `.cache/bin/admin -config configs/local/admin.json`。本地样例默认仅启用基础设施；实际业务需显式配置依赖和业务绑定，见 [两应用运行说明](docs/TWO_APPS.md)。每个应用各有独立 cmd 入口，旧 role 分发命令已移除；测试复用现有 Docker infra，不再额外部署基础服务。
 P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、策略创建/查询/启停及参数发布/换源、审计列表/详情、策略风险与额度页面和HTTP/gRPC及网格控制循环已分步交付；做市/网格的浏览器发布换源、模拟资金冻结/释放及暂停/停止目标保留通过，策略风险页面的资金关闭/恢复闭环也已验证。风险历史及运行概览页面也已分步交付；剩余P07验收、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发
 项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。
 运行 make doctor 验证并按需获取固定工具链；Go 命令使用 python3 scripts/go.py，例如 python3 scripts/go.py version。make test-tooling 验证工具链入口的版本检查及失败处理。
-运行 make tools 安装固定版本 protoc 与插件，make generate 生成模型及 RPC，make verify 执行生成一致性、hz 生成/编译、格式、lint、工具链测试、Go 单元/race 测试与构建。make integration 使用 Docker 启动并清理独立 PostgreSQL/Redis/NATS/Nacos，执行模型、客户端/池/超时/TTL/生命周期、JetStream 确认丢失、Nacos 认证与 namespace 隔离测试；仅绑定 127.0.0.1，由 Docker 动态分配端口并传给本次测试进程，本机需 Docker 可用。Nacos 使用临时数据和明确测试口令，首次镜像下载/Java 启动会增加耗时。
+运行 make tools 安装固定版本 protoc 与插件，make generate 生成模型及 RPC，make verify 执行生成一致性、hz 生成/编译、格式、lint、工具链测试、Go 单元/race 测试与构建。make integration 复用现有 Docker infra 的 PostgreSQL/Redis/NATS/Nacos，仅创建和清理独立逻辑测试资源，执行模型、客户端/池/超时/TTL/生命周期、JetStream 确认丢失、Nacos 认证与 namespace 隔离测试；仅绑定 127.0.0.1，由 Docker 动态分配端口并传给本次测试进程，本机需 Docker 可用。Nacos 使用现有凭据和独立测试命名空间，不初始化管理员或启动新基础服务镜像。
 
 make doctor 同时验证精确工具链及服务/API 示例配置；其他文件使用 `python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json`。严格 Proto JSON、相对路径与校验范围见 [配置说明](docs/CONFIGURATION.md)。
-make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；例如 `.cache/bin/muskdeer -role market -config configs/local/market.json` 启动独立 market 进程，SIGTERM/CTRL-C 有序停止。`configs/local` 提供六种无外部依赖的本地配置及独立 loopback 端口；运行与日志边界见 [运维说明](docs/OPERATIONS.md)。api可显式开启[管理登录/会话页面与身份接口](docs/ADMIN_HTTP.md)及下述管理页面；完整P07仍待剩余验收。
-`make dev-up` 启动本工作区专属的持久 PostgreSQL/Redis/NATS/Nacos，生成 `.cache/dev` 地址、样例环境变量和六份配置；`make dev-down` 保留数据卷。`make dev-test` 在独立临时工作区验证重复启动、配置、实际依赖就绪和数据保留，结束只清理该测试资源。详见 [开发环境](docs/OPERATIONS.md#开发资源)。
+make build 生成 `.cache/bin/admin`、`.cache/bin/operator`、迁移和 adminuser 账户开通命令；例如 `.cache/bin/operator -config configs/local/operator.json` 启动 operator 进程，SIGTERM/CTRL-C 有序停止。`configs/local/admin.json` 和 `operator.json` 提供无外部依赖的本地配置及独立 loopback 端口；运行与日志边界见 [运维说明](docs/OPERATIONS.md)。api可显式开启[管理登录/会话页面与身份接口](docs/ADMIN_HTTP.md)及下述管理页面；完整P07仍待剩余验收。
+`make dev-up` 连接已有 infra，生成 `.cache/dev` 地址、环境引用和两份配置；`make dev-down` 只解除本工作区关联，保留共享服务。`make dev-test` 在独立临时工作区验证重复启动、配置、实际依赖就绪和数据保留，结束只清理该测试资源。详见 [开发环境](docs/OPERATIONS.md#开发资源)。
 
 可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费、market工作器/行情RPC和strategy账户控制循环；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令、双来源market及双strategy接管/报价/终态停止的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
 `make soak-smoke` 检查12秒真实策略驱动；`make soak` 使用独有测试基础设施执行固定30分钟场景，保存资金/预算/成交投影采样及实际业务进程日志。短场景不能计为30分钟验收，见 [长运行说明](docs/STRATEGY_SOAK.md)。
@@ -27,7 +27,7 @@ make build 生成 `.cache/bin/muskdeer`、迁移和本地账户开通命令；�
 `make admin-cancellation-browser`验证指定订单撤单的确认表单、真实提交后丢回包的原键重试、只读收据深链接，以及撤单待确认期间成交和最终资金结算，见[撤单合同](docs/ADMIN_CANCELLATIONS.md)。
 `make admin-emergency-browser`验证策略范围紧急撤单的范围/风险修订确认、原键重试、历史与持久结果，以及两个挂单的冻结保留、竞态成交和最终结算，见[范围合同](docs/ADMIN_EMERGENCY_CANCELLATIONS.md)。
 `make admin-market-browser`验证真实API/strategy及两个独立market回放进程的行情监控、精确价格、来源/模式/产品筛选、深链接、采样到期提示和单源停机后的隔离展示，见[行情监控](docs/ADMIN_MARKETS.md)。
-`make image` 使用固定 digest 的 Go 1.27.3 构建 `muskdeer:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test及十五组管理浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
+`make image` 使用固定 digest 的 Go 1.27.3 分别构建 `muskdeer-admin:local`、`muskdeer-operator:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test、two-apps-test及十五组管理浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
 指定订单的[管理撤单仓储、控制器、typed API及页面](docs/ADMIN_CANCELLATIONS.md)已交付：持久请求/审计、有效执行者沿原键处理及OMS终态结果。受理不代表订单终止，仍运行的策略可能重新报价；暂停、停止、关闭新风险及平仓语义分别处理。
 管理[行情监控仓储、typed API及页面](docs/ADMIN_MARKETS.md)已提供来源/交易对/模式隔离、快照与发布者健康的数据库时间重检；采样价格、当前时效与历史诊断分开展示，不将绑定存在或历史HEALTHY当作当前健康。
 

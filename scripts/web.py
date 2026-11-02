@@ -98,6 +98,7 @@ def run(action: str) -> int:
         'check': ['run', 'check'],
         'browser-install': ['run', 'browser-install'],
         'browser-test': ['run', 'browser-test'],
+        'browser-two-apps': ['run', 'browser-two-apps'],
         'browser-strategies': ['run', 'browser-strategies'],
         'browser-controls': ['run', 'browser-controls'],
         'browser-creation': ['run', 'browser-creation'],
@@ -121,7 +122,7 @@ def run(action: str) -> int:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['doctor', 'lock', 'install', 'build', 'check', 'browser-install', 'browser-test', 'browser-strategies', 'browser-controls', 'browser-creation', 'browser-publication', 'browser-funded-publication', 'browser-audits', 'browser-risk', 'browser-orders', 'browser-cancellations', 'browser-emergencies', 'browser-markets', 'browser-trades', 'browser-portfolios', 'browser-risk-events', 'browser-overview'])
+    parser.add_argument('action', choices=['doctor', 'lock', 'install', 'build', 'check', 'browser-install', 'browser-test', 'browser-two-apps', 'browser-strategies', 'browser-controls', 'browser-creation', 'browser-publication', 'browser-funded-publication', 'browser-audits', 'browser-risk', 'browser-orders', 'browser-cancellations', 'browser-emergencies', 'browser-markets', 'browser-trades', 'browser-portfolios', 'browser-risk-events', 'browser-overview'])
     options = parser.parse_args()
     try:
         sys.exit(run(options.action))

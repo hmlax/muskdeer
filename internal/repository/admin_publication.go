@@ -118,9 +118,14 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 			return err
 		}
-		alive := tx.WithContext(ctx).Model(&modelv1.AdminSession{}).Select("1").
-			Where("id = ? AND user_id = ? AND credential_version = ? AND revoked_at IS NULL AND delete_at IS NULL AND expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint", session.Id, user.Id, user.CredentialVersion)
-		changed := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND revision = ? AND EXISTS (?)", instance.Id, instance.Revision, alive).
+
+		guarded := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{})
+		if !apiValidatedActor(ctx) {
+			alive := tx.WithContext(ctx).Model(&modelv1.AdminSession{}).Select("1").
+				Where("id = ? AND user_id = ? AND credential_version = ? AND revoked_at IS NULL AND delete_at IS NULL AND expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint", session.Id, user.Id, user.CredentialVersion)
+			guarded = guarded.Where("EXISTS (?)", alive)
+		}
+		changed := guarded.Where("id = ? AND revision = ?", instance.Id, instance.Revision).
 			Select("RequestedConfigVersion", "MarketDataSource", "Revision").Updates(&modelv1.StrategyInstance{
 			RequestedConfigVersion: version.Version,
 			MarketDataSource:       string(request.Source),

@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
+	"github.com/hmlax/muskdeer/internal/adminactor"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 
@@ -32,10 +33,10 @@ func (s *ControlServer) ControlStrategy(ctx context.Context, request *strategyv1
 	if err := boundary(ctx, request); err != nil {
 		return nil, err
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, controlRPCError(err)
 	}
-	if !controlCSRFValid(request.CsrfToken) {
+	if !controlCSRFValid(ctx, request.CsrfToken) {
 		return nil, controlRPCError(domain.ErrForbidden)
 	}
 	command, err := (domain.AdminControlRequest{
@@ -48,7 +49,7 @@ func (s *ControlServer) ControlStrategy(ctx context.Context, request *strategyv1
 	if err != nil {
 		return nil, controlRPCError(err)
 	}
-	operation, err := s.controls.Control(ctx, request.Session.Token, request.CsrfToken, command)
+	operation, err := s.controls.Control(ctx, request.GetSession().GetToken(), request.CsrfToken, command)
 	if err != nil {
 		return nil, controlRPCError(err)
 	}
@@ -63,17 +64,20 @@ func (s *ControlServer) GetOperation(ctx context.Context, request *strategyv1.Ge
 	if request.OperationId <= 0 {
 		return nil, controlRPCError(domain.ErrInvalidAdminControl)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, controlRPCError(err)
 	}
-	operation, err := s.controls.Operation(ctx, request.Session.Token, request.OperationId)
+	operation, err := s.controls.Operation(ctx, request.GetSession().GetToken(), request.OperationId)
 	if err != nil {
 		return nil, controlRPCError(err)
 	}
 	return operationProto(operation), nil
 }
 
-func controlCSRFValid(value string) bool {
+func controlCSRFValid(ctx context.Context, value string) bool {
+	if _, trusted := adminactor.From(ctx); trusted {
+		return true
+	}
 	if len(value) != 43 {
 		return false
 	}

@@ -21,11 +21,11 @@ func (r *Routes) listRiskEvents(ctx context.Context, request *app.RequestContext
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.riskEvents.ListRiskEvents(call, &strategyv1.ListRiskEventsRequest{
 		Session:          session,
@@ -50,11 +50,11 @@ func (r *Routes) getRiskEvent(ctx context.Context, request *app.RequestContext) 
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.riskEvents.GetRiskEvent(call, &strategyv1.GetRiskEventRequest{
 		Session: session,

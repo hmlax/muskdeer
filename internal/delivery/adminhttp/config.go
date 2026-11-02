@@ -16,7 +16,7 @@ import (
 )
 
 // MessageInvalidConfig never includes an untrusted origin or configuration.
-const MessageInvalidConfig = "management HTTP requires api, PostgreSQL, a loopback listener and an explicit canonical origin"
+const MessageInvalidConfig = "management HTTP requires admin, PostgreSQL, a loopback listener and an explicit canonical origin"
 
 // ErrInvalidConfig rejects incomplete management opt-in before serving requests.
 var ErrInvalidConfig = errors.New(MessageInvalidConfig)
@@ -36,14 +36,14 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		}
 		return nil
 	}
-	if cfg.Name != "api" || cfg.Postgres == nil || cfg.Http == nil {
+	if cfg.Name != "api" && cfg.Name != "admin" || cfg.Postgres == nil || cfg.Http == nil {
 		return ErrInvalidConfig
 	}
 	if admin.StrategyControlsEnabled && !admin.StrategyQueriesEnabled {
 		return ErrInvalidConfig
 	}
 	if admin.StrategyQueriesEnabled && (cfg.Nacos == nil || cfg.GrpcClients == nil ||
-		!slices.Contains(cfg.GrpcClients.AllowedServices, rpcsecurity.ServiceStrategy) ||
+		!slices.Contains(cfg.GrpcClients.AllowedServices, managementService(cfg)) ||
 		cfg.GrpcClients.RequestTimeout.CheckValid() != nil || cfg.GrpcClients.RequestTimeout.AsDuration() <= 0 || cfg.GrpcClients.RequestTimeout.AsDuration() > 5*time.Second) {
 		return ErrInvalidConfig
 	}
@@ -125,4 +125,11 @@ func resolvedOrigin(cfg *configv1.AdminHTTP, listener net.Addr) (string, bool, e
 		origin.Host = net.JoinHostPort(host, port)
 	}
 	return origin.String(), origin.Scheme == "https", nil
+}
+
+func managementService(cfg *configv1.ServiceConfig) string {
+	if cfg.Name == "admin" {
+		return rpcsecurity.ServiceOperator
+	}
+	return rpcsecurity.ServiceStrategy
 }

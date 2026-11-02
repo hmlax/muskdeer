@@ -1,5 +1,8 @@
 # 管理页面与身份 HTTP
 
+2026-11-02 当前部署与鉴权边界以 [两应用说明](TWO_APPS.md) 为准：admin/Hertz 在 HTTP 边界完成会话/角色/CSRF，operator/Kratos 仅接收审计身份，两个应用各有独立入口，测试复用已有 Docker infra。以下旧模块及验证记录保持历史含义。
+
+
 已提供登录/会话/注销、策略目录/列表/详情/版本、创建、启停/异步结果、参数发布/换源、审计历史、[策略风险状态和控制](ADMIN_RISK.md)、[订单列表/详情](ADMIN_ORDERS.md)、[指定订单撤单](ADMIN_CANCELLATIONS.md)、[策略范围紧急撤单](ADMIN_EMERGENCY_CANCELLATIONS.md)、[成交查询](ADMIN_TRADES.md)、[账户持仓](ADMIN_PORTFOLIOS.md)、[行情监控](ADMIN_MARKETS.md)、[风险事件](RISK_EVENTS.md)和[运行概览](ADMIN_OVERVIEW.md)的typed接口和实际页面。[OpenAPI](OPENAPI.md)另行生成及验证；完整R08/A27仍有剩余验收。
 
 [成交查询](ADMIN_TRADES.md)已增加typed只读gRPC/HTTP入口及策略详情链接的成交列表/独立详情页面，以核心成交为准，按首次提交命令保留可空原OMS关联，并单独显示持仓侧事实是否收录；持仓等能力继续后续步骤。/strategies/:strategyID/trades及/:tradeID按查询能力开放，校验规范路径身份并支持登录恢复/刷新；`make admin-trades-browser`进入CI/e2e第十一组。

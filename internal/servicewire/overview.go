@@ -50,7 +50,7 @@ func OverviewProto(value domain.AdminServiceOverview, filter domain.AdminService
 }
 
 func validScope(value domain.AdminServiceOverview) bool {
-	if value.Role == domain.AdminServiceAPI {
+	if value.Role == domain.AdminServiceAPI || value.Role == domain.AdminServiceAdmin {
 		return value.Source == domain.AdminServiceLocalAPI && value.Total == 1 && value.ProbeConfigured
 	}
 	return value.Source == domain.AdminServiceRegistry && value.Total >= 0 && value.Total <= domain.MaxAdminServiceInstances
@@ -58,7 +58,7 @@ func validScope(value domain.AdminServiceOverview) bool {
 
 func validInstance(item domain.AdminServiceInstance, role domain.AdminServiceRole, configured bool) bool {
 	if !domain.ValidAdminServiceLabel(item.InstanceID) || !domain.ValidAdminServiceLabel(item.DeclaredVersion) || !item.Status.Valid() ||
-		role != domain.AdminServiceAPI && !domain.ValidAdminRemoteInstanceID(item.InstanceID) {
+		role != domain.AdminServiceAPI && role != domain.AdminServiceAdmin && !domain.ValidAdminRemoteInstanceID(item.InstanceID) {
 		return false
 	}
 	if !configured {
@@ -67,7 +67,7 @@ func validInstance(item domain.AdminServiceInstance, role domain.AdminServiceRol
 	if item.Status == domain.AdminServiceProbeNotConfigured || item.ProbedAt == nil || !exactMillis(*item.ProbedAt) {
 		return false
 	}
-	return role != domain.AdminServiceAPI || item.Status == domain.AdminServiceReady || item.Status == domain.AdminServiceNotReady || item.Status == domain.AdminServiceProbeTimeout
+	return role != domain.AdminServiceAPI && role != domain.AdminServiceAdmin || item.Status == domain.AdminServiceReady || item.Status == domain.AdminServiceNotReady || item.Status == domain.AdminServiceProbeTimeout
 }
 
 func validCursor(value domain.AdminServiceOverview, filter domain.AdminServiceFilter, last string) bool {

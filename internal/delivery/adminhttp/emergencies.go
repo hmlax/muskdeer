@@ -31,7 +31,7 @@ func (r *Routes) requestEmergencyCancellation(ctx context.Context, request *app.
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
@@ -41,11 +41,11 @@ func (r *Routes) requestEmergencyCancellation(ctx context.Context, request *app.
 		return
 	}
 	input.Reason = command.Reason
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.emergencyControls.RequestEmergencyCancellation(call, &strategyv1.RequestEmergencyCancellationRequest{
 		Session:        session,
-		CsrfToken:      csrf[0],
+		CsrfToken:      r.rpcCSRF(csrf[0]),
 		IdempotencyKey: command.Key,
 		StrategyId:     command.StrategyID,
 		Input:          input,
@@ -67,11 +67,11 @@ func (r *Routes) getEmergencyCancellation(ctx context.Context, request *app.Requ
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.emergencyQueries.GetEmergencyCancellation(call, &strategyv1.GetEmergencyCancellationRequest{
 		Session:        session,
@@ -91,11 +91,11 @@ func (r *Routes) listEmergencyCancellations(ctx context.Context, request *app.Re
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.emergencyQueries.ListEmergencyCancellations(call, &strategyv1.ListEmergencyCancellationsRequest{
 		Session:    session,

@@ -64,7 +64,9 @@ class SoakRunnerTest(unittest.TestCase):
             with patch.object(runner, 'ROOT', Path(directory)):
                 with patch.object(runner.subprocess, 'check_output', side_effect=['unit-revision', '', 'go version go1.27.3']):
                     with patch.object(runner.subprocess, 'run', side_effect=compose):
-                        with patch.object(runner, 'test_environment', return_value={}):
+                        with patch.object(runner, 'Infra') as fixture:
+                            fixture.return_value.__enter__.return_value.environment = {}
+                            fixture.return_value.__exit__.side_effect = subprocess.CalledProcessError(23, 'test-resource-cleanup')
                             with patch.object(runner, 'execute_scenario', side_effect=execute):
                                 with self.assertRaises(subprocess.CalledProcessError):
                                     runner.run(False)

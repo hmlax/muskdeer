@@ -20,11 +20,11 @@ func (r *Routes) listAudits(ctx context.Context, request *app.RequestContext) {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.audits.ListAudits(call, &strategyv1.ListAuditsRequest{
 		Session:  session,
@@ -43,11 +43,11 @@ func (r *Routes) getAudit(ctx context.Context, request *app.RequestContext) {
 		writeError(request, http.StatusBadRequest, codeInvalidRequest, messageInvalidRequest)
 		return
 	}
-	session, valid := r.strategySession(request)
+	session, valid := r.strategySession(ctx, request)
 	if !valid {
 		return
 	}
-	call, cancel := context.WithTimeout(ctx, strategyReadTimeout)
+	call, cancel := context.WithTimeout(managementContext(ctx, request), strategyReadTimeout)
 	defer cancel()
 	reply, err := r.audits.GetAudit(call, &strategyv1.GetAuditRequest{
 		Session: session,

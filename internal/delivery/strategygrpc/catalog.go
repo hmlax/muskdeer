@@ -32,10 +32,10 @@ func (s *CatalogServer) ListAccounts(ctx context.Context, request *strategyv1.Li
 	if !pageValid(request.AfterId, request.Limit) {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.catalog.Accounts(ctx, request.Session.Token, domain.AdminPage{
+	page, err := s.catalog.Accounts(ctx, request.GetSession().GetToken(), domain.AdminPage{
 		AfterID: request.AfterId,
 		Limit:   int(request.Limit),
 	})
@@ -70,10 +70,10 @@ func (s *CatalogServer) ListInstruments(ctx context.Context, request *strategyv1
 	if !pageValid(request.AfterId, request.Limit) {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.catalog.Instruments(ctx, request.Session.Token, domain.AdminPage{
+	page, err := s.catalog.Instruments(ctx, request.GetSession().GetToken(), domain.AdminPage{
 		AfterID: request.AfterId,
 		Limit:   int(request.Limit),
 	})
@@ -113,10 +113,10 @@ func (s *CatalogServer) ListMarketFeeds(ctx context.Context, request *strategyv1
 	if request.InstrumentId <= 0 || (mode != domain.MarketModeLive && mode != domain.MarketModeReplay) || !pageValid(request.AfterId, request.Limit) {
 		return nil, rpcError(domain.ErrInvalidAdminQuery)
 	}
-	if err := sessionValid(request.Session); err != nil {
+	if err := sessionValid(ctx, request.Session); err != nil {
 		return nil, rpcError(err)
 	}
-	page, err := s.catalog.Feeds(ctx, request.Session.Token, request.InstrumentId, mode, domain.AdminPage{
+	page, err := s.catalog.Feeds(ctx, request.GetSession().GetToken(), request.InstrumentId, mode, domain.AdminPage{
 		AfterID: request.AfterId,
 		Limit:   int(request.Limit),
 	})

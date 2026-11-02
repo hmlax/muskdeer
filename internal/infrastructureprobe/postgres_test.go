@@ -289,8 +289,8 @@ func postgresConfig(t *testing.T) *configv1.Postgres {
 	return &configv1.Postgres{
 		Host:             "127.0.0.1",
 		Port:             uint32(port),
-		Database:         "muskdeer_p01",
-		Username:         "muskdeer",
+		Database:         os.Getenv("MUSKDEER_TEST_POSTGRES_DATABASE"),
+		Username:         os.Getenv("MUSKDEER_TEST_POSTGRES_USERNAME"),
 		PasswordEnv:      "MUSKDEER_TEST_POSTGRES_PASSWORD",
 		SslMode:          postgres.SSLModeDisable,
 		Schema:           "muskdeer_p02",

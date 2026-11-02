@@ -16,6 +16,7 @@ import (
 
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/internal/testcert"
+	"github.com/hmlax/muskdeer/internal/testprocess"
 )
 
 func TestMarketProcessPublicationDeadlineRollsBackAndWithdraws(t *testing.T) {
@@ -48,7 +49,7 @@ CREATE TRIGGER test_delayed_publication BEFORE UPDATE ON market_snapshots
 	if err := os.WriteFile(path, data, 0600); err != nil {
 		t.Fatal(err)
 	}
-	command := exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", "muskdeer"), "-role", cfg.Name, "-config", path)
+	command := testprocess.Command(ctx, cfg.Name, path)
 	output, runErr := command.CombinedOutput()
 	var exit *exec.ExitError
 	if !errors.As(runErr, &exit) || exit.ExitCode() != 1 || !hasDeadlineProcessDiagnostic(output) {
