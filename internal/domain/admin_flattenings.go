@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -48,6 +49,41 @@ type AdminFlattenRequest struct {
 	ConfirmedQuantity         decimal.Decimal
 	LimitPrice                decimal.Decimal
 	Reason                    string
+}
+
+// AdminFlattenReceipt is immutable confirmation, not a trade or completion.
+type AdminFlattenReceipt struct {
+	ID                        int64
+	ActorUserID               int64
+	StrategyID                int64
+	AccountID                 string
+	InstrumentID              int64
+	CancellationID            int64
+	Scope                     AdminFlattenScope
+	ExpectedRiskRevision      int64
+	ExpectedPortfolioRevision int64
+	ExpectedBaseRevision      int64
+	ConfirmedQuantity         decimal.Decimal
+	LimitPrice                decimal.Decimal
+	Reason                    string
+	CreatedAt                 time.Time
+}
+
+// AdminFlattenWriter revalidates current administrator/session/CSRF and all
+// financial confirmation under persistent locks; it never sends an order.
+type AdminFlattenWriter interface {
+	Request(context.Context, string, string, AdminFlattenRequest) (AdminFlattenReceipt, error)
+}
+
+// AdminFlattenReader only reads immutable confirmation for a current viewer.
+type AdminFlattenReader interface {
+	Confirmation(context.Context, string, int64, int64) (AdminFlattenReceipt, error)
+}
+
+// AdminAccountFlattenings shares borrowed storage across separate abilities.
+type AdminAccountFlattenings interface {
+	AdminFlattenWriter
+	AdminFlattenReader
 }
 
 // AdminFlattenBasis is a proposed internal snapshot. It does not authenticate
