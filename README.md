@@ -4,6 +4,8 @@
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
 
 ## 当前交付
+
+2026-11-02 架构调整：前端统一 React；后端收敛为 operator（Kratos/gRPC）和 admin（Hertz/HTTP），管理权限统一在 admin 校验。单仓库、单 go.mod 保持。调整进行中，以下六角色命令属于旧实现，新的启动方式随 P12 验证后更新。
 P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、策略创建/查询/启停及参数发布/换源、审计列表/详情、策略风险与额度页面和HTTP/gRPC及网格控制循环已分步交付；做市/网格的浏览器发布换源、模拟资金冻结/释放及暂停/停止目标保留通过，策略风险页面的资金关闭/恢复闭环也已验证。风险历史及运行概览页面也已分步交付；剩余P07验收、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
 
 ## 开始开发

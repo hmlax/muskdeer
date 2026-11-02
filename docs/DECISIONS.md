@@ -1,6 +1,8 @@
 # 决策、默认值与待确认
 
 ## 用户已明确
+
+2026-11-02 最新：前端只保留 React；后端为 operator（Kratos/gRPC）与 admin（Hertz/HTTP）两个应用。权限相关校验在 admin/API 完成，operator 接收已校验审计身份并保留业务安全规则。此决定替代旧六业务进程与独立 cron 部署约定；单仓库、单 go.mod 和 deer 公共封装保持。
 项目 Muskdeer；Go 版本固定为 1.27.3；Hertz、Kratos、gRPC、Nacos、PostgreSQL、GORM、Redis、优先 NATS、Prometheus/Grafana；公共组件及 config/model Proto 集中；生成 ORM，不额外手写数据库 Model；独立 cron，其他服务支持多节点；Codex 持续推进 MVP。
 每张表必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL。所有 GORM 数据操作显式使用 Model，禁止 Table("xxx") 及其封装绕过；业务、公共组件、脚本和测试一致执行。
 所有接口的小数字段统一 string；Go 小数值、计算和比较统一 decimal.Decimal，禁止 float32/float64 及浮点中间转换，覆盖价格、数量、金额、费率、比例、百分比等全部小数。

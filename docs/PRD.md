@@ -12,6 +12,8 @@
 
 ## 公共模块与服务封装
 
+2026-11-02 用户最新确认：前端只保留 React；后端仅 operator（Kratos/gRPC）和 admin（Hertz/HTTP）两个应用，仍为单仓库、单 go.mod。登录、会话、角色权限、CSRF 在 admin/API 校验完成；operator 执行业务及审计，不重复管理权限校验。行情/策略/执行/投影/定期任务是 operator 内部模块，支持多节点和最终 fencing。此约定替代旧独立业务进程说明及旧 api 命名；实施与验收见 P12。
+
 公共模块名为 deer，所有 Kratos 业务服务分别使用统一的 Deer 封装，由 deer.NewDeer 构造，保留各自服务进程及职责。api 用作平台管理界面，用户已确认包含可操作的管理前端页面和配套后端接口，纳入 MVP。DeerApi 作为 Hertz API 服务封装，配套 deer.NewDeerApi，复用 Deer 的基础设施、注册发现与生命周期；API handler 通过 gRPC 调用业务服务。详细设计见 DEER.md，P02 实现公共封装并通过 A02/A26，P07 实现管理界面并通过 A27。
 
 ## 用户流程与可观察行为

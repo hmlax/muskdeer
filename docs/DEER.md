@@ -2,6 +2,8 @@
 
 ## 命名与服务形态（已确认）
 
+2026-11-02 最新部署形态为 operator + admin：operator 通过 deer.NewDeer 承载全部业务模块及 gRPC；admin 通过 deer.NewDeerApi 承载 Hertz HTTP/React 和管理鉴权，通过 gRPC 调用 operator。每进程仅一个 Deer。下文旧角色独立部署说明作为已有实现历史，由此约定替代。
+
 公共目录与 Go 包名统一 deer，公共 Proto 位于 deer/proto。所有 Kratos 业务服务分别使用统一的 deer.Deer 封装，由 deer.NewDeer 构造；market、strategy、execution、portfolio、cron 保持各自独立进程与服务身份。用户已明确“各业务服务分别使用统一 Deer 封装”。
 api 用作平台管理界面，包含可操作的管理前端页面和配套后端接口。API 服务使用 deer.DeerApi，复用 Deer 公共装配，并承载 Hertz HTTP 入口。名称按用户要求保留 DeerApi 的拼写；本规范配套采用 deer.NewDeerApi 作为构造函数。
 
