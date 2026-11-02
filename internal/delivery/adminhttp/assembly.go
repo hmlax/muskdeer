@@ -68,12 +68,14 @@ func Assemble(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer
 		routes.markets = strategyv1.NewStrategyMarketQueryClient(connection)
 		routes.riskQueries = strategyv1.NewStrategyRiskQueryClient(connection)
 		routes.cancellationQueries = strategyv1.NewStrategyOrderCancellationQueryClient(connection)
+		routes.emergencyQueries = strategyv1.NewStrategyEmergencyCancellationQueryClient(connection)
 		if cfg.AdminHttp.StrategyControlsEnabled {
 			routes.controls = strategyv1.NewStrategyControlClient(connection)
 			routes.creation = strategyv1.NewStrategyCreationClient(connection)
 			routes.publication = strategyv1.NewStrategyPublicationClient(connection)
 			routes.riskControls = strategyv1.NewStrategyRiskControlClient(connection)
 			routes.cancellationControls = strategyv1.NewStrategyOrderCancellationControlClient(connection)
+			routes.emergencyControls = strategyv1.NewStrategyEmergencyCancellationControlClient(connection)
 		}
 	}
 	routes.Register(hertz)

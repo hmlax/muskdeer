@@ -1,6 +1,6 @@
 # 策略范围的紧急撤单
 
-R08要求紧急撤单展示明确范围、原因及确认；[单笔撤单](ADMIN_CANCELLATIONS.md)不能扩大为全范围成功，Stop和[独立受限平仓](INTERFACES.md)也不是同一动作。P07.58交付领域请求和进度推导，P07.59–P07.61增加持久受理及有界工作，P07.62接入策略业务周期，P07.63提供内部只读历史/观测，P07.64接入typed管理gRPC。HTTP和页面尚未交付，当前不能通过浏览器发起范围撤单。
+R08要求紧急撤单展示明确范围、原因及确认；[单笔撤单](ADMIN_CANCELLATIONS.md)不能扩大为全范围成功，Stop和[独立受限平仓](INTERFACES.md)也不是同一动作。P07.58交付领域请求和进度推导，P07.59–P07.61增加持久受理及有界工作，P07.62接入策略业务周期，P07.63提供内部只读历史/观测，P07.64接入typed管理gRPC，P07.65提供Hertz HTTP。浏览器确认页面仍未交付。
 
 P07.59另增Proto唯一来源的不可变受理结构与schema32；该步骤只有受理结构，未实现仓储或执行任务。执行进度尚未实现，不得把缺少进度行的请求推断为成功。迁移不回填请求，也不主动关闭风险或撤单；受理必须在同一事务写入真实风险关闭及范围审计。新表要求同一策略/操作者/会话/原因、风险修订一增及唯一证据，提交时重新检查会话和当前实际关闭状态。
 
@@ -20,7 +20,11 @@ P07.63提供内部当前viewer历史分页和单范围观测端口，复用同�
 
 P07.64的[typed Proto](../api/strategy/v1/emergencies.proto)区分StrategyEmergencyCancellationControl与Query。RequestEmergencyCancellation显式携带scope、strategy_id、expected_risk_revision、原因、幂等键、当前会话和独立CSRF，只返回不可变受理。GetEmergencyCancellation提供存储Record、当前Progress及数据库观测时间；ListEmergencyCancellations返回有界历史。所有身份/修订/计数为int64，若经Proto JSON呈现为十进制字符串，不经浮点；没有JSON/bytes业务载荷。
 
-服务借用同一Deer数据库，只有ManagementEnabled注册查询，ControlEnabled才另注册写入。API-peer mTLS、当前持久viewer/operator权限、原调用期限（最多5秒）、2KiB请求上限与递归相关消息未知字段拒绝均保留；使用原rpcclient单次调用、禁止透明重试，不直接发交易指令。返回前验证范围/完整确认、状态/可空证明/计数/分页及精确毫秒时间，私有存储错误统一公开分类。HTTP和页面继续下一步，不把gRPC接通记为A27浏览器完成。
+服务借用同一Deer数据库，只有ManagementEnabled注册查询，ControlEnabled才另注册写入。API-peer mTLS、当前持久viewer/operator权限、原调用期限（最多5秒）、2KiB请求上限与请求及相关嵌套消息的未知字段拒绝均保留；使用原rpcclient单次调用、禁止透明重试，不直接发交易指令。返回前验证范围/完整确认、状态/可空证明/计数/分页及精确毫秒时间，私有存储错误统一公开分类。
+
+P07.65沿用唯一DeerApi/已有strategy连接，提供POST /api/v1/strategies/{strategyID}/emergency-cancellations、同路径GET有界历史和GET /api/v1/strategies/{strategyID}/emergency-cancellations/{cancellationID}。POST仅接收scope、十进制字符串expected_risk_revision及原因，必须唯一会话Cookie、固定Host/Origin、独立CSRF和幂等键；拒绝重复字段、数字修订、未知字段、额外查询及非规范ID。受理和原键重放均为202加Location，即使任务已经完成，也不能把写回复当作终态观测。
+
+两个GET只在queries开关装配，写入还需controls；借用原三秒期限、当前会话、no-store和typed错误，所有int64 JSON均为string。读取不推进任务；查询中的pending_submissions是当前实例未归结新单动作数，可能含后来工作，不能据此改写历史任务。仅查询模式同路径GET存在，POST为405；全部查询禁用时路径不存在为404。[OpenAPI](OPENAPI.md)包含三项操作及具体消息，不把HTTP闭环记为A27浏览器确认完成。
 
 任务状态来自持久证明，而非读取时根据空计数推断。未收录完、待确认子请求、不明提交、缺失OMS投影的活动核心单或未释放预留都不能成功；已知失败目标仍保留义务。单笔历史失败后若订单后来确已终态且预留归结，范围可按当时权威事实达到终态目标，不改写单笔历史。可以因成交而终止，SUCCEEDED不等于每笔CANCELED或持仓清零。完成标记不能重新打开或改写，管理员恢复还必须通过原有当前资格/资金/市场/配置/目标检查；新风险、别的策略与后来风险修订不属于旧任务结果。
 
@@ -45,4 +49,4 @@ AdminEmergencyCancelProgress.State先检查计数一致性，用减法检查和�
 
 收录/执行未归结时，管理员恢复也须拒绝，不能仅靠临时零挂单窗口重新开风险。并发策略新增/提交与关闭的线性化、分页去重、共享账户隔离、原键重放、注销竞态、旧epoch、部分成交和撤单未知均须用实际数据库/进程行为验证。实现前不得将本领域组件记为紧急撤单功能完成。
 
-领域组件见[P07.58](validation/P07-58.md)，不可变受理结构及schema32见[P07.59](validation/P07-59.md)，原子受理与schema33恢复门禁见[P07.60](validation/P07-60.md)，有界收录/实际取消证明与schema34见[P07.61](validation/P07-61.md)，业务周期与独立进程验证见[P07.62](validation/P07-62.md)，当前viewer历史/观测见[P07.63](validation/P07-63.md)，管理gRPC见[P07.64](validation/P07-64.md)。完整P07/A27和受限平仓仍未完成，无真实资金或生产操作。
+领域组件见[P07.58](validation/P07-58.md)，不可变受理结构及schema32见[P07.59](validation/P07-59.md)，原子受理与schema33恢复门禁见[P07.60](validation/P07-60.md)，有界收录/实际取消证明与schema34见[P07.61](validation/P07-61.md)，业务周期与独立进程验证见[P07.62](validation/P07-62.md)，当前viewer历史/观测见[P07.63](validation/P07-63.md)，管理gRPC见[P07.64](validation/P07-64.md)，HTTP闭环见[P07.65](validation/P07-65.md)。完整P07/A27和受限平仓仍未完成，无真实资金或生产操作。

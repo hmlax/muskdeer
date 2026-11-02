@@ -3307,6 +3307,481 @@
         "x-muskdeer-minimum-role": "operator"
       }
     },
+    "/api/v1/strategies/{strategyID}/emergency-cancellations": {
+      "get": {
+        "operationId": "listEmergencyCancellations",
+        "summary": "listEmergencyCancellations",
+        "description": "Current persistent viewer session is revalidated; responses are observations, not trading authority.  GET body must be empty. Only listed single-value query names are accepted; positive IDs and nonnegative cursors are canonical int64 strings. Default page limit 50 (maximum 100), except service overview.",
+        "parameters": [
+          {
+            "name": "strategyID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+              "format": "muskdeer-int64",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "after_id",
+            "in": "query",
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "description": "Canonical nonnegative int64 cursor; default 0.",
+              "format": "muskdeer-int64",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": [
+                "integer"
+              ],
+              "description": "Canonical positive decimal query text; default 50, maximum 100.",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful complete response; Cache-Control: no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/muskdeer.strategy.v1.ListEmergencyCancellationsReply"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "Always no-store.",
+                "schema": {
+                  "type": [
+                    "string"
+                  ],
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request shape, query, identifier or business input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid current persistent session, or invalid login.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed host/origin, current role or CSRF proof denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature disabled or management resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed for this route.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency/revision/state conflict; risk recovery may be denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency, timeout or invalid successful upstream response; no partial private payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-muskdeer-feature": "admin_http.strategy_queries_enabled",
+        "x-muskdeer-minimum-role": "viewer"
+      },
+      "post": {
+        "operationId": "requestEmergencyCancellation",
+        "summary": "requestEmergencyCancellation",
+        "description": "Current persistent viewer session is revalidated; responses are observations, not trading authority. Atomically blocks this strategy's new risk and accepts its confirmed cancellation scope. Original-key replay always returns 202 with immutable acceptance; query the Location for stored task proof and current counters. Acceptance neither completes cancellation nor restores risk or flattens inventory. Exact configured Origin required. JSON body names are unique, with no unknown names or trailing data. Business writes reject all query parameters; optimistic revisions and idempotency bind the actor and original normalized command.",
+        "parameters": [
+          {
+            "name": "strategyID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+              "format": "muskdeer-int64",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "Origin",
+            "in": "header",
+            "required": true,
+            "description": "Must exactly equal the configured fixed administration origin.",
+            "schema": {
+              "type": [
+                "string"
+              ]
+            }
+          },
+          {
+            "name": "X-CSRF-Token",
+            "in": "header",
+            "required": true,
+            "description": "Independent readable __Host-muskdeer_csrf (HTTPS) or muskdeer_csrf (local) cookie, bound to the current session.",
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "description": "Actor-scoped stable key for retries of the same normalized command; never reuse with a different command.",
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "pattern": "^[A-Za-z0-9_.:-]+$",
+              "minLength": 16,
+              "maxLength": 64
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationInput.Input"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful complete response; Cache-Control: no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationAcceptance"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "Always no-store.",
+                "schema": {
+                  "type": [
+                    "string"
+                  ],
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              },
+              "Location": {
+                "description": "Relative management resource or result path; not a promise of execution completion.",
+                "schema": {
+                  "type": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request shape, query, identifier or business input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid current persistent session, or invalid login.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed host/origin, current role or CSRF proof denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature disabled or management resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed for this route.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency/revision/state conflict; risk recovery may be denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency, timeout or invalid successful upstream response; no partial private payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-muskdeer-feature": "admin_http.strategy_controls_enabled",
+        "x-muskdeer-minimum-role": "operator"
+      }
+    },
+    "/api/v1/strategies/{strategyID}/emergency-cancellations/{cancellationID}": {
+      "get": {
+        "operationId": "getEmergencyCancellation",
+        "summary": "getEmergencyCancellation",
+        "description": "Current persistent viewer session is revalidated; responses are observations, not trading authority.  GET body must be empty. Only listed single-value query names are accepted; positive IDs and nonnegative cursors are canonical int64 strings. Default page limit 50 (maximum 100), except service overview.",
+        "parameters": [
+          {
+            "name": "strategyID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+              "format": "muskdeer-int64",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 20
+            }
+          },
+          {
+            "name": "cancellationID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": [
+                "string"
+              ],
+              "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+              "format": "muskdeer-int64",
+              "pattern": "^[1-9][0-9]*$",
+              "maxLength": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful complete response; Cache-Control: no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationObservation"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "Always no-store.",
+                "schema": {
+                  "type": [
+                    "string"
+                  ],
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request shape, query, identifier or business input.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No valid current persistent session, or invalid login.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Fixed host/origin, current role or CSRF proof denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Feature disabled or management resource not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed for this route.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Idempotency/revision/state conflict; risk recovery may be denied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Dependency, timeout or invalid successful upstream response; no partial private payload.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorReply"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "secureSession": []
+          },
+          {
+            "localSession": []
+          }
+        ],
+        "x-muskdeer-feature": "admin_http.strategy_queries_enabled",
+        "x-muskdeer-minimum-role": "viewer"
+      }
+    },
     "/api/v1/strategies/{strategyID}/order-cancellations/{cancellationID}": {
       "get": {
         "operationId": "getOrderCancellation",
@@ -6330,6 +6805,282 @@
         ],
         "additionalProperties": false
       },
+      "muskdeer.strategy.v1.EmergencyCancellationAcceptance": {
+        "type": [
+          "object"
+        ],
+        "properties": {
+          "actor_user_id": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "created_at_ms": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "expected_risk_revision": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "id": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "reason": {
+            "type": [
+              "string"
+            ]
+          },
+          "risk_revision": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "scope": {
+            "type": [
+              "string"
+            ]
+          },
+          "strategy_id": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "id",
+          "actor_user_id",
+          "strategy_id",
+          "scope",
+          "expected_risk_revision",
+          "risk_revision",
+          "reason",
+          "created_at_ms"
+        ],
+        "additionalProperties": false
+      },
+      "muskdeer.strategy.v1.EmergencyCancellationInput.Input": {
+        "type": [
+          "object"
+        ],
+        "properties": {
+          "expected_risk_revision": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^[1-9][0-9]*$",
+            "maxLength": 20
+          },
+          "reason": {
+            "type": [
+              "string"
+            ],
+            "description": "Trimmed nonempty UTF-8 audit reason, at most 256 bytes and no NUL. Byte length and trimming are checked by the server.",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "scope": {
+            "type": [
+              "string"
+            ],
+            "enum": [
+              "strategy"
+            ]
+          }
+        },
+        "required": [
+          "scope",
+          "expected_risk_revision",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "muskdeer.strategy.v1.EmergencyCancellationObservation": {
+        "type": [
+          "object"
+        ],
+        "properties": {
+          "observed_at_ms": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "progress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationProgress"
+              },
+              {
+                "type": [
+                  "null"
+                ]
+              }
+            ]
+          },
+          "record": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationRecord"
+              },
+              {
+                "type": [
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "record",
+          "progress",
+          "observed_at_ms"
+        ],
+        "additionalProperties": false
+      },
+      "muskdeer.strategy.v1.EmergencyCancellationProgress": {
+        "type": [
+          "object"
+        ],
+        "properties": {
+          "enrollment_complete": {
+            "type": [
+              "boolean"
+            ]
+          },
+          "failed": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "pending_submissions": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "targets": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "terminal": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "targets",
+          "terminal",
+          "failed",
+          "pending_submissions",
+          "enrollment_complete"
+        ],
+        "additionalProperties": false
+      },
+      "muskdeer.strategy.v1.EmergencyCancellationRecord": {
+        "type": [
+          "object"
+        ],
+        "properties": {
+          "acceptance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationAcceptance"
+              },
+              {
+                "type": [
+                  "null"
+                ]
+              }
+            ]
+          },
+          "completed_at_ms": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "enrollment_complete": {
+            "type": [
+              "boolean"
+            ]
+          },
+          "revision": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "state": {
+            "type": [
+              "string"
+            ]
+          }
+        },
+        "required": [
+          "acceptance",
+          "state",
+          "revision",
+          "enrollment_complete"
+        ],
+        "additionalProperties": false
+      },
       "muskdeer.strategy.v1.GetAuditReply": {
         "type": [
           "object"
@@ -6669,6 +7420,45 @@
         "required": [
           "versions",
           "next_after_id"
+        ],
+        "additionalProperties": false
+      },
+      "muskdeer.strategy.v1.ListEmergencyCancellationsReply": {
+        "type": [
+          "object"
+        ],
+        "properties": {
+          "items": {
+            "type": [
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/muskdeer.strategy.v1.EmergencyCancellationRecord"
+            }
+          },
+          "next_after_id": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          },
+          "observed_at_ms": {
+            "type": [
+              "string"
+            ],
+            "description": "Canonical base-10 signed int64 string; bounded to [-9223372036854775808,9223372036854775807]. Never parse through a binary floating-point number.",
+            "format": "muskdeer-int64",
+            "pattern": "^(0|-?[1-9][0-9]*)$",
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "items",
+          "next_after_id",
+          "observed_at_ms"
         ],
         "additionalProperties": false
       },

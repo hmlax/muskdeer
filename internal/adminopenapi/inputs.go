@@ -75,6 +75,10 @@ func configureInput(name protoreflect.FullName, schema *Schema) {
 	case "muskdeer.strategy.v1.OrderCancellationInput":
 		schema.Required = []string{"expected_order_revision", "reason"}
 		schema.Properties["expected_order_revision"] = int64String(true)
+	case "muskdeer.strategy.v1.EmergencyCancellationInput":
+		schema.Required = []string{"scope", "expected_risk_revision", "reason"}
+		schema.Properties["scope"] = stringsEnum(string(domain.AdminEmergencyCancelScopeStrategy))
+		schema.Properties["expected_risk_revision"] = int64String(true)
 	case "muskdeer.common.v1.MakerParameters", "muskdeer.common.v1.GridParameters":
 		schema.Description = "Typed template parameters. Financial values are plain decimal strings (amount/price/quantity at most 20 integer and 18 fractional digits; BPS at most 5 and 10). Durations are whole millisecond int64 strings bounded to one hour. Cross-field budgets, instrument increments, ranges, freshness and disabled hedge limits are checked by the server. Management creation/publication currently require hedging disabled."
 		for field, property := range schema.Properties {

@@ -87,6 +87,32 @@ func TestOptionalObservationAndIntegerBounds(t *testing.T) {
 	}
 }
 
+func TestEmergencyInputRequiresExplicitScopeAndImmutableAcceptanceHasOnly202(t *testing.T) {
+	compiler := documentCompiler(t)
+	schema := compileComponent(t, compiler, "muskdeer.strategy.v1.EmergencyCancellationInput.Input")
+	input := `{"scope":"strategy","expected_risk_revision":"9007199254740993","reason":"schema confirmation"}`
+	validateJSON(t, schema, []byte(input), true)
+	for _, invalid := range []string{
+		strings.Replace(input, `"strategy"`, `"account"`, 1),
+		strings.Replace(input, `"9007199254740993"`, `9007199254740993`, 1),
+		strings.Replace(input, `"9007199254740993"`, `"01"`, 1),
+		strings.Replace(input, `"scope":"strategy",`, "", 1),
+		strings.Replace(input, `"reason":`, `"cancel_all":true,"reason":`, 1),
+	} {
+		validateJSON(t, schema, []byte(invalid), false)
+	}
+	for _, definition := range definitions() {
+		if definition.id != "requestEmergencyCancellation" {
+			continue
+		}
+		builder := &schemaBuilder{schemas: manualSchemas()}
+		operation := builder.operation(definition)
+		if _, exists := operation.Responses["200"]; exists || operation.Responses["202"].Content == nil {
+			t.Fatal("immutable acceptance was documented as a terminal replay")
+		}
+	}
+}
+
 func TestOfficialSchemaIsPinnedAndLoadingIsOffline(t *testing.T) {
 	data, err := os.ReadFile("../../third_party/openapi/schema-2022-10-07.json")
 	if err != nil {

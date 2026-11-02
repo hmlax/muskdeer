@@ -80,10 +80,13 @@ func definitions() []definition {
 		query("/api/v1/overview/services", "getServiceOverview", &adminv1.ServiceOverview{}, serviceParameters()...),
 		query(strategyPath+"/risk", "getStrategyRisk", &strategyv1.StrategyRiskState{}),
 		query(strategyPath+"/order-cancellations/{cancellationID}", "getOrderCancellation", &strategyv1.OrderCancellationReceipt{}),
+		query(strategyPath+"/emergency-cancellations", "listEmergencyCancellations", &strategyv1.ListEmergencyCancellationsReply{}, page()...),
+		query(strategyPath+"/emergency-cancellations/{cancellationID}", "getEmergencyCancellation", &strategyv1.EmergencyCancellationObservation{}),
 		mutation("/api/v1/strategies", "createStrategy", &strategyv1.CreationReceipt{}, &strategyv1.CreateStrategyInput{}, "201", "Creates immutable metadata and initial parameters; never starts trading or initializes funds."),
 		mutation(strategyPath+"/configurations", "publishConfiguration", &strategyv1.PublicationReceipt{}, &strategyv1.PublishConfigurationInput{}, "201", "Publishes a requested configuration; does not assert activation, market-source fallback or resumed trading."),
 		mutation(strategyPath+"/risk", "changeStrategyRisk", &strategyv1.StrategyRiskReceipt{}, nil, "200", "BLOCK requires operator; UNBLOCK requires administrator and both expected configuration and desired state. A receipt is historical, never a current risk grant. Recovery denial returns 409 "+domain.AdminRiskRecoveryDeniedCode+"."),
 		mutation(strategyPath+"/orders/{orderID}/cancellations", "requestOrderCancellation", &strategyv1.OrderCancellationReceipt{}, &strategyv1.OrderCancellationInput{}, "202", "202 means accepted cancellation work; 200 is an already observed terminal result. UNKNOWN retains funds/exposure reservations; terminal FILLED does not mean canceled."),
+		mutation(strategyPath+"/emergency-cancellations", "requestEmergencyCancellation", &strategyv1.EmergencyCancellationAcceptance{}, &strategyv1.EmergencyCancellationInput{}, "202", "Atomically blocks this strategy's new risk and accepts its confirmed cancellation scope. Original-key replay always returns 202 with immutable acceptance; query the Location for stored task proof and current counters. Acceptance neither completes cancellation nor restores risk or flattens inventory."),
 		mutation(strategyPath+"/control", "controlStrategy", &strategyv1.StrategyOperation{}, nil, "202", "202 means accepted desired-state intent; 200 is a previously observed result. Stop waits for terminal orders; stop, cancellation and flattening are separate operations. No flatten endpoint is provided."),
 	}
 	return result
@@ -163,7 +166,7 @@ func (b *schemaBuilder) operation(d definition) *Operation {
 	}
 	response := successResponse(reply, d.write && d.feature == featureControls)
 	operation.Responses[d.status] = response
-	if d.status == "202" {
+	if d.status == "202" && d.id != "requestEmergencyCancellation" {
 		operation.Responses["200"] = response
 	}
 	var input *Schema

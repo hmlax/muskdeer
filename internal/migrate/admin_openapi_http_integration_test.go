@@ -166,6 +166,10 @@ func nativeOpenAPIQueries(ctx context.Context, t *testing.T, client *http.Client
 			path:     strategyPath + "/risk",
 			template: "/api/v1/strategies/{strategyID}/risk",
 		},
+		{
+			path:     strategyPath + "/emergency-cancellations",
+			template: "/api/v1/strategies/{strategyID}/emergency-cancellations",
+		},
 	} {
 		data := nativeOpenAPIRead(ctx, t, client, base, contract, item.path, item.template, 200)
 		if item.path == "/api/v1/strategies/"+strconv.FormatInt(gridID, 10) {
@@ -228,12 +232,12 @@ func nativeOpenAPIDetails(ctx context.Context, t *testing.T, client *http.Client
 func nativeOpenAPIAbsentResources(ctx context.Context, t *testing.T, client *http.Client, base string, contract *testopenapi.Contract, strategyID int64) {
 	t.Helper()
 	prefix := "/api/v1/strategies/" + strconv.FormatInt(strategyID, 10)
-	for _, suffix := range []string{"orders", "trades", "order-cancellations"} {
+	for _, suffix := range []string{"orders", "trades", "order-cancellations", "emergency-cancellations"} {
 		parameter := "orderID"
 		switch suffix {
 		case "trades":
 			parameter = "tradeID"
-		case "order-cancellations":
+		case "order-cancellations", "emergency-cancellations":
 			parameter = "cancellationID"
 		}
 		nativeOpenAPIRead(ctx, t, client, base, contract, prefix+"/"+suffix+"/9223372036854775807", "/api/v1/strategies/{strategyID}/"+suffix+"/{"+parameter+"}", 404)

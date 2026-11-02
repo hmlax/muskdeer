@@ -1259,3 +1259,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 红测/检查：缺typed消息/入口先编译失败；实际生成新增两个生成物，首lint拒绝copy遮蔽builtin后改名。最终完整make verify通过：Go1.27.3/doctor/contract/58生成/OpenAPI/Hertz/fmt/lint/govet0 issues/政策/22工具/全包单元/race/三命令构建，strategygrpc0.654/race1.914、strategywire/race1.891秒。高位身份/修订、Proto往返、16种嵌套/范围/计数损坏、历史结果与当前计数、分页/精确毫秒、期限/权限/私有故障通过。
 - 原生：最终13项实际PG/Nacos/NATS/独立业务进程/race29.950秒全过，自有资源清理。新实际管理RPC受理/同键、独立风险1→2、异内容/旧修订冲突、viewer/CSRF/非API证书拒绝及真实注销通过；Get/List不推进任务，LIVE/策略Proto及预留200保持，USDT799.8/冻结200.2，受理/风险各1、动作/取消请求0。只读进程不注册写服务，空范围不伪造成功；旧HTTP撤单、控制/查询管理、范围双进程接管及只读查询/历史失败后来成交全过，未变期限/断言。
 - 交付/后续：6ff7cd6b397902eb52ecf1818df44cdae4659abe已推送main并核对SHA，[CI41374888508](https://github.com/hmlax/muskdeer/actions/runs/41374888508)最近in_progress。文档/链接/逐文件审查及独立暂存检查后单独提交立即推送核对SHA，继续Hertz HTTP/确认页面及受限平仓。完整P07/A27和P08–P10/L1未完成，P11缺真实合同/环境；生产/真实资金/部署、14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未重复。旧Nacos等故障继续矩阵，本次通过不宣称根因已修复。
+
+
+## 2026-11-02：P07.65 范围紧急撤单Hertz HTTP与OpenAPI
+
+- 改动：DeerApi原连接上的POST范围受理、GET观测及1–100历史，明确scope/字符串风险修订/原因，固定Host/Origin/唯一会话/CSRF/键及2KiB，严格拒绝歧义；首次与完成后重放都202加Location，当前任务另GET。queries/controls分开，现有GET同路径禁写405、未配置404。58生成/36模型/schema34/四资产保持，无新资源/页面；OpenAPI31路径/34操作/71schema、312400字节，见[合同](ADMIN_EMERGENCY_CANCELLATIONS.md)、[P07.65](validation/P07-65.md)。
+- 红测/工程：缺装配字段先编译失败，首次OpenAPI比较发现生成物未刷新，实际生成后通过。完整make verify通过，Go1.27.3/doctor/contract/58生成及新OpenAPI/Hertz/fmt/lint/govet0 issues/政策/22工具/全包单元/race/三命令构建，HTTP/race4.135、OpenAPI/race1.836秒。高位字符串、11种歧义、独立证明、错误成功/固定故障、分页及202-only schema通过，最终生产二进制在原生前构建。
+- 原生诊断：首9项19.156秒两个新夹具失败，其余7过；误将无体204交给JSON检查器，以及仅查询登录误用controls=true的helper。改用原严格Logout204/恢复旧Cookie，并明确断言query=true/controls=false/operator，原期限和生产实现不变；最终fmt/lint0 issues。
+- 最终原生：相同9项实际PG/Nacos/NATS/独立API及业务进程/race22.771秒全过，自有资源清理。新闭环4.30秒完成真实受理/原键202、异内容/旧修订409、viewer/CSRF403、注销恢复旧Cookie401；已受理工作随后由实际worker执行，确认前USDT799.8/冻结200.2/预留200，竞态成交1再确认后存储成功、预留0、USDT899.9/冻结0。最终OMS/核心/子收据/动作/取消请求/成交各1，范围/风险各1且风险仍关闭；重登录后已完成原键仍同一受理202，历史/空页及旧viewer拒绝均过，实际载荷按下载合同验证。仅查询1.29秒保持空Task并拒POST405；旧单笔、范围接管、RPC、全26类GET合同及资金风险HTTP全过。
+- 交付/后续：dae621739cdc840eec8a2d50433c38b10b3a526e已推送main并核对SHA，[CI41375523473](https://github.com/hmlax/muskdeer/actions/runs/41375523473)最近in_progress。文档/链接/逐文件审查及独立暂存检查后单独提交立即推送核对SHA，继续范围浏览器确认/结果页面及独立受限平仓。P07/A27及P08–P10/L1未完成，P11缺真实合同/环境；生产/真实资金/部署、14浏览器/镜像/默认全量integration/持久开发/固定30分钟本地未重复，旧Nacos等故障留待矩阵。

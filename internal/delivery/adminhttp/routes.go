@@ -76,6 +76,8 @@ type Routes struct {
 	riskControls         strategyv1.StrategyRiskControlClient
 	cancellationQueries  strategyv1.StrategyOrderCancellationQueryClient
 	cancellationControls strategyv1.StrategyOrderCancellationControlClient
+	emergencyQueries     strategyv1.StrategyEmergencyCancellationQueryClient
+	emergencyControls    strategyv1.StrategyEmergencyCancellationControlClient
 	controls             strategyv1.StrategyControlClient
 	creation             strategyv1.StrategyCreationClient
 	publication          strategyv1.StrategyPublicationClient
@@ -185,6 +187,13 @@ func (r *Routes) Register(hertz *server.Hertz) {
 	}
 	if r.cancellationControls != nil {
 		hertz.POST("/api/v1/strategies/:strategyID/orders/:orderID/cancellations", r.requestOrderCancellation)
+	}
+	if r.emergencyQueries != nil {
+		hertz.GET("/api/v1/strategies/:strategyID/emergency-cancellations", r.listEmergencyCancellations)
+		hertz.GET("/api/v1/strategies/:strategyID/emergency-cancellations/:cancellationID", r.getEmergencyCancellation)
+	}
+	if r.emergencyControls != nil {
+		hertz.POST("/api/v1/strategies/:strategyID/emergency-cancellations", r.requestEmergencyCancellation)
 	}
 	hertz.NoRoute(func(_ context.Context, request *app.RequestContext) {
 		if strings.HasPrefix(string(request.Path()), "/api/") {
