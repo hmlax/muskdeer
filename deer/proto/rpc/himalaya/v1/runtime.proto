@@ -2,6 +2,7 @@ syntax = "proto3";
 package muskdeer.himalaya.v1;
 option go_package = "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1;himalayav1";
 import "deer/proto/common/v1/himalaya.proto";
+import "deer/proto/common/v1/synthetic.proto";
 
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 service Market {
@@ -10,6 +11,7 @@ service Market {
 service Execution {
   rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
+  rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
 }
 service Portfolio {
   rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);

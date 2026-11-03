@@ -70,6 +70,21 @@ message HimalayaRuntime {
   string quantity_fraction = 4;
   uint32 depth = 5;
   google.protobuf.Duration lease_ttl = 6;
+  SyntheticTape synthetic_tape = 7;
+}
+// SyntheticTape is an opt-in, finite market-data test run; it never places orders.
+message SyntheticTape {
+  bool enabled = 1;
+  bool development_only = 2;
+  string run_id = 3;
+  google.protobuf.Duration interval = 4;
+  uint32 maximum_events = 5;
+  repeated SyntheticTapeProfile profiles = 6;
+}
+message SyntheticTapeProfile {
+  string symbol = 1;
+  string quantity = 2;
+  string maximum_notional = 3;
 }
 message HimalayaProfile {
   int64 user_id = 1;

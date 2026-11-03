@@ -1,0 +1,24 @@
+syntax = "proto3";
+package muskdeer.common.v1;
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+import "deer/proto/common/v1/himalaya.proto";
+
+// SyntheticTapePlan identifies one slot of a finite development market-data run.
+// The same run/symbol/sequence never emits again, even if a reply is lost.
+message SyntheticTapePlan {
+  string run_id = 1;
+  string symbol = 2;
+  uint32 sequence = 3;
+  string side = 4;
+  string price = 5;
+  string quantity = 6;
+  HimalayaAuthority strategy = 7;
+  HimalayaBook book = 8;
+}
+message SyntheticTapeResult {
+  string state = 1;
+  string trade_id = 2;
+  string price = 3;
+  string quantity = 4;
+  uint64 timestamp_ms = 5;
+}

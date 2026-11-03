@@ -36,7 +36,7 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		}
 		funds[ScopeKey(profile.UserId, profile.FundId)], symbols[profile.Symbol] = true, true
 	}
-	return nil
+	return ValidateSyntheticConfig(h)
 }
 
 func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.HimalayaRuntime) error {

@@ -20,6 +20,9 @@ var definition string
 //go:embed sql/0002_live_execution.sql
 var liveDefinition string
 
+//go:embed sql/0003_synthetic_tape.sql
+var syntheticDefinition string
+
 // ErrHistory rejects missing, changed or future SDK schema history.
 var ErrHistory = errors.New("himalaya SDK schema history differs from this binary")
 
@@ -85,6 +88,6 @@ func validate(rows []*modelv1.HimalayaSchemaMigration, complete bool) error {
 	return nil
 }
 
-func definitions() []string { return []string{definition, liveDefinition} }
+func definitions() []string { return []string{definition, liveDefinition, syntheticDefinition} }
 
 func checksum(value string) string { return fmt.Sprintf("%x", sha256.Sum256([]byte(value))) }

@@ -424,6 +424,7 @@ type HimalayaRuntime struct {
 	QuantityFraction string                 `protobuf:"bytes,4,opt,name=quantity_fraction,json=quantityFraction,proto3" json:"quantity_fraction,omitempty"`
 	Depth            uint32                 `protobuf:"varint,5,opt,name=depth,proto3" json:"depth,omitempty"`
 	LeaseTtl         *durationpb.Duration   `protobuf:"bytes,6,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
+	SyntheticTape    *SyntheticTape         `protobuf:"bytes,7,opt,name=synthetic_tape,json=syntheticTape,proto3" json:"synthetic_tape,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -500,6 +501,158 @@ func (x *HimalayaRuntime) GetLeaseTtl() *durationpb.Duration {
 	return nil
 }
 
+func (x *HimalayaRuntime) GetSyntheticTape() *SyntheticTape {
+	if x != nil {
+		return x.SyntheticTape
+	}
+	return nil
+}
+
+// SyntheticTape is an opt-in, finite market-data test run; it never places orders.
+type SyntheticTape struct {
+	state           protoimpl.MessageState  `protogen:"open.v1"`
+	Enabled         bool                    `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	DevelopmentOnly bool                    `protobuf:"varint,2,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
+	RunId           string                  `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Interval        *durationpb.Duration    `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
+	MaximumEvents   uint32                  `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
+	Profiles        []*SyntheticTapeProfile `protobuf:"bytes,6,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SyntheticTape) Reset() {
+	*x = SyntheticTape{}
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyntheticTape) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyntheticTape) ProtoMessage() {}
+
+func (x *SyntheticTape) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyntheticTape.ProtoReflect.Descriptor instead.
+func (*SyntheticTape) Descriptor() ([]byte, []int) {
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *SyntheticTape) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *SyntheticTape) GetDevelopmentOnly() bool {
+	if x != nil {
+		return x.DevelopmentOnly
+	}
+	return false
+}
+
+func (x *SyntheticTape) GetRunId() string {
+	if x != nil {
+		return x.RunId
+	}
+	return ""
+}
+
+func (x *SyntheticTape) GetInterval() *durationpb.Duration {
+	if x != nil {
+		return x.Interval
+	}
+	return nil
+}
+
+func (x *SyntheticTape) GetMaximumEvents() uint32 {
+	if x != nil {
+		return x.MaximumEvents
+	}
+	return 0
+}
+
+func (x *SyntheticTape) GetProfiles() []*SyntheticTapeProfile {
+	if x != nil {
+		return x.Profiles
+	}
+	return nil
+}
+
+type SyntheticTapeProfile struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Symbol          string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Quantity        string                 `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	MaximumNotional string                 `protobuf:"bytes,3,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *SyntheticTapeProfile) Reset() {
+	*x = SyntheticTapeProfile{}
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyntheticTapeProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyntheticTapeProfile) ProtoMessage() {}
+
+func (x *SyntheticTapeProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyntheticTapeProfile.ProtoReflect.Descriptor instead.
+func (*SyntheticTapeProfile) Descriptor() ([]byte, []int) {
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *SyntheticTapeProfile) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *SyntheticTapeProfile) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *SyntheticTapeProfile) GetMaximumNotional() string {
+	if x != nil {
+		return x.MaximumNotional
+	}
+	return ""
+}
+
 type HimalayaProfile struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	UserId               int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -517,7 +670,7 @@ type HimalayaProfile struct {
 
 func (x *HimalayaProfile) Reset() {
 	*x = HimalayaProfile{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +682,7 @@ func (x *HimalayaProfile) String() string {
 func (*HimalayaProfile) ProtoMessage() {}
 
 func (x *HimalayaProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +695,7 @@ func (x *HimalayaProfile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HimalayaProfile.ProtoReflect.Descriptor instead.
 func (*HimalayaProfile) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{4}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *HimalayaProfile) GetUserId() int64 {
@@ -623,7 +776,7 @@ type StrategyRuntime struct {
 
 func (x *StrategyRuntime) Reset() {
 	*x = StrategyRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -635,7 +788,7 @@ func (x *StrategyRuntime) String() string {
 func (*StrategyRuntime) ProtoMessage() {}
 
 func (x *StrategyRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -648,7 +801,7 @@ func (x *StrategyRuntime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StrategyRuntime.ProtoReflect.Descriptor instead.
 func (*StrategyRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{5}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StrategyRuntime) GetAccountIds() []string {
@@ -690,7 +843,7 @@ type SimulatorScenarioRuntime struct {
 
 func (x *SimulatorScenarioRuntime) Reset() {
 	*x = SimulatorScenarioRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -702,7 +855,7 @@ func (x *SimulatorScenarioRuntime) String() string {
 func (*SimulatorScenarioRuntime) ProtoMessage() {}
 
 func (x *SimulatorScenarioRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -715,7 +868,7 @@ func (x *SimulatorScenarioRuntime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SimulatorScenarioRuntime.ProtoReflect.Descriptor instead.
 func (*SimulatorScenarioRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{6}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SimulatorScenarioRuntime) GetAccountIds() []string {
@@ -742,7 +895,7 @@ type RiskRuntime struct {
 
 func (x *RiskRuntime) Reset() {
 	*x = RiskRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -754,7 +907,7 @@ func (x *RiskRuntime) String() string {
 func (*RiskRuntime) ProtoMessage() {}
 
 func (x *RiskRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -767,7 +920,7 @@ func (x *RiskRuntime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RiskRuntime.ProtoReflect.Descriptor instead.
 func (*RiskRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{7}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RiskRuntime) GetAccountIds() []string {
@@ -788,7 +941,7 @@ type MarketRuntime struct {
 
 func (x *MarketRuntime) Reset() {
 	*x = MarketRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -800,7 +953,7 @@ func (x *MarketRuntime) String() string {
 func (*MarketRuntime) ProtoMessage() {}
 
 func (x *MarketRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -813,7 +966,7 @@ func (x *MarketRuntime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarketRuntime.ProtoReflect.Descriptor instead.
 func (*MarketRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{8}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *MarketRuntime) GetFeeds() []*MarketFeedRuntime {
@@ -845,7 +998,7 @@ type MarketFeedRuntime struct {
 
 func (x *MarketFeedRuntime) Reset() {
 	*x = MarketFeedRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -857,7 +1010,7 @@ func (x *MarketFeedRuntime) String() string {
 func (*MarketFeedRuntime) ProtoMessage() {}
 
 func (x *MarketFeedRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -870,7 +1023,7 @@ func (x *MarketFeedRuntime) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MarketFeedRuntime.ProtoReflect.Descriptor instead.
 func (*MarketFeedRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{9}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *MarketFeedRuntime) GetFeedId() int64 {
@@ -924,7 +1077,7 @@ type GRPCClients struct {
 
 func (x *GRPCClients) Reset() {
 	*x = GRPCClients{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -936,7 +1089,7 @@ func (x *GRPCClients) String() string {
 func (*GRPCClients) ProtoMessage() {}
 
 func (x *GRPCClients) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -949,7 +1102,7 @@ func (x *GRPCClients) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GRPCClients.ProtoReflect.Descriptor instead.
 func (*GRPCClients) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{10}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GRPCClients) GetMtls() *MutualTLS {
@@ -1013,7 +1166,7 @@ type MutualTLS struct {
 
 func (x *MutualTLS) Reset() {
 	*x = MutualTLS{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[11]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1025,7 +1178,7 @@ func (x *MutualTLS) String() string {
 func (*MutualTLS) ProtoMessage() {}
 
 func (x *MutualTLS) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[11]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1038,7 +1191,7 @@ func (x *MutualTLS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MutualTLS.ProtoReflect.Descriptor instead.
 func (*MutualTLS) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{11}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *MutualTLS) GetCertificateFile() string {
@@ -1073,7 +1226,7 @@ type GRPCServerSecurity struct {
 
 func (x *GRPCServerSecurity) Reset() {
 	*x = GRPCServerSecurity{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[12]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1085,7 +1238,7 @@ func (x *GRPCServerSecurity) String() string {
 func (*GRPCServerSecurity) ProtoMessage() {}
 
 func (x *GRPCServerSecurity) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[12]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1098,7 +1251,7 @@ func (x *GRPCServerSecurity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GRPCServerSecurity.ProtoReflect.Descriptor instead.
 func (*GRPCServerSecurity) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{12}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *GRPCServerSecurity) GetMtls() *MutualTLS {
@@ -1136,7 +1289,7 @@ type Nacos struct {
 
 func (x *Nacos) Reset() {
 	*x = Nacos{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[13]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1148,7 +1301,7 @@ func (x *Nacos) String() string {
 func (*Nacos) ProtoMessage() {}
 
 func (x *Nacos) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[13]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1161,7 +1314,7 @@ func (x *Nacos) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Nacos.ProtoReflect.Descriptor instead.
 func (*Nacos) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{13}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *Nacos) GetAddress() string {
@@ -1259,7 +1412,7 @@ type NacosRegistration struct {
 
 func (x *NacosRegistration) Reset() {
 	*x = NacosRegistration{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[14]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1271,7 +1424,7 @@ func (x *NacosRegistration) String() string {
 func (*NacosRegistration) ProtoMessage() {}
 
 func (x *NacosRegistration) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[14]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1284,7 +1437,7 @@ func (x *NacosRegistration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NacosRegistration.ProtoReflect.Descriptor instead.
 func (*NacosRegistration) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{14}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *NacosRegistration) GetAdvertiseIp() string {
@@ -1324,7 +1477,7 @@ type JetStream struct {
 
 func (x *JetStream) Reset() {
 	*x = JetStream{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[15]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1336,7 +1489,7 @@ func (x *JetStream) String() string {
 func (*JetStream) ProtoMessage() {}
 
 func (x *JetStream) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[15]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1349,7 +1502,7 @@ func (x *JetStream) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JetStream.ProtoReflect.Descriptor instead.
 func (*JetStream) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{15}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *JetStream) GetAddress() string {
@@ -1458,7 +1611,7 @@ type Redis struct {
 
 func (x *Redis) Reset() {
 	*x = Redis{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[16]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1470,7 +1623,7 @@ func (x *Redis) String() string {
 func (*Redis) ProtoMessage() {}
 
 func (x *Redis) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[16]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1483,7 +1636,7 @@ func (x *Redis) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Redis.ProtoReflect.Descriptor instead.
 func (*Redis) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{16}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *Redis) GetAddress() string {
@@ -1601,7 +1754,7 @@ type Postgres struct {
 
 func (x *Postgres) Reset() {
 	*x = Postgres{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[17]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1613,7 +1766,7 @@ func (x *Postgres) String() string {
 func (*Postgres) ProtoMessage() {}
 
 func (x *Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[17]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1626,7 +1779,7 @@ func (x *Postgres) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Postgres.ProtoReflect.Descriptor instead.
 func (*Postgres) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{17}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *Postgres) GetHost() string {
@@ -1739,7 +1892,7 @@ type Logging struct {
 
 func (x *Logging) Reset() {
 	*x = Logging{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[18]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1751,7 +1904,7 @@ func (x *Logging) String() string {
 func (*Logging) ProtoMessage() {}
 
 func (x *Logging) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[18]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1764,7 +1917,7 @@ func (x *Logging) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Logging.ProtoReflect.Descriptor instead.
 func (*Logging) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{18}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *Logging) GetLevel() string {
@@ -1802,7 +1955,7 @@ type LogFile struct {
 
 func (x *LogFile) Reset() {
 	*x = LogFile{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[19]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1814,7 +1967,7 @@ func (x *LogFile) String() string {
 func (*LogFile) ProtoMessage() {}
 
 func (x *LogFile) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[19]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1827,7 +1980,7 @@ func (x *LogFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogFile.ProtoReflect.Descriptor instead.
 func (*LogFile) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{19}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *LogFile) GetFilename() string {
@@ -1877,7 +2030,7 @@ type Listener struct {
 
 func (x *Listener) Reset() {
 	*x = Listener{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[20]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1889,7 +2042,7 @@ func (x *Listener) String() string {
 func (*Listener) ProtoMessage() {}
 
 func (x *Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[20]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1902,7 +2055,7 @@ func (x *Listener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Listener.ProtoReflect.Descriptor instead.
 func (*Listener) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{20}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *Listener) GetAddress() string {
@@ -1966,14 +2119,26 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\tsimulator\x18\t \x01(\v2,.muskdeer.config.v1.SimulatorScenarioRuntimeR\tsimulator\x12?\n" +
 	"\bstrategy\x18\n" +
 	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\x12?\n" +
-	"\bhimalaya\x18\v \x01(\v2#.muskdeer.config.v1.HimalayaRuntimeR\bhimalaya\"\x82\x02\n" +
+	"\bhimalaya\x18\v \x01(\v2#.muskdeer.config.v1.HimalayaRuntimeR\bhimalaya\"\xcc\x02\n" +
 	"\x0fHimalayaRuntime\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
 	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\x12?\n" +
 	"\bprofiles\x18\x03 \x03(\v2#.muskdeer.config.v1.HimalayaProfileR\bprofiles\x12+\n" +
 	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
 	"\x05depth\x18\x05 \x01(\rR\x05depth\x126\n" +
-	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\"\xca\x02\n" +
+	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12H\n" +
+	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTape\"\x8f\x02\n" +
+	"\rSyntheticTape\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12)\n" +
+	"\x10development_only\x18\x02 \x01(\bR\x0fdevelopmentOnly\x12\x15\n" +
+	"\x06run_id\x18\x03 \x01(\tR\x05runId\x125\n" +
+	"\binterval\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12%\n" +
+	"\x0emaximum_events\x18\x05 \x01(\rR\rmaximumEvents\x12D\n" +
+	"\bprofiles\x18\x06 \x03(\v2(.muskdeer.config.v1.SyntheticTapeProfileR\bprofiles\"u\n" +
+	"\x14SyntheticTapeProfile\x12\x16\n" +
+	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12\x1a\n" +
+	"\bquantity\x18\x02 \x01(\tR\bquantity\x12)\n" +
+	"\x10maximum_notional\x18\x03 \x01(\tR\x0fmaximumNotional\"\xca\x02\n" +
 	"\x0fHimalayaProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x17\n" +
 	"\afund_id\x18\x02 \x01(\x03R\x06fundId\x12\x16\n" +
@@ -2121,87 +2286,92 @@ func file_deer_proto_config_v1_service_proto_rawDescGZIP() []byte {
 	return file_deer_proto_config_v1_service_proto_rawDescData
 }
 
-var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_deer_proto_config_v1_service_proto_goTypes = []any{
 	(*ServiceConfig)(nil),            // 0: muskdeer.config.v1.ServiceConfig
 	(*AdminHTTP)(nil),                // 1: muskdeer.config.v1.AdminHTTP
 	(*BusinessRuntime)(nil),          // 2: muskdeer.config.v1.BusinessRuntime
 	(*HimalayaRuntime)(nil),          // 3: muskdeer.config.v1.HimalayaRuntime
-	(*HimalayaProfile)(nil),          // 4: muskdeer.config.v1.HimalayaProfile
-	(*StrategyRuntime)(nil),          // 5: muskdeer.config.v1.StrategyRuntime
-	(*SimulatorScenarioRuntime)(nil), // 6: muskdeer.config.v1.SimulatorScenarioRuntime
-	(*RiskRuntime)(nil),              // 7: muskdeer.config.v1.RiskRuntime
-	(*MarketRuntime)(nil),            // 8: muskdeer.config.v1.MarketRuntime
-	(*MarketFeedRuntime)(nil),        // 9: muskdeer.config.v1.MarketFeedRuntime
-	(*GRPCClients)(nil),              // 10: muskdeer.config.v1.GRPCClients
-	(*MutualTLS)(nil),                // 11: muskdeer.config.v1.MutualTLS
-	(*GRPCServerSecurity)(nil),       // 12: muskdeer.config.v1.GRPCServerSecurity
-	(*Nacos)(nil),                    // 13: muskdeer.config.v1.Nacos
-	(*NacosRegistration)(nil),        // 14: muskdeer.config.v1.NacosRegistration
-	(*JetStream)(nil),                // 15: muskdeer.config.v1.JetStream
-	(*Redis)(nil),                    // 16: muskdeer.config.v1.Redis
-	(*Postgres)(nil),                 // 17: muskdeer.config.v1.Postgres
-	(*Logging)(nil),                  // 18: muskdeer.config.v1.Logging
-	(*LogFile)(nil),                  // 19: muskdeer.config.v1.LogFile
-	(*Listener)(nil),                 // 20: muskdeer.config.v1.Listener
-	(*durationpb.Duration)(nil),      // 21: google.protobuf.Duration
+	(*SyntheticTape)(nil),            // 4: muskdeer.config.v1.SyntheticTape
+	(*SyntheticTapeProfile)(nil),     // 5: muskdeer.config.v1.SyntheticTapeProfile
+	(*HimalayaProfile)(nil),          // 6: muskdeer.config.v1.HimalayaProfile
+	(*StrategyRuntime)(nil),          // 7: muskdeer.config.v1.StrategyRuntime
+	(*SimulatorScenarioRuntime)(nil), // 8: muskdeer.config.v1.SimulatorScenarioRuntime
+	(*RiskRuntime)(nil),              // 9: muskdeer.config.v1.RiskRuntime
+	(*MarketRuntime)(nil),            // 10: muskdeer.config.v1.MarketRuntime
+	(*MarketFeedRuntime)(nil),        // 11: muskdeer.config.v1.MarketFeedRuntime
+	(*GRPCClients)(nil),              // 12: muskdeer.config.v1.GRPCClients
+	(*MutualTLS)(nil),                // 13: muskdeer.config.v1.MutualTLS
+	(*GRPCServerSecurity)(nil),       // 14: muskdeer.config.v1.GRPCServerSecurity
+	(*Nacos)(nil),                    // 15: muskdeer.config.v1.Nacos
+	(*NacosRegistration)(nil),        // 16: muskdeer.config.v1.NacosRegistration
+	(*JetStream)(nil),                // 17: muskdeer.config.v1.JetStream
+	(*Redis)(nil),                    // 18: muskdeer.config.v1.Redis
+	(*Postgres)(nil),                 // 19: muskdeer.config.v1.Postgres
+	(*Logging)(nil),                  // 20: muskdeer.config.v1.Logging
+	(*LogFile)(nil),                  // 21: muskdeer.config.v1.LogFile
+	(*Listener)(nil),                 // 22: muskdeer.config.v1.Listener
+	(*durationpb.Duration)(nil),      // 23: google.protobuf.Duration
 }
 var file_deer_proto_config_v1_service_proto_depIdxs = []int32{
-	21, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	21, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
-	20, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
-	20, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
-	18, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
-	17, // 5: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
-	16, // 6: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
-	15, // 7: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
-	13, // 8: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
-	12, // 9: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
-	10, // 10: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
-	20, // 11: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
+	23, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	23, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	22, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
+	22, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
+	20, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
+	19, // 5: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
+	18, // 6: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
+	17, // 7: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
+	15, // 8: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
+	14, // 9: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
+	12, // 10: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
+	22, // 11: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
 	2,  // 12: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
 	1,  // 13: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	21, // 14: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
-	21, // 15: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
-	8,  // 16: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
-	7,  // 17: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
-	21, // 18: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
-	6,  // 19: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
-	5,  // 20: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
+	23, // 14: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
+	23, // 15: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
+	10, // 16: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
+	9,  // 17: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
+	23, // 18: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
+	8,  // 19: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
+	7,  // 20: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
 	3,  // 21: muskdeer.config.v1.BusinessRuntime.himalaya:type_name -> muskdeer.config.v1.HimalayaRuntime
-	4,  // 22: muskdeer.config.v1.HimalayaRuntime.profiles:type_name -> muskdeer.config.v1.HimalayaProfile
-	21, // 23: muskdeer.config.v1.HimalayaRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	21, // 24: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	21, // 25: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
-	9,  // 26: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
-	21, // 27: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	21, // 28: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
-	11, // 29: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	21, // 30: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
-	21, // 31: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
-	11, // 32: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	21, // 33: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
-	21, // 34: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
-	14, // 35: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
-	21, // 36: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
-	21, // 37: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
-	21, // 38: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
-	21, // 39: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
-	21, // 40: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
-	21, // 41: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
-	21, // 42: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
-	21, // 43: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
-	21, // 44: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
-	21, // 45: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
-	21, // 46: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
-	21, // 47: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
-	19, // 48: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	21, // 49: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	50, // [50:50] is the sub-list for method output_type
-	50, // [50:50] is the sub-list for method input_type
-	50, // [50:50] is the sub-list for extension type_name
-	50, // [50:50] is the sub-list for extension extendee
-	0,  // [0:50] is the sub-list for field type_name
+	6,  // 22: muskdeer.config.v1.HimalayaRuntime.profiles:type_name -> muskdeer.config.v1.HimalayaProfile
+	23, // 23: muskdeer.config.v1.HimalayaRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	4,  // 24: muskdeer.config.v1.HimalayaRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
+	23, // 25: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
+	5,  // 26: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
+	23, // 27: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	23, // 28: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
+	11, // 29: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
+	23, // 30: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	23, // 31: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
+	13, // 32: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	23, // 33: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
+	23, // 34: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
+	13, // 35: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	23, // 36: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
+	23, // 37: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
+	16, // 38: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	23, // 39: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
+	23, // 40: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
+	23, // 41: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
+	23, // 42: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
+	23, // 43: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
+	23, // 44: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
+	23, // 45: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
+	23, // 46: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
+	23, // 47: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
+	23, // 48: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
+	23, // 49: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
+	23, // 50: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
+	21, // 51: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	23, // 52: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	53, // [53:53] is the sub-list for method output_type
+	53, // [53:53] is the sub-list for method input_type
+	53, // [53:53] is the sub-list for extension type_name
+	53, // [53:53] is the sub-list for extension extendee
+	0,  // [0:53] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_config_v1_service_proto_init() }
@@ -2209,16 +2379,16 @@ func file_deer_proto_config_v1_service_proto_init() {
 	if File_deer_proto_config_v1_service_proto != nil {
 		return
 	}
-	file_deer_proto_config_v1_service_proto_msgTypes[13].OneofWrappers = []any{}
 	file_deer_proto_config_v1_service_proto_msgTypes[15].OneofWrappers = []any{}
-	file_deer_proto_config_v1_service_proto_msgTypes[16].OneofWrappers = []any{}
+	file_deer_proto_config_v1_service_proto_msgTypes[17].OneofWrappers = []any{}
+	file_deer_proto_config_v1_service_proto_msgTypes[18].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_config_v1_service_proto_rawDesc), len(file_deer_proto_config_v1_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

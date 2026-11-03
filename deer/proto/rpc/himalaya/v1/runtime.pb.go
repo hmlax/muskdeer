@@ -214,7 +214,7 @@ var File_deer_proto_rpc_himalaya_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"(deer/proto/rpc/himalaya/v1/runtime.proto\x12\x14muskdeer.himalaya.v1\x1a#deer/proto/common/v1/himalaya.proto\"%\n" +
+	"(deer/proto/rpc/himalaya/v1/runtime.proto\x12\x14muskdeer.himalaya.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a$deer/proto/common/v1/synthetic.proto\"%\n" +
 	"\vBookRequest\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\"\x9a\x02\n" +
 	"\tQuotePlan\x127\n" +
@@ -230,10 +230,11 @@ const file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDesc = "" +
 	"\bretained\x18\x03 \x01(\rR\bretained\x12\x14\n" +
 	"\x05state\x18\x04 \x01(\tR\x05state2X\n" +
 	"\x06Market\x12N\n" +
-	"\aGetBook\x12!.muskdeer.himalaya.v1.BookRequest\x1a .muskdeer.common.v1.HimalayaBook2\xb4\x01\n" +
+	"\aGetBook\x12!.muskdeer.himalaya.v1.BookRequest\x1a .muskdeer.common.v1.HimalayaBook2\x98\x02\n" +
 	"\tExecution\x12V\n" +
 	"\vGetSnapshot\x12!.muskdeer.common.v1.HimalayaScope\x1a$.muskdeer.common.v1.HimalayaSnapshot\x12O\n" +
-	"\tReconcile\x12\x1f.muskdeer.himalaya.v1.QuotePlan\x1a!.muskdeer.himalaya.v1.QuoteResult2c\n" +
+	"\tReconcile\x12\x1f.muskdeer.himalaya.v1.QuotePlan\x1a!.muskdeer.himalaya.v1.QuoteResult\x12b\n" +
+	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResult2c\n" +
 	"\tPortfolio\x12V\n" +
 	"\vGetSnapshot\x12!.muskdeer.common.v1.HimalayaScope\x1a$.muskdeer.common.v1.HimalayaSnapshotBAZ?github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1;himalayav1b\x06proto3"
 
@@ -251,14 +252,16 @@ func file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP() []byte {
 
 var file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_deer_proto_rpc_himalaya_v1_runtime_proto_goTypes = []any{
-	(*BookRequest)(nil),          // 0: muskdeer.himalaya.v1.BookRequest
-	(*QuotePlan)(nil),            // 1: muskdeer.himalaya.v1.QuotePlan
-	(*QuoteResult)(nil),          // 2: muskdeer.himalaya.v1.QuoteResult
-	(*v1.HimalayaScope)(nil),     // 3: muskdeer.common.v1.HimalayaScope
-	(*v1.HimalayaBook)(nil),      // 4: muskdeer.common.v1.HimalayaBook
-	(*v1.HimalayaAuthority)(nil), // 5: muskdeer.common.v1.HimalayaAuthority
-	(*v1.HimalayaTarget)(nil),    // 6: muskdeer.common.v1.HimalayaTarget
-	(*v1.HimalayaSnapshot)(nil),  // 7: muskdeer.common.v1.HimalayaSnapshot
+	(*BookRequest)(nil),            // 0: muskdeer.himalaya.v1.BookRequest
+	(*QuotePlan)(nil),              // 1: muskdeer.himalaya.v1.QuotePlan
+	(*QuoteResult)(nil),            // 2: muskdeer.himalaya.v1.QuoteResult
+	(*v1.HimalayaScope)(nil),       // 3: muskdeer.common.v1.HimalayaScope
+	(*v1.HimalayaBook)(nil),        // 4: muskdeer.common.v1.HimalayaBook
+	(*v1.HimalayaAuthority)(nil),   // 5: muskdeer.common.v1.HimalayaAuthority
+	(*v1.HimalayaTarget)(nil),      // 6: muskdeer.common.v1.HimalayaTarget
+	(*v1.SyntheticTapePlan)(nil),   // 7: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.HimalayaSnapshot)(nil),    // 8: muskdeer.common.v1.HimalayaSnapshot
+	(*v1.SyntheticTapeResult)(nil), // 9: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_rpc_himalaya_v1_runtime_proto_depIdxs = []int32{
 	3, // 0: muskdeer.himalaya.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.HimalayaScope
@@ -268,13 +271,15 @@ var file_deer_proto_rpc_himalaya_v1_runtime_proto_depIdxs = []int32{
 	0, // 4: muskdeer.himalaya.v1.Market.GetBook:input_type -> muskdeer.himalaya.v1.BookRequest
 	3, // 5: muskdeer.himalaya.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
 	1, // 6: muskdeer.himalaya.v1.Execution.Reconcile:input_type -> muskdeer.himalaya.v1.QuotePlan
-	3, // 7: muskdeer.himalaya.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
-	4, // 8: muskdeer.himalaya.v1.Market.GetBook:output_type -> muskdeer.common.v1.HimalayaBook
-	7, // 9: muskdeer.himalaya.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
-	2, // 10: muskdeer.himalaya.v1.Execution.Reconcile:output_type -> muskdeer.himalaya.v1.QuoteResult
-	7, // 11: muskdeer.himalaya.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
+	7, // 7: muskdeer.himalaya.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	3, // 8: muskdeer.himalaya.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
+	4, // 9: muskdeer.himalaya.v1.Market.GetBook:output_type -> muskdeer.common.v1.HimalayaBook
+	8, // 10: muskdeer.himalaya.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
+	2, // 11: muskdeer.himalaya.v1.Execution.Reconcile:output_type -> muskdeer.himalaya.v1.QuoteResult
+	9, // 12: muskdeer.himalaya.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	8, // 13: muskdeer.himalaya.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
+	9, // [9:14] is the sub-list for method output_type
+	4, // [4:9] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
