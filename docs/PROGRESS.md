@@ -1416,3 +1416,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - Docker 同源码 build 阶段完成四核心及三维护命令编译，runtime-market 导出通过，核验运行文件与 lumberjack LICENSE 原始哈希；没有替换当前运行容器。Buildx 初次写 ~/.docker 活动记录被沙箱拒绝，按工具审批重试后构建通过。Docker 验证使用 .cache/thirdparty-move/source 排除原有平仓修改，产物在 .cache/thirdparty-move/runtime。
 - 修改文档链接及 git diff --check 通过。完整全包单元/race、基础设施/交易集成、Compose 重建、浏览器及生产本步未运行；本步仅改路径，没有业务算法、协议或数据迁移。
 - 工作分支 codex/two-apps，基线 784cc3c；本步检查通过后独立提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。
+
+## 2026-11-03：通过 Docker Compose 重建并启动最新核心服务
+
+- 按用户明确要求，从已提交的 9f31d64 导出 schema 37 源码至 .cache/compose-restart/source，包含 Wire/Deer With 注入及 deer/third_party 迁移；原有未提交平仓修改保持，未混入镜像。prepare --source 更新持久构建来源，复用已有配置、证书及逻辑资源。
+- Docker Compose build market strategy execution portfolio 通过；up -d --force-recreate --no-build --wait --wait-timeout 90 重建四个应用容器并全部 healthy。核对新旧容器及镜像 ID 均不同、新容器对应最终 infra-local 标签、启动重启计数均为 0，日志为正确服务身份的 JSON 且无 ERROR。容器仍为无参数、单证书目录只读挂载。
+- 实际 mTLS 验证四份 Nacos 配置及四个独立健康注册、Binance/OKX 两路未过期 HEALTHY 回放及精确 99.99/100.01、execution 空订单查询全部通过。基础 PostgreSQL/Redis/Nacos/NATS 的容器 ID/启动时间以及四份 Nacos 配置哈希与启动前一致，未操作共享基础设施生命周期。
+- 构建版本与前后状态/RPC 证据保存于忽略的 .cache/compose-restart；未执行迁移、重新注资、启用账户、生产部署或外部实盘。此步只进行实际构建/启动/运行探针及文档检查，未重复上一轮已通过的 Go 单元/race 和交易集成。
+- 构建源码提交 9f31d64 已在 origin/codex/two-apps；本步运行记录经文档链接和 git diff --check 验证后单独提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。

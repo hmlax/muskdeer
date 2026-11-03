@@ -54,4 +54,4 @@ make compose-down
 make core-test
 ```
 
-本工作区保留尚未验收的 schema 38 平仓修改。本次镜像使用已提交代码加 Nacos 配置改动的 schema 37 源码，保存在忽略的 `.cache/nacos-config/source`；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。原管理容器已移除，其历史数据保留。
+本工作区保留尚未验收的 schema 38 平仓修改。2026-11-03 按用户要求重新构建并通过 Compose 重建四个应用容器，当前运行源码为已提交的 `9f31d64`（含 Wire/Deer 注入及 deer/third_party 迁移），使用 schema 37，导出在忽略的 `.cache/compose-restart/source`；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。四容器 healthy，实际 mTLS 双源回放行情及 execution 查询通过；启动证据见 `.cache/compose-restart/{before,after,live-probe}.json`。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。原管理容器已移除，其历史数据保留。
