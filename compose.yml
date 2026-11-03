@@ -92,6 +92,7 @@ services:
       target: runtime-execution
     environment:
       NACOS_DATA_ID: execution.json
+      MUSKDEER_HIMALAYA_TOKEN: "${MUSKDEER_HIMALAYA_TOKEN:-}"
     volumes:
       - type: bind
         source: "${MUSKDEER_RUNTIME_DIR}/config/execution/certs"

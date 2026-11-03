@@ -5,6 +5,7 @@ import (
 	"context"
 	"slices"
 
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -14,26 +15,45 @@ import (
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
+	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/execution/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/execution/outbox"
+	nativeportfolio "github.com/hmlax/muskdeer/portfolio/native"
 	"github.com/hmlax/muskdeer/portfolio/usecase"
 )
 
 const workerPortfolioFills = "portfolio.fills"
 
 // Portfolio owns the fill-consumer work plan and no management RPCs.
-type Portfolio struct{ workers []deer.Worker }
+type Portfolio struct {
+	workers []deer.Worker
+	native  *nativeportfolio.Runtime
+}
 
 // NewPortfolio assembles the projection service without starting tasks.
 func NewPortfolio(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Portfolio, error) {
 	if cfg.GetName() != "portfolio" {
 		return nil, runtimeconfig.ErrInvalidConfig
 	}
-	db, _, err := runtimeconfig.Data(ctx, cfg, owner)
+	db, incarnation, err := runtimeconfig.Data(ctx, cfg, owner)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Business.ExecutionVenue == native.Venue {
+		factory, err := owner.GRPCClients()
+		if err != nil {
+			return nil, err
+		}
+		runtime, err := nativeportfolio.NewRuntime(db, incarnation, cfg.Business, factory, owner.Logger())
+		if err != nil {
+			return nil, err
+		}
+		return &Portfolio{
+			native:  runtime,
+			workers: runtime.Workers(),
+		}, nil
 	}
 	events, err := owner.JetStream()
 	if err != nil {
@@ -44,6 +64,14 @@ func NewPortfolio(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.
 
 // Workers returns a private portfolio work plan.
 func (s *Portfolio) Workers() []deer.Worker { return slices.Clone(s.workers) }
+
+// RegisterGRPC exposes only native observations when explicitly configured.
+func (s *Portfolio) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	if s.native != nil {
+		s.native.RegisterGRPC(registrar)
+	}
+	return nil
+}
 
 // Assemble borrows validated dependencies and constructs work without starting tasks.
 func Assemble(ctx context.Context, db *gorm.DB, owner *deer.Deer, events *jetstream.Client, cfg *configv1.BusinessRuntime) (*Portfolio, error) {

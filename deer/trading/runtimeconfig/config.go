@@ -10,6 +10,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
 // MessageInvalidConfig is a fixed startup failure without config contents.
@@ -28,10 +29,15 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 		return nil
 	}
 	if cfg.Postgres == nil || cfg.Grpc == nil || cfg.GrpcSecurity.GetMtls() == nil || cfg.Nacos.GetRegistration() == nil ||
-		cfg.Business.ExecutionVenue != domain.ExecutionVenueSimulator ||
 		!boundedDuration(cfg.Business.PollInterval, 10*time.Millisecond, 5*time.Second) ||
 		!boundedDuration(cfg.Business.OperationTimeout, 100*time.Millisecond, 5*time.Second) ||
 		cfg.Business.OperationTimeout.AsDuration() > cfg.ShutdownTimeout.AsDuration() {
+		return ErrInvalidConfig
+	}
+	if cfg.Business.ExecutionVenue == native.Venue {
+		return native.ValidateConfig(cfg)
+	}
+	if cfg.Business.ExecutionVenue != domain.ExecutionVenueSimulator || cfg.Business.Himalaya != nil {
 		return ErrInvalidConfig
 	}
 	return validateBusinessRole(cfg)

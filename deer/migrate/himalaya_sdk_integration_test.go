@@ -270,7 +270,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	if _, err := Apply(ctx, db); err != nil {
-		t.Fatal(err)
+		t.Fatalf("core migration fixture: %v; cause: %v", err, errors.Unwrap(err))
 	}
 	if err := himalayamigrate.Apply(ctx, db); err != nil {
 		t.Fatal(err)

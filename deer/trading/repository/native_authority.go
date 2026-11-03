@@ -62,3 +62,18 @@ func validNativeAuthority(ctx context.Context, authority *commonv1.HimalayaAutho
 	return ctx != nil && ctx.Err() == nil && authority.GetEpoch() > 0 && authority.GetAccountId() != "" &&
 		len(authority.AccountId) <= 64 && ownerid.Valid(authority.GetOwnerId())
 }
+
+// NativeExecutionInstance resolves exactly the retained fund execution owner.
+func NativeExecutionInstance(ctx context.Context, db *gorm.DB, account string) (string, error) {
+	var row modelv1.ExecutionShardLease
+	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+		Where("account_id = ? AND delete_at IS NULL AND epoch > 0", account).
+		Where("expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint").First(&row).Error; err != nil {
+		return "", err
+	}
+	instance, valid := ownerid.Instance(row.OwnerId)
+	if !valid {
+		return "", domain.ErrLeaseLost
+	}
+	return instance, nil
+}

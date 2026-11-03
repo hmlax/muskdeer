@@ -509,6 +509,8 @@ type HimalayaProfile struct {
 	MaximumOrderNotional string                 `protobuf:"bytes,5,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty"`
 	Leverage             uint32                 `protobuf:"varint,6,opt,name=leverage,proto3" json:"leverage,omitempty"`
 	MarketDataSource     string                 `protobuf:"bytes,7,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty"`
+	PriceTick            string                 `protobuf:"bytes,8,opt,name=price_tick,json=priceTick,proto3" json:"price_tick,omitempty"`
+	QuantityStep         string                 `protobuf:"bytes,9,opt,name=quantity_step,json=quantityStep,proto3" json:"quantity_step,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -588,6 +590,20 @@ func (x *HimalayaProfile) GetLeverage() uint32 {
 func (x *HimalayaProfile) GetMarketDataSource() string {
 	if x != nil {
 		return x.MarketDataSource
+	}
+	return ""
+}
+
+func (x *HimalayaProfile) GetPriceTick() string {
+	if x != nil {
+		return x.PriceTick
+	}
+	return ""
+}
+
+func (x *HimalayaProfile) GetQuantityStep() string {
+	if x != nil {
+		return x.QuantityStep
 	}
 	return ""
 }
@@ -1957,7 +1973,7 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\bprofiles\x18\x03 \x03(\v2#.muskdeer.config.v1.HimalayaProfileR\bprofiles\x12+\n" +
 	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
 	"\x05depth\x18\x05 \x01(\rR\x05depth\x126\n" +
-	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\"\x86\x02\n" +
+	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\"\xca\x02\n" +
 	"\x0fHimalayaProfile\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x17\n" +
 	"\afund_id\x18\x02 \x01(\x03R\x06fundId\x12\x16\n" +
@@ -1965,7 +1981,10 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\x10maximum_notional\x18\x04 \x01(\tR\x0fmaximumNotional\x124\n" +
 	"\x16maximum_order_notional\x18\x05 \x01(\tR\x14maximumOrderNotional\x12\x1a\n" +
 	"\bleverage\x18\x06 \x01(\rR\bleverage\x12,\n" +
-	"\x12market_data_source\x18\a \x01(\tR\x10marketDataSource\"\xc2\x01\n" +
+	"\x12market_data_source\x18\a \x01(\tR\x10marketDataSource\x12\x1d\n" +
+	"\n" +
+	"price_tick\x18\b \x01(\tR\tpriceTick\x12#\n" +
+	"\rquantity_step\x18\t \x01(\tR\fquantityStep\"\xc2\x01\n" +
 	"\x0fStrategyRuntime\x12\x1f\n" +
 	"\vaccount_ids\x18\x01 \x03(\tR\n" +
 	"accountIds\x126\n" +

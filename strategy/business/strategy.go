@@ -14,10 +14,12 @@ import (
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/execution/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/market/delivery/marketgrpc"
+	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 	"github.com/hmlax/muskdeer/strategy/usecase"
 )
 
@@ -34,6 +36,17 @@ func NewStrategy(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.D
 	db, incarnation, err := runtimeconfig.Data(ctx, cfg, owner)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Business.ExecutionVenue == native.Venue {
+		factory, err := owner.GRPCClients()
+		if err != nil {
+			return nil, err
+		}
+		workers, err := nativestrategy.Workers(db, incarnation, cfg.Business, factory, owner.Logger())
+		if err != nil {
+			return nil, err
+		}
+		return &Strategy{workers: workers}, nil
 	}
 	workers, err := AssembleWorkers(ctx, db, owner, incarnation, cfg.Business)
 	if err != nil {

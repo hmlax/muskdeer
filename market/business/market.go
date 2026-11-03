@@ -14,10 +14,12 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	marketv1 "github.com/hmlax/muskdeer/deer/proto/rpc/market/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/market/delivery/marketgrpc"
 	"github.com/hmlax/muskdeer/market/marketworker"
+	"github.com/hmlax/muskdeer/market/usdm"
 )
 
 const marketWorkerPrefix = "market.feed."
@@ -26,6 +28,7 @@ const marketWorkerPrefix = "market.feed."
 type Market struct {
 	handler *marketgrpc.Server
 	workers []deer.Worker
+	native  *usdm.Runtime
 }
 
 // NewMarket assembles the market service without starting tasks.
@@ -37,6 +40,16 @@ func NewMarket(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Dee
 	if err != nil {
 		return nil, err
 	}
+	if cfg.Business.ExecutionVenue == native.Venue {
+		runtime, err := usdm.NewRuntime(db, incarnation, cfg.Business, owner.Logger())
+		if err != nil {
+			return nil, err
+		}
+		return &Market{
+			native:  runtime,
+			workers: runtime.Workers(),
+		}, nil
+	}
 	return Assemble(ctx, db, incarnation, cfg.Business)
 }
 
@@ -45,6 +58,10 @@ func (s *Market) Workers() []deer.Worker { return slices.Clone(s.workers) }
 
 // RegisterGRPC registers only the market-data contract.
 func (s *Market) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	if s.native != nil {
+		s.native.RegisterGRPC(registrar)
+		return nil
+	}
 	marketv1.RegisterMarketDataServer(registrar, s.handler)
 	return nil
 }

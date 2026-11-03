@@ -13,9 +13,11 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
+	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/execution/delivery/executiongrpc"
+	"github.com/hmlax/muskdeer/execution/himalaya"
 	"github.com/hmlax/muskdeer/execution/outbox"
 	"github.com/hmlax/muskdeer/execution/usecase"
 )
@@ -26,6 +28,7 @@ const workerExecutionOutbox = "execution.outbox"
 type Execution struct {
 	handler *executiongrpc.Server
 	workers []deer.Worker
+	native  *himalaya.Runtime
 }
 
 // NewExecution assembles the execution service without starting tasks.
@@ -36,6 +39,20 @@ func NewExecution(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.
 	db, incarnation, err := runtimeconfig.Data(ctx, cfg, owner)
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Business.ExecutionVenue == native.Venue {
+		factory, err := owner.GRPCClients()
+		if err != nil {
+			return nil, err
+		}
+		runtime, err := himalaya.NewRuntime(db, incarnation, cfg.Business, factory, owner.Logger())
+		if err != nil {
+			return nil, err
+		}
+		return &Execution{
+			native:  runtime,
+			workers: runtime.Workers(),
+		}, nil
 	}
 	events, err := owner.JetStream()
 	if err != nil {
@@ -49,6 +66,10 @@ func (s *Execution) Workers() []deer.Worker { return slices.Clone(s.workers) }
 
 // RegisterGRPC registers only the execution contract.
 func (s *Execution) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	if s.native != nil {
+		s.native.RegisterGRPC(registrar)
+		return nil
+	}
 	executionv1.RegisterExecutionServer(registrar, s.handler)
 	return nil
 }

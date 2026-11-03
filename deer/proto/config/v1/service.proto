@@ -79,6 +79,8 @@ message HimalayaProfile {
   string maximum_order_notional = 5;
   uint32 leverage = 6;
   string market_data_source = 7;
+  string price_tick = 8;
+  string quantity_step = 9;
 }
 
 // StrategyRuntime discovers existing instances only in explicitly owned accounts.

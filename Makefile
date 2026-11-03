@@ -60,6 +60,7 @@ build:
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
 	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
+	python3 scripts/go.py build -o .cache/bin/himalayainit ./cmd/himalayainit
 	@for name in market strategy execution portfolio; do \
 		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
 	done
