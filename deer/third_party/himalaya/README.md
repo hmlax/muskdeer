@@ -12,3 +12,11 @@ CARGO_TARGET_DIR=.cache/himalaya/native-target rustup run 1.94.0 cargo test \
 ```
 
 工具链与序列化依赖均锁定，Rust 参数遵循 Himalaya 的 1.94.0。原生服务集成后还需运行 Himalaya 规定的完整 workspace/all-features 检查。网关合同在 [gateway.proto](../../proto/rpc/himalaya/v1/gateway.proto)，所有价格、数量、资金及费率使用十进制字符串。
+
+`matching/` 保存本轮新增的原生撮合 RPC、实际订单簿回归测试及增量补丁。补丁仅包含本轮修改，不包含 Himalaya 原有未提交业务。`maker_matching.proto` 中的既有撮合消息沿用原系统 tick 合同，面向 Muskdeer 的网关仍只接收十进制字符串。
+
+`matching/preimages.json` 记录补丁基线各文件的 SHA-256。复用补丁前必须逐项验证前像；`integration.patch` 为零上下文增量，核验后在原生 matching-engine 目录使用 `git apply --check --unidiff-zero`，不得向变化的源码强行应用。新增模块与两份 Proto 分别复制到原生 `src`/`proto`；根 `gateway.proto` 对应原生的 `maker_gateway.proto`。当前工作区已应用，无需再应用。
+
+原生绑定将两级 proof 和准入时的期限带入原有 FIFO，在持有每交易对执行锁后复核所有权，并持有 guard 直到订单簿效果与 outcome 写入结束。`MatchingAuthority` 使用原生 ServiceAuth；默认关闭。显式 `HIMALAYA_MAKER_DEVELOPMENT_TEST_FUNDS=true` 且有持久化 outbox 目录才启用，只接受测试账户 10001/BTCUSDT 和 10002/ETHUSDT。检查点失败后状态探针拒绝声明可用。
+
+开发源码已绑定并通过原生完整回归，运行容器尚未升级。仍需订单服务的持久命令日志、旧入口接管保护和失联撤单；单独启用此撮合服务不能视为完整 Gateway，也不能据此启动报价。

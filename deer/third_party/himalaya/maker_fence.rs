@@ -172,7 +172,7 @@ impl Registry {
     }
 
     pub fn durable(&self) -> bool {
-        self.path.is_some()
+        self.path.is_some() && self.state.lock().is_ok_and(|state| !state.failed)
     }
 
     pub fn claim(
