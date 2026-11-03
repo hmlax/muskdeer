@@ -1,14 +1,8 @@
 # 现有交易所接入合同与缺失资料
 
-状态：2026-11-03 已取得 Himalaya 本地开发仓库/Proto 和可用只读接口。用户确认以测试资金接入其 ONE_WAY 线性永续撮合，先补齐两边交易合同，再由 Muskdeer 接管 BTC/ETH；当前运行的 Muskdeer 仍是现货模拟器，不能用改交易对配置冒充真实接通。以下是验收要求，不代表原生网关已经具备全部能力。
+2026-11-03 最新边界：Himalaya 已提供 Go SDK（模块 `gitlab.com/himalaya/lukla-go`，本地目录 `Himalaya/sdk/go/lukla-go`）。本轮通过 SDK 消费现有接口，仅修改 Muskdeer；不改撮合、订单服务、目标协议或 SDK。此前新增的原生网关/协议/迁移路线已撤销。
 
-## Himalaya 开发接入
-
-旧启动脚本的 BTCUSDT/ETHUSDT 分配独立测试用户，按每侧 20 档、源数量 0.1、200ms、最高 10 倍杠杆启动。它使用 USDM 永续行情和保证金账户，与既有 Go 现货余额/结算模型不同。已只读确认交易对网格、正的测试余额、旧挂单和仓位；不在代码/文档中保存认证凭据或账户资金明细。
-
-原生 Place/OpenPosition 的 client_id 当前仅有关联存储证据，未确认同键去重；每次原生提交分配新 order_id。请求没有客户端策略/执行所有权字段，现有撮合恢复/撤单 fence 不能冒充生产者 epoch。因此需新增独立开发 Gateway 合同，并在最终撮合执行处校验账户执行者和策略控制者两个作用域。稳定 client_id 必须关联唯一原生命令；未知结果先查，不能仅因列表暂时不存在而重发或释放风险。
-
-新 typed 合同见 [Himalaya Gateway](../deer/proto/rpc/himalaya/v1/gateway.proto)。能力握手必须确认开发测试资金、持久幂等、最终 fencing、按客户端键查询、post-only、ONE_WAY 永续与失联撤单；缺失任一项则 Go 客户端拒绝暴露交易能力。协议和独立组件验证不等于真实服务已实现或已接管。
+已核验 SDK 提供 Place、CancelOrder、GetAccountForFund、ListPositionsForFund、ListOrdersForFund 及 Raw 查询接口。价格和下单数量使用十进制字符串。client_id 的关联能力与目标订单幂等保证分别核验；Muskdeer 执行端持久化意图、校验所有权，超时进入 UNKNOWN 后查询，不盲目重发，不将下表的期望能力宣称为撮合已支持。
 
 ## 必需能力
 | 能力 | 核心字段/行为 | 缺失影响 |
