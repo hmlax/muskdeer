@@ -6,6 +6,7 @@ import (
 	"context"
 	"net"
 	"sort"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	pb "gitlab.com/himalaya/lukla-go/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
@@ -51,6 +53,7 @@ type nativeSDKFixture struct {
 	orders       map[uint64]*pb.OrderRow
 	next         uint64
 	historyDelay time.Duration
+	synthetic    []*pb.WashTradeRequest
 }
 
 func startNativeSDK(t *testing.T, fixture *nativeSDKFixture) string {
@@ -171,4 +174,26 @@ func (s *nativeSDKFixture) active() int {
 		}
 	}
 	return count
+}
+
+func (s *nativeSDKFixture) WashTrade(ctx context.Context, request *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	if auth, protocol := md.Get("authorization"), md.Get("x-orderbook-protocol"); len(auth) != 1 || auth[0] != "Bearer test-token" || len(protocol) != 1 || protocol[0] != "2" {
+		return nil, status.Error(codes.Unauthenticated, "SDK test authentication mismatch")
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.synthetic = append(s.synthetic, proto.CloneOf(request))
+	return &pb.WashTradeResponse{
+		TradeId:     "wash-test-" + strconv.Itoa(len(s.synthetic)),
+		Price:       request.Price,
+		Quantity:    request.Quantity,
+		TimestampMs: uint64(time.Now().UnixMilli()),
+	}, nil
+}
+
+func (s *nativeSDKFixture) syntheticCount() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.synthetic)
 }

@@ -66,5 +66,6 @@ Go 命令统一通过 `python3 scripts/go.py` 使用固定工具链；例如 `py
 - [Proto 与模型规范](docs/PROTO_AND_MODEL.md)
 - [Nacos 配置](docs/NACOS_CONFIG.md)
 - [交易与接口合同](docs/TRADING_CONTRACT.md)
+- [开发测试成交策略](docs/SYNTHETIC_TAPE.md)
 - [实施计划](docs/IMPLEMENTATION_PLAN.md)
 - [开发进度与实际验证](docs/PROGRESS.md)

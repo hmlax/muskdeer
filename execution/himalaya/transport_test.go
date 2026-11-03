@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	pb "gitlab.com/himalaya/lukla-go/pb"
 	"golang.org/x/net/http2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -19,6 +20,15 @@ import (
 )
 
 func TestSDKCannotReplayARefusedHTTP2Stream(t *testing.T) {
+	testSDKRefusedStream(t, false)
+}
+
+func TestSDKCannotReplaySyntheticTradeOnARefusedHTTP2Stream(t *testing.T) {
+	testSDKRefusedStream(t, true)
+}
+
+func testSDKRefusedStream(t *testing.T, synthetic bool) {
+	t.Helper()
 	t.Parallel()
 	listener := bufconn.Listen(1 << 20)
 	refused := make(chan struct{})
@@ -72,6 +82,17 @@ func TestSDKCannotReplayARefusedHTTP2Stream(t *testing.T) {
 			t.Error(err)
 		}
 	})
+	if synthetic {
+		if _, err := client.publishSynthetic(t.Context(), &pb.WashTradeRequest{
+			Symbol:   "BTCUSDT",
+			Side:     int32(pb.Side_SIDE_BUY),
+			Quantity: "0.001",
+			Price:    "100.1",
+		}); err == nil || attempts.Load() != 1 {
+			t.Fatalf("refused synthetic SDK request was replayed: attempts=%d err=%v", attempts.Load(), err)
+		}
+		return
+	}
 	if _, err := client.Submit(t.Context(), sdkOrder()); !errors.Is(err, domain.ErrOutcomeUnknown) || attempts.Load() != 1 {
 		t.Fatalf("refused SDK request was replayed: attempts=%d err=%v", attempts.Load(), err)
 	}

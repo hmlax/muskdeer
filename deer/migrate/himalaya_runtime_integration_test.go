@@ -233,7 +233,7 @@ func nativeTLSServer(t *testing.T, ca *testcert.Authority, service string, regis
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(security)))
+	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(security)), grpc.WaitForHandlers(true))
 	register(server)
 	done := make(chan struct{})
 	go func() { defer close(done); _ = server.Serve(listener) }()

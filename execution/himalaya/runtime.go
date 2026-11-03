@@ -137,6 +137,11 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 		}
 	}()
 	for ctx.Err() == nil {
+		if err := r.renewSyntheticScopes(ctx); err != nil && ctx.Err() == nil {
+			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("strategy", native.SyntheticWorker)); logErr != nil {
+				return logErr
+			}
+		}
 		for _, profile := range r.cfg.Himalaya.Profiles {
 			gate := r.gates[AccountID(profile.UserId, profile.FundId)]
 			select {

@@ -130,6 +130,7 @@ type SyntheticTapeResult struct {
 	Price         string                 `protobuf:"bytes,3,opt,name=price,proto3" json:"price,omitempty"`
 	Quantity      string                 `protobuf:"bytes,4,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	TimestampMs   uint64                 `protobuf:"varint,5,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
+	Replayed      bool                   `protobuf:"varint,6,opt,name=replayed,proto3" json:"replayed,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -199,6 +200,13 @@ func (x *SyntheticTapeResult) GetTimestampMs() uint64 {
 	return 0
 }
 
+func (x *SyntheticTapeResult) GetReplayed() bool {
+	if x != nil {
+		return x.Replayed
+	}
+	return false
+}
+
 var File_deer_proto_common_v1_synthetic_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_synthetic_proto_rawDesc = "" +
@@ -212,13 +220,14 @@ const file_deer_proto_common_v1_synthetic_proto_rawDesc = "" +
 	"\x05price\x18\x05 \x01(\tR\x05price\x12\x1a\n" +
 	"\bquantity\x18\x06 \x01(\tR\bquantity\x12A\n" +
 	"\bstrategy\x18\a \x01(\v2%.muskdeer.common.v1.HimalayaAuthorityR\bstrategy\x124\n" +
-	"\x04book\x18\b \x01(\v2 .muskdeer.common.v1.HimalayaBookR\x04book\"\x9b\x01\n" +
+	"\x04book\x18\b \x01(\v2 .muskdeer.common.v1.HimalayaBookR\x04book\"\xb7\x01\n" +
 	"\x13SyntheticTapeResult\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x19\n" +
 	"\btrade_id\x18\x02 \x01(\tR\atradeId\x12\x14\n" +
 	"\x05price\x18\x03 \x01(\tR\x05price\x12\x1a\n" +
 	"\bquantity\x18\x04 \x01(\tR\bquantity\x12!\n" +
-	"\ftimestamp_ms\x18\x05 \x01(\x04R\vtimestampMsB9Z7github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1b\x06proto3"
+	"\ftimestamp_ms\x18\x05 \x01(\x04R\vtimestampMs\x12\x1a\n" +
+	"\breplayed\x18\x06 \x01(\bR\breplayedB9Z7github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1b\x06proto3"
 
 var (
 	file_deer_proto_common_v1_synthetic_proto_rawDescOnce sync.Once

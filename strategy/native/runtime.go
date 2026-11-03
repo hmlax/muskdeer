@@ -49,7 +49,7 @@ func Workers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *
 			},
 		})
 	}
-	return workers, nil
+	return append(workers, syntheticWorkers(db, owner, cfg, factory, logger, leases)...), nil
 }
 
 func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *configv1.BusinessRuntime, profile *configv1.HimalayaProfile) error {

@@ -88,7 +88,13 @@ func syntheticFixture() (*configv1.HimalayaRuntime, *commonv1.HimalayaBook) {
 		Source:       Source,
 		Segment:      Segment,
 		ValidUntilMs: time.Now().Add(BookAge).UnixMilli(),
-		Bids:         []*commonv1.HimalayaLevel{{Price: "99.99", Quantity: "1"}},
-		Asks:         []*commonv1.HimalayaLevel{{Price: "100.11", Quantity: "1"}},
+		Bids: []*commonv1.HimalayaLevel{{
+			Price:    "99.99",
+			Quantity: "1",
+		}},
+		Asks: []*commonv1.HimalayaLevel{{
+			Price:    "100.11",
+			Quantity: "1",
+		}},
 	}
 }

@@ -21,4 +21,5 @@ message SyntheticTapeResult {
   string price = 3;
   string quantity = 4;
   uint64 timestamp_ms = 5;
+  bool replayed = 6;
 }

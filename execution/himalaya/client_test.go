@@ -32,6 +32,15 @@ func TestSDKSubmissionNeedsTheFinalMuskdeerAdmission(t *testing.T) {
 	}
 }
 
+func TestSDKReadOnlyClientCannotPublishSyntheticMarketData(t *testing.T) {
+	t.Parallel()
+	peer := &sdkPeer{}
+	client := sdkClient(t, peer, nil)
+	if _, err := client.publishSynthetic(t.Context(), &pb.WashTradeRequest{}); !errors.Is(err, ErrInvalidSubmit) || peer.count() != 0 {
+		t.Fatalf("read-only synthetic publication = %v, SDK effects=%d, want rejected/0", err, peer.count())
+	}
+}
+
 func TestSDKReplyLossRetainsIdentityWithoutSendingAgain(t *testing.T) {
 	t.Parallel()
 	peer := &sdkPeer{fail: true}
