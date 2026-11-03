@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 
-	"github.com/hmlax/muskdeer/internal/policy"
+	"github.com/hmlax/muskdeer/deer/policy"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func check(path string) ([]policy.Issue, error) {
 		return nil, errors.New("project descriptor set is missing or invalid")
 	}
 	issues := policy.Descriptors(&set)
-	for _, root := range []string{"cmd", "deer", "internal", "scripts"} {
+	for _, root := range []string{"cmd", "deer", "scripts"} {
 		if err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr

@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hmlax/muskdeer/internal/domain"
-	"github.com/hmlax/muskdeer/internal/marketbook"
-	"github.com/hmlax/muskdeer/internal/marketfeed"
-	"github.com/hmlax/muskdeer/internal/marketwire"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/market/marketbook"
+	"github.com/hmlax/muskdeer/market/marketfeed"
+	"github.com/hmlax/muskdeer/market/marketwire"
 )
 
 const (

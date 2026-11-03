@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
+	"github.com/hmlax/muskdeer/deer/migrate"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/internal/migrate"
 )
 
 type result struct {

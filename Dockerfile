@@ -12,7 +12,6 @@ COPY strategy ./strategy
 COPY execution ./execution
 COPY portfolio ./portfolio
 COPY deer ./deer
-COPY internal ./internal
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     for name in market strategy execution portfolio; do \
       go build -mod=readonly -trimpath -o /out/$name ./$name/cmd || exit $?; \

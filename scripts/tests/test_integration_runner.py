@@ -18,7 +18,7 @@ class IntegrationFailureTest(unittest.TestCase):
     def test_migration_batches_cover_every_runnable_entry_once(self):
         inventory = '\n'.join([
             'TestSecond', 'TestFirst', 'FuzzDecimal', 'ExampleBalance',
-            'BenchmarkNotRunByDefault', 'ok\tgithub.com/hmlax/muskdeer/internal/migrate\t0.1s',
+            'BenchmarkNotRunByDefault', 'ok\tgithub.com/hmlax/muskdeer/deer/migrate\t0.1s',
         ])
         batches = runner.migration_batches(inventory)
         flattened = [name for batch in batches for name in batch]

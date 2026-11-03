@@ -18,7 +18,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
-	"github.com/hmlax/muskdeer/internal/testcert"
+	"github.com/hmlax/muskdeer/deer/testcert"
 )
 
 type rpcDiscoveryFixture struct {

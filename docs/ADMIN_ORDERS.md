@@ -6,7 +6,7 @@ P07.32提供当前 viewer 权限下的策略订单仓储列表与详情，P07.33
 
 ## 范围与字段
 
-[域合同](../internal/domain/admin_orders.go)以明确策略 ID 为必填范围，按 OMS 自增 ID 升序使用 exclusive cursor，每页1–100。可选择一个已定义 OMS 状态及 open_only；开放状态包括 INTENT、SUBMITTING、LIVE、PARTIALLY_FILLED、UNKNOWN，终态与 open_only 组合拒绝。详情同时绑定策略 ID 和订单 ID，不能越过同账户的兄弟策略。
+[域合同](../deer/trading/domain/admin_orders.go)以明确策略 ID 为必填范围，按 OMS 自增 ID 升序使用 exclusive cursor，每页1–100。可选择一个已定义 OMS 状态及 open_only；开放状态包括 INTENT、SUBMITTING、LIVE、PARTIALLY_FILLED、UNKNOWN，终态与 open_only 组合拒绝。详情同时绑定策略 ID 和订单 ID，不能越过同账户的兄弟策略。
 
 每条返回业务账户/交易对/稳定客户端订单 ID、订单自己的配置版本与历史行情来源、方向、价格/数量/已确认成交、名义额预留、TIF/reduce_only、OMS 与取消状态、最后已确认核心 ID/版本、记录修订/截止/创建/更新时间及固定业务错误代码。Go金额保持 decimal.Decimal，接口小数统一 string。提交幂等键、请求追踪键、策略及执行租约身份不进入管理视图。
 
@@ -16,7 +16,7 @@ P07.32提供当前 viewer 权限下的策略订单仓储列表与详情，P07.33
 
 ## 一致性和失败
 
-[查询实现](../internal/repository/admin_orders.go)复用现有管理 read-only REPEATABLE READ：当前会话/角色/凭据/到期、策略范围、OMS、不可变配置与核心都在同一快照内读取。核心事实在认证读取后由另一个事务更新，不混入这次响应；后续新读取可见新事实。每个调用重新鉴权，既往HTTP身份或曾经成功的页面不替代仓储边界。
+[查询实现](../deer/trading/repository/admin_orders.go)复用现有管理 read-only REPEATABLE READ：当前会话/角色/凭据/到期、策略范围、OMS、不可变配置与核心都在同一快照内读取。核心事实在认证读取后由另一个事务更新，不混入这次响应；后续新读取可见新事实。每个调用重新鉴权，既往HTTP身份或曾经成功的页面不替代仓储边界。
 
 使用生成模型直接读取，所有 GORM 操作均绑定 WithContext/Model；批量配置和核心查询随页长有界，不做逐单 N+1 查询。无法关联已确认核心、业务字段不相符、存储失败或父取消时整页/详情失败，不返回部分 OMS 成功或游标。对外错误固定，内部诊断仍可通过私有错误链定位。
 

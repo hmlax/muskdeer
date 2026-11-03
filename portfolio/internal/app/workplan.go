@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/internal/business"
+	"github.com/hmlax/muskdeer/deer/trading/business"
 )
 
 // WorkPlan assembles only this service's typed runtime after Deer opens dependencies.

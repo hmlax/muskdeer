@@ -51,7 +51,7 @@ Nacos 仅注册 operator.grpc；operator 服务端证书和内部客户端证书
 
 `make two-apps-test` 复用现有 infra-postgres/infra-redis/infra-nacos/infra-nats，创建并清理独立数据库、命名空间及测试账户中的消息资源，验证真实 operator 模块和 admin HTTP→gRPC 闭环；不启动或删除基础服务容器。`make image` 构建独立 muskdeer-admin:local 与 muskdeer-operator:local；`make image-test` 对两个非 root、只读镜像验证启动/readiness/JSON 日志/SIGTERM。
 
-每个服务有独立入口：`cmd/admin` 与 `cmd/operator` 各自解析参数；不使用 role 参数，共用 `cmd/muskdeer` 已删除。历史模块回归分别使用 `internal/testservice/{api,market,strategy,execution,portfolio,cron}` 的独立入口，由 `make build-fixtures` 构建，每个夹具都有自己的可执行文件。这些仅供历史模块隔离回归，不属于部署应用。
+每个服务有独立入口：`cmd/admin` 与 `cmd/operator` 各自解析参数；不使用 role 参数，共用 `cmd/muskdeer` 已删除。历史模块回归分别使用 `deer/testservice/{api,market,strategy,execution,portfolio,cron}` 的独立入口，由 `make build-fixtures` 构建，每个夹具都有自己的可执行文件。这些仅供历史模块隔离回归，不属于部署应用。
 
 ## 权限迁移
 

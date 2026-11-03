@@ -1451,3 +1451,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 工作区生成检查、29 项工具及相关包 race 通过；原有未提交平仓代码的 eventwire TestPublicationRejectsChangedEnvelopeOrDecimalShape 失败保持，完整 verify 的通过范围为本次隔离提交源码，未冒充工作区全部业务已验收。49 个原有修改及已删除目录的本地依赖均有忽略备份，原业务差异未混入提交。
 - Docker Compose 已使用 .cache/apiweb-removal/rpc-source 重建四镜像及容器，全部 healthy，实际 mTLS 双源未过期 HEALTHY 回放/精确价格和 execution 查询通过。最初探针重启数为 0，后续检查发现 market 重启 1 次、execution 2 次，日志为 worker deadline_exceeded，PostgreSQL 同时记录行情租约行锁等待取消；无 OOM，当前无阻塞会话，再次 mTLS 探针通过。该运行稳定性问题尚未修复，未宣称零重启或长期稳定。四份 Nacos 配置哈希及共享 infra 的容器 ID/启动时间保持，没有迁移、注资、启用账户或生产操作。详见 [P14 验证](validation/P14-02.md)，运行/集成证据在 .cache/apiweb-removal。
 - 未运行剩余全部历史迁移集成、固定三十分钟或真实资金/生产。工作分支 codex/two-apps，P14.1 提交 1da8847 已同步；本步验证后独立提交、立即推送并核验远端 SHA，见交付报告及 Git 历史。
+
+## 2026-11-03：P15.1 顶层 internal 按项目与公共职责迁移
+
+- 用户确认服务专属实现下沉，公共领域、租约和跨服务事务仓储继续共用，保持单 go.mod 与既有事务合同。38 个原有包迁至所属项目或 deer，顶层 internal 移除：market 拥有订单簿/行情/质量/适配，strategy 拥有报价/策略适配，execution 拥有订单适配/outbox/模拟器；公共 domain/repository/配置合同在 deer/trading，迁移在 deer/migrate，进程与测试支撑在 deer。集中 business/usecase 本步暂置公共区，下一步拆为项目业务装配与用例，不把临时位置冒充最终边界。
+- 同步 Go 导入、Wire 生成、Docker COPY/白名单、迁移 SQL 的精确 lint 豁免、工具/回归路径及文档引用。日志 caller 过滤同步真实包路径；历史组合测试入口包改为 testentry，与路径一致。镜像继续排除测试、testdata、证书、私钥和环境文件。
+- 512 个搬迁的已提交 Go 文件逐文件核对，除声明的导入/包名/caller 路径及 gofmt 外内容一致，没有业务算法、SQL、协议或超时调整。49 个原有修改在忽略的 .cache/internal-split/uncommitted 备份；全部逐文件核验保留，只随目录调整导入/格式，独立暂存干净基线的迁移版本，不提交原有平仓业务。
+- 隔离 schema 37 源码全包单元通过；公共交易包、四项目、日志/testentry 的 race 通过，integration 标签下 migrate/infrastructureprobe/persistenceprobe 编译通过。60 Proto/Wire 生成一致性、Hertz 确定性/编译、格式、lint/govet 0 issues、规范正反样例、29 项工具测试及核心/历史夹具构建通过；606 个本地文档链接有效，git diff --check 通过。
+- 本步未运行实际基础设施/交易集成、镜像构建或 Compose 重建，留待业务装配拆分后验证；当前容器仍为上一轮源码，既有 worker 超时重启未作修复。原有工作区 eventwire 测试失败仍未纳入本次隔离验收，不声明所有未提交功能通过。
+- 基线 0ac9e96，工作分支 codex/two-apps；本独立步骤验证后提交、立即推送并核验远端 SHA，见交付报告及 Git 历史。

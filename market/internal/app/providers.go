@@ -5,7 +5,7 @@ package app
 import (
 	"github.com/google/wire"
 
-	"github.com/hmlax/muskdeer/internal/processlog"
+	"github.com/hmlax/muskdeer/deer/processlog"
 )
 
 // ProviderSet defines the market graph; it is used only by Wire generation.

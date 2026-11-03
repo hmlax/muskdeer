@@ -38,7 +38,7 @@ linters:
   exclusions:
     generated: strict
     rules:
-      - path: '^internal/migrate/'
+      - path: '^deer/migrate/'
         linters: [forbidigo]
         text: 'Raw SQL is confined to reviewed migration DDL and lock control'
 formatters:

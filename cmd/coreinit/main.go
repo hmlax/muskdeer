@@ -10,12 +10,12 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
+	"github.com/hmlax/muskdeer/deer/corelocal"
+	"github.com/hmlax/muskdeer/deer/migrate"
 	"github.com/hmlax/muskdeer/deer/postgres"
+	"github.com/hmlax/muskdeer/deer/processfailure"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/internal/corelocal"
-	"github.com/hmlax/muskdeer/internal/domain"
-	"github.com/hmlax/muskdeer/internal/migrate"
-	"github.com/hmlax/muskdeer/internal/processfailure"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 func main() {

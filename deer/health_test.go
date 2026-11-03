@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/internal/testcert"
+	"github.com/hmlax/muskdeer/deer/testcert"
 )
 
 func TestHTTPAndGRPCHealthReflectDependencies(t *testing.T) {

@@ -14,7 +14,7 @@ P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。P07.3
 
 ## 原子性与重放
 
-持久化结构来自 [Model Proto](../deer/proto/model/v1/admin_risk.proto)，实现为 [风险事务](../internal/repository/admin_risk.go)、[恢复检查](../internal/repository/admin_risk_recovery.go) 和 [当前快照](../internal/repository/admin_risk_state.go)。风险管理版本从不可变收据最大版本推导，尚无收据时为 1；它独立于频繁变化的资金预算 Revision。新控制在策略互斥下检查版本并递增，普通资金释放不使风险确认版本失效。
+持久化结构来自 [Model Proto](../deer/proto/model/v1/admin_risk.proto)，实现为 [风险事务](../deer/trading/repository/admin_risk.go)、[恢复检查](../deer/trading/repository/admin_risk_recovery.go) 和 [当前快照](../deer/trading/repository/admin_risk_state.go)。风险管理版本从不可变收据最大版本推导，尚无收据时为 1；它独立于频繁变化的资金预算 Revision。新控制在策略互斥下检查版本并递增，普通资金释放不使风险确认版本失效。
 
 操作者与幂等键共同唯一，规范化请求以确定性二进制编码计算摘要。同键同内容返回原历史收据，同键改内容冲突；重放仍须当前权限及 CSRF，恢复历史重放仍需当前 admin。后来的新控制不改变旧收据，也不会因旧请求重放而重新写开关。
 
@@ -22,7 +22,7 @@ P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。P07.3
 
 ## 最终数据库保护
 
-[迁移 29](../internal/migrate/sql/0029_admin_strategy_risk.sql) 新增带自增 Id、非空创建/更新时间及 nullable 删除时间的收据表；历史禁止改写、删除和软删除。提交时独立检查当前会话、角色、凭据版本、会话到期、相符审计、独立风险版本、实际旗标及已关闭的缓存许可。恢复证明受当前选择行情的有效期、事件/接收年龄、发布租约及最多 5 秒限制；提交时已过期或仍有义务则整笔回滚。
+[迁移 29](../deer/migrate/sql/0029_admin_strategy_risk.sql) 新增带自增 Id、非空创建/更新时间及 nullable 删除时间的收据表；历史禁止改写、删除和软删除。提交时独立检查当前会话、角色、凭据版本、会话到期、相符审计、独立风险版本、实际旗标及已关闭的缓存许可。恢复证明受当前选择行情的有效期、事件/接收年龄、发布租约及最多 5 秒限制；提交时已过期或仍有义务则整笔回滚。
 
 模拟核心对已管理策略的全部新增提交检查当前预算旗标，包括没有 OMS intent ID 的直接核心提交。裸核心历史场景没有策略预算时保持原合同，迁移不自动创建或启用预算。取消保留原授权/fencing 检查。历史迁移 1–28 的字节和校验和不改变，升级不重写现有预算、金额、状态或权限。
 

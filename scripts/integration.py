@@ -38,7 +38,7 @@ def run_migration_tests(environment: dict[str, str]) -> int:
     command = [sys.executable, str(ROOT / 'scripts/go.py'), 'test',
                '-tags=integration', '-race', '-count=1']
     inventory = subprocess.run(
-        [*command, '-list', '.', './internal/migrate'],
+        [*command, '-list', '.', './deer/migrate'],
         cwd=ROOT, env=environment, capture_output=True, text=True, check=False,
     )
     if inventory.returncode:
@@ -50,7 +50,7 @@ def run_migration_tests(environment: dict[str, str]) -> int:
               f'{len(names)} runnable entries; race enabled; deadline 10m', flush=True)
         pattern = '^(' + '|'.join(re.escape(name) for name in names) + ')$'
         result = subprocess.run(
-            [*command, '-v', '-timeout=10m', '-run', pattern, './internal/migrate'],
+            [*command, '-v', '-timeout=10m', '-run', pattern, './deer/migrate'],
             cwd=ROOT, env=environment, check=False,
         )
         if result.returncode:
@@ -62,7 +62,7 @@ def run() -> int:
     from infra import Infra
     with Infra() as infra:
         environment = infra.environment
-        for package in ['./internal/persistenceprobe', './internal/infrastructureprobe']:
+        for package in ['./deer/persistenceprobe', './deer/infrastructureprobe']:
             result = subprocess.run([
                 sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
                 '-race', '-count=1', '-v', package,

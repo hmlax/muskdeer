@@ -34,7 +34,7 @@ def execute_scenario(environment: dict[str, str], log, smoke: bool) -> int:
     name = 'TestStrategySoakDriverSmoke' if smoke else 'TestStrategyThirtyMinuteRealTimeSoak'
     process = subprocess.Popen([
         sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration,soak',
-        '-race', '-count=1', '-v', '-timeout=40m', '-run', '^' + name + '$', './internal/migrate',
+        '-race', '-count=1', '-v', '-timeout=40m', '-run', '^' + name + '$', './deer/migrate',
     ], cwd=ROOT, env=environment, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
     try:
         code = process.wait(timeout=120 if smoke else 2400)

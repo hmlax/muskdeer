@@ -65,7 +65,7 @@ verify: doctor contract-check generate-check hz-check fmt-check lint policy-test
 build-fixtures: build
 	python3 scripts/go.py build -o .cache/bin/operator ./cmd/operator
 	@for role in market strategy execution portfolio cron; do \
-		python3 scripts/go.py build -o .cache/bin/module-$$role ./internal/testservice/$$role || exit $$?; \
+		python3 scripts/go.py build -o .cache/bin/module-$$role ./deer/testservice/$$role || exit $$?; \
 	done
 
 integration: build-fixtures

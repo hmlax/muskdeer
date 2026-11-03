@@ -19,6 +19,8 @@
 
 公共配置、模型、事件分别位于 `deer/proto/{config,model,common}`；gRPC 契约和生成代码统一位于 `deer/proto/rpc`。仓库内维护的第三方源码、注解和许可证在 [deer/third_party](deer/third_party/README.md)。
 
+行情订单簿、接入、质量和工作器归 `market`；报价与策略适配归 `strategy`；订单适配、outbox 和模拟执行归 `execution`。公共交易领域与跨服务事务仓储位于 `deer/trading`，迁移位于 `deer/migrate`；单份共用，不复制资金、幂等与 fencing 逻辑。顶层不再保留 `internal`，各项目自己的 `internal/app` 继续负责生命周期和 Wire 装配。
+
 ## 本地启动
 
 复用已运行的 PostgreSQL、Redis、Nacos、NATS 及 infra-network。需要 Docker Compose、Python 3.11+ 和 OpenSSL；Go 工具链固定为 1.27.3，Wire 固定为 v0.7.0。

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/internal/coreentry"
-	"github.com/hmlax/muskdeer/internal/processfailure"
+	"github.com/hmlax/muskdeer/deer/coreentry"
+	"github.com/hmlax/muskdeer/deer/processfailure"
 )
 
 func main() {

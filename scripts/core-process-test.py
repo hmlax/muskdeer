@@ -12,5 +12,5 @@ if __name__ == '__main__':
     sys.exit(run_tests([
         '-tags=integration', '-race', '-count=1', '-v', '-timeout=3m', '-run',
         '^Test(CoreLocal.*|IndependentBusinessProcessesPublishConsumeAndReconcile|StrategyCommandsDiscoverTakeOverQuoteAndCompleteStop)$',
-        './internal/migrate',
+        './deer/migrate',
     ]))

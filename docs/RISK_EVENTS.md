@@ -1,12 +1,12 @@
 # 风险快照诊断变更历史
 
-P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../internal/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；P07.50交付风险历史页面，不把当前快照拼成未曾保存的过去。
+P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../deer/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；P07.50交付风险历史页面，不把当前快照拼成未曾保存的过去。
 
 ## 记录含义
 
 风险快照依然是实际准入链路中的原有输入；历史记录是诊断事实，不是当前许可。记录中的allow_new_risk/reconciled、原因、配置/来源/发布者代次及观察/截止时间，只反映该次写入值。实际订单仍逐次检查当前预算/对账/新鲜所选行情、全部所有权和最终fencing。
 
-[记录类型](../internal/domain/risk_events.go)仅有：
+[记录类型](../deer/trading/domain/risk_events.go)仅有：
 
 - BASELINE：首次保存某快照或启用历史记录时的现有值，是可用记录起点，不声称曾发生某个过去的状态变化。
 - CHANGED：策略/账户/交易对/配置、来源/绑定/发布者代次/政策，或原始许可位/对账位/原因/退役状态实际变化。
@@ -28,7 +28,7 @@ PostgreSQL源表AFTER触发器在快照INSERT/UPDATE/DELETE的同一事务写历
 
 ## 只读管理查询
 
-P07.48的[AdminRiskEvents](../internal/domain/admin_risk_events.go)复用当前viewer及以上角色鉴权，在同一PostgreSQL只读Repeatable Read事务中提供列表/详情。列表可按策略ID、业务账户、交易对ID、Binance/OKX来源、记录类型与八种已定义原因精确组合筛选；页长1–100、事件ID升序及after_id游标。过滤值缺席表示不限，未知历史范围返回空页；详情身份不存在为not found。历史范围不要求当前快照、活动策略、核心账户或行情绑定存在，不把已退役记录隐藏在当前目录后面。
+P07.48的[AdminRiskEvents](../deer/trading/domain/admin_risk_events.go)复用当前viewer及以上角色鉴权，在同一PostgreSQL只读Repeatable Read事务中提供列表/详情。列表可按策略ID、业务账户、交易对ID、Binance/OKX来源、记录类型与八种已定义原因精确组合筛选；页长1–100、事件ID升序及after_id游标。过滤值缺席表示不限，未知历史范围返回空页；详情身份不存在为not found。历史范围不要求当前快照、活动策略、核心账户或行情绑定存在，不把已退役记录隐藏在当前目录后面。
 
 结果直接保留事件ID、记录时间、源快照ID/修订、配置/来源/可空绑定、发布者代次/序列/修订/政策、观察与截止时间，以及明确命名的RecordedReconciled/RecordedAllowNewRisk、原原因和源退役标志。过期记录仍可阅读；不会与当前时间比较后改写为新的风险事件，不依据旧READY/许可位授予交易权限。可空绑定保持缺席，所有身份/版本保持int64精度；读取对象不共享生成模型的可变指针。
 

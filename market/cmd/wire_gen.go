@@ -9,8 +9,8 @@ package main
 import (
 	"context"
 	"github.com/hmlax/muskdeer/deer"
+	"github.com/hmlax/muskdeer/deer/processlog"
 	"github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/internal/processlog"
 	"github.com/hmlax/muskdeer/market/internal/app"
 	"io"
 )

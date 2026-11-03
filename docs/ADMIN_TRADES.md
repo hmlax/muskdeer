@@ -2,7 +2,7 @@
 
 历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
 
-P07.41提供[AdminTrades](../internal/domain/admin_trades.go)只读仓储，P07.42增加具体typed gRPC/HTTP，P07.43增加成交列表和独立详情页面。数据主集合为模拟核心的真实成交，不能用持仓投影是否收到回报决定成交是否存在。
+P07.41提供[AdminTrades](../deer/trading/domain/admin_trades.go)只读仓储，P07.42增加具体typed gRPC/HTTP，P07.43增加成交列表和独立详情页面。数据主集合为模拟核心的真实成交，不能用持仓投影是否收到回报决定成交是否存在。
 
 ## 范围与身份
 
@@ -20,7 +20,7 @@ Go金额使用decimal.Decimal，后续传输必须使用十进制string。读取
 
 ## 一致性与副作用
 
-[实现](../internal/repository/admin_trades.go)与[批量关联](../internal/repository/admin_trade_rows.go)直接使用生成Model和WithContext。核心订单、首次提交、明确OMS意图、历史配置、交易对和收录事实在同一事务快照内有界批量查询。当前读取之后另一事务收录成交，不混入本次响应；下次读取才可见。
+[实现](../deer/trading/repository/admin_trades.go)与[批量关联](../deer/trading/repository/admin_trade_rows.go)直接使用生成Model和WithContext。核心订单、首次提交、明确OMS意图、历史配置、交易对和收录事实在同一事务快照内有界批量查询。当前读取之后另一事务收录成交，不混入本次响应；下次读取才可见。
 
 关联字段损坏、缺失依赖、存储错误或父取消均拒绝整页/详情，不返回部分数据或游标；公开错误固定，内部保留诊断链。数据库拒绝快照中的实际UPDATE。查询不修改核心账本、OMS、持仓、inbox/outbox、额度、风险或审计；未确认OMS即使核心已全部成交仍保持原预留。
 

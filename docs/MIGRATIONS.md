@@ -17,7 +17,7 @@ make build
 
 ## 结构与执行
 
-迁移定义为 [内嵌 SQL](../internal/migrate/sql/0001_schema_migrations.sql)，按连续版本编号加载，记录文件名与精确字节 SHA-256；`.gitattributes` 固定 SQL 的 LF 行尾。仅运行随二进制内嵌的已审查 DDL，不接受用户文件路径或动态业务 SQL。
+迁移定义为 [内嵌 SQL](../deer/migrate/sql/0001_schema_migrations.sql)，按连续版本编号加载，记录文件名与精确字节 SHA-256；`.gitattributes` 固定 SQL 的 LF 行尾。仅运行随二进制内嵌的已审查 DDL，不接受用户文件路径或动态业务 SQL。
 
 SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/migration.proto)，由既有 protoc/gotag 生成；记录含 Id 自增主键、create_at/update_at 非空及真实 nullable delete_at。GORM 自动填入 Unix 毫秒时间。物理表名由生成类型及统一 GORM 命名推导，数据读写始终使用 WithContext(ctx).Model(&modelv1.SchemaMigration{})。
 

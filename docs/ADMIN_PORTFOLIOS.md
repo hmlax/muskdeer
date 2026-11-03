@@ -2,7 +2,7 @@
 
 历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
 
-P07.44提供[AdminPortfolios](../internal/domain/admin_portfolios.go)当前viewer只读仓储，P07.45增加具体typed gRPC/HTTP，P07.46增加账户持仓列表、筛选与独立详情页面。持仓是可重建的账户投影；核心余额与成交仍是权威，不能以管理读取补账或修改核心资产。
+P07.44提供[AdminPortfolios](../deer/trading/domain/admin_portfolios.go)当前viewer只读仓储，P07.45增加具体typed gRPC/HTTP，P07.46增加账户持仓列表、筛选与独立详情页面。持仓是可重建的账户投影；核心余额与成交仍是权威，不能以管理读取补账或修改核心资产。
 
 ## 范围与读取字段
 
@@ -20,7 +20,7 @@ P07.44提供[AdminPortfolios](../internal/domain/admin_portfolios.go)当前viewe
 
 ## 一致性与失败
 
-[仓储](../internal/repository/admin_portfolios.go)、[批量关联](../internal/repository/admin_portfolio_rows.go)和[统计](../internal/repository/admin_portfolio_stats.go)直接使用生成Model、WithContext和当前viewer的read-only REPEATABLE READ。策略、执行与持仓的生产逻辑不参与读取；不调用具有写入效果的Portfolio.Get/Rebuild/Apply，不加账户/资产行锁，不新增资源或工作器。
+[仓储](../deer/trading/repository/admin_portfolios.go)、[批量关联](../deer/trading/repository/admin_portfolio_rows.go)和[统计](../deer/trading/repository/admin_portfolio_stats.go)直接使用生成Model、WithContext和当前viewer的read-only REPEATABLE READ。策略、执行与持仓的生产逻辑不参与读取；不调用具有写入效果的Portfolio.Get/Rebuild/Apply，不加账户/资产行锁，不新增资源或工作器。
 
 按页批量读取账户/交易对/余额；核心成交统计使用明确Model和固定JOIN，收录统计使用其生成Model，都只接受页面中的精确账户/交易对组合，返回有界分组而非全部成交历史。所有账户策略共享统计，不按当前策略或行情来源截断历史。
 

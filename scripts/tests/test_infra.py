@@ -43,6 +43,6 @@ class ExistingInfraTest(unittest.TestCase):
             self.assertNotIn("'down', '--volumes'", text, path.name)
 
     def test_shared_redis_is_not_paused_by_integration(self):
-        source = (infra.ROOT / 'internal/infrastructureprobe/redis_test.go').read_text()
+        source = (infra.ROOT / 'deer/infrastructureprobe/redis_test.go').read_text()
         self.assertNotIn('.ClientPause(', source)
         self.assertNotIn('.ClientUnpause(', source)

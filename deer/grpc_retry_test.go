@@ -21,7 +21,7 @@ import (
 	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
-	"github.com/hmlax/muskdeer/internal/testcert"
+	"github.com/hmlax/muskdeer/deer/testcert"
 )
 
 type refusedRequestCodec struct {

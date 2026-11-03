@@ -18,7 +18,7 @@ Book 属于单个 actor，调用者串行操作；输入切片不保留，内部
 
 ## P05.2 Typed 行情 JSON
 
-`internal/marketwire` 解码 Binance REST depth、原始 spot depthUpdate 及 OKX books 的具体结构，绑定明确 instrument ID/外部 symbol 和本地 receive time。REST 响应本身没有 symbol/event time，沿原 HTTP 请求身份关联，不伪造交易所时间；增量及 OKX 使用实际协议时间。
+`market/marketwire` 解码 Binance REST depth、原始 spot depthUpdate 及 OKX books 的具体结构，绑定明确 instrument ID/外部 symbol 和本地 receive time。REST 响应本身没有 symbol/event time，沿原 HTTP 请求身份关联，不伪造交易所时间；增量及 OKX 使用实际协议时间。
 
 价格/数量只接受 JSON string，直接按20位整数/18位小数解析为 decimal。Binance 档位必须2个字段，OKX必须4个字段且订单数为规范非负整数；空增量与0数量有效，快照空侧/0数量拒绝。必需数组和序列的缺失/NULL 与合法0序列明确区分；OKX checksum 只作可选整数元数据接收，不判断其数值有效性。
 
@@ -28,7 +28,7 @@ decoder 保留取消 cause，错误文本不输出原始 payload；交易对或 
 
 ## P05.3 TLS 网络会话
 
-`internal/marketfeed` 每个 Run 绑定一家来源/产品；构造不联网。使用固定公开 TLS 地址、原生 HTTP/握手/读写期限、无环境代理/重定向，无账户或交易权限。Gorilla WebSocket 固定 v1.5.3；[Go 漏洞记录](https://pkg.go.dev/vuln/GO-2026-6278)标明弱掩码随机数问题影响此版本之前版本，所选版本使用 crypto/rand。
+`market/marketfeed` 每个 Run 绑定一家来源/产品；构造不联网。使用固定公开 TLS 地址、原生 HTTP/握手/读写期限、无环境代理/重定向，无账户或交易权限。Gorilla WebSocket 固定 v1.5.3；[Go 漏洞记录](https://pkg.go.dev/vuln/GO-2026-6278)标明弱掩码随机数问题影响此版本之前版本，所选版本使用 crypto/rand。
 
 Binance 使用[官方无鉴权 market-only 地址](https://github.com/binance/binance-spot-api-docs/blob/master/faqs/market_data_only.md)：`data-stream.binance.vision:443` 的原始现货 depth@100ms，以及 `data-api.binance.vision` 的 depth。先读取首条增量再请求 REST，读任务同时保留最多256条/8MiB缓冲，单消息1MiB；落后快照最多刷新3次。只在范围衔接后输出价格，已覆盖增量不刷新时效。服务器 PING 的 PONG 复制原 payload；默认23小时50分重建会话，早于24小时限制。
 
@@ -44,7 +44,7 @@ OKX 使用 `wss://ws.okx.com:8443/ws/v5/public`，显式 typed `books` 订阅；
 
 ## P05.4 来源独立质量
 
-`internal/marketquality` 的单 actor Tracker 固定 source/instrument/symbol/LIVE或REPLAY，读取另一来源不会影响本源参考价或基准。检查队列处理时的 exchange/receive 时间、未来偏移与时钟回退、准确BBO/mid、价差和本源价格跳变。默认门槛为2秒时效、500ms时钟偏差、100bps价差、200bps跳变；均是明确的模拟配置，不是生产SLA。
+`market/marketquality` 的单 actor Tracker 固定 source/instrument/symbol/LIVE或REPLAY，读取另一来源不会影响本源参考价或基准。检查队列处理时的 exchange/receive 时间、未来偏移与时钟回退、准确BBO/mid、价差和本源价格跳变。默认门槛为2秒时效、500ms时钟偏差、100bps价差、200bps跳变；均是明确的模拟配置，不是生产SLA。
 
 所有价差/跳变使用 decimal 交叉相乘比较，保留19位甚至更精细的mid，不依赖全局除法精度。异常读数、断连或静默到期输出零价格及具体质量/原因；Current 在没有新消息时也会过期。消费者的 domain.MarketReading.Selected 再检查实例准确来源/产品/模式、契约版本、时效和数值，不以持久的 HEALTHY 字样永久授权。
 
@@ -80,7 +80,7 @@ NewReader借用Deer的只读unary factory，每次原生调用使用新发现/mT
 
 ## P05.8 单来源工作器与显式回放
 
-`internal/marketworker` 绑定不可变feed与process incarnation。备用节点只等待数据库租约，不创建数据流；获取后加载持久revision/已接受基准，启动串行发布actor与owned续租任务。续租、提交或数据流异常会退出，取消先等待数据流/续租，再用独立小预算释放；若释放失败保留错误，实际到期仍以数据库为准。未请求的子流cancel算异常，panic传播前也等待续租退出。
+`market/marketworker` 绑定不可变feed与process incarnation。备用节点只等待数据库租约，不创建数据流；获取后加载持久revision/已接受基准，启动串行发布actor与owned续租任务。续租、提交或数据流异常会退出，取消先等待数据流/续租，再用独立小预算释放；若释放失败保留错误，实际到期仍以数据库为准。未请求的子流cancel算异常，panic传播前也等待续租退出。
 
 新连接同步时清空旧簿generation/seq，随后接受该连接的新簿；只失效当前源。数据库时间/质量可能拒绝本地候选，此时本地处理器重新加载返回的已接受基准，不能让未持久接受的价格污染后续判断。
 

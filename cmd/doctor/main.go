@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/internal/business"
+	"github.com/hmlax/muskdeer/deer/trading/business"
 )
 
 func main() {

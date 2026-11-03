@@ -7,7 +7,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/internal/testapp"
+	"github.com/hmlax/muskdeer/deer/testapp"
 )
 
 func TestServiceRejectsOtherIdentitiesAndAdministrationBeforeOpeningResources(t *testing.T) {

@@ -180,7 +180,7 @@ class Infra:
         self.clean_nats()
 
     def clean_nats(self):
-        subprocess.run([sys.executable, str(ROOT / 'scripts/go.py'), 'run', './internal/testinfra'],
+        subprocess.run([sys.executable, str(ROOT / 'scripts/go.py'), 'run', './deer/testinfra'],
                        cwd=ROOT, env=self.environment, check=True, timeout=30)
 
     def __exit__(self, exception_type, exception, traceback):

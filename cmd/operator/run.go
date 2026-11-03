@@ -8,8 +8,8 @@ import (
 	"io"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/internal/domain"
-	"github.com/hmlax/muskdeer/internal/entry"
+	"github.com/hmlax/muskdeer/deer/testentry"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 type commandFailure struct {
@@ -30,7 +30,7 @@ const (
 )
 
 func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
-	const role = entry.RoleOperator
+	const role = testentry.RoleOperator
 	flags := flag.NewFlagSet(string(role), flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	path := flags.String("config", "", "local protobuf JSON configuration")
@@ -46,7 +46,7 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if *path == "" || flags.NArg() != 0 {
 		return report(diagnostic, "config is required and positional arguments are not accepted", nil, 2)
 	}
-	if role != entry.RoleOperator {
+	if role != testentry.RoleOperator {
 		return report(diagnostic, "unsupported application", nil, 2)
 	}
 	cfg, err := deer.LoadConfig(ctx, *path)
@@ -54,12 +54,12 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 		return report(diagnostic, "configuration loading failed", err, 1)
 	}
 	if *checkReady {
-		if err := entry.CheckReady(ctx, cfg.Monitoring); err != nil {
+		if err := testentry.CheckReady(ctx, cfg.Monitoring); err != nil {
 			return report(diagnostic, "readiness probe failed", err, 1)
 		}
 		return 0
 	}
-	if err := entry.Run(ctx, role, cfg, output); err != nil {
+	if err := testentry.Run(ctx, role, cfg, output); err != nil {
 		if onlyCancellation(err) {
 			return 0
 		}

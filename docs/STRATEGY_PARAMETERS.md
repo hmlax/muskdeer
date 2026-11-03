@@ -2,7 +2,7 @@
 
 P03.5 以 [参数 Proto](../deer/proto/common/v1/strategy_parameters.proto) 定义做市/网格字段及 oneof，当前参数 schema=1。数字小数全部为 string，整数档数及整毫秒时间分别使用 int32/int64；未知字段、空模板、legacy schema=0 和未来 schema 被业务边界拒绝。
 
-`internal/strategyconfig` 显式映射字段为纯 domain 值，使用 ParseDecimal，不经过浮点、JSON/map 转换。金额、数量和价格限制为 20 位整数+18 位小数；BPS 为 5 位整数+10 位小数。时间转换先检查 0..一小时，实际启用的间隔/时效要求至少 1ms，避免乘法溢出。下列是计算上界及交叉校验，不是容量/SLA 或生产参数推荐。
+`deer/trading/strategyconfig` 显式映射字段为纯 domain 值，使用 ParseDecimal，不经过浮点、JSON/map 转换。金额、数量和价格限制为 20 位整数+18 位小数；BPS 为 5 位整数+10 位小数。时间转换先检查 0..一小时，实际启用的间隔/时效要求至少 1ms，避免乘法溢出。下列是计算上界及交叉校验，不是容量/SLA 或生产参数推荐。
 
 | 参数组 | 单位与校验 |
 |---|---|

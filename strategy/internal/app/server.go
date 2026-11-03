@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/internal/processlog"
+	"github.com/hmlax/muskdeer/deer/processlog"
 )
 
 // NewSpec binds strategy work and logging to the sole Deer owner.

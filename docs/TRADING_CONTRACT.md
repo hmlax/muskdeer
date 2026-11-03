@@ -1,6 +1,6 @@
 # Typed 执行合同
 
-P03.6 的 [Execution Proto](../deer/proto/rpc/execution/v1/execution.proto) 明确 SubmitIntent、CancelOrder、FindOrder、ListOrders、ListFills、GetAccount 的业务字段；P04.8 增加 FindCancellation、独立 CancellationView 及 core_revision。[公共枚举](../deer/proto/common/v1/trading.proto) 定义方向、TIF、订单/撤单状态，零值均为 UNSPECIFIED。`internal/delivery/executiongrpc` 已实现全部方法，可通过 Deer 注册；默认命令入口的业务装配继续后续步骤。
+P03.6 的 [Execution Proto](../deer/proto/rpc/execution/v1/execution.proto) 明确 SubmitIntent、CancelOrder、FindOrder、ListOrders、ListFills、GetAccount 的业务字段；P04.8 增加 FindCancellation、独立 CancellationView 及 core_revision。[公共枚举](../deer/proto/common/v1/trading.proto) 定义方向、TIF、订单/撤单状态，零值均为 UNSPECIFIED。`execution/delivery/executiongrpc` 已实现全部方法，可通过 Deer 注册；默认命令入口的业务装配继续后续步骤。
 
 提交含 request_id、独立幂等键、策略/配置/owner/epoch、账户、instrument、明确方向/价格/数量/TIF、reduce_only 和 Timestamp deadline。idempotency_key 稳定于同一意图，不能使用 request_id、随机重试编号或 Nacos 在线状态代替。owner 字段只是待验证声明；最终执行必须检查真实租约和 fencing，输入解析本身不授权交易。
 
