@@ -57,7 +57,7 @@ build:
 	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
 	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
 	@for name in market strategy execution portfolio; do \
-		python3 scripts/go.py build -o .cache/bin/$$name ./cmd/$$name || exit $$?; \
+		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
 	done
 
 verify: doctor contract-check generate-check hz-check fmt-check lint policy-test test-tooling test test-race build

@@ -8,15 +8,22 @@ COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY api ./api
 COPY cmd ./cmd
+COPY market ./market
+COPY strategy ./strategy
+COPY execution ./execution
+COPY portfolio ./portfolio
 COPY deer ./deer
 COPY internal ./internal
 COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    for name in market strategy execution portfolio migrate coreinit readycheck; do \
+    for name in market strategy execution portfolio; do \
+      go build -mod=readonly -trimpath -o /out/$name ./$name/cmd || exit $?; \
+    done && \
+    for name in migrate coreinit readycheck; do \
       go build -mod=readonly -trimpath -o /out/$name ./cmd/$name || exit $?; \
     done
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./cmd/market ./cmd/strategy ./cmd/execution ./cmd/portfolio ./cmd/migrate ./cmd/coreinit ./cmd/readycheck > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cmd/migrate ./cmd/coreinit ./cmd/readycheck > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \

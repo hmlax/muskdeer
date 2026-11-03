@@ -4,10 +4,10 @@
 
 | 服务 | 独立入口 | 本机 gRPC | Nacos 身份 | 实际工作 |
 |---|---|---|---|---|
-| market | cmd/market | 127.0.0.1:59002 | market.grpc | Binance/OKX 独立回放流、质量、行情发布/读取 |
-| strategy | cmd/strategy | 127.0.0.1:59003 | strategy.grpc | 账户策略候选扫描、实例控制及执行/行情 RPC 客户端 |
-| execution | cmd/execution | 127.0.0.1:59004 | execution.grpc | OMS gRPC、风险候选、模拟撤单恢复、outbox |
-| portfolio | cmd/portfolio | 127.0.0.1:59005 | portfolio.grpc | 持久成交消费、幂等投影及执行恢复查询 |
+| market | market/cmd | 127.0.0.1:59002 | market.grpc | Binance/OKX 独立回放流、质量、行情发布/读取 |
+| strategy | strategy/cmd | 127.0.0.1:59003 | strategy.grpc | 账户策略候选扫描、实例控制及执行/行情 RPC 客户端 |
+| execution | execution/cmd | 127.0.0.1:59004 | execution.grpc | OMS gRPC、风险候选、模拟撤单恢复、outbox |
+| portfolio | portfolio/cmd | 127.0.0.1:59005 | portfolio.grpc | 持久成交消费、幂等投影及执行恢复查询 |
 
 每个进程使用一个 Deer/Kratos 生命周期和自己的 mTLS 身份，Nacos group 为 MUSKDEER_CORE、namespace 为 muskdeer-local。gRPC 是认证的内部接口；strategy/portfolio 当前主要提供后台工作循环及标准健康 RPC，不把管理接口当核心接口重新开启。
 
@@ -15,14 +15,16 @@
 
 ## 独立装配位置
 
-每个服务在自己的 `cmd/<service>/service.go` 维护配置检查、Deer 生命周期、依赖及工作计划。market/execution 只注册自身业务 RPC；strategy/portfolio 装配自己的后台工作循环。四个 main 只从 env 引导 Nacos 配置并调用本服务 `runService`，没有命令行配置参数或公共启动分发。
+四个服务按各自目录组织，入口、装配和测试位于 `<service>/cmd`，继续共用根 go.mod；其余 cmd 命令保持原样。每个项目可单独构建，例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。
+
+每个服务在自己的 `<service>/cmd/service.go` 维护配置检查、Deer 生命周期、依赖及工作计划。market/execution 只注册自身业务 RPC；strategy/portfolio 装配自己的后台工作循环。四个 main 只从 env 引导 Nacos 配置并调用本服务 `runService`，没有命令行配置参数或公共启动分发。
 
 | 服务装配 | 直接业务构造 | 工作计划实现 |
 |---|---|---|
-| [market](../cmd/market/service.go) | business.NewMarket → *Market | [market.go](../internal/business/market.go) |
-| [strategy](../cmd/strategy/service.go) | business.NewStrategy → *Strategy | [strategy.go](../internal/business/strategy.go) |
-| [execution](../cmd/execution/service.go) | business.NewExecution → *Execution | [execution.go](../internal/business/execution.go) |
-| [portfolio](../cmd/portfolio/service.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../internal/business/portfolio.go) |
+| [market](../market/cmd/service.go) | business.NewMarket → *Market | [market.go](../internal/business/market.go) |
+| [strategy](../strategy/cmd/service.go) | business.NewStrategy → *Strategy | [strategy.go](../internal/business/strategy.go) |
+| [execution](../execution/cmd/service.go) | business.NewExecution → *Execution | [execution.go](../internal/business/execution.go) |
+| [portfolio](../portfolio/cmd/service.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../internal/business/portfolio.go) |
 
 公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。通用 `business.New/Runtime` 留给历史组合入口/管理回归，四个核心进程不再调用它；业务工作器的算法、超时、注册发现与资金合同保持。
 

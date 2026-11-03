@@ -1391,3 +1391,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 四个新镜像构建并 Compose up --wait 首次全部 healthy；随后宿主磁盘耗尽，Docker 日志明确记录 no space left on device 并自动关闭引擎。清理本项目 Go 构建缓存后恢复约 4 GB，正常重启卡住，经过工具审批仅终止已核实的 Desktop 进程并恢复引擎，显式启动原 infra-nats；共享基础容器 ID/卷保持，启动时间因恢复而改变。配置/NATS 未就绪时核心进程安全失败，依赖恢复后重验通过，未屏蔽错误。
 - 最终 Compose up --wait 四服务全部 healthy；核实最终镜像 ID、无参数/JSON 挂载、四份 Nacos 配置和四健康身份，实际 mTLS 双源行情均未过期 HEALTHY、价格 99.99/100.01，execution 订单为空。证据 .cache/runtime-version/live-probe.json。原 49 个未提交平仓路径保留，运行源码仍为 .cache/nacos-config/source；既有 NATS 的旧 stream 健康告警不在本步修复范围，不宣称全部共享 infra 健康。不涉及生产、资金或迁移。
 - 工作分支 codex/two-apps，基线 035e402 已同步；本步验证后独立提交、立即推送并核验远程 SHA，见交付报告和 Git 历史。
+
+## 2026-11-03：P13.5 核心服务按项目目录组织
+
+- 按用户要求，将 cmd 下需要的四个服务分别迁移为 market/cmd、strategy/cmd、execution/cmd、portfolio/cmd；各自 main.go、service.go 和 service_test.go 共 12 个文件原样移动，内容逐字节保持。继续使用单一根 go.mod，其他 cmd 命令原样保留；不改服务身份、Nacos/env 配置、运行算法或二进制名。
+- 同步 Makefile 的独立构建路径、Dockerfile 源码复制/构建/许可证依赖路径及 .dockerignore 白名单，更新当前架构和启动文档链接；历史验证记录保留原路径。核心构建不依赖管理入口。
+- 验证：独立 schema 37 源码的 fmt-check、60 Proto/OpenAPI 生成检查、lint/govet（0 issues）、make build 及四个新路径命令包测试通过；make core-test 四项实际 infra/race 共 15.428 秒通过，成交投影/预算 3.01 秒、资源幂等 0.40 秒、broker 冲突 0.02 秒、策略接管/报价/停止 10.40 秒。本步未新写重复测试；全量单元/race、旧管理/浏览器和固定三十分钟未重跑。
+- 四个新路径镜像构建并 Compose up --wait 全部 healthy；核实最终镜像 ID、无参数/JSON 挂载、四份 Nacos 配置与健康身份，实际 mTLS 双源行情未过期 HEALTHY、价格 99.99/100.01，execution 订单为空。仅重建本项目四个应用容器，不部署或启停共享基础设施；证据 .cache/service-layout/live-probe.json。原 49 个未提交平仓路径保留，验证/运行源码仍为 .cache/nacos-config/source，不混入 schema 38；未涉及资金、生产或迁移。
+- 工作分支 codex/two-apps，基线 89f0cf0 已同步；本步验证后独立提交、立即推送并核验远程 SHA，见交付报告和 Git 历史。
