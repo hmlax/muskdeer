@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/testcert"
 )

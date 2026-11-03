@@ -8,7 +8,7 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app"
 
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 

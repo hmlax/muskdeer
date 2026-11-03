@@ -2,8 +2,6 @@
 !Dockerfile
 !go.mod
 !go.sum
-!api
-!api/**
 !cmd
 !cmd/**
 !market

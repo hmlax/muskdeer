@@ -16,8 +16,8 @@ import (
 	healthv1 "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 )
 
 func TestGRPCMetricsIncludeHandlerErrorsAndStreamRejections(t *testing.T) {

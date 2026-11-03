@@ -1,7 +1,7 @@
 # Proto、GORM 与迁移规范
 
 ## 结构唯一来源
-config: deer/proto/config/v1；数据库结构: deer/proto/model/v1；公共枚举/错误: deer/proto/common/v1；服务合同: api/<service>/v1。生成目录由工具配置固定，严禁手改。
+config: deer/proto/config/v1；数据库结构: deer/proto/model/v1；公共枚举/错误: deer/proto/common/v1；gRPC 服务合同: deer/proto/rpc/<service>/v1。生成目录由工具配置固定，严禁手改；根 api 目录已移除，Proto package、字段编号和 RPC 方法名保持。
 用户要求使用 GORM tag 自动生成 model，不再手工定义 model。默认优先验证“Proto 生成的结构直接带 GORM tag 并作为持久化类型”。若必须使用专用 .gorm.pb.go ORM 生成类型才能满足类型要求，提交技术验证结果和取舍，请用户决定，不能静默引入第二套结构。
 
 ## 每张表的必备字段（强制）

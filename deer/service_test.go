@@ -18,8 +18,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 )
 
 type identitySnapshot struct {

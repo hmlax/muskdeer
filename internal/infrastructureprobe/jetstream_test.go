@@ -17,10 +17,10 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 )
 
 func TestJetStreamInfrastructure(t *testing.T) {

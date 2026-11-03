@@ -76,7 +76,7 @@ React页面通过同源fetch调用Hertz，初始检查真实会话；显示加�
 
 协议、配置/边界及实际独立API→Nacos/mTLS→strategy→PG验证见[P07.8](validation/P07-08.md)。[独立OpenAPI及确定性生成门禁](OPENAPI.md)覆盖当前31个管理操作；GET /openapi.json随查询能力开放并每次检查当前viewer会话，返回与生成物相同的no-store JSON，不增加业务权限。
 
-P07.26增加[typed审计合同](../api/strategy/v1/audit.proto)。查询字符串至多1024字节，actor/action/resource分别至多64/64/128 UTF-8字节；精确匹配、不改写大小写/前后空白，不接受重复/未知项或在URL指定session。按ID升序分页，每次都是当前viewer的一次快照。历史actor_role不代表调用者当前权限；可空before_version/after_version使用Proto optional，缺失字段不补0。所有ID/修订/毫秒仍是JSON string，原因保留原文，页面按文本显示。单条响应身份与请求不匹配返回503。入口随原strategy_queries_enabled开启，不需要控制能力，不改变审计/策略/资金或后台工作器。
+P07.26增加[typed审计合同](../deer/proto/rpc/strategy/v1/audit.proto)。查询字符串至多1024字节，actor/action/resource分别至多64/64/128 UTF-8字节；精确匹配、不改写大小写/前后空白，不接受重复/未知项或在URL指定session。按ID升序分页，每次都是当前viewer的一次快照。历史actor_role不代表调用者当前权限；可空before_version/after_version使用Proto optional，缺失字段不补0。所有ID/修订/毫秒仍是JSON string，原因保留原文，页面按文本显示。单条响应身份与请求不匹配返回503。入口随原strategy_queries_enabled开启，不需要控制能力，不改变审计/策略/资金或后台工作器。
 
 P07.28的`/audits`和`/audits/:auditID`与策略页面共用embed资产和查询开关，详情路径要求规范正int64；HTML回退不覆盖API JSON错误。当前会话校验后开放审计导航和只读页面；精确筛选、ID游标、缺失版本、大整数、原因文本、URL刷新与失败状态见[审计查询](ADMIN_STRATEGIES.md)。`make admin-audit-browser`验证实际浏览器及服务链，进入CI/e2e第六组。
 

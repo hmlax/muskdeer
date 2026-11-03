@@ -5,9 +5,9 @@ import (
 
 	"github.com/cloudwego/hertz/pkg/app/server"
 
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/internal/migrate"
 	"github.com/hmlax/muskdeer/internal/repository"

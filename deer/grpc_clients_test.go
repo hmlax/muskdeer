@@ -14,9 +14,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/internal/testcert"
 )

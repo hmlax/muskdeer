@@ -12,10 +12,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/domain"

@@ -1,6 +1,6 @@
 # 运行概览
 
-P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../api/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](../api/admin/v1/services.proto)，P07.55提供[运行概览页面](../web/admin/src/overview.tsx)。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
+P07.51交付[AdminOverview只读仓储](../internal/domain/admin_overview.go)，P07.52接通[typed gRPC](../deer/proto/rpc/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../internal/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](../deer/proto/rpc/admin/v1/services.proto)，P07.55提供[运行概览页面](../web/admin/src/overview.tsx)。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
 
 ## 策略数据库观测
 
@@ -34,7 +34,7 @@ gRPC映射与HTTP两端校验统计和、正的已知状态分组及升序唯一
 
 ## 服务观测读取器
 
-AdminServices.Observe按api/market/strategy/execution/portfolio/cron固定角色读取，不接受任意主机或RPC目标。每页1–4个实例，按实例ID升序游标；总数独立于游标，不把当前页探测结果外推为全部服务健康。读取前后都调用当前持久会话Identity，校验viewer及同一user/session；撤销、角色丢失、会话替换或父取消整次丢弃，不返回部分成员和时间。
+AdminServices.Observe按deer/proto/rpc/market/strategy/execution/portfolio/cron固定角色读取，不接受任意主机或RPC目标。每页1–4个实例，按实例ID升序游标；总数独立于游标，不把当前页探测结果外推为全部服务健康。读取前后都调用当前持久会话Identity，校验viewer及同一user/session；撤销、角色丢失、会话替换或父取消整次丢弃，不返回部分成员和时间。
 
 api来源LOCAL_API仅代表处理请求的这个API，total=1，不枚举全部API副本。借用其唯一Deer.CheckReady，包含实际监听、工作器及已配置依赖检查；不使用仅表示生命周期的Ready。其他角色来源NACOS_HEALTHY_GRPC，借用既有发现客户端按当前namespace/group/cluster读取健康、启用的gRPC注册；total不包含注册系统排除的节点，也不是部署的进程总数。
 

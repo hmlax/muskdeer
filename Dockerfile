@@ -6,7 +6,6 @@ RUN test "$(go env GOVERSION)" = "go1.27.3"
 FROM toolchain AS build
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
-COPY api ./api
 COPY cmd ./cmd
 COPY market ./market
 COPY strategy ./strategy

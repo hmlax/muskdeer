@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/strategywire"
 )

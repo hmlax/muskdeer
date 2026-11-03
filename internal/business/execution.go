@@ -7,10 +7,10 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
 	"github.com/hmlax/muskdeer/internal/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/internal/outbox"
 	"github.com/hmlax/muskdeer/internal/repository"

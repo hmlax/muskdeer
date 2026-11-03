@@ -26,7 +26,7 @@ P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。P07.3
 
 ## Typed 管理入口
 
-[风险 Proto](../api/strategy/v1/risk.proto) 明确区分 StrategyRiskQuery.GetStrategyRisk 与 StrategyRiskControl.ChangeStrategyRisk：前者随 management/query opt-in 注册，后者仅随 control opt-in 注册。查询进程不注册修改 RPC。两者都要求已验证 API mTLS 身份、当前持久会话和至多 5 秒的调用预算；≤2KiB、未知字段和嵌套会话/输入检查保留，无新连接、后台任务、资金或预算初始化。
+[风险 Proto](../deer/proto/rpc/strategy/v1/risk.proto) 明确区分 StrategyRiskQuery.GetStrategyRisk 与 StrategyRiskControl.ChangeStrategyRisk：前者随 management/query opt-in 注册，后者仅随 control opt-in 注册。查询进程不注册修改 RPC。两者都要求已验证 API mTLS 身份、当前持久会话和至多 5 秒的调用预算；≤2KiB、未知字段和嵌套会话/输入检查保留，无新连接、后台任务、资金或预算初始化。
 
 | 方法/路径 | 返回 | 证明/输入 |
 |---|---|---|

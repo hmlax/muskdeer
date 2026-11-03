@@ -22,11 +22,11 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/gorm"
 
-	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/domain"

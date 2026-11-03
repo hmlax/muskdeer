@@ -11,10 +11,10 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	adminv1 "github.com/hmlax/muskdeer/api/admin/v1"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	adminv1 "github.com/hmlax/muskdeer/deer/proto/rpc/admin/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/testcert"
 )

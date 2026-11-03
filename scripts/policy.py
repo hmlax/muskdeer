@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def check():
     compiler = protoc()
-    inputs = sorted((ROOT / 'deer/proto').rglob('*.proto')) + sorted((ROOT / 'api').rglob('*.proto'))
+    inputs = sorted((ROOT / 'deer/proto').rglob('*.proto'))
     if not inputs:
         raise ValueError('owned Proto schemas are missing')
     with tempfile.TemporaryDirectory(prefix='muskdeer-policy-') as directory:

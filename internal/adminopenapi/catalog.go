@@ -5,8 +5,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	adminv1 "github.com/hmlax/muskdeer/api/admin/v1"
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
+	adminv1 "github.com/hmlax/muskdeer/deer/proto/rpc/admin/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 	"github.com/hmlax/muskdeer/internal/domain"
 )
 

@@ -12,9 +12,10 @@
 - Wire 版本固定在 go.mod 的 tool/require 与 tools/versions.json。make wire 生成、make wire-check 只比较且不写回；两者纳入生成/verify 流程，禁止手改 wire_gen.go。每进程只有一个 Deer；业务工作计划在 Deer 基础设施就绪后同步装配，不在 provider 中启动 goroutine 或另开池。App.Run/Close 保留有 context 且返回 error 的清理合同，不能转成吞错的 func()。
 - Deer 保存 Kratos App、日志及公共依赖，NewDeer 通过 WithDB/WithRedis/WithLogger 等选项支持注入已有客户端；注入依赖为借用，调用方在 Deer 清理后关闭，未注入的依赖仍由 Deer 按配置创建和清理。Wire 透传 []deer.Option，不重复创建池；构造、启动与运行 readiness 保留依赖检查。
 - 核心服务无命令行参数：不使用 flag、-config 或 -check-ready，不从本地 JSON 启动。Nacos 连接地址、命名空间、分组、cluster、认证和 TLS 从 env 获取；服务/业务运行配置使用 Proto JSON 存放 Nacos，启动时读取并校验，不回退本地文件。配置变更显式重启，不隐式热切换交易状态；健康探针为独立无参数 readycheck。
-- 管理后台、HTTP 管理接口、React 和管理开户退出当前交付范围；已有源码、历史验收及用户未提交修改保留，核心构建不依赖管理 HTTP 入口或前端资产。核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
+- 2026-11-03 用户进一步确认移除根 api/web 目录：删除管理 HTTP、前端及相关应用入口，必要 gRPC 协议迁入 deer/proto/rpc，保留四核心服务通信；此项替代此前仅保留管理源码但不部署的约定。历史验收、已存在的数据库迁移及用户未提交业务修改保留；核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
+- gRPC 服务合同与生成代码位于 deer/proto/rpc/<service>/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
 - 仓库内维护的第三方源码、Proto 注解、OpenAPI schema 及许可证统一放 deer/third_party，继续共用根 go.mod；生成工具、Go 导入及镜像许可收集使用该路径。
 - 每张表及其持久化 Model 必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL；字段映射、生成与迁移要求见 docs/PROTO_AND_MODEL.md。
 - 所有 GORM 数据操作显式使用 db.Model(&model.X{}) 或事务中的 tx.Model(&model.X{})，禁止 db.Table("xxx")、tx.Table("xxx") 及其他变量上的 .Table(...)；适用于业务、公共组件、脚本与测试。

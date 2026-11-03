@@ -17,12 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def generate(verify: bool) -> None:
     check()
-    inputs = sorted((ROOT / 'deer/proto').rglob('*.proto')) + sorted((ROOT / 'api').rglob('*.proto'))
+    inputs = sorted((ROOT / 'deer/proto').rglob('*.proto'))
     if not inputs:
         raise ValueError('no project Proto definitions found')
     with tempfile.TemporaryDirectory(prefix='muskdeer-generate-') as temporary:
         stage = Path(temporary)
-        for base in ('deer/proto', 'api', 'deer/third_party'):
+        for base in ('deer/proto', 'deer/third_party'):
             for original in (ROOT / base).rglob('*.proto'):
                 destination = stage / original.relative_to(ROOT)
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -37,7 +37,7 @@ def generate(verify: bool) -> None:
             *arguments, '--go_out=.', '--go_opt=module=github.com/hmlax/muskdeer', '--go_opt=' + mapping,
             *files,
         ], cwd=stage, env=environment, check=True)
-        rpc_files = [path.relative_to(ROOT).as_posix() for path in inputs if path.is_relative_to(ROOT / 'api')]
+        rpc_files = [path.relative_to(ROOT).as_posix() for path in inputs if path.is_relative_to(ROOT / 'deer/proto/rpc')]
         if rpc_files:
             subprocess.run([
                 *arguments, '--go-grpc_out=.', '--go-grpc_opt=module=github.com/hmlax/muskdeer',
@@ -53,7 +53,7 @@ def generate(verify: bool) -> None:
         expected = {path.relative_to(stage) for path in generated}
         existing = {
             path.relative_to(ROOT)
-            for base in ('deer/proto', 'api')
+            for base in ('deer/proto',)
             for path in (ROOT / base).rglob('*.pb.go')
         }
         stale = sorted(existing - expected)

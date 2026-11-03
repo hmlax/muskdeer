@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
-	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/proto/rpc/market/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/marketquality"

@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 )
 
 const documentURL = "https://muskdeer.invalid/openapi.json"

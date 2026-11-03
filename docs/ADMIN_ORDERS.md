@@ -22,7 +22,7 @@ P07.32提供当前 viewer 权限下的策略订单仓储列表与详情，P07.33
 
 ## typed 传输边界
 
-[订单Proto](../api/strategy/v1/orders.proto)的StrategyOrderQuery提供ListStrategyOrders与GetStrategyOrder。只随strategy.management_enabled注册，验证API mTLS身份、最多5秒原生截止、≤2KiB请求和当前viewer；不要求控制能力，不创建交易工作器。API复用既有strategy连接，HTTP单次最多3秒，继续继承更早父取消。
+[订单Proto](../deer/proto/rpc/strategy/v1/orders.proto)的StrategyOrderQuery提供ListStrategyOrders与GetStrategyOrder。只随strategy.management_enabled注册，验证API mTLS身份、最多5秒原生截止、≤2KiB请求和当前viewer；不要求控制能力，不创建交易工作器。API复用既有strategy连接，HTTP单次最多3秒，继续继承更早父取消。
 
 | GET 路径 | 参数与返回 |
 |---|---|

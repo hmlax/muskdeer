@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/domain"

@@ -7,8 +7,8 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
 	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/internal/domain"
 )

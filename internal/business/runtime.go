@@ -6,11 +6,11 @@ import (
 
 	"google.golang.org/grpc"
 
-	executionv1 "github.com/hmlax/muskdeer/api/execution/v1"
-	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/proto/rpc/market/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/adminactor"
 	"github.com/hmlax/muskdeer/internal/delivery/executiongrpc"

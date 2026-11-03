@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	strategyv1 "github.com/hmlax/muskdeer/api/strategy/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
 )
 
 func TestStrategyHTTPUsesCookieAndTypedDecimalAndLongIdentityWire(t *testing.T) {

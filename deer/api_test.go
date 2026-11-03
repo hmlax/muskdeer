@@ -14,8 +14,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/app/server"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 )
 
 func TestDeerApiSharesDependenciesAndLifecycle(t *testing.T) {

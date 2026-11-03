@@ -18,11 +18,11 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/gorm"
 
-	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/proto/rpc/market/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/internal/delivery/marketgrpc"
 	"github.com/hmlax/muskdeer/internal/domain"

@@ -28,7 +28,7 @@ SIGTERM/CTRL-C 触发停止：先撤就绪、停止心跳并注销，再 drain t
 
 `make dev-up` 使用 compose.dev.yml 启动四项固定 digest 的基础设施，Docker 自动分配 loopback 端口。Compose project 由当前工作区绝对路径的 SHA-256 前 12 位派生，不从可编辑 state 文件读取；不同路径拥有独立资源，移动目录会得到新项目。命令有工作区互斥锁，重复 up 复用已有数据，不迁移数据库、不重设既有 Nacos 管理员密码。
 
-实际地址保存在 `.cache/dev/endpoints.json`；`environment.sh` 和 api/market/strategy/execution/portfolio/cron.json 使用可辨识开发口令，不进 git。先在当前 shell 中运行：
+实际地址保存在 `.cache/dev/endpoints.json`；`environment.sh` 和 deer/proto/rpc/market/strategy/execution/portfolio/cron.json 使用可辨识开发口令，不进 git。先在当前 shell 中运行：
 
 ```sh
 make dev-up

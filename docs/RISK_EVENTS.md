@@ -38,7 +38,7 @@ P07.48的[AdminRiskEvents](../internal/domain/admin_risk_events.go)复用当前v
 
 ## typed gRPC与HTTP
 
-P07.49提供[StrategyRiskEventQuery](../api/strategy/v1/risk_events.proto)的ListRiskEvents/GetRiskEvent及具体RiskDiagnosticEvent。仅在strategy的management_enabled时注册，要求已验证API服务身份、当前viewer会话、最大5秒调用和2KiB请求；读取节点不注册控制写RPC。API在strategy_queries_enabled下使用既有唯一strategy连接，不启动事件生产者、投影消费或其他工作器。
+P07.49提供[StrategyRiskEventQuery](../deer/proto/rpc/strategy/v1/risk_events.proto)的ListRiskEvents/GetRiskEvent及具体RiskDiagnosticEvent。仅在strategy的management_enabled时注册，要求已验证API服务身份、当前viewer会话、最大5秒调用和2KiB请求；读取节点不注册控制写RPC。API在strategy_queries_enabled下使用既有唯一strategy连接，不启动事件生产者、投影消费或其他工作器。
 
 Hertz只读入口：
 

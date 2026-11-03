@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
-	marketv1 "github.com/hmlax/muskdeer/api/market/v1"
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/proto/rpc/market/v1"
 	"github.com/hmlax/muskdeer/internal/delivery/marketgrpc"
 	"github.com/hmlax/muskdeer/internal/domain"
 	"github.com/hmlax/muskdeer/internal/marketworker"

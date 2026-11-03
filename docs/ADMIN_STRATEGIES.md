@@ -20,7 +20,7 @@ Feeds显式限定一个存在且未软删除的instrument和LIVE/REPLAY模式，
 
 三个查询均使用当前viewer及有界只读REPEATABLE READ事务、自增ID排他游标与1–100限制、软删除过滤及固定错误。Feeds的交易对存在性与绑定列表共用同一快照；并发提交的新绑定仅在下一次查询可见。查询不创建交易实例、账户余额、租约或行情。仓储验证见[P07.15](validation/P07-15.md)。
 
-P07.16由[typed目录Proto](../api/strategy/v1/catalog.proto)的独立StrategyCatalog提供ListAccounts/ListInstruments/ListMarketFeeds，随management_enabled显式注册，不需要control_enabled。复用API-peer、原生≤5秒、≤2KiB、未知字段/规范会话及分页门禁；具体账户/交易对/feed/质量策略字段，不使用JSON或bytes业务包装。小数string、int64保留，服务端对精确小数和feed输入身份再次验证，错误沿用固定管理合同。
+P07.16由[typed目录Proto](../deer/proto/rpc/strategy/v1/catalog.proto)的独立StrategyCatalog提供ListAccounts/ListInstruments/ListMarketFeeds，随management_enabled显式注册，不需要control_enabled。复用API-peer、原生≤5秒、≤2KiB、未知字段/规范会话及分页门禁；具体账户/交易对/feed/质量策略字段，不使用JSON或bytes业务包装。小数string、int64保留，服务端对精确小数和feed输入身份再次验证，错误沿用固定管理合同。
 
 API的strategy_queries_enabled同时显式接入三个[目录HTTP](ADMIN_HTTP.md)GET；借用同一个Deer/Nacos/mTLS客户端，不在API读取业务目录表、不透明重试或创建交易资源。实际两独立命令、真实viewer密码登录/业务鉴权与注销旧Cookie回归见[P07.16](validation/P07-16.md)。P07.17已提供独立[创建持久事务](ADMIN_CREATION.md)，P07.18接入创建gRPC/HTTP，P07.19接入实际创建表单；参数发布/换源见[发布说明](ADMIN_PUBLICATION.md)。
 
@@ -32,7 +32,7 @@ List按自增ID升序，以排他after_id及1–100条限制分页；actor/actio
 
 响应只含历史ID、actor及当时role、action、resource、reason、可空before/after版本、UTC创建时间；无用户密码、session/CSRF哈希、原幂等键或请求指纹。可空版本保留presence和完整int64，不把缺失伪造为0，不依据历史记录授予当前权限或断言控制已完成。历史原因按原值返回，后续页面必须按文本渲染。读请求不写审计、不启动观测器或改变实例、风险、订单和余额，故障/取消不返回部分数据，公开错误沿用固定管理合同。真实历史/权限/并发快照/故障验证见[P07.25](validation/P07-25.md)。
 
-P07.26通过独立[StrategyAudit typed Proto](../api/strategy/v1/audit.proto)提供ListAudits/GetAudit。沿用management_enabled、API-peer-only、≤5秒原生期限、2KiB/未知字段及规范会话边界；AuditEntry全部具体字段，optional int64前后修订，输出检验历史角色/文本/时间/版本及请求ID、精确筛选/升序页/游标一致，不返回不可信部分页。查询模式也注册，不依赖control_enabled，无新增工作器。API的strategy_queries_enabled沿同一个Deer/Nacos/mTLS客户端连接提供[两个审计HTTP](ADMIN_HTTP.md)，不读取本地审计业务表或缓存权限。
+P07.26通过独立[StrategyAudit typed Proto](../deer/proto/rpc/strategy/v1/audit.proto)提供ListAudits/GetAudit。沿用management_enabled、API-peer-only、≤5秒原生期限、2KiB/未知字段及规范会话边界；AuditEntry全部具体字段，optional int64前后修订，输出检验历史角色/文本/时间/版本及请求ID、精确筛选/升序页/游标一致，不返回不可信部分页。查询模式也注册，不依赖control_enabled，无新增工作器。API的strategy_queries_enabled沿同一个Deer/Nacos/mTLS客户端连接提供[两个审计HTTP](ADMIN_HTTP.md)，不读取本地审计业务表或缓存权限。
 
 P07.28提供`/audits`列表与`/audits/:auditID`详情。viewer/operator/admin沿同一查询能力看见“审计记录”导航，不需要控制能力；深层登录与刷新保留入口，未启用查询时HTML与API都404。actor/action/resource按原值填写，只有明确查询才应用；本地检查UTF-8字节/控制字符/前后空白，筛选条件写入URL供刷新，改变条件重置分页，游标分页不使用offset或Number。载入/空结果/权限/依赖失败/协议失败/404/当前会话失效均有明确状态；每次读取6秒、卸载/替换条件取消，旧读取不能覆盖新条件。
 
@@ -40,7 +40,7 @@ P07.28提供`/audits`列表与`/audits/:auditID`详情。viewer/operator/admin�
 
 ## 管理 gRPC
 
-合同为 `api/strategy/v1/management.proto` 的 StrategyManagement，包含 ListStrategies、GetStrategy、ListConfigVersions。调用者必须同时通过 Deer 的 CA/mTLS 验证及方法级 `api.grpc` 身份检查；其他有效服务证书也不具备管理权限，metadata 无法伪造身份。请求携带 API 从 HttpOnly cookie 提取的 AdminSession，不接受浏览器业务 JSON 自行指定会话。无/超长原生期限、超 2KiB 请求、未知请求字段、非法页大小/身份或非规范随机会话拒绝；原生上限 5 秒，沿用 Deer 有界连接/发现及禁止透明重试规则。
+合同为 `deer/proto/rpc/strategy/v1/management.proto` 的 StrategyManagement，包含 ListStrategies、GetStrategy、ListConfigVersions。调用者必须同时通过 Deer 的 CA/mTLS 验证及方法级 `api.grpc` 身份检查；其他有效服务证书也不具备管理权限，metadata 无法伪造身份。请求携带 API 从 HttpOnly cookie 提取的 AdminSession，不接受浏览器业务 JSON 自行指定会话。无/超长原生期限、超 2KiB 请求、未知请求字段、非法页大小/身份或非规范随机会话拒绝；原生上限 5 秒，沿用 Deer 有界连接/发现及禁止透明重试规则。
 
 响应为显式 Strategy/ConfigVersion 字段及 Maker/Grid oneof，所有小数为 string；生效配置使用消息/optional presence，未生效不会显示成版本零配置。schema 0 不返回参数；金额精度、参数联合及整毫秒约束在输出编码时也检查。错误使用固定文本和明确 Unauthenticated/PermissionDenied/InvalidArgument/NotFound/Unavailable/原生取消期限分类，不向客户端返回持久化原因。
 

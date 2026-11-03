@@ -11,8 +11,8 @@ import (
 	"github.com/nats-io/nats.go"
 	natsjs "github.com/nats-io/nats.go/jetstream"
 
-	probev1 "github.com/hmlax/muskdeer/api/probe/v1"
 	"github.com/hmlax/muskdeer/deer/jetstream"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
 )
 
 func TestConsumerBindingDoesNotProvisionMissingDurable(t *testing.T) {

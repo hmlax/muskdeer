@@ -1433,3 +1433,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 实际执行不带 --env-file 的 docker compose down 和 docker compose up --build -d --wait --wait-timeout 90 成功，四个新应用容器全部 healthy、启动重启数为 0；随后普通 ps、四份 Nacos 健康身份、mTLS 双源未过期 HEALTHY 回放及 99.99/100.01 精确价格、execution 空订单查询通过。共享 PostgreSQL/Redis/Nacos/NATS 容器 ID/启动时间及四份 Nacos 配置哈希与操作前一致。
 - 运行证据在忽略的 .cache/compose-env/{before,after,live-probe}.json；原有平仓修改保留，镜像运行源码仍为 9f31d64，未混入 schema 38。本步只改 Python 准备及文档，Go 单元/race、生成和完整交易集成本步未重跑；没有迁移、注资或生产操作。文档链接及 git diff --check 通过。
 - 工作分支 codex/two-apps，基线 4a32ca1；本步修复/测试/文档独立提交后立即推送并核验远程 SHA，见交付报告与 Git 历史。
+
+## 2026-11-03：P14.1 核心 gRPC 协议迁出根 api
+
+- 用户确认移除根 api/web 和管理 HTTP，保留核心 gRPC。先将服务 Proto 与生成代码迁至 deer/proto/rpc，同步 Go 导入、Proto import/go_package、生成器/检查、Hertz 验证及 Docker 路径；根 api 移除，下一步继续删除 web 和管理 HTTP 应用。
+- 生成代码全部由工具重新生成；迁移前后 47 个 descriptor 逐项对比，只规范化文件/import/Go 包路径后完全相同，Proto package、字段编号、消息类型、RPC 名称及选项保持。
+- 原有 49 个未提交文件和完整 binary diff 备份在 .cache/apiweb-removal。确认其中 48 个文件除 RPC 导入和 gofmt 外内容保持，执行接口生成代码从原有 Proto 重新生成；独立暂存已提交基线的迁移版本，不把平仓业务修改混入本步提交，原有修改在新路径继续保留。
+- 验证：隔离 schema 37 源码生成一致性（60 Proto/OpenAPI/Wire）、Hertz 确定性与编译、格式、lint/govet（0 issues）、全包单元及核心构建通过；工作区生成检查通过。真实四核心进程 integration/race 最终四项全过，14.431 秒，覆盖成交/投影/预算、资源幂等、broker 冲突和策略接管/报价/停止。
+- 回归期间两次 execution 启动 fetch 失败；独立回读实验明确复现 Nacos 发布已确认但立即 GET 为 404。测试进程夹具现在在原 command_timeout 内等待该新配置可读，仅对 404 等待，其他错误或内容不符立即拒绝；保留原交易/启动超时和断言，失败清理已发布的测试配置。三个针对性单元/race 检查覆盖可见性、异常/内容拒绝及取消；真实四项随后全过。生产启动逻辑不变。
+- 不涉及迁移、注资或生产；当前运行容器暂未重建，待管理 HTTP/Web 清理完成统一验证。工作分支 codex/two-apps，基线 a1b06f6；本独立步骤检查通过后提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。
