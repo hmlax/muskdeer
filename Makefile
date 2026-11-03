@@ -116,3 +116,8 @@ compose-status:
 
 core-test: build
 	python3 scripts/core-process-test.py
+
+.PHONY: native-himalaya-test
+native-himalaya-test:
+	CARGO_TARGET_DIR=.cache/himalaya/native-target rustup run 1.94.0 cargo test --locked --manifest-path scripts/native/himalaya/Cargo.toml
+	python3 scripts/native/himalaya-journal/run.py

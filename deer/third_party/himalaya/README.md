@@ -20,3 +20,5 @@ CARGO_TARGET_DIR=.cache/himalaya/native-target rustup run 1.94.0 cargo test \
 原生绑定将两级 proof 和准入时的期限带入原有 FIFO，在持有每交易对执行锁后复核所有权，并持有 guard 直到订单簿效果与 outcome 写入结束。`MatchingAuthority` 使用原生 ServiceAuth；默认关闭。显式 `HIMALAYA_MAKER_DEVELOPMENT_TEST_FUNDS=true` 且有持久化 outbox 目录才启用，只接受测试账户 10001/BTCUSDT 和 10002/ETHUSDT。检查点失败后状态探针拒绝声明可用。
 
 开发源码已绑定并通过原生完整回归，运行容器尚未升级。仍需订单服务的持久命令日志、旧入口接管保护和失联撤单；单独启用此撮合服务不能视为完整 Gateway，也不能据此启动报价。
+
+`order/maker_journal.rs` 与 `order/001_maker_commands.sql` 是持久命令身份组件及显式 version 1 增量迁移。服务启动只校验 schema/唯一键，不能自动执行 DDL；原生订单服务绑定尚在实施。`make native-himalaya-test` 同时运行所有权和真实 MySQL 日志测试，复用 `infra-mysql` 并只创建/清理随机测试逻辑库。凭据只从已有容器配置读入子进程环境，不输出或写入仓库。缺少 infra 或凭据时命令失败，不跳过测试。
