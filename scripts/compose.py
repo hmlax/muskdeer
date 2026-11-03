@@ -34,6 +34,18 @@ def write(path, content):
     temporary.replace(path)
 
 
+def install_default_environment():
+    """Expose prepared settings to plain Compose without replacing a user's .env."""
+    destination = ROOT / '.env'
+    prepared = DIRECTORY / 'compose.env'
+    if destination.is_symlink():
+        return destination.resolve() == prepared.resolve()
+    if destination.exists():
+        return False
+    destination.symlink_to(os.path.relpath(prepared, ROOT))
+    return True
+
+
 def run(arguments, **options):
     return subprocess.run(arguments, check=True, capture_output=True, text=True, timeout=30, **options).stdout
 
@@ -249,6 +261,8 @@ def prepare(source):
     compose_environment = {'MUSKDEER_RUNTIME_DIR': str(DIRECTORY), 'MUSKDEER_UID': str(os.getuid()),
                            'MUSKDEER_GID': str(os.getgid()), 'MUSKDEER_BUILD_CONTEXT': state['source']}
     write(DIRECTORY / 'compose.env', ''.join(key + '=' + env_value(value) + '\n' for key, value in compose_environment.items()))
+    if not install_default_environment():
+        print('Existing project .env preserved; use docker compose --env-file .cache/compose/compose.env')
     print('Prepared existing infra: isolated muskdeer_local database and muskdeer-local namespace; no infra container created')
 
 

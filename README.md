@@ -2,6 +2,8 @@
 
 核心服务复用既有 Docker infra：`make compose-up` 分别启动 market、strategy、execution、portfolio 四个 Kratos 进程；不启动管理后台。入口、端口及验证见[核心服务运行说明](docs/CORE_SERVICES.md)。
 
+首次准备后会生成忽略的根 `.env` 入口；后续可直接使用 `docker compose ps`、`docker compose down`、`docker compose up --build -d`，自动读取本地引导设置。
+
 四个服务均无命令行参数：Nacos 连接信息从 env 获取，服务及业务运行配置从 Nacos 的各自配置项读取，不读取本地 JSON。字段及示例见 [Nacos 配置](docs/NACOS_CONFIG.md)。
 
 服务目录分别为 `market`、`strategy`、`execution`、`portfolio`，统一使用 `cmd/main.go + wire.go + wire_gen.go` 和各自 `internal/app` ProviderSet，继续共用根 go.mod；例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。`make wire` 重新生成依赖装配，`make wire-check` 检查漂移；详细结构见 [Wire 装配](docs/WIRING.md)。其余 cmd 命令保留原样。

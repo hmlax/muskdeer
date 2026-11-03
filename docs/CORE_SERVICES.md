@@ -34,8 +34,10 @@
 
 ```sh
 make compose-up
-docker compose --env-file .cache/compose/compose.env ps
+docker compose ps
 ```
+
+准备脚本会创建忽略的根目录 `.env` 相对链接，指向 `.cache/compose/compose.env`。其中只有运行目录、UID/GID 和构建源码位置；凭据仍放忽略的 secrets.env/nacos.env。Docker Compose [默认读取项目的 .env](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file)，因此准备完成后可直接执行普通命令；重复 prepare 后链接立即使用更新的设置。已有用户 `.env` 文件或其他链接保持原样，此时继续使用显式 `--env-file .cache/compose/compose.env`，脚本会给出提示。
 
 准备脚本复用既有基础服务，只创建独立逻辑资源：有本工作区所有权标记的 muskdeer_local PostgreSQL 数据库/角色、muskdeer-local Nacos 命名空间、本地服务证书。Nacos 凭据从忽略的 `.cache/infra/nacos-credentials.json`（username/password）读取，Redis 从既有容器读取本地认证配置。独立持久 NATS 用户 muskdeer-local 的凭据放 `.cache/infra/nats-local-credentials.json`；该账户必须已配置在现有 infra-nats，不能使用会被测试清理的 muskdeer-test。所有凭据/密钥仅存在忽略缓存，权限 0600；每个容器仅挂载自己的证书/私钥，不挂载 CA 私钥。
 
@@ -47,7 +49,9 @@ docker compose --env-file .cache/compose/compose.env ps
 
 ```sh
 # 已准备且初始化后再次启动
-docker compose --env-file .cache/compose/compose.env up -d --remove-orphans --wait
+docker compose up --build -d --wait
+# 需要先停止本项目应用时
+docker compose down && docker compose up --build -d --wait
 # 仅移除本项目应用，保留数据和既有 infra
 make compose-down
 # 真实独立核心命令与隔离资源回归

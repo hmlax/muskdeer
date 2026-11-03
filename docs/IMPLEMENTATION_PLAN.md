@@ -11,6 +11,7 @@
 - P13.5：按后续要求，将四个核心服务入口及各自装配/测试迁移到 <service>/cmd；保持单 go.mod，同步构建与镜像路径，其他 cmd 命令原样保留。
 - P13.6：按后续要求统一四服务 Wire injector 与 internal/app provider 结构，生成物入库并纳入一致性检查；Deer 保存 Kratos App、日志及公共依赖，NewDeer 支持 WithDB/WithRedis 等借入依赖选项，Wire 透传选项；保留单 Deer 生命周期、构造失败回滚和独立服务身份，验证真实核心进程与基础设施依赖所有权。
 - P13.7：按后续要求将 third_party 移入 deer/third_party，保留第三方源码/许可原文，同步 Go 导入、Proto include、OpenAPI 测试和 Docker 构建路径；验证生成一致性、日志/合同测试与构建。
+- P13.8：修复普通 Docker Compose 命令未加载本地引导配置的问题，prepare 生成默认 .env 入口并保留已有用户文件；回归默认读取、重复准备与实际 down/up --build。
 - 复用既有 PostgreSQL/Redis/Nacos/NATS，独立持久消息账户/流，显式迁移和本地资源初始化；不创建基础服务。
 - 核心工作循环不依赖管理开启；本地回放双源行情，交易账户未注资且禁止新增风险。
 - 验收：四容器健康、四个独立 Nacos 身份、实际 RPC 和工作循环、数据/消息幂等、真实独立进程业务与停止/接管回归通过。无具体业务的 cron 不部署。

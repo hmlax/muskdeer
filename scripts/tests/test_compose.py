@@ -10,6 +10,40 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import compose
 
 
+class ComposeEnvironmentTest(unittest.TestCase):
+    def test_default_environment_follows_prepared_settings_after_repeated_prepare(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime = root / '.cache/compose'
+            with mock.patch.object(compose, 'ROOT', root), mock.patch.object(compose, 'DIRECTORY', runtime):
+                compose.write(runtime / 'compose.env', "MUSKDEER_BUILD_CONTEXT='first-source'\n")
+                self.assertTrue(compose.install_default_environment())
+                self.assertEqual((root / '.env').read_text(), "MUSKDEER_BUILD_CONTEXT='first-source'\n")
+                self.assertFalse((root / '.env').readlink().is_absolute())
+                compose.write(runtime / 'compose.env', "MUSKDEER_BUILD_CONTEXT='second-source'\n")
+                self.assertTrue(compose.install_default_environment())
+                self.assertEqual((root / '.env').read_text(), "MUSKDEER_BUILD_CONTEXT='second-source'\n")
+
+    def test_existing_project_environment_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            owned = root / '.env'
+            owned.write_text('EXISTING_SETTING=keep-me\n')
+            with mock.patch.object(compose, 'ROOT', root), mock.patch.object(compose, 'DIRECTORY', root / '.cache/compose'):
+                self.assertFalse(compose.install_default_environment())
+                self.assertEqual(owned.read_text(), 'EXISTING_SETTING=keep-me\n')
+                self.assertFalse(owned.is_symlink())
+
+    def test_existing_external_environment_symlink_is_preserved(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            owned = root / '.env'
+            owned.symlink_to('user-settings.env')
+            with mock.patch.object(compose, 'ROOT', root), mock.patch.object(compose, 'DIRECTORY', root / '.cache/compose'):
+                self.assertFalse(compose.install_default_environment())
+                self.assertEqual(owned.readlink(), Path('user-settings.env'))
+
+
 class ComposeResourcesTest(unittest.TestCase):
     def test_existing_database_without_matching_ownership_is_never_adopted(self):
         state = {'database_password': 'local-secret', 'ownership': 'workspace-token'}

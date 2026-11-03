@@ -1424,3 +1424,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 实际 mTLS 验证四份 Nacos 配置及四个独立健康注册、Binance/OKX 两路未过期 HEALTHY 回放及精确 99.99/100.01、execution 空订单查询全部通过。基础 PostgreSQL/Redis/Nacos/NATS 的容器 ID/启动时间以及四份 Nacos 配置哈希与启动前一致，未操作共享基础设施生命周期。
 - 构建版本与前后状态/RPC 证据保存于忽略的 .cache/compose-restart；未执行迁移、重新注资、启用账户、生产部署或外部实盘。此步只进行实际构建/启动/运行探针及文档检查，未重复上一轮已通过的 Go 单元/race 和交易集成。
 - 构建源码提交 9f31d64 已在 origin/codex/two-apps；本步运行记录经文档链接和 git diff --check 验证后单独提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。
+
+## 2026-11-03：P13.8 普通 Docker Compose 命令默认配置入口
+
+- 用户贴出的普通 docker compose down/up --build 因未传 --env-file 而缺少 MUSKDEER_RUNTIME_DIR/UID；复现清空 shell 引导变量后 config --services 返回 1。根因是准备脚本仅写 .cache/compose/compose.env，未建立 Compose 默认读取的根 .env。
+- prepare 现在为不存在的根 .env 创建指向已准备 compose.env 的相对链接；重复准备即使原子替换设置文件，默认入口也立即读取新内容。已有用户普通 .env 或其他链接保持原样并提示显式 --env-file；根入口加入 gitignore，未提交任何机器配置或凭据。README 和核心运行说明同步普通命令用法。
+- 新增三项回归先失败、实现后通过，覆盖默认读取/重复更新、保留用户文件和外部悬空链接；Python 3.13.2 全部 33 项工具测试通过。实际 prepare 后，在完全清空 shell 引导变量时，普通 config 与显式 --env-file 的完整解析结果一致且无警告，构建源仍为已验证的 schema 37 快照。
+- 实际执行不带 --env-file 的 docker compose down 和 docker compose up --build -d --wait --wait-timeout 90 成功，四个新应用容器全部 healthy、启动重启数为 0；随后普通 ps、四份 Nacos 健康身份、mTLS 双源未过期 HEALTHY 回放及 99.99/100.01 精确价格、execution 空订单查询通过。共享 PostgreSQL/Redis/Nacos/NATS 容器 ID/启动时间及四份 Nacos 配置哈希与操作前一致。
+- 运行证据在忽略的 .cache/compose-env/{before,after,live-probe}.json；原有平仓修改保留，镜像运行源码仍为 9f31d64，未混入 schema 38。本步只改 Python 准备及文档，Go 单元/race、生成和完整交易集成本步未重跑；没有迁移、注资或生产操作。文档链接及 git diff --check 通过。
+- 工作分支 codex/two-apps，基线 4a32ca1；本步修复/测试/文档独立提交后立即推送并核验远程 SHA，见交付报告与 Git 历史。

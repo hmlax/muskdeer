@@ -3,5 +3,6 @@
 /Muskdeer-preparation.zip
 .DS_Store
 /.cache/
+/.env
 __pycache__/
 /web/admin/node_modules/
