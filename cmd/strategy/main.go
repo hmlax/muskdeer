@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -18,8 +17,8 @@ func main() {
 }
 
 func run() int {
-	if len(os.Args) != 1 || runtime.Version() != "go1.27.3" {
-		return processfailure.Report(os.Stderr, "core service takes no arguments and requires Go 1.27.3", nil, 2)
+	if len(os.Args) != 1 {
+		return processfailure.Report(os.Stderr, "core service takes no arguments", nil, 2)
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

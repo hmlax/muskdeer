@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -49,9 +48,6 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	}
 	if !*apply || flags.NArg() != 0 {
 		return failure(diagnostic, "migrate requires -apply with no positional arguments", 2)
-	}
-	if runtime.Version() != "go1.27.3" {
-		return failure(diagnostic, "Go 1.27.3 is required", 1)
 	}
 	var cfg *configv1.ServiceConfig
 	var err error

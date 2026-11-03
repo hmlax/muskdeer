@@ -1,4 +1,4 @@
-// Command doctor checks the exact compiler and local protobuf configuration.
+// Command doctor checks local protobuf configuration.
 package main
 
 import (
@@ -8,15 +8,12 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/internal/business"
 	"github.com/hmlax/muskdeer/internal/delivery/adminhttp"
 )
-
-const requiredGoVersion = "go1.27.3"
 
 func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -38,9 +35,6 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if *path == "" || flags.NArg() != 0 {
 		return diagnosticExit(diagnostic, "doctor requires -config and no positional arguments", 2)
 	}
-	if runtime.Version() != requiredGoVersion {
-		return diagnosticExit(diagnostic, "doctor requires Go 1.27.3", 1)
-	}
 	cfg, err := deer.LoadConfig(ctx, *path)
 	if err != nil {
 		return diagnosticExit(diagnostic, err, 1)
@@ -51,7 +45,7 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if err := adminhttp.ValidateConfig(cfg); err != nil {
 		return diagnosticExit(diagnostic, err, 1)
 	}
-	if _, err := fmt.Fprintln(output, "go1.27.3: configuration syntax and limits validated"); err != nil {
+	if _, err := fmt.Fprintln(output, "configuration syntax and limits validated"); err != nil {
 		return 1
 	}
 	return 0

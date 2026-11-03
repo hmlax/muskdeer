@@ -1383,3 +1383,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：相关包 race 通过；独立 schema 37 源码的 fmt/60 Proto 与 OpenAPI 生成检查/lint/govet（0 issues）/全包单元/核心构建通过；core-test 四项实际 infra/Nacos/race 15.033 秒通过，包含真实独立命令成交投影/预算、幂等初始化、broker 冲突与策略接管/终态停止。dev-test 真实 Nacos 启动及重复关联/退出通过；最终 30 项工具测试、四个最终镜像非 root/只读/无参数/无 JSON 挂载的 readiness/日志/SIGTERM 通过。
 - 运行：四个最终镜像 Compose up --wait 全部 healthy，实际核实 Nacos 四配置/四健康身份、双源未过期 HEALTHY 回放及精确 99.99/100.01、execution 空订单；没有新增或重启共享基础容器。原 49 个未提交平仓路径保持，构建来源 .cache/nacos-config/source。详见 [配置说明](NACOS_CONFIG.md) 和 [P13.3 验证](validation/P13-03.md)。旧全量集成/管理浏览器/固定三十分钟及生产本步未运行。
 - 工作分支 codex/two-apps，基线 84fd86c 已同步；本步验证后独立提交、立即推送并核验 SHA，结果见交付报告和 Git 历史。
+
+## 2026-11-02：P13.4 移除运行时 Go 版本判断
+
+- 按用户后续要求，移除所有应用命令中的 runtime.Version() 精确比较，包括四核心入口、readycheck、migrate、doctor 及保留的管理命令；删除无用 runtime 导入和 doctor 硬编码版本输出。版本继续在 go.mod 声明（当前已为 1.27.3），不新增运行时版本门禁；参数/配置/取消逻辑保持。工程约定同步记录此项对原要求的调整。
+- 验证：独立 schema 37 源码的 fmt-check、lint/govet（0 issues）与十个受影响命令包测试/编译通过；源码扫描确认 cmd 不再包含 runtime.Version()。本次仅移除启动检查，没有改并发/交易算法，未新写重复测试；全量单元/race、生成及核心交易回归本步未重跑。
+- 四个新镜像构建并 Compose up --wait 首次全部 healthy；随后宿主磁盘耗尽，Docker 日志明确记录 no space left on device 并自动关闭引擎。清理本项目 Go 构建缓存后恢复约 4 GB，正常重启卡住，经过工具审批仅终止已核实的 Desktop 进程并恢复引擎，显式启动原 infra-nats；共享基础容器 ID/卷保持，启动时间因恢复而改变。配置/NATS 未就绪时核心进程安全失败，依赖恢复后重验通过，未屏蔽错误。
+- 最终 Compose up --wait 四服务全部 healthy；核实最终镜像 ID、无参数/JSON 挂载、四份 Nacos 配置和四健康身份，实际 mTLS 双源行情均未过期 HEALTHY、价格 99.99/100.01，execution 订单为空。证据 .cache/runtime-version/live-probe.json。原 49 个未提交平仓路径保留，运行源码仍为 .cache/nacos-config/source；既有 NATS 的旧 stream 健康告警不在本步修复范围，不宣称全部共享 infra 健康。不涉及生产、资金或迁移。
+- 工作分支 codex/two-apps，基线 035e402 已同步；本步验证后独立提交、立即推送并核验远程 SHA，见交付报告和 Git 历史。

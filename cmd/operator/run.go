@@ -6,7 +6,6 @@ import (
 	"errors"
 	"flag"
 	"io"
-	"runtime"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/internal/domain"
@@ -49,9 +48,6 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	}
 	if role != entry.RoleAdmin && role != entry.RoleOperator {
 		return report(diagnostic, "unsupported application", nil, 2)
-	}
-	if runtime.Version() != "go1.27.3" {
-		return report(diagnostic, "Go 1.27.3 is required", nil, 1)
 	}
 	cfg, err := deer.LoadConfig(ctx, *path)
 	if err != nil {

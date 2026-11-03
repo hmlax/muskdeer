@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"os"
-	"runtime"
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -13,8 +12,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 1 || runtime.Version() != "go1.27.3" {
-		os.Exit(processfailure.Report(os.Stderr, "readiness probe takes no arguments and requires Go 1.27.3", nil, 2))
+	if len(os.Args) != 1 {
+		os.Exit(processfailure.Report(os.Stderr, "readiness probe takes no arguments", nil, 2))
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	cfg, err := deer.LoadNacosConfig(ctx, "")

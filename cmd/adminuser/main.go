@@ -7,7 +7,6 @@ import (
 	"flag"
 	"io"
 	"os"
-	"runtime"
 	"strconv"
 	"time"
 
@@ -40,9 +39,6 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	passwordEnv := flags.String("password-env", "", "environment variable containing the new password")
 	if err := flags.Parse(args); err != nil || flags.NArg() != 0 || *path == "" || *username == "" || !domain.AdminRole(*role).Allows(domain.AdminRole(*role)) || !environmentName(*passwordEnv) {
 		return fail(diagnostic, "config, username, role and password-env are required", 2)
-	}
-	if runtime.Version() != "go1.27.3" {
-		return fail(diagnostic, "Go 1.27.3 is required", 1)
 	}
 	password := os.Getenv(*passwordEnv)
 	if password == "" {
