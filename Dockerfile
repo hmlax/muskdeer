@@ -14,7 +14,6 @@ COPY execution ./execution
 COPY portfolio ./portfolio
 COPY deer ./deer
 COPY internal ./internal
-COPY third_party ./third_party
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     for name in market strategy execution portfolio; do \
       go build -mod=readonly -trimpath -o /out/$name ./$name/cmd || exit $?; \
@@ -26,7 +25,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cmd/migrate ./cmd/coreinit ./cmd/readycheck > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
-    cp third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
+    cp deer/third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
     sort -u /tmp/module-dirs > /tmp/module-dirs-sorted && \
     while IFS= read -r module_dir; do \
       case "$module_dir" in /go/pkg/mod/*) \

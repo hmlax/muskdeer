@@ -56,7 +56,7 @@ func check(path string) ([]policy.Issue, error) {
 		return nil, errors.New("project descriptor set is missing or invalid")
 	}
 	issues := policy.Descriptors(&set)
-	for _, root := range []string{"api", "cmd", "deer", "internal", "scripts", "third_party"} {
+	for _, root := range []string{"api", "cmd", "deer", "internal", "scripts"} {
 		if err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 			if walkErr != nil {
 				return walkErr

@@ -22,7 +22,7 @@ def generate(verify: bool) -> None:
         raise ValueError('no project Proto definitions found')
     with tempfile.TemporaryDirectory(prefix='muskdeer-generate-') as temporary:
         stage = Path(temporary)
-        for base in ('deer/proto', 'api', 'third_party'):
+        for base in ('deer/proto', 'api', 'deer/third_party'):
             for original in (ROOT / base).rglob('*.proto'):
                 destination = stage / original.relative_to(ROOT)
                 destination.parent.mkdir(parents=True, exist_ok=True)
@@ -30,7 +30,7 @@ def generate(verify: bool) -> None:
         environment = os.environ.copy()
         environment['PATH'] = str(ROOT / '.cache/bin') + os.pathsep + environment['PATH']
         compiler = protoc()
-        arguments = [str(compiler), '-I.', '-Ithird_party', '-I' + str(compiler.parent.parent / 'include')]
+        arguments = [str(compiler), '-I.', '-Ideer/third_party', '-I' + str(compiler.parent.parent / 'include')]
         files = [path.relative_to(ROOT).as_posix() for path in inputs] + ['hertz/api.proto']
         mapping = 'Mhertz/api.proto=github.com/hmlax/muskdeer/deer/proto/hertz;api'
         subprocess.run([

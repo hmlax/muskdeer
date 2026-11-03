@@ -114,7 +114,7 @@ func TestEmergencyInputRequiresExplicitScopeAndImmutableAcceptanceHasOnly202(t *
 }
 
 func TestOfficialSchemaIsPinnedAndLoadingIsOffline(t *testing.T) {
-	data, err := os.ReadFile("../../third_party/openapi/schema-2022-10-07.json")
+	data, err := os.ReadFile("../../deer/third_party/openapi/schema-2022-10-07.json")
 	if err != nil {
 		t.Fatal(err)
 	}

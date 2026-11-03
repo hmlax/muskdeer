@@ -1407,3 +1407,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：隔离 schema 37 源码的格式、60 Proto/OpenAPI/Wire 一致性、lint/govet（0 issues）、全包单元与核心构建通过；deer 全部子包、processlog、business、四服务相关 race 通过。真实 infra 全部客户端合同含新 DB/Redis 注入所有权/readiness 测试通过，25.807 秒；四项真实核心进程 integration/race 原时限重跑全部通过，13.533 秒。30 项 Python 3.13.2 工具测试、文档链接和差异检查通过。详见 [P13.6 验证](validation/P13-06.md)。
 - 诊断：构造函数复杂度超限通过拆分初始化修复；日志测试按本次精确增量校验；旧 Python 工具错误改用现有 3.13.2 后通过。首次组合回归出现 Nacos 配置 fetch 失败及观察等待超时，具体远端原因未确定，未放宽断言/时限；独立重跑原四项通过。原有平仓未提交修改保留，完整单元/实际进程使用 .cache/deer-options/source 排除这些修改；未运行镜像/Compose 重建、完整历史迁移/浏览器、固定三十分钟或生产，未操作共享基础容器生命周期、资金或生产迁移。
 - 工作分支 codex/two-apps，基线 3b94abe 已同步；本步检查通过后独立提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。
+
+## 2026-11-03：P13.7 第三方目录归入 deer
+
+- 按用户要求将根 third_party 的 13 个文件整体移至 deer/third_party，涵盖 Hertz/tagger Proto 注解、OpenAPI schema 与 lumberjack 维护源码/测试/许可；移动前后逐文件 SHA-256 一致，继续共用根 go.mod。
+- 同步日志包导入、Proto 生成/合同检查/Hertz include、OpenAPI 离线测试夹具、文档链接与 Docker 许可复制路径；Docker 直接通过 COPY deer 纳入该目录，移除根 third_party 的独立 COPY/白名单。合同扫描继续递归 deer，覆盖移动后的 Go 文件；历史验收记录中的当时目录文字保留。
+- 验证：格式、60 Proto/OpenAPI/Wire 生成一致性、两次 Hertz 生成确定性及编译通过；lint/govet 为 0 issues，policy-test 正反样例通过。日志/lumberjack/OpenAPI/policy 相关 race 与核心构建通过；隔离 schema 37 源码的 deer 全部包、OpenAPI、合同命令及四核心入口单元通过。未新增镜像实现行为的重复测试，原有平仓修改保留。
+- Docker 同源码 build 阶段完成四核心及三维护命令编译，runtime-market 导出通过，核验运行文件与 lumberjack LICENSE 原始哈希；没有替换当前运行容器。Buildx 初次写 ~/.docker 活动记录被沙箱拒绝，按工具审批重试后构建通过。Docker 验证使用 .cache/thirdparty-move/source 排除原有平仓修改，产物在 .cache/thirdparty-move/runtime。
+- 修改文档链接及 git diff --check 通过。完整全包单元/race、基础设施/交易集成、Compose 重建、浏览器及生产本步未运行；本步仅改路径，没有业务算法、协议或数据迁移。
+- 工作分支 codex/two-apps，基线 784cc3c；本步检查通过后独立提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。

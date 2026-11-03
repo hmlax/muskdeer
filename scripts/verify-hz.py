@@ -34,7 +34,7 @@ def verify() -> None:
             subprocess.run([
                 str(ROOT / '.cache/bin/hz'), 'new', '--module', PROBE_MODULE,
                 '--idl', str(ROOT / 'api/probe/v1/probe.proto'),
-                '-I', str(ROOT / 'third_party'), '-I', str(compiler.parent.parent / 'include'),
+                '-I', str(ROOT / 'deer/third_party'), '-I', str(compiler.parent.parent / 'include'),
                 '--use', 'github.com/hmlax/muskdeer',
                 '--trim_gopackage', 'github.com/hmlax/muskdeer/',
                 '--out_dir', str(stage), '--sort_router',

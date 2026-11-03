@@ -21,7 +21,7 @@ def check():
     with tempfile.TemporaryDirectory(prefix='muskdeer-policy-') as directory:
         descriptor = Path(directory) / 'project.pb'
         subprocess.run([
-            str(compiler), '-I.', '-Ithird_party', '-I' + str(compiler.parent.parent / 'include'),
+            str(compiler), '-I.', '-Ideer/third_party', '-I' + str(compiler.parent.parent / 'include'),
             '--include_imports', '--descriptor_set_out=' + str(descriptor),
             *[path.relative_to(ROOT).as_posix() for path in inputs],
         ], cwd=ROOT, check=True)

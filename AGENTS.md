@@ -15,6 +15,7 @@
 - 管理后台、HTTP 管理接口、React 和管理开户退出当前交付范围；已有源码、历史验收及用户未提交修改保留，核心构建不依赖管理 HTTP 入口或前端资产。核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
+- 仓库内维护的第三方源码、Proto 注解、OpenAPI schema 及许可证统一放 deer/third_party，继续共用根 go.mod；生成工具、Go 导入及镜像许可收集使用该路径。
 - 每张表及其持久化 Model 必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL；字段映射、生成与迁移要求见 docs/PROTO_AND_MODEL.md。
 - 所有 GORM 数据操作显式使用 db.Model(&model.X{}) 或事务中的 tx.Model(&model.X{})，禁止 db.Table("xxx")、tx.Table("xxx") 及其他变量上的 .Table(...)；适用于业务、公共组件、脚本与测试。
 - 所有接口中的小数字段统一定义为 string，覆盖 HTTP/OpenAPI、gRPC/Proto、WebSocket、事件的请求与响应；金额、价格、数量、费率、比例、百分比等均须遵守。Go 小数值及其计算统一使用 decimal.Decimal，禁止 float32/float64 及浮点中间转换；细则见 docs/PROTO_AND_MODEL.md。

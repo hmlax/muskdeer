@@ -18,7 +18,7 @@ import (
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/requestid"
-	"github.com/hmlax/muskdeer/third_party/lumberjack"
+	"github.com/hmlax/muskdeer/deer/third_party/lumberjack"
 )
 
 // LevelDebug, LevelInfo, LevelWarn and LevelError are accepted configuration levels.

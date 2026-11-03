@@ -10,7 +10,7 @@
 
 ## 决策
 
-保留 lumberjack 的大小轮转、UTC 命名、保留和 gzip 路线，使用固定 v2.2.1 源码的仓库内维护版本 third_party/lumberjack。保留 MIT LICENSE、上游 commit、模块校验和和原文件 SHA-256，具体改动见 [来源记录](../../third_party/lumberjack/README.md)。保持单 go.mod，不替换其他 SDK 的传递依赖。
+保留 lumberjack 的大小轮转、UTC 命名、保留和 gzip 路线，使用固定 v2.2.1 源码的仓库内维护版本 deer/third_party/lumberjack。保留 MIT LICENSE、上游 commit、模块校验和和原文件 SHA-256，具体改动见 [来源记录](../../deer/third_party/lumberjack/README.md)。保持单 go.mod，不替换其他 SDK 的传递依赖。
 
 维护版在打开/轮转时同步执行保留和压缩，返回错误，不创建后台协程；Close 为终态并可重复调用；备份命名避开已存在的原始/gzip 文件。移除可变全局测试 hook，文件关闭和维护错误向调用者保留。继续运行项目完整 lint/race/goleak，不为第三方来源文件新增忽略规则。
 

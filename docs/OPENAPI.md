@@ -8,7 +8,7 @@
 
 响应引用现有api/strategy及api/admin的具体公开消息，递归引用公共参数Proto；没有为文档复制业务DTO。输入只引用公开Input消息或HTTP边界的明确字段，不输出内部gRPC AdminSession/CSRF/幂等包装，也不遍历整个服务描述符。新增不支持的字段类型或map会使生成失败，要求人工明确合同。
 
-所有生成器/检查使用Go1.27.3。官方固定schema保存在[third_party](../third_party/README.md)，测试核对SHA并用固定v6.0.2验证器离线校验完整文档、编译业务schema；未知外部引用必须失败。该依赖只用于测试，不加入业务运行路径。
+所有生成器/检查使用Go1.27.3。官方固定schema保存在[third_party](../deer/third_party/README.md)，测试核对SHA并用固定v6.0.2验证器离线校验完整文档、编译业务schema；未知外部引用必须失败。该依赖只用于测试，不加入业务运行路径。
 
 ## 传输与权限
 
