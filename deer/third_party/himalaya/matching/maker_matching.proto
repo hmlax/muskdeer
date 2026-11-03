@@ -21,6 +21,7 @@ message Status {
   bool development_test_funds = 1;
   bool durable_authority = 2;
   string incarnation = 3;
+  bool owner_expiry_cancel = 4;
 }
 message PlaceRequest {
   matching.PlaceOrderRequest order = 1;

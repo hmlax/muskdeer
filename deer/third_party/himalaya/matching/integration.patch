@@ -1,12 +1,16 @@
 --- a/src/engine.rs
 +++ b/src/engine.rs
-@@ -62,0 +63,2 @@
+@@ -62,0 +63,4 @@
 +    pub(crate) maker_authority: Option<Arc<crate::maker_fence::Registry>>,
 +    pub(crate) maker_clock: Arc<std::time::Instant>,
-@@ -151,0 +154,2 @@
++    pub(crate) maker_orders: Arc<DashMap<(String, u64), crate::maker_fence::Authorization>>,
++    pub(crate) maker_deadman_ready: Arc<AtomicBool>,
+@@ -151,0 +156,4 @@
 +            maker_authority: None,
 +            maker_clock: Arc::new(std::time::Instant::now()),
-@@ -167,0 +172,22 @@
++            maker_orders: Arc::new(DashMap::new()),
++            maker_deadman_ready: Arc::new(AtomicBool::new(false)),
+@@ -167,0 +176,22 @@
 +    }
 +
 +    /// Uses only this matching process's monotonic clock, never a remote timestamp.
@@ -89,7 +93,7 @@
 +    authority: Option<crate::maker_fence::Authorization>,
 +    system: Option<crate::maker_service::SystemAuthorization>,
 +) -> Result<PlaceOrderResponse, Status> {
-@@ -326,0 +378,46 @@
+@@ -326,0 +378,54 @@
 +    // The grant guard is held through the actual book effect and outcome write.
 +    // A successful handover cannot race an old queued command's final check.
 +    if authority.is_some() && system.is_some() {
@@ -98,6 +102,14 @@
 +        )));
 +    }
 +    let _authority = if let Some(proof) = authority.as_ref() {
++        if !engine
++            .maker_deadman_ready
++            .load(std::sync::atomic::Ordering::Acquire)
++        {
++            return Err(not_admitted(Status::unavailable(
++                "maker cancellation owner is not ready",
++            )));
++        }
 +        Some(
 +            engine
 +                .maker_authority
@@ -136,7 +148,24 @@
 +        }
 +        None
 +    };
-@@ -1035,0 +1133,46 @@
+@@ -340,0 +446,12 @@
++    }
++    if authority.is_some()
++        && engine
++            .order_outcomes
++            .iter()
++            .filter(|outcome| !outcome.terminal && outcome.request.fund_id == req.fund_id)
++            .count()
++            >= crate::maker_deadman::MAX_RESTING_PER_ACCOUNT
++    {
++        return Err(not_admitted(Status::resource_exhausted(
++            "development maker resting order limit reached",
++        )));
+@@ -360,0 +478,3 @@
++    if !terminal && let Some(proof) = authority.as_ref() {
++        engine.maker_orders.insert(key.clone(), proof.clone());
++    }
+@@ -1035,0 +1156,46 @@
 +    async fn maker_request_queued_before_handover_cannot_write_after_new_grant() {
 +        let (engine, authority) = crate::maker_execution_tests::setup();
 +        let queue = PlaceQueue::spawn(engine.clone());
@@ -183,9 +212,19 @@
 +    }
 +
 +    #[tokio::test]
-@@ -1052,0 +1196,2 @@
+@@ -1052,0 +1219,2 @@
 +                        system: None,
 +                        authority: None,
+@@ -1218,0 +1387,9 @@
++    cancel_recovered(engine.clone(), req)
++}
++
++// Only recovery completion may bypass the closed admission read guard, while
++// holding its exclusive recovery session. The actual symbol owner is retained.
++pub(crate) fn cancel_recovered(
++    engine: EngineState,
++    req: crate::proto::CancelOrderRequest,
++) -> Result<crate::proto::CancelOrderResponse, Status> {
 --- a/src/service.rs
 +++ b/src/service.rs
 @@ -88 +88 @@
@@ -244,7 +283,7 @@
 +        Ok(response)
 --- a/src/lib.rs
 +++ b/src/lib.rs
-@@ -35,0 +36,13 @@
+@@ -35,0 +36,17 @@
 +
 +pub mod maker_fence;
 +pub mod maker_service;
@@ -258,6 +297,10 @@
 +}
 +#[cfg(test)]
 +mod maker_execution_tests;
++
++pub mod maker_deadman;
++#[cfg(test)]
++mod maker_deadman_tests;
 --- a/src/bin/matching.rs
 +++ b/src/bin/matching.rs
 @@ -72 +72 @@
@@ -265,14 +308,20 @@
 +    let mut engine =
 @@ -73,0 +74 @@
 +    engine.enable_development_maker_authority()?;
-@@ -109,0 +111,3 @@
+@@ -104,0 +106 @@
++    let maker_deadman = matching_engine::maker_deadman::Deadman::start(engine.clone());
+@@ -109,0 +112,3 @@
 +        .register_encoded_file_descriptor_set(
 +            matching_engine::maker_matching_proto::FILE_DESCRIPTOR_SET,
 +        )
-@@ -170,0 +175,3 @@
+@@ -170,0 +176,3 @@
 +        .add_service(matching_engine::maker_matching_proto::matching_authority_server::MatchingAuthorityServer::with_interceptor(
 +            matching_engine::maker_service::MatchingAuthorityService::new(service.clone()), auth.clone(),
 +        ))
+@@ -186,0 +195,3 @@
++    if let Some(deadman) = maker_deadman {
++        deadman.shutdown().await?;
++    }
 --- a/build.rs
 +++ b/build.rs
 @@ -27,0 +28,15 @@
@@ -291,3 +340,9 @@
 +        .extern_path(".muskdeer.himalaya.v1", "crate::maker_proto")
 +        .file_descriptor_set_path(out_dir.join("maker_matching_descriptor.bin"))
 +        .compile_protos(&["proto/maker_matching.proto"], &["proto", "../proto"])?;
+--- a/src/recovery.rs
++++ b/src/recovery.rs
+@@ -87,0 +88,3 @@
++        // Restart never resurrects the old process's producer leases. Withdraw
++        // these restored quotes behind the exclusive admission barrier.
++        crate::maker_deadman::sweep(self, true, true)?;

@@ -160,6 +160,11 @@ impl MatchingAuthority for MatchingAuthorityService {
             development_test_funds: enabled,
             durable_authority: durable && self.matching.engine.order_admission_ready(),
             incarnation: self.matching.engine.engine_epoch.as_ref().clone(),
+            owner_expiry_cancel: self
+                .matching
+                .engine
+                .maker_deadman_ready
+                .load(std::sync::atomic::Ordering::Acquire),
         }))
     }
 

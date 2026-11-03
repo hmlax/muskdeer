@@ -13,6 +13,9 @@ pub(crate) fn setup() -> (EngineState, Authorization) {
     let mut engine = EngineState::new(None, None);
     let registry = Arc::new(Registry::load(None).unwrap());
     engine.maker_authority = Some(registry.clone());
+    engine
+        .maker_deadman_ready
+        .store(true, std::sync::atomic::Ordering::Release);
     let execution = registry
         .claim(
             Scope {
