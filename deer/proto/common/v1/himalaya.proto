@@ -1,0 +1,72 @@
+syntax = "proto3";
+package muskdeer.common.v1;
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+
+// Native scope and all decimal values remain explicit at service boundaries.
+message HimalayaScope {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+}
+message HimalayaLevel {
+  string price = 1;
+  string quantity = 2;
+}
+message HimalayaAuthority {
+  string account_id = 1;
+  string owner_id = 2;
+  int64 epoch = 3;
+  int64 expires_at_ms = 4;
+}
+message HimalayaBook {
+  string symbol = 1;
+  string source = 2;
+  string segment = 3;
+  int64 sequence = 4;
+  int64 event_at_ms = 5;
+  int64 received_at_ms = 6;
+  int64 valid_until_ms = 7;
+  repeated HimalayaLevel bids = 8;
+  repeated HimalayaLevel asks = 9;
+  HimalayaAuthority publisher = 10;
+}
+message HimalayaMarket {
+  string price_tick = 1;
+  string quantity_step = 2;
+  string minimum_quantity = 3;
+  string maximum_quantity = 4;
+  string minimum_notional = 5;
+  string mark_price = 6;
+  uint32 maximum_leverage = 7;
+}
+message HimalayaOrder {
+  string order_id = 1;
+  string client_id = 2;
+  string side = 3;
+  string price = 4;
+  string quantity = 5;
+  string executed_quantity = 6;
+  string status = 7;
+}
+message HimalayaPosition {
+  string symbol = 1;
+  string signed_quantity = 2;
+  string entry_price = 3;
+  string leverage = 4;
+}
+// Separate SDK queries are observations, never an atomic ledger snapshot.
+message HimalayaSnapshot {
+  HimalayaScope scope = 1;
+  HimalayaMarket market = 2;
+  string available = 3;
+  repeated HimalayaPosition positions = 4;
+  repeated HimalayaOrder orders = 5;
+  int64 started_at_ms = 6;
+  int64 observed_at_ms = 7;
+  int64 valid_until_ms = 8;
+}
+message HimalayaTarget {
+  string side = 1;
+  string price = 2;
+  string quantity = 3;
+}

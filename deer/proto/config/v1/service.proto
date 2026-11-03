@@ -58,6 +58,27 @@ message BusinessRuntime {
   google.protobuf.Duration execution_lease_ttl = 8;
   SimulatorScenarioRuntime simulator = 9;
   StrategyRuntime strategy = 10;
+  HimalayaRuntime himalaya = 11;
+}
+
+// HimalayaRuntime opts into the existing SDK on the development environment.
+// Secrets are resolved from env only by the execution worker lifecycle.
+message HimalayaRuntime {
+  string target = 1;
+  string token_env = 2;
+  repeated HimalayaProfile profiles = 3;
+  string quantity_fraction = 4;
+  uint32 depth = 5;
+  google.protobuf.Duration lease_ttl = 6;
+}
+message HimalayaProfile {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+  string maximum_notional = 4;
+  string maximum_order_notional = 5;
+  uint32 leverage = 6;
+  string market_data_source = 7;
 }
 
 // StrategyRuntime discovers existing instances only in explicitly owned accounts.

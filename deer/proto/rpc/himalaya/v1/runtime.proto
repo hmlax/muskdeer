@@ -1,0 +1,30 @@
+syntax = "proto3";
+package muskdeer.himalaya.v1;
+option go_package = "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1;himalayav1";
+import "deer/proto/common/v1/himalaya.proto";
+
+// These are internal Muskdeer contracts, independent of the upstream SDK wire.
+service Market {
+  rpc GetBook(BookRequest) returns (muskdeer.common.v1.HimalayaBook);
+}
+service Execution {
+  rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);
+  rpc Reconcile(QuotePlan) returns (QuoteResult);
+}
+service Portfolio {
+  rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);
+}
+message BookRequest { string symbol = 1; }
+message QuotePlan {
+  muskdeer.common.v1.HimalayaScope scope = 1;
+  muskdeer.common.v1.HimalayaBook book = 2;
+  muskdeer.common.v1.HimalayaAuthority strategy = 3;
+  repeated muskdeer.common.v1.HimalayaTarget targets = 4;
+  string request_id = 5;
+}
+message QuoteResult {
+  uint32 placed = 1;
+  uint32 cancelled = 2;
+  uint32 retained = 3;
+  string state = 4;
+}

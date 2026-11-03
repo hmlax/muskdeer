@@ -59,11 +59,13 @@ func (c *Client) Read(ctx context.Context, scope Scope) (*SDKSnapshot, error) {
 	if err != nil {
 		return nil, err
 	}
-	positions, err := c.sdk.ListPositionsForFund(op, scope.UserID, scope.FundID)
+	// Read opening obligations before positions: a fill between these queries
+	// remains conservatively covered by its preceding order observation.
+	orders, err := c.sdk.ListOrdersForFund(op, scope.UserID, scope.FundID, "")
 	if err != nil {
 		return nil, err
 	}
-	orders, err := c.sdk.ListOrdersForFund(op, scope.UserID, scope.FundID, scope.Symbol)
+	positions, err := c.sdk.ListPositionsForFund(op, scope.UserID, scope.FundID)
 	if err != nil {
 		return nil, err
 	}
