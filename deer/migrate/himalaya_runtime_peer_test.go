@@ -47,9 +47,10 @@ func (m *nativeMarketFixture) GetBook(context.Context, *himalayav1.BookRequest) 
 
 type nativeSDKFixture struct {
 	pb.UnimplementedOrderServer
-	mu     sync.Mutex
-	orders map[uint64]*pb.OrderRow
-	next   uint64
+	mu           sync.Mutex
+	orders       map[uint64]*pb.OrderRow
+	next         uint64
+	historyDelay time.Duration
 }
 
 func startNativeSDK(t *testing.T, fixture *nativeSDKFixture) string {
@@ -132,7 +133,12 @@ func (s *nativeSDKFixture) CancelOrder(_ context.Context, r *pb.CancelOrderReque
 	}
 	return &pb.CancelOrderResponse{Success: true}, nil
 }
-func (s *nativeSDKFixture) ListOrders(_ context.Context, r *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+func (s *nativeSDKFixture) ListOrders(ctx context.Context, r *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+	if r.History && s.historyDelay > 0 {
+		if err := native.Wait(ctx, s.historyDelay); err != nil {
+			return nil, err
+		}
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var result []*pb.OrderRow

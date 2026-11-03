@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -33,11 +34,48 @@ import (
 )
 
 func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
-	db, _, executionLease, request := sdkAdmissionFixture(t)
+	testNativeWorkers(t, 0)
+}
+
+func TestHimalayaNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
+	testNativeWorkers(t, 40)
+}
+
+func testNativeWorkers(t *testing.T, legacy int) {
+	t.Helper()
+	db, store, executionLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	t.Cleanup(cancel)
 	authority := liveAuthorityFixture(ctx, t, db, executionLease, request.Symbol)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
+	if legacy > 0 {
+		sdk.historyDelay = 40 * time.Millisecond
+		for i := range legacy {
+			id := uint64(i + 100)
+			sdk.orders[id] = &pb.OrderRow{
+				OrderId:  id,
+				UserId:   request.UserID,
+				FundId:   request.FundID,
+				Symbol:   request.Symbol,
+				ClientId: native.LegacyPrefix + request.Symbol + "_" + strconv.Itoa(i),
+				Price:    "99.9",
+				Quantity: 100,
+				Side:     pb.Side_SIDE_BUY,
+				Status:   native.StatusCanceled,
+			}
+			if _, err := store.PrepareCancel(ctx, executionLease, himalaya.CancelRequest{
+				Scope: himalaya.Scope{
+					UserID: request.UserID,
+					FundID: request.FundID,
+					Symbol: request.Symbol,
+				},
+				OrderID: id,
+			}); err != nil {
+				t.Fatal(err)
+			}
+			sdk.next = id
+		}
+	}
 	sdkAddress := startNativeSDK(t, sdk)
 	ca := testcert.New(t)
 	discovery := &nativeDiscoveryFixture{entries: make(map[string]nacos.Instance)}
@@ -109,7 +147,13 @@ func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing
 	workers := append(execution.Workers(), portfolio.Workers()...)
 	workers = append(workers, strategy...)
 	runNativeWorkers(ctx, t, workers)
-	nativeWait(ctx, t, func() bool { return sdk.active() == 2 })
+	nativeWait(ctx, t, func() bool {
+		pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID)
+		return err == nil && len(pending) == 2 && sdk.active() == 2
+	})
+	if pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID); err != nil || len(pending) != 2 {
+		t.Fatalf("PendingIDs(after history recovery) = %d, %v, want two live orders", len(pending), err)
+	}
 	var count int64
 	if err := db.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Where("account_id = ?", native.ScopeKey(10001, 10001)).Count(&count).Error; err != nil || count != 1 {
 		t.Fatalf("native portfolio projection missing: count=%d err=%v", count, err)

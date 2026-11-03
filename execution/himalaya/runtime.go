@@ -376,6 +376,15 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 		if err != nil {
 			return nil, err
 		}
+		// Commit each positive native fact before querying the next ID. A full
+		// cutover history can exceed one operation deadline; later calls must
+		// continue from the remaining IDs rather than repeat the whole prefix.
+		if err := r.store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
+			Scope:  snapshot.Scope,
+			Orders: []*commonv1.HimalayaOrder{order},
+		}); err != nil {
+			return nil, err
+		}
 		snapshot.Orders = append(snapshot.Orders, order)
 	}
 	if err := r.store.Observe(ctx, lease, snapshot); err != nil {
