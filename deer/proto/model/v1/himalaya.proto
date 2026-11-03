@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
+
+// HimalayaSchemaMigration keeps the SDK extension separate from core history.
+message HimalayaSchemaMigration {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 version = 5 [(tagger.tags) = "gorm:\"column:version;type:bigint;not null;uniqueIndex:uk_himalaya_migration_version\""];
+  string checksum = 6 [(tagger.tags) = "gorm:\"column:checksum;type:varchar(64);not null\""];
+}
+
+// HimalayaBudget reserves additional gross notional across a whole fund.
+// Observed native obligations and unobserved local reservations are additive.
+message HimalayaBudget {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_budget_account\""];
+  int64 user_id = 6 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;not null\""];
+  int64 fund_id = 7 [(tagger.tags) = "gorm:\"column:fund_id;type:bigint;not null\""];
+  string maximum_notional = 8 [(tagger.tags) = "gorm:\"column:maximum_notional;type:numeric(76,36);not null\""];
+  string observed_notional = 9 [(tagger.tags) = "gorm:\"column:observed_notional;type:numeric(76,36);not null\""];
+  string reserved_notional = 10 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+  int64 snapshot_expires_at = 11 [(tagger.tags) = "gorm:\"column:snapshot_expires_at;type:bigint;not null\""];
+  bool enabled = 12 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+}
+
+// HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
+// dispatched again, including after process death or ownership handover.
+message HimalayaIntent {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;index:idx_himalaya_intent_account\""];
+  int64 user_id = 6 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;not null\""];
+  int64 fund_id = 7 [(tagger.tags) = "gorm:\"column:fund_id;type:bigint;not null\""];
+  string symbol = 8 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(32);not null\""];
+  string client_id = 9 [(tagger.tags) = "gorm:\"column:client_id;type:varchar(128);not null;uniqueIndex:uk_himalaya_intent_client\""];
+  string owner_id = 10 [(tagger.tags) = "gorm:\"column:owner_id;type:varchar(128);not null\""];
+  int64 owner_epoch = 11 [(tagger.tags) = "gorm:\"column:owner_epoch;type:bigint;not null\""];
+  string request_digest = 12 [(tagger.tags) = "gorm:\"column:request_digest;type:varchar(64);not null\""];
+  string side = 13 [(tagger.tags) = "gorm:\"column:side;type:varchar(8);not null\""];
+  string price = 14 [(tagger.tags) = "gorm:\"column:price;type:numeric(76,36);not null\""];
+  string quantity = 15 [(tagger.tags) = "gorm:\"column:quantity;type:numeric(76,36);not null\""];
+  uint32 leverage = 16 [(tagger.tags) = "gorm:\"column:leverage;type:integer;not null\""];
+  string state = 17 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+  string order_id = 18 [(tagger.tags) = "gorm:\"column:order_id;type:varchar(20);not null\""];
+  string reserved_notional = 19 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+}
