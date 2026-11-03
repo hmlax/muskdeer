@@ -117,3 +117,74 @@ fn valid_authority_writes_once_and_identical_order_identity_does_not_duplicate()
         5
     );
 }
+
+#[test]
+fn adopted_account_cannot_bypass_final_fence_via_legacy_place() {
+    let (engine, _) = setup();
+    let result = crate::place_pipeline::execute_place(engine.clone(), order(407));
+    assert!(
+        result.is_err(),
+        "legacy RPC bypassed the adopted account's final fence"
+    );
+    assert!(engine.order_outcomes.is_empty());
+    assert!(engine.books.is_empty());
+}
+
+#[test]
+fn native_reduction_revokes_producers_and_preserves_its_ioc_execution() {
+    let (engine, old) = setup();
+    let mut counterparty = order(408);
+    counterparty.user_id = 3;
+    counterparty.fund_id = 3;
+    counterparty.side = side::SELL;
+    crate::place_pipeline::execute_place(engine.clone(), counterparty).unwrap();
+    let mut reduce = order(409);
+    reduce.order_kind = order_kind::LIMIT;
+    reduce.time_in_force = time_in_force::IOC;
+    let system = crate::maker_service::SystemAuthorization {
+        user_id: 10001,
+        fund_id: 10001,
+        symbol: "BTCUSDT".into(),
+        order_id: 409,
+        deadline: engine.maker_now() + 2_000,
+    };
+    let response =
+        crate::place_pipeline::execute_place_guarded(engine.clone(), reduce, None, Some(system))
+            .unwrap();
+    assert_eq!(response.executed_quantity, 5);
+    assert!(execute_place_authorized(engine.clone(), order(410), Some(old.clone())).is_err());
+    let registry = engine.maker_authority.as_ref().unwrap();
+    assert_eq!(
+        registry.authorize(&old.execution, || engine.maker_now()),
+        Err(crate::maker_fence::Error::Lost)
+    );
+    assert_eq!(
+        registry.authorize(&old.strategy, || engine.maker_now()),
+        Err(crate::maker_fence::Error::Lost)
+    );
+}
+
+#[tokio::test]
+async fn ordinary_service_identity_cannot_enter_native_reduction_lane() {
+    use crate::maker_matching_proto::matching_authority_server::MatchingAuthority;
+    let engine = EngineState::new(None, None);
+    let markets = Arc::new(crate::market_registry::MarketRegistry::from_markets(
+        Vec::new(),
+    ));
+    let svc = crate::maker_service::MatchingAuthorityService::new(
+        crate::service::MatchingEngineService::new(engine.clone(), markets),
+    );
+    let mut request = tonic::Request::new(crate::maker_matching_proto::SystemReduceRequest {
+        order: Some(order(411)),
+        episode_id: "test-liquidation".into(),
+        maximum_queue_age_ms: 1_000,
+    });
+    request
+        .extensions_mut()
+        .insert(app_config::auth::Identity { admin: false });
+    assert_eq!(
+        svc.system_reduce(request).await.unwrap_err().code(),
+        tonic::Code::PermissionDenied
+    );
+    assert!(engine.books.is_empty());
+}

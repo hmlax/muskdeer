@@ -323,6 +323,44 @@ impl Registry {
         Ok(EffectGuard { _owner: state })
     }
 
+    /// Only the native, administrator-authenticated liquidation path may call
+    /// this. Revoke producer proofs durably before the risk-reducing effect,
+    /// then retain ownership until that effect finishes.
+    pub fn system_effect(
+        &self,
+        user_id: i64,
+        fund_id: i64,
+        symbol: &str,
+    ) -> Result<EffectGuard<'_>, Error> {
+        let execution = Scope {
+            kind: Kind::Execution,
+            user_id,
+            fund_id,
+            symbol: String::new(),
+        };
+        let strategy = Scope {
+            kind: Kind::Strategy,
+            user_id,
+            fund_id,
+            symbol: symbol.into(),
+        };
+        if !execution.valid() || !strategy.valid() {
+            return Err(Error::Invalid);
+        }
+        let mut state = self.state.lock().map_err(|_| Error::Durability)?;
+        if state.failed {
+            return Err(Error::Durability);
+        }
+        let mut next = state.leases.clone();
+        for scope in [execution, strategy] {
+            if let Some(lease) = next.get_mut(&scope) {
+                lease.expires_at = 0;
+            }
+        }
+        self.commit(&mut state, next)?;
+        Ok(EffectGuard { _owner: state })
+    }
+
     fn authorized(state: &State, proof: &Proof, now: u64) -> Result<Lease, Error> {
         if state.failed {
             return Err(Error::Durability);

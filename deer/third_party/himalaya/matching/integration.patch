@@ -31,16 +31,18 @@
 +        Ok(())
 --- a/src/place_pipeline.rs
 +++ b/src/place_pipeline.rs
-@@ -33,0 +34 @@
+@@ -33,0 +34,2 @@
++    system: Option<Box<crate::maker_service::SystemAuthorization>>,
 +    authority: Option<Box<crate::maker_fence::Authorization>>,
-@@ -129 +130,5 @@
+@@ -129 +131,6 @@
 -                        let _ = job.done.send(execute_place(engine, job.req));
-+                        let _ = job.done.send(execute_place_authorized(
++                        let _ = job.done.send(execute_place_guarded(
 +                            engine,
 +                            job.req,
 +                            job.authority.map(|authority| *authority),
++                            job.system.map(|system| *system),
 +                        ));
-@@ -212,0 +218,8 @@
+@@ -212,0 +220,25 @@
 +        self.submit_authorized(req, None).await
 +    }
 +
@@ -49,9 +51,27 @@
 +        req: PlaceOrderRequest,
 +        authority: Option<crate::maker_fence::Authorization>,
 +    ) -> Result<PlaceOrderResponse, Status> {
-@@ -220,0 +234 @@
++        self.submit_guarded(req, authority, None).await
++    }
++
++    pub(crate) async fn submit_system(
++        &self,
++        req: PlaceOrderRequest,
++        system: crate::maker_service::SystemAuthorization,
++    ) -> Result<PlaceOrderResponse, Status> {
++        self.submit_guarded(req, None, Some(system)).await
++    }
++
++    async fn submit_guarded(
++        &self,
++        req: PlaceOrderRequest,
++        authority: Option<crate::maker_fence::Authorization>,
++        system: Option<crate::maker_service::SystemAuthorization>,
++    ) -> Result<PlaceOrderResponse, Status> {
+@@ -220,0 +253,2 @@
++                    system: system.map(Box::new),
 +                    authority: authority.map(Box::new),
-@@ -312,0 +327,8 @@
+@@ -312,0 +347,17 @@
 +    execute_place_authorized(engine, req, None)
 +}
 +
@@ -60,11 +80,25 @@
 +    req: PlaceOrderRequest,
 +    authority: Option<crate::maker_fence::Authorization>,
 +) -> Result<PlaceOrderResponse, Status> {
-@@ -326,0 +349,17 @@
++    execute_place_guarded(engine, req, authority, None)
++}
++
++pub(crate) fn execute_place_guarded(
++    engine: EngineState,
++    req: PlaceOrderRequest,
++    authority: Option<crate::maker_fence::Authorization>,
++    system: Option<crate::maker_service::SystemAuthorization>,
++) -> Result<PlaceOrderResponse, Status> {
+@@ -326,0 +378,46 @@
 +    // The grant guard is held through the actual book effect and outcome write.
 +    // A successful handover cannot race an old queued command's final check.
-+    let _authority = match authority.as_ref() {
-+        Some(proof) => Some(
++    if authority.is_some() && system.is_some() {
++        return Err(not_admitted(Status::invalid_argument(
++            "conflicting matching authority",
++        )));
++    }
++    let _authority = if let Some(proof) = authority.as_ref() {
++        Some(
 +            engine
 +                .maker_authority
 +                .as_ref()
@@ -75,10 +109,34 @@
 +                    engine.maker_now()
 +                })
 +                .map_err(crate::maker_service::authority_status)?,
-+        ),
-+        None => None,
++        )
++    } else if let Some(system) = system.as_ref() {
++        if !system.valid(&req, engine.maker_now()) {
++            return Err(not_admitted(Status::failed_precondition(
++                "system reduction authority expired or mismatched",
++            )));
++        }
++        Some(
++            engine
++                .maker_authority
++                .as_ref()
++                .ok_or_else(|| {
++                    not_admitted(Status::failed_precondition("maker authority disabled"))
++                })?
++                .system_effect(req.user_id, req.fund_id, &req.symbol)
++                .map_err(crate::maker_service::authority_status)?,
++        )
++    } else {
++        if engine.maker_authority.is_some()
++            && crate::maker_service::adopted_account(req.user_id, req.fund_id)
++        {
++            return Err(not_admitted(Status::failed_precondition(
++                "adopted maker account requires final authority",
++            )));
++        }
++        None
 +    };
-@@ -1035,0 +1075,45 @@
+@@ -1035,0 +1133,46 @@
 +    async fn maker_request_queued_before_handover_cannot_write_after_new_grant() {
 +        let (engine, authority) = crate::maker_execution_tests::setup();
 +        let queue = PlaceQueue::spawn(engine.clone());
@@ -92,6 +150,7 @@
 +                "BTCUSDT",
 +                PlaceCommand::Place(
 +                    PlaceJob {
++                        system: None,
 +                        authority: Some(Box::new(authority.clone())),
 +                        req,
 +                        done,
@@ -124,18 +183,15 @@
 +    }
 +
 +    #[tokio::test]
-@@ -1052,0 +1137 @@
+@@ -1052,0 +1196,2 @@
++                        system: None,
 +                        authority: None,
 --- a/src/service.rs
 +++ b/src/service.rs
 @@ -88 +88 @@
 -    engine: EngineState,
 +    pub(crate) engine: EngineState,
-@@ -151,0 +152,25 @@
-+        }?;
-+        result.has_more_deals = result.deals.len() > 128;
-+        result.deals.truncate(128);
-+        Ok(result)
+@@ -155,0 +156,50 @@
 +    }
 +
 +    pub(crate) async fn maker_place(
@@ -157,6 +213,35 @@
 +            })
 +            .await
 +            .map_err(|_| Status::internal("maker execution owner failed"))?
++        }?;
++        result.has_more_deals = result.deals.len() > 128;
++        result.deals.truncate(128);
++        Ok(result)
++    }
++
++    pub(crate) async fn system_reduce(
++        &self,
++        req: PlaceOrderRequest,
++        authority: crate::maker_service::SystemAuthorization,
++    ) -> Result<PlaceOrderResponse, Status> {
++        if nats_subjects::is_shutting_down() {
++            return Err(Status::unavailable("service is shutting down"));
++        }
++        self.validate_market(&req.symbol)
++            .map_err(crate::place_pipeline::not_admitted)?;
++        let mut response = if let Some(queue) = &self.place_queue {
++            queue.submit_system(req, authority).await
++        } else {
++            let engine = self.engine.clone();
++            nats_subjects::run_blocking(move || {
++                crate::place_pipeline::execute_place_guarded(engine, req, None, Some(authority))
++            })
++            .await
++            .map_err(|_| Status::internal("system reduction owner failed"))?
++        }?;
++        response.has_more_deals = response.deals.len() > 128;
++        response.deals.truncate(128);
++        Ok(response)
 --- a/src/lib.rs
 +++ b/src/lib.rs
 @@ -35,0 +36,13 @@

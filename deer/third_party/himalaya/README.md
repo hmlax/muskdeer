@@ -22,3 +22,5 @@ CARGO_TARGET_DIR=.cache/himalaya/native-target rustup run 1.94.0 cargo test \
 开发源码已绑定并通过原生完整回归，运行容器尚未升级。仍需订单服务的持久命令日志、旧入口接管保护和失联撤单；单独启用此撮合服务不能视为完整 Gateway，也不能据此启动报价。
 
 `order/maker_journal.rs` 与 `order/001_maker_commands.sql` 是持久命令身份组件及显式 version 1 增量迁移。服务启动只校验 schema/唯一键，不能自动执行 DDL；原生订单服务绑定尚在实施。`make native-himalaya-test` 同时运行所有权和真实 MySQL 日志测试，复用 `infra-mysql` 并只创建/清理随机测试逻辑库。凭据只从已有容器配置读入子进程环境，不输出或写入仓库。缺少 infra 或凭据时命令失败，不跳过测试。
+
+最终撮合点现已拒绝接管资金账户的普通旧下单。原生清算使用独立管理员认证的 SystemReduce IOC 通道，在原清算准备/冻结后发送，并在目标处撤销 producer 双 proof；普通 service 身份不能调用。`order/integration.patch` 与前像摘要保存该原生通道/资源借用增量，与 matching 补丁一样只允许哈希核验后使用 `--unidiff-zero`。服务启动标志、未接管账户及默认关闭行为保持；目标失联撤单和完整 Gateway 仍待后续完成。

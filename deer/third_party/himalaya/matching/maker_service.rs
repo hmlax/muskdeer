@@ -11,6 +11,36 @@ use crate::{
     service::MatchingEngineService,
 };
 
+pub(crate) fn adopted_account(user: i64, fund: i64) -> bool {
+    matches!(if fund == 0 { user } else { fund }, 10001 | 10002)
+}
+
+pub(crate) struct SystemAuthorization {
+    pub user_id: i64,
+    pub fund_id: i64,
+    pub symbol: String,
+    pub order_id: u64,
+    pub deadline: u64,
+}
+
+impl SystemAuthorization {
+    pub(crate) fn valid(&self, req: &crate::proto::PlaceOrderRequest, now: u64) -> bool {
+        use proto_wire::matching::{order_kind, time_in_force};
+        self.user_id == req.user_id
+            && self.fund_id == req.fund_id
+            && self.symbol == req.symbol
+            && self.order_id == req.order_id
+            && self.order_id != 0
+            && now < self.deadline
+            && req.time_in_force == time_in_force::IOC
+            && matches!(req.order_kind, order_kind::LIMIT | order_kind::MARKET)
+            && matches!(
+                (req.user_id, req.fund_id, req.symbol.as_str()),
+                (10001, 10001, "BTCUSDT") | (10002, 10002, "ETHUSDT")
+            )
+    }
+}
+
 #[derive(Clone)]
 pub struct MatchingAuthorityService {
     matching: MatchingEngineService,
@@ -183,6 +213,68 @@ impl MatchingAuthority for MatchingAuthorityService {
         .await
         .map_err(|_| Status::internal("maker release worker failed"))??;
         Ok(Response::new(api::ReleaseLeaseResponse { released: true }))
+    }
+
+    async fn check(
+        &self,
+        request: Request<wire::CheckRequest>,
+    ) -> Result<Response<wire::CheckResponse>, Status> {
+        let (engine, registry) = self.authority()?;
+        let request = request.into_inner();
+        let execution = proof(request.execution)?;
+        let strategy = proof(request.strategy)?;
+        match registry.admit(execution, strategy, 1, || engine.maker_now()) {
+            Ok(_) => Ok(Response::new(wire::CheckResponse { active: true })),
+            Err(maker_fence::Error::Lost) => {
+                Ok(Response::new(wire::CheckResponse { active: false }))
+            }
+            Err(error) => Err(authority_status(error)),
+        }
+    }
+
+    async fn system_reduce(
+        &self,
+        request: Request<wire::SystemReduceRequest>,
+    ) -> Result<Response<crate::proto::PlaceOrderResponse>, Status> {
+        app_config::auth::require_admin(&request).map_err(crate::place_pipeline::not_admitted)?;
+        let (engine, _) = self.authority()?;
+        let request = request.into_inner();
+        if request.episode_id.is_empty()
+            || request.episode_id.len() > 128
+            || !request
+                .episode_id
+                .bytes()
+                .all(|c| c.is_ascii_alphanumeric() || b"._-:".contains(&c))
+            || request.maximum_queue_age_ms == 0
+            || request.maximum_queue_age_ms > 2_000
+        {
+            return Err(crate::place_pipeline::not_admitted(
+                Status::invalid_argument("invalid native liquidation admission"),
+            ));
+        }
+        let order = request.order.ok_or_else(|| {
+            crate::place_pipeline::not_admitted(Status::invalid_argument(
+                "missing native liquidation order",
+            ))
+        })?;
+        let authority = SystemAuthorization {
+            user_id: order.user_id,
+            fund_id: order.fund_id,
+            symbol: order.symbol.clone(),
+            order_id: order.order_id,
+            deadline: engine
+                .maker_now()
+                .saturating_add(u64::from(request.maximum_queue_age_ms)),
+        };
+        if !authority.valid(&order, engine.maker_now()) {
+            return Err(crate::place_pipeline::not_admitted(
+                Status::invalid_argument("native reduction must be an adopted account IOC"),
+            ));
+        }
+        self.matching
+            .system_reduce(order, authority)
+            .await
+            .map(Response::new)
     }
 
     async fn place(

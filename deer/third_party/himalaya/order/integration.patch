@@ -1,0 +1,147 @@
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -38,0 +39,7 @@
++
++pub mod maker_proto {
++    tonic::include_proto!("muskdeer.himalaya.v1");
++}
++pub mod maker_matching_proto {
++    include!(concat!(env!("OUT_DIR"), "/maker/maker_matching.rs"));
++}
+@@ -467,7 +474,10 @@
+-                let client = matching::matching_engine_client::MatchingEngineClient::new(channel);
+-                let place = Arc::new(LongPlaceStream::connect(client.clone()).await.map_err(
+-                    |e| {
+-                        exec_log::exec_error_grpc!("startup_long_place_stream_connect", &e);
+-                        format!("matching-engine place_order_stream: {e}")
+-                    },
+-                )?);
++                let client =
++                    matching::matching_engine_client::MatchingEngineClient::new(channel.clone());
++                let place = Arc::new(
++                    LongPlaceStream::connect_with_authority(client.clone(), channel)
++                        .await
++                        .map_err(|e| {
++                            exec_log::exec_error_grpc!("startup_long_place_stream_connect", &e);
++                            format!("matching-engine place_order_stream: {e}")
++                        })?,
++                );
+@@ -649,0 +660,9 @@
++    let maker_adopted = match std::env::var("HIMALAYA_MAKER_DEVELOPMENT_TEST_FUNDS") {
++        Err(std::env::VarError::NotPresent) => false,
++        Ok(value) if value == "false" => false,
++        Ok(value) if value == "true" => true,
++        _ => return Err("invalid maker development profile".into()),
++    };
++    svc.state
++        .maker_adopted
++        .store(maker_adopted, std::sync::atomic::Ordering::Release);
+--- a/src/order.rs
++++ b/src/order.rs
+@@ -151,0 +152 @@
++    pub(crate) maker_adopted: std::sync::atomic::AtomicBool,
+--- a/src/state.rs
++++ b/src/state.rs
+@@ -218,0 +219 @@
++            maker_adopted: std::sync::atomic::AtomicBool::new(false),
+--- a/src/matching_streams.rs
++++ b/src/matching_streams.rs
+@@ -117,0 +118,5 @@
++    authority: Option<
++        crate::maker_matching_proto::matching_authority_client::MatchingAuthorityClient<
++            tonic::transport::Channel,
++        >,
++    >,
+@@ -180,0 +186 @@
++            authority: None,
+@@ -184,0 +191,55 @@
++    pub async fn connect_with_authority(
++        client: MatchingEngineClient<tonic::transport::Channel>,
++        channel: tonic::transport::Channel,
++    ) -> Result<Self, Status> {
++        let mut stream = Self::connect(client).await?;
++        stream.authority = Some(
++            crate::maker_matching_proto::matching_authority_client::MatchingAuthorityClient::new(
++                channel,
++            ),
++        );
++        Ok(stream)
++    }
++
++    pub(crate) fn authority_client(
++        &self,
++    ) -> Option<
++        crate::maker_matching_proto::matching_authority_client::MatchingAuthorityClient<
++            tonic::transport::Channel,
++        >,
++    > {
++        self.authority.clone()
++    }
++
++    pub(crate) async fn risk_reduce_one(
++        &self,
++        order: PlaceOrderRequest,
++        episode: &str,
++    ) -> Result<PlaceOrderResponse, Status> {
++        let mut client = self.authority_client().ok_or_else(|| not_sent())?;
++        let token = std::env::var("ADMIN_AUTH_TOKEN").map_err(|_| not_sent())?;
++        let id = order.order_id;
++        let symbol = order.symbol.clone();
++        let mut request = app_config::auth::request_with_token(
++            crate::maker_matching_proto::SystemReduceRequest {
++                order: Some(order),
++                episode_id: episode.into(),
++                maximum_queue_age_ms: 2_000,
++            },
++            &token,
++        );
++        request.set_timeout(std::time::Duration::from_secs(2));
++        let response = client.system_reduce(request).await?.into_inner();
++        if response.order_id != id {
++            return Err(Status::data_loss(
++                "native reduction response identity mismatch",
++            ));
++        }
++        if response.has_more_deals {
++            return self.outcome(id, &symbol).await?.result.ok_or_else(|| {
++                Status::unavailable("complete native reduction outcome unavailable")
++            });
++        }
++        Ok(response)
++    }
++
+--- a/src/liquidation_execution/settlement.rs
++++ b/src/liquidation_execution/settlement.rs
+@@ -705,3 +705,10 @@
+-    let response = svc.matching_place[svc.matching_pipe_idx()]
+-        .place_one(request)
+-        .await;
++    let pipe = &svc.matching_place[svc.matching_pipe_idx()];
++    let response = if state
++        .maker_adopted
++        .load(std::sync::atomic::Ordering::Acquire)
++        && matches!(c.fund_id, 10001 | 10002)
++    {
++        pipe.risk_reduce_one(request, &c.episode_id).await
++    } else {
++        pipe.place_one(request).await
++    };
+--- a/build.rs
++++ b/build.rs
+@@ -35,0 +36,16 @@
++    let maker_gateway = "../matching-engine/proto/maker_gateway.proto";
++    let maker_matching = "../matching-engine/proto/maker_matching.proto";
++    println!("cargo:rerun-if-changed={maker_gateway}");
++    println!("cargo:rerun-if-changed={maker_matching}");
++    tonic_prost_build::configure()
++        .build_server(true)
++        .build_client(true)
++        .compile_protos(&[maker_gateway], &["../matching-engine/proto"])?;
++    std::fs::create_dir_all(out_dir.join("maker"))?;
++    tonic_prost_build::configure()
++        .build_server(false)
++        .build_client(true)
++        .out_dir(out_dir.join("maker"))
++        .extern_path(".matching", "crate::matching")
++        .extern_path(".muskdeer.himalaya.v1", "crate::maker_proto")
++        .compile_protos(&[maker_matching], &["../matching-engine/proto", "../proto"])?;

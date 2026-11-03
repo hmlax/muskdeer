@@ -12,6 +12,10 @@ service MatchingAuthority {
   rpc RenewLease(muskdeer.himalaya.v1.RenewLeaseRequest) returns (muskdeer.himalaya.v1.Lease);
   rpc ReleaseLease(muskdeer.himalaya.v1.ReleaseLeaseRequest) returns (muskdeer.himalaya.v1.ReleaseLeaseResponse);
   rpc Place(PlaceRequest) returns (matching.PlaceOrderResponse);
+  rpc Check(CheckRequest) returns (CheckResponse);
+  // Native liquidation only; requires the administrator credential in addition
+  // to the explicit IOC contract. Ordinary legacy place cannot use this lane.
+  rpc SystemReduce(SystemReduceRequest) returns (matching.PlaceOrderResponse);
 }
 message Status {
   bool development_test_funds = 1;
@@ -23,4 +27,14 @@ message PlaceRequest {
   muskdeer.himalaya.v1.Proof execution = 2;
   muskdeer.himalaya.v1.Proof strategy = 3;
   uint32 maximum_queue_age_ms = 4;
+}
+message CheckRequest {
+  muskdeer.himalaya.v1.Proof execution = 1;
+  muskdeer.himalaya.v1.Proof strategy = 2;
+}
+message CheckResponse { bool active = 1; }
+message SystemReduceRequest {
+  matching.PlaceOrderRequest order = 1;
+  string episode_id = 2;
+  uint32 maximum_queue_age_ms = 3;
 }
