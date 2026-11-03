@@ -14,7 +14,7 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
-	"github.com/hmlax/muskdeer/deer/trading/usecase"
+	"github.com/hmlax/muskdeer/strategy/usecase"
 )
 
 func TestGridControllerMaintainsFixedLevelsAndWaitsForTerminalStop(t *testing.T) {

@@ -28,9 +28,9 @@ import (
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/deer/trading/usecase"
 	"github.com/hmlax/muskdeer/execution/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/execution/simulator"
+	"github.com/hmlax/muskdeer/execution/usecase"
 )
 
 func TestExecutionRPCAuthenticatesThenSubmitsQueriesAndCancels(t *testing.T) {

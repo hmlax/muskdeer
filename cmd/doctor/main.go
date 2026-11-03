@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/deer/trading/business"
+	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
 
 func main() {
@@ -38,7 +38,7 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if err != nil {
 		return diagnosticExit(diagnostic, err, 1)
 	}
-	if err := business.ValidateConfig(cfg); err != nil {
+	if err := runtimeconfig.ValidateConfig(cfg); err != nil {
 		return diagnosticExit(diagnostic, err, 1)
 	}
 	if cfg.AdminHttp != nil || cfg.Http != nil {

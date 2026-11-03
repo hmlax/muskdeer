@@ -19,7 +19,7 @@
 
 公共配置、模型、事件分别位于 `deer/proto/{config,model,common}`；gRPC 契约和生成代码统一位于 `deer/proto/rpc`。仓库内维护的第三方源码、注解和许可证在 [deer/third_party](deer/third_party/README.md)。
 
-行情订单簿、接入、质量和工作器归 `market`；报价与策略适配归 `strategy`；订单适配、outbox 和模拟执行归 `execution`。公共交易领域与跨服务事务仓储位于 `deer/trading`，迁移位于 `deer/migrate`；单份共用，不复制资金、幂等与 fencing 逻辑。顶层不再保留 `internal`，各项目自己的 `internal/app` 继续负责生命周期和 Wire 装配。
+各项目的 `business` 拥有自身业务装配；执行、策略、持仓用例分别在各自 `usecase`。行情订单簿、接入、质量和工作器归 `market`；报价与策略适配归 `strategy`；订单适配、outbox 和模拟执行归 `execution`。公共交易领域与跨服务事务仓储位于 `deer/trading`，迁移位于 `deer/migrate`；单份共用，不复制资金、幂等与 fencing 逻辑。顶层不再保留 `internal`，各项目自己的 `internal/app` 继续负责生命周期和 Wire 装配。详见 [项目目录与依赖边界](docs/PROJECT_LAYOUT.md)。
 
 ## 本地启动
 

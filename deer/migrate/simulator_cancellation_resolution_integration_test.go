@@ -17,7 +17,7 @@ import (
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/deer/trading/usecase"
+	"github.com/hmlax/muskdeer/execution/usecase"
 )
 
 func TestSimulatorUnsentCancellationResolvesOnlyItsExpiredCommandAndKeepsLiveFunds(t *testing.T) {

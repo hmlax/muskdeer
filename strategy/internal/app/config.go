@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/deer/trading/business"
+	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
 
 // Config is the private, validated startup snapshot supplied to this service graph.
@@ -26,7 +26,7 @@ func NewConfig(ctx context.Context, cfg *configv1.ServiceConfig) (*Config, error
 		return nil, err
 	}
 	snapshot := proto.CloneOf(cfg)
-	if err := business.ValidateConfig(snapshot); err != nil {
+	if err := runtimeconfig.ValidateConfig(snapshot); err != nil {
 		return nil, err
 	}
 	return &Config{service: snapshot}, nil

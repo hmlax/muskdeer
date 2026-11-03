@@ -21,12 +21,12 @@
 
 | 服务装配 | 直接业务构造 | 工作计划实现 |
 |---|---|---|
-| [market](../market/internal/app/workplan.go) | business.NewMarket → *Market | [market.go](../deer/trading/business/market.go) |
-| [strategy](../strategy/internal/app/workplan.go) | business.NewStrategy → *Strategy | [strategy.go](../deer/trading/business/strategy.go) |
-| [execution](../execution/internal/app/workplan.go) | business.NewExecution → *Execution | [execution.go](../deer/trading/business/execution.go) |
-| [portfolio](../portfolio/internal/app/workplan.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../deer/trading/business/portfolio.go) |
+| [market](../market/internal/app/workplan.go) | business.NewMarket → *Market | [market.go](../market/business/market.go) |
+| [strategy](../strategy/internal/app/workplan.go) | business.NewStrategy → *Strategy | [strategy.go](../strategy/business/strategy.go) |
+| [execution](../execution/internal/app/workplan.go) | business.NewExecution → *Execution | [execution.go](../execution/business/execution.go) |
+| [portfolio](../portfolio/internal/app/workplan.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../portfolio/business/portfolio.go) |
 
-公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。通用 `business.New/Runtime` 留给历史组合入口/管理回归，四个核心进程不再调用它；业务工作器的算法、超时、注册发现与资金合同保持。
+公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。通用 `deer/testbusiness` 中的 `testbusiness.New/Runtime` 留给历史组合入口/管理回归，四个核心进程不再调用它；业务工作器的算法、超时、注册发现与资金合同保持。
 
 ## 启动
 

@@ -14,7 +14,8 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	"github.com/hmlax/muskdeer/deer/processlog"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/deer/trading/business"
+	"github.com/hmlax/muskdeer/deer/testbusiness"
+	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
 
 // Role selects a separately owned service process, not a module in one process.
@@ -54,7 +55,7 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 		return errors.New("service entry requires context and configuration")
 	}
 	cfg = proto.CloneOf(cfg)
-	if err := business.ValidateConfig(cfg); err != nil {
+	if err := runtimeconfig.ValidateConfig(cfg); err != nil {
 		return err
 	}
 	if cfg.AdminHttp != nil || cfg.Http != nil {
@@ -88,10 +89,10 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 		},
 	}
 	if cfg.GetBusiness().GetEnabled() {
-		var runtime *business.Runtime
+		var runtime *testbusiness.Runtime
 		spec.Workers = func(ctx context.Context, owner *deer.Deer) ([]deer.Worker, error) {
 			var err error
-			runtime, err = business.New(ctx, cfg, owner)
+			runtime, err = testbusiness.New(ctx, cfg, owner)
 			if err != nil {
 				return nil, err
 			}

@@ -15,7 +15,7 @@ import (
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
-	"github.com/hmlax/muskdeer/deer/trading/usecase"
+	"github.com/hmlax/muskdeer/portfolio/usecase"
 )
 
 func TestCoreFillAndSourceOutboxCommitOrRollBackTogether(t *testing.T) {

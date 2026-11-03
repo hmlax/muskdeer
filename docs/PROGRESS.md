@@ -1460,3 +1460,13 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 隔离 schema 37 源码全包单元通过；公共交易包、四项目、日志/testentry 的 race 通过，integration 标签下 migrate/infrastructureprobe/persistenceprobe 编译通过。60 Proto/Wire 生成一致性、Hertz 确定性/编译、格式、lint/govet 0 issues、规范正反样例、29 项工具测试及核心/历史夹具构建通过；606 个本地文档链接有效，git diff --check 通过。
 - 本步未运行实际基础设施/交易集成、镜像构建或 Compose 重建，留待业务装配拆分后验证；当前容器仍为上一轮源码，既有 worker 超时重启未作修复。原有工作区 eventwire 测试失败仍未纳入本次隔离验收，不声明所有未提交功能通过。
 - 基线 0ac9e96，工作分支 codex/two-apps；本独立步骤验证后提交、立即推送并核验远端 SHA，见交付报告及 Git 历史。
+
+## 2026-11-03：P15.2 各项目拥有业务装配与用例
+
+- 四个 typed 业务构造、RPC/worker 工作计划归各项目 business；执行、策略与持仓用例分别在所属项目 usecase。各 internal/app 直接引用本项目 business。公共配置/资源借用移至 runtimeconfig，轮询移至 runloop；历史组合仅留 deer/testbusiness 并委托项目实现，默认核心不依赖历史装配或其他项目 business。
+- 保持共用 domain/repository 的事务边界；单份订单终态判断归 OrderState.Terminal，回放值配置归 domain.MarketReplayConfig，保留原 marketworker.ReplayConfig 类型别名，避免公共校验拉入行情工作器。未改业务算法、SQL、Proto/RPC、超时或资金/幂等/fencing 合同。新增项目目录说明，更新 Wire/架构/运行文档。
+- 隔离 schema 37 提交源码完整 make verify、build-fixtures 通过：60 Proto/Wire、Hertz 确定性/编译、格式、lint/govet 0 issues、规范正反样例、29 项工具、全包单元/race 和构建；全部迁移/探针 integration 标签编译通过。四核心生产依赖图逐项验证，只用自身 business，无历史夹具及公共配置对行情工作器的反向依赖。
+- 真实既有 infra 的完整 infrastructureprobe integration/race/goleak 32.530 秒通过；五项实际四核心命令 integration/race 23.195 秒通过；三项历史组合/模块实际进程回归 18.047 秒通过，覆盖部分成交、费用、资金冻结链路及停止；outbox/inbox/ACK 重投顺序 6.347 秒通过。未降低断言或扩大时限，均为隔离模拟场景，非外部实盘或生产。
+- Docker build 阶段完成四核心及三维护命令编译/许可证收集，验证镜像 muskdeer-build:layout-check；未重建 Compose 或修改共享基础容器生命周期。现有 worker 超时重启问题保留，未在目录调整中改恢复策略。
+- 49 个原有文件在两步迁移后再次逐项核验，除导入/格式外完整保持；暂存使用隔离已验证源码，原有业务不混入提交。根工作区四核心构建、生成/Wire/格式通过；原有 eventwire TestPublicationRejectsChangedEnvelopeOrDecimalShape 仍失败，未将未提交功能宣称通过。证据与限制见 [P15 验证](validation/P15-02.md)。
+- P15.1 的 9363fe3 已同步；本步验证后独立提交，立即推送 codex/two-apps 并核验远端 SHA，见交付报告和 Git 历史。剩余全部历史迁移集成、固定三十分钟及生产本步未运行。

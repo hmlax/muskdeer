@@ -14,7 +14,7 @@
 
 保留单仓库、单 go.mod，各服务通过独立 cmd/镜像/端口/Nacos 身份运行，每个进程装配一次公共依赖。核心入口拒绝 HTTP 管理配置及管理 RPC 开启标志，不构造管理身份或加载 React。服务间保留 mTLS 身份及超时，实例/账户/行情继续用持久租约和最终 fencing 支持多节点。当前本地启动使用回放行情及禁用、未注资的模拟账户；定期报表/归档尚无实现，不部署空 cron。启动说明见 [核心服务](CORE_SERVICES.md)。
 
-各核心服务按独立项目目录组织，继续共用根 go.mod。`<service>/cmd` 统一为 main、wire injector 声明及 wire_gen.go；各自 `internal/app` 定义 Config、WorkPlan、ServiceSpec 与 App 的 ProviderSet，由 Wire 生成静态调用顺序。业务仍调用对应 `business.NewMarket/NewStrategy/NewExecution/NewPortfolio` typed 构造函数，在 Deer 开好基础设施后同步形成工作计划，不另开资源。公共 Deer 负责启动、排空和清理；每服务只有自己的 RPC/worker，没有共用 Run 的 name 分发。其他 cmd 命令原样保留，通用 business.Runtime 只供历史入口兼容。具体结构和生成门禁见 [Wire 装配](WIRING.md)。
+各核心服务按独立项目目录组织，继续共用根 go.mod。`<service>/cmd` 统一为 main、wire injector 声明及 wire_gen.go；各自 `internal/app` 定义 Config、WorkPlan、ServiceSpec 与 App 的 ProviderSet，由 Wire 生成静态调用顺序。业务仍调用对应 `business.NewMarket/NewStrategy/NewExecution/NewPortfolio` typed 构造函数，在 Deer 开好基础设施后同步形成工作计划，不另开资源。公共 Deer 负责启动、排空和清理；每服务只有自己的 RPC/worker，没有共用 Run 的 name 分发。其他 cmd 命令原样保留，deer/testbusiness 的组合装配只供历史入口兼容。具体结构和生成门禁见 [Wire 装配](WIRING.md)。
 
 核心入口无 flags 或本地 JSON：Nacos 连接从 env 引导，服务及业务运行参数从 Nacos 严格解析为 Proto 配置，启动时读取并校验；变更显式重启。持仓、订单、资金与业务版本的存储权威仍按下文执行。具体环境变量见 [Nacos 配置](NACOS_CONFIG.md)。
 

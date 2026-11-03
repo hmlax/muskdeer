@@ -5,8 +5,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/shopspring/decimal"
-
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/market/marketbook"
 	"github.com/hmlax/muskdeer/market/marketfeed"
@@ -14,13 +12,7 @@ import (
 )
 
 // ReplayConfig contains explicit simulator inputs, never a live-source fallback.
-type ReplayConfig struct {
-	Bid             decimal.Decimal
-	Ask             decimal.Decimal
-	Quantity        decimal.Decimal
-	Interval        time.Duration
-	CallbackTimeout time.Duration
-}
+type ReplayConfig = domain.MarketReplayConfig
 
 type replay struct {
 	feed   domain.MarketFeedDefinition

@@ -17,6 +17,7 @@
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
 - gRPC 服务合同与生成代码位于 deer/proto/rpc/<service>/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
 - 2026-11-03 用户确认业务实现按项目下沉，公共领域、租约及跨服务事务仓储继续共用，不重划资金/幂等/fencing 事务边界。行情/策略/执行/持仓代码归所属项目，公共交易合同与事务仓储归 deer/trading，数据库迁移归 deer/migrate，进程与测试支撑归 deer；不再使用顶层 internal。继续单 go.mod，不复制共用交易实现，项目 internal 包遵守 Go 可见性限制。
+- 每个核心项目使用自身 business 包及对应 usecase；公共 runtimeconfig 只校验/借用资源，不装配业务。deer/testbusiness、testentry、testservice 仅供历史回归，核心生产依赖图不得包含它们或其他项目的 business。协议客户端适配和公共交易合同可复用，目录说明见 docs/PROJECT_LAYOUT.md。
 - 仓库内维护的第三方源码、Proto 注解、OpenAPI schema 及许可证统一放 deer/third_party，继续共用根 go.mod；生成工具、Go 导入及镜像许可收集使用该路径。
 - 每张表及其持久化 Model 必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL；字段映射、生成与迁移要求见 docs/PROTO_AND_MODEL.md。
 - 所有 GORM 数据操作显式使用 db.Model(&model.X{}) 或事务中的 tx.Model(&model.X{})，禁止 db.Table("xxx")、tx.Table("xxx") 及其他变量上的 .Table(...)；适用于业务、公共组件、脚本与测试。

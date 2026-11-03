@@ -25,8 +25,8 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/deer/trading/usecase"
 	"github.com/hmlax/muskdeer/execution/outbox"
+	"github.com/hmlax/muskdeer/portfolio/usecase"
 )
 
 func TestOutboxClaimsExcludePeersAndFenceExpiredOwner(t *testing.T) {
