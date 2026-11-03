@@ -1,0 +1,260 @@
+syntax = "proto3";
+
+package muskdeer.himalaya.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1;himalayav1";
+
+// This contract is explicitly for a development matching venue with test funds.
+// Native gateway ownership is verified again at the matching effect boundary.
+service Gateway {
+  rpc GetCapabilities(CapabilitiesRequest) returns (Capabilities);
+  rpc GetMarket(MarketRequest) returns (Market);
+  rpc GetSnapshot(SnapshotRequest) returns (Snapshot);
+  rpc ClaimLease(ClaimLeaseRequest) returns (Lease);
+  rpc RenewLease(RenewLeaseRequest) returns (Lease);
+  rpc ReleaseLease(ReleaseLeaseRequest) returns (ReleaseLeaseResponse);
+  rpc Submit(SubmitRequest) returns (SubmitResponse);
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+  rpc Find(FindRequest) returns (Order);
+}
+
+// Execution is exposed by Muskdeer's execution process using internal mTLS.
+// The execution process adds its own native account lease before dispatch.
+service Execution {
+  rpc GetMarket(MarketRequest) returns (Market);
+  rpc GetSnapshot(SnapshotRequest) returns (Snapshot);
+  rpc ClaimStrategy(ClaimLeaseRequest) returns (Lease);
+  rpc RenewStrategy(RenewLeaseRequest) returns (Lease);
+  rpc ReleaseStrategy(ReleaseLeaseRequest) returns (ReleaseLeaseResponse);
+  rpc Submit(SubmitRequest) returns (SubmitResponse);
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+  rpc Find(FindRequest) returns (Order);
+}
+
+service MarketData {
+  rpc GetDepth(DepthRequest) returns (Depth);
+}
+
+enum LeaseKind {
+  LEASE_KIND_UNSPECIFIED = 0;
+  LEASE_KIND_EXECUTION = 1;
+  LEASE_KIND_STRATEGY = 2;
+}
+
+enum Side {
+  SIDE_UNSPECIFIED = 0;
+  SIDE_BUY = 1;
+  SIDE_SELL = 2;
+}
+
+enum OrderState {
+  ORDER_STATE_UNSPECIFIED = 0;
+  ORDER_STATE_PENDING = 1;
+  ORDER_STATE_LIVE = 2;
+  ORDER_STATE_PARTIALLY_FILLED = 3;
+  ORDER_STATE_FILLED = 4;
+  ORDER_STATE_CANCELED = 5;
+  ORDER_STATE_REJECTED = 6;
+  ORDER_STATE_UNKNOWN = 7;
+}
+
+enum PositionMode {
+  POSITION_MODE_UNSPECIFIED = 0;
+  POSITION_MODE_ONE_WAY = 1;
+}
+
+message CapabilitiesRequest {}
+
+message Capabilities {
+  uint32 contract_version = 1;
+  bool development_test_funds = 2;
+  bool durable_client_idempotency = 3;
+  bool matching_owner_fencing = 4;
+  bool query_by_client_id = 5;
+  bool post_only = 6;
+  bool one_way_linear_perpetual = 7;
+  bool owner_expiry_cancel = 8;
+  string incarnation = 9;
+}
+
+message MarketRequest { string symbol = 1; }
+
+message Market {
+  int64 id = 1;
+  string symbol = 2;
+  string base_currency = 3;
+  string quote_currency = 4;
+  string price_tick = 5;
+  string quantity_step = 6;
+  string minimum_quantity = 7;
+  string maximum_quantity = 8;
+  string minimum_notional = 9;
+  uint32 maximum_leverage = 10;
+  string maker_fee_rate = 11;
+  string taker_fee_rate = 12;
+  bool trading = 13;
+  bool linear_perpetual = 14;
+}
+
+message Scope {
+  LeaseKind kind = 1;
+  int64 user_id = 2;
+  int64 fund_id = 3;
+  // Empty for an execution account scope; canonical symbol for strategy scope.
+  string symbol = 4;
+}
+
+message Proof {
+  Scope scope = 1;
+  string owner = 2;
+  uint64 epoch = 3;
+}
+
+message ClaimLeaseRequest {
+  Scope scope = 1;
+  string owner = 2;
+  uint64 ttl_ms = 3;
+}
+
+message RenewLeaseRequest {
+  Proof proof = 1;
+  uint64 ttl_ms = 2;
+}
+
+message ReleaseLeaseRequest { Proof proof = 1; }
+message ReleaseLeaseResponse { bool released = 1; }
+
+message Lease {
+  Proof proof = 1;
+  // Relative lifetime from the native authority's monotonic clock. Callers
+  // subtract RPC elapsed time; a local wall timestamp never extends authority.
+  uint64 remaining_ms = 2;
+  string incarnation = 3;
+}
+
+message SnapshotRequest {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+}
+
+message Account {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string coin = 3;
+  string balance = 4;
+  string available = 5;
+  string frozen = 6;
+  string margin_used = 7;
+  PositionMode position_mode = 8;
+  bool normal = 9;
+}
+
+message Position {
+  string id = 1;
+  string symbol = 2;
+  // Signed base quantity, including an already existing position at takeover.
+  string quantity = 3;
+  string average_price = 4;
+  string unrealized_pnl = 5;
+  string realized_pnl = 6;
+  uint32 leverage = 7;
+}
+
+message Order {
+  uint64 id = 1;
+  string client_id = 2;
+  int64 user_id = 3;
+  int64 fund_id = 4;
+  string symbol = 5;
+  Side side = 6;
+  string price = 7;
+  string quantity = 8;
+  string executed_quantity = 9;
+  OrderState state = 10;
+  bool cancel_pending = 11;
+  bool reduce_only = 12;
+  uint32 leverage = 13;
+  string reserved_margin = 14;
+  string reserved_fee = 15;
+  string fee = 16;
+  uint64 updated_at_ms = 17;
+}
+
+message Snapshot {
+  Account account = 1;
+  repeated Position positions = 2;
+  repeated Order orders = 3;
+  uint64 observed_at_ms = 4;
+  // False means the caller must reject the entire snapshot, never a partial page.
+  bool complete = 5;
+}
+
+message SubmitRequest {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+  string client_id = 4;
+  Side side = 5;
+  string price = 6;
+  string quantity = 7;
+  uint32 leverage = 8;
+  PositionMode position_mode = 9;
+  bool reduce_only = 10;
+  Proof execution = 11;
+  Proof strategy = 12;
+  uint32 maximum_queue_age_ms = 13;
+  string request_id = 14;
+  bool post_only = 15;
+}
+
+message SubmitResponse {
+  Order order = 1;
+  bool duplicate = 2;
+  uint32 rejection_code = 3;
+  string rejection = 4;
+}
+
+message CancelRequest {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+  uint64 order_id = 4;
+  string client_id = 5;
+  Proof execution = 6;
+  Proof strategy = 7;
+  uint32 maximum_queue_age_ms = 8;
+}
+
+message CancelResponse {
+  Order order = 1;
+  bool accepted = 2;
+}
+
+message FindRequest {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+  oneof identity {
+    string client_id = 4;
+    uint64 order_id = 5;
+  }
+}
+
+message DepthRequest { string symbol = 1; }
+message Level {
+  string price = 1;
+  string quantity = 2;
+}
+message Depth {
+  string symbol = 1;
+  string source = 2;
+  repeated Level bids = 3;
+  repeated Level asks = 4;
+  uint64 generation = 5;
+  uint64 sequence = 6;
+  uint64 source_event_at_ms = 7;
+  uint64 observed_at_ms = 8;
+  uint64 valid_for_ms = 9;
+  bool healthy = 10;
+}

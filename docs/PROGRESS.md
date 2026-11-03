@@ -1470,3 +1470,10 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - Docker build 阶段完成四核心及三维护命令编译/许可证收集，验证镜像 muskdeer-build:layout-check；未重建 Compose 或修改共享基础容器生命周期。现有 worker 超时重启问题保留，未在目录调整中改恢复策略。
 - 49 个原有文件在两步迁移后再次逐项核验，除导入/格式外完整保持；暂存使用隔离已验证源码，原有业务不混入提交。根工作区四核心构建、生成/Wire/格式通过；原有 eventwire TestPublicationRejectsChangedEnvelopeOrDecimalShape 仍失败，未将未提交功能宣称通过。证据与限制见 [P15 验证](validation/P15-02.md)。
 - P15.1 的 9363fe3 已同步；本步验证后独立提交，立即推送 codex/two-apps 并核验远端 SHA，见交付报告和 Git 历史。剩余全部历史迁移集成、固定三十分钟及生产本步未运行。
+
+## 2026-11-03：P16.1 开发永续协议与所有权组件
+
+- 用户确认以测试资金连接 Himalaya 开发撮合，先补齐原生合同再由 Muskdeer 接管 BTC/ETH。本步新增 typed Gateway/Execution/MarketData Proto、生成物、能力/输入门禁客户端，以及原生持久 epoch/双作用域/效果 guard 组件与故障测试；具体范围见 [P16.1 验证](validation/P16-01.md)。
+- 隔离提交源码格式、62 Proto/Wire 生成一致性、contract-check、lint/govet 0 issues、规范正反样例、29 项工具与核心构建通过；新增 Go 包 race 通过，锁定 Rust 1.94.0 与依赖的六项所有权故障测试通过。原有 49 个工作区文件逐字节核验保留。
+- 组件尚未绑定原生最终撮合写入，开发网关未升级；没有下单、撤单、平仓、充值或改变现有账户。后续继续原生稳定命令键、最终 fencing/失联撤单和四服务永续模式，再进行实际接管。原生完整 workspace、真实网关及固定时长做市尚未运行；不宣称本轮接管完成。
+- 基线 9f34646，验证后独立提交并立即推送 codex/two-apps，核验远端 SHA；原有未提交业务和既有 eventwire 失败不混入本步验收。
