@@ -1399,3 +1399,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：独立 schema 37 源码的 fmt-check、60 Proto/OpenAPI 生成检查、lint/govet（0 issues）、make build 及四个新路径命令包测试通过；make core-test 四项实际 infra/race 共 15.428 秒通过，成交投影/预算 3.01 秒、资源幂等 0.40 秒、broker 冲突 0.02 秒、策略接管/报价/停止 10.40 秒。本步未新写重复测试；全量单元/race、旧管理/浏览器和固定三十分钟未重跑。
 - 四个新路径镜像构建并 Compose up --wait 全部 healthy；核实最终镜像 ID、无参数/JSON 挂载、四份 Nacos 配置与健康身份，实际 mTLS 双源行情未过期 HEALTHY、价格 99.99/100.01，execution 订单为空。仅重建本项目四个应用容器，不部署或启停共享基础设施；证据 .cache/service-layout/live-probe.json。原 49 个未提交平仓路径保留，验证/运行源码仍为 .cache/nacos-config/source，不混入 schema 38；未涉及资金、生产或迁移。
 - 工作分支 codex/two-apps，基线 89f0cf0 已同步；本步验证后独立提交、立即推送并核验远程 SHA，见交付报告和 Git 历史。
+
+## 2026-11-03：P13.6 Wire 装配与 Deer With 注入
+
+- 按用户要求完成四服务独立 Wire injector 和 internal/app ProviderSet，固定 Wire v0.7.0，生成物入库并接入 generate/verify；main 仍为无参数 env/Nacos 启动，各进程只有一个 Deer。原有空 market/cmd/service.go 已随旧装配移除，其他 cmd 命令保持。
+- Deer 保存 Kratos App、日志及公共客户端；NewDeer/NewDeerApi 兼容原调用，增加 WithDB、WithRedis、WithLogger、WithJetStream、WithDiscovery、WithGRPCClients。注入依赖借用且优先于配置创建，不另开池；构造/启动/运行健康检查保持。未注入资源仍由 Deer 创建并逆序清理；调用方在 Deer 清理后关闭借入资源，Wire 透传选项且不吞清理错误。
+- 验证：隔离 schema 37 源码的格式、60 Proto/OpenAPI/Wire 一致性、lint/govet（0 issues）、全包单元与核心构建通过；deer 全部子包、processlog、business、四服务相关 race 通过。真实 infra 全部客户端合同含新 DB/Redis 注入所有权/readiness 测试通过，25.807 秒；四项真实核心进程 integration/race 原时限重跑全部通过，13.533 秒。30 项 Python 3.13.2 工具测试、文档链接和差异检查通过。详见 [P13.6 验证](validation/P13-06.md)。
+- 诊断：构造函数复杂度超限通过拆分初始化修复；日志测试按本次精确增量校验；旧 Python 工具错误改用现有 3.13.2 后通过。首次组合回归出现 Nacos 配置 fetch 失败及观察等待超时，具体远端原因未确定，未放宽断言/时限；独立重跑原四项通过。原有平仓未提交修改保留，完整单元/实际进程使用 .cache/deer-options/source 排除这些修改；未运行镜像/Compose 重建、完整历史迁移/浏览器、固定三十分钟或生产，未操作共享基础容器生命周期、资金或生产迁移。
+- 工作分支 codex/two-apps，基线 3b94abe 已同步；本步检查通过后独立提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。

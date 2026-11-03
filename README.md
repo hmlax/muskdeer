@@ -4,7 +4,7 @@
 
 四个服务均无命令行参数：Nacos 连接信息从 env 获取，服务及业务运行配置从 Nacos 的各自配置项读取，不读取本地 JSON。字段及示例见 [Nacos 配置](docs/NACOS_CONFIG.md)。
 
-服务目录分别为 `market/cmd`、`strategy/cmd`、`execution/cmd`、`portfolio/cmd`，各自维护入口、装配与测试，继续共用根 go.mod；例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。其余 cmd 命令保留原样。
+服务目录分别为 `market`、`strategy`、`execution`、`portfolio`，统一使用 `cmd/main.go + wire.go + wire_gen.go` 和各自 `internal/app` ProviderSet，继续共用根 go.mod；例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。`make wire` 重新生成依赖装配，`make wire-check` 检查漂移；详细结构见 [Wire 装配](docs/WIRING.md)。其余 cmd 命令保留原样。
 
 基于既有撮合引擎的自营做市与可配置策略平台。
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。

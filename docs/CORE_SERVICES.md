@@ -15,16 +15,16 @@
 
 ## 独立装配位置
 
-四个服务按各自目录组织，入口、装配和测试位于 `<service>/cmd`，继续共用根 go.mod；其余 cmd 命令保持原样。每个项目可单独构建，例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。
+四个服务按各自目录组织，cmd 统一放 main、wire.go、wire_gen.go 和 injector 测试；装配 provider 在各自 internal/app，继续共用根 go.mod，其余 cmd 命令保持原样。每个项目可单独构建，例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。生成及清理合同见 [Wire 装配](WIRING.md)。
 
-每个服务在自己的 `<service>/cmd/service.go` 维护配置检查、Deer 生命周期、依赖及工作计划。market/execution 只注册自身业务 RPC；strategy/portfolio 装配自己的后台工作循环。四个 main 只从 env 引导 Nacos 配置并调用本服务 `runService`，没有命令行配置参数或公共启动分发。
+各 internal/app 分别维护配置检查、工作计划、服务定义和 Deer 生命周期，由独立 ProviderSet 注入。market/execution 只注册自身业务 RPC，strategy/portfolio 只有后台工作循环。四个 main 从 env 引导 Nacos 配置，调用本服务生成的 wireApp 和 App.Run，没有命令行配置参数或公共启动分发。
 
 | 服务装配 | 直接业务构造 | 工作计划实现 |
 |---|---|---|
-| [market](../market/cmd/service.go) | business.NewMarket → *Market | [market.go](../internal/business/market.go) |
-| [strategy](../strategy/cmd/service.go) | business.NewStrategy → *Strategy | [strategy.go](../internal/business/strategy.go) |
-| [execution](../execution/cmd/service.go) | business.NewExecution → *Execution | [execution.go](../internal/business/execution.go) |
-| [portfolio](../portfolio/cmd/service.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../internal/business/portfolio.go) |
+| [market](../market/internal/app/workplan.go) | business.NewMarket → *Market | [market.go](../internal/business/market.go) |
+| [strategy](../strategy/internal/app/workplan.go) | business.NewStrategy → *Strategy | [strategy.go](../internal/business/strategy.go) |
+| [execution](../execution/internal/app/workplan.go) | business.NewExecution → *Execution | [execution.go](../internal/business/execution.go) |
+| [portfolio](../portfolio/internal/app/workplan.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../internal/business/portfolio.go) |
 
 公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。通用 `business.New/Runtime` 留给历史组合入口/管理回归，四个核心进程不再调用它；业务工作器的算法、超时、注册发现与资金合同保持。
 

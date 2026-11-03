@@ -61,10 +61,12 @@ type ServiceSpec struct {
 	SetupProcessLogging func(context.Context, *logging.Logger) (Cleanup, error)
 }
 
-// Deer owns one independent Kratos service, its listeners and dependencies.
+// Deer owns one independent Kratos service, its listeners and configured dependencies.
+// Dependencies supplied through With options remain owned by the caller.
 // Construct once, Run at most once, and defer the returned Cleanup immediately.
 // Run also releases all resources before returning.
 type Deer struct {
+	app               *kratos.App
 	cfg               *configv1.ServiceConfig
 	servers           []*managedTransport
 	workers           []*managedWorker
@@ -92,18 +94,19 @@ type Deer struct {
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
 // registration failures roll back dependencies and listeners in reverse order.
-func NewDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec) (*Deer, Cleanup, error) {
-	return newDeer(ctx, cfg, spec, false)
+// With options borrow initialized clients instead of opening configured replacements.
+func NewDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec, opts ...Option) (*Deer, Cleanup, error) {
+	return newDeer(ctx, cfg, spec, false, opts...)
 }
 
 // GRPCAddress returns the actual reserved address, or empty if gRPC is disabled.
 func (d *Deer) GRPCAddress() string { return d.grpcAddress }
 
-// Logger returns this instance's eagerly initialized JSON logger, borrowed by
-// callers. The service owns its lifetime; callers must not close it themselves.
+// Logger returns this instance's initialized JSON logger, borrowed by consumers.
+// A WithLogger caller retains ownership and closes it only after Deer cleanup.
 func (d *Deer) Logger() *logging.Logger { return d.logger }
 
-// DB returns the configured, borrowed GORM handle without opening a connection.
+// DB returns the configured or injected GORM handle without opening a connection.
 // Repositories must use WithContext(ctx).Model(&generatedModel{}) for data access.
 func (d *Deer) DB() (*gorm.DB, error) {
 	if d.database == nil {
@@ -112,8 +115,8 @@ func (d *Deer) DB() (*gorm.DB, error) {
 	return d.database.GORM(), nil
 }
 
-// Redis returns the eagerly initialized cache, borrowed by callers. The service
-// owns its lifetime; callers must not close it themselves.
+// Redis returns the initialized cache, borrowed by consumers. Only its owner
+// (Deer or the WithRedis caller) may close it, after this service's work stops.
 func (d *Deer) Redis() (*redis.Client, error) {
 	if d.cache == nil {
 		return nil, ErrRedisNotConfigured
@@ -121,8 +124,8 @@ func (d *Deer) Redis() (*redis.Client, error) {
 	return d.cache, nil
 }
 
-// JetStream returns the initialized synchronous publisher, borrowed by callers.
-// The service owns its lifetime; callers must not close it themselves.
+// JetStream returns the initialized synchronous publisher, borrowed by consumers.
+// A WithJetStream caller closes it only after Deer cleanup.
 func (d *Deer) JetStream() (*jetstream.Client, error) {
 	if d.events == nil {
 		return nil, ErrJetStreamNotConfigured
@@ -131,7 +134,7 @@ func (d *Deer) JetStream() (*jetstream.Client, error) {
 }
 
 // Discovery returns a borrowed, initialized Nacos client for fresh lookups.
-// The service owns its lifetime; callers must not close it themselves.
+// A WithDiscovery caller closes it only after Deer cleanup.
 func (d *Deer) Discovery() (*nacos.Client, error) {
 	if d.discovery == nil {
 		return nil, ErrNacosNotConfigured
@@ -139,7 +142,7 @@ func (d *Deer) Discovery() (*nacos.Client, error) {
 	return d.discovery, nil
 }
 
-// CheckReady verifies current listener state and configured dependencies live.
+// CheckReady verifies listener state and configured or injected dependencies live.
 // Ready alone reports lifecycle state; health endpoints should use CheckReady.
 func (d *Deer) CheckReady(ctx context.Context) error {
 	if ctx == nil {
@@ -228,7 +231,7 @@ func (d *Deer) Run(ctx context.Context) error {
 	return errors.Join(runErr, d.closeErr)
 }
 
-func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec, api bool) (*Deer, Cleanup, error) {
+func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec, api bool, opts ...Option) (*Deer, Cleanup, error) {
 	if ctx == nil {
 		return nil, nil, errors.New("construction context is required")
 	}
@@ -239,104 +242,13 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 	if cfg.Grpc == nil && spec.RegisterGRPC != nil {
 		return nil, nil, errors.New("RPC registration requires a gRPC listener")
 	}
+	settings, err := resolveOptions(opts)
+	if err != nil {
+		return nil, nil, err
+	}
 	startup, cancel := context.WithTimeout(ctx, cfg.StartupTimeout.AsDuration())
 	defer cancel()
-	var logger *logging.Logger
-	var database *postgres.Client
-	var cache *redis.Client
-	var events *jetstream.Client
-	var discovery *nacos.Client
-	var rpcClients *rpcclient.Factory
-	plan := make([]Initializer, 0, len(spec.Resources)+7)
-	plan = append(plan, Initializer{
-		Name: "deer.logging",
-		Open: func(ctx context.Context) (Cleanup, error) {
-			var err error
-			logger, err = logging.New(ctx, cfg.Logging, logging.Identity{
-				Service:  cfg.Name,
-				Instance: cfg.InstanceId,
-			}, spec.LogOutput)
-			if err != nil {
-				return nil, err
-			}
-			return func(context.Context) error { return logger.Close() }, nil
-		},
-	})
-	if spec.SetupProcessLogging != nil {
-		plan = append(plan, Initializer{
-			Name: "deer.process-logging",
-			Open: func(ctx context.Context) (Cleanup, error) {
-				return spec.SetupProcessLogging(ctx, logger)
-			},
-		})
-	}
-	if cfg.Postgres != nil {
-		plan = append(plan, Initializer{
-			Name: "deer.postgres",
-			Open: func(ctx context.Context) (Cleanup, error) {
-				var err error
-				database, err = postgres.New(ctx, cfg.Postgres, cfg.Name+"/"+cfg.InstanceId)
-				if err != nil {
-					return nil, err
-				}
-				return func(context.Context) error { return database.Close() }, nil
-			},
-		})
-	}
-	if cfg.Redis != nil {
-		plan = append(plan, Initializer{
-			Name: "deer.redis",
-			Open: func(ctx context.Context) (Cleanup, error) {
-				var err error
-				cache, err = redis.New(ctx, cfg.Redis, cfg.Name+"/"+cfg.InstanceId)
-				if err != nil {
-					return nil, err
-				}
-				return func(context.Context) error { return cache.Close() }, nil
-			},
-		})
-	}
-	if cfg.Jetstream != nil {
-		plan = append(plan, Initializer{
-			Name: "deer.jetstream",
-			Open: func(ctx context.Context) (Cleanup, error) {
-				var err error
-				events, err = jetstream.New(ctx, cfg.Jetstream, cfg.Name+"/"+cfg.InstanceId)
-				if err != nil {
-					return nil, err
-				}
-				return func(context.Context) error { return events.Close() }, nil
-			},
-		})
-	}
-	if cfg.Nacos != nil {
-		plan = append(plan, Initializer{
-			Name: "deer.nacos",
-			Open: func(ctx context.Context) (Cleanup, error) {
-				var err error
-				discovery, err = nacos.New(ctx, cfg.Nacos)
-				if err != nil {
-					return nil, err
-				}
-				return func(context.Context) error { return discovery.Close() }, nil
-			},
-		})
-	}
-	if cfg.GrpcClients != nil {
-		plan = append(plan, Initializer{
-			Name: "deer.grpc-clients",
-			Open: func(ctx context.Context) (Cleanup, error) {
-				var err error
-				rpcClients, err = rpcclient.New(ctx, cfg.GrpcClients, cfg.Name+grpcServiceSuffix, discovery)
-				if err != nil {
-					return nil, err
-				}
-				return func(context.Context) error { return rpcClients.Close() }, nil
-			},
-		})
-	}
-	plan = append(plan, spec.Resources...)
-	release, err := initializeResources(startup, plan, cfg.ShutdownTimeout.AsDuration())
+	release, err := settings.initialize(startup, cfg, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -346,12 +258,12 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		readySignal: make(chan struct{}),
 		stopSignal:  make(chan struct{}),
 		done:        make(chan struct{}),
-		logger:      logger,
-		database:    database,
-		cache:       cache,
-		events:      events,
-		discovery:   discovery,
-		rpcClients:  rpcClients,
+		logger:      settings.logger,
+		database:    settings.database,
+		cache:       settings.cache,
+		events:      settings.events,
+		discovery:   settings.discovery,
+		rpcClients:  settings.rpcClients,
 		metrics:     metrics.New(),
 	}
 	if err := d.addWorkers(startup, spec.Workers); err != nil {
@@ -427,7 +339,7 @@ func (d *Deer) run(ctx context.Context) (error, error) {
 	for _, worker := range d.workers {
 		servers = append(servers, worker)
 	}
-	app := kratos.New(
+	d.app = kratos.New(
 		kratos.Context(owned),
 		kratos.Name(d.cfg.Name),
 		kratos.ID(d.cfg.InstanceId),
@@ -442,7 +354,7 @@ func (d *Deer) run(ctx context.Context) (error, error) {
 	)
 	// Run owns this single supervisor and joins it before releasing resources.
 	completed := make(chan error, 1)
-	go func() { completed <- app.Run() }()
+	go func() { completed <- d.app.Run() }()
 	var runErr error
 	appDone := false
 	var publicationFailures <-chan error
@@ -458,7 +370,7 @@ func (d *Deer) run(ctx context.Context) (error, error) {
 	case runErr = <-publicationFailures:
 	}
 	d.requestStop()
-	stopErr := app.Stop()
+	stopErr := d.app.Stop()
 	if stopErr != nil {
 		cancel() // A failed stop hook must not leave the supervisor running.
 	}

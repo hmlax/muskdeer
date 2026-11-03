@@ -1,4 +1,5 @@
 .PHONY: doctor test-tooling tools contract-check policy-test generate generate-check openapi-generate openapi-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e web-install web-build web-check web-generated-check admin-browser
+.PHONY: wire wire-check
 
 doctor:
 	python3 scripts/go.py version
@@ -22,10 +23,18 @@ policy-test:
 generate: contract-check
 	python3 scripts/generate.py
 	python3 scripts/go.py run ./cmd/openapi
+	python3 scripts/wire.py
 
 generate-check: contract-check
 	python3 scripts/generate.py --check
 	python3 scripts/go.py run ./cmd/openapi -check
+	python3 scripts/wire.py --check
+
+wire:
+	python3 scripts/wire.py
+
+wire-check:
+	python3 scripts/wire.py --check
 
 openapi-generate: contract-check
 	python3 scripts/go.py run ./cmd/openapi

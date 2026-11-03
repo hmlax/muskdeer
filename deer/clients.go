@@ -2,8 +2,8 @@ package deer
 
 import "github.com/hmlax/muskdeer/deer/rpcclient"
 
-// GRPCClients returns the borrowed factory. Callers must not close it; Deer
-// cancels/joins calls before releasing its discovery and other shared resources.
+// GRPCClients returns the factory borrowed by consumers. Deer joins its work
+// before cleanup; a WithGRPCClients caller then closes its injected factory.
 func (d *Deer) GRPCClients() (*rpcclient.Factory, error) {
 	if d.rpcClients == nil {
 		return nil, ErrGRPCClientsNotConfigured

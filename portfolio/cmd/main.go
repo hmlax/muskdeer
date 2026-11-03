@@ -23,9 +23,17 @@ func run() int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	cfg, err := deer.LoadNacosConfig(ctx, "portfolio")
-	if err == nil {
-		err = runService(ctx, cfg, os.Stdout)
+	if err != nil {
+		return exitCode(err)
 	}
+	application, err := wireApp(ctx, cfg, os.Stdout, nil)
+	if err != nil {
+		return exitCode(err)
+	}
+	return exitCode(application.Run(ctx))
+}
+
+func exitCode(err error) int {
 	if err != nil && !coreentry.IsCancellation(err) {
 		return processfailure.Report(os.Stderr, "core service failed", err, 1)
 	}

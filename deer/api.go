@@ -46,13 +46,13 @@ var _ transport.Server = (*hertzTransport)(nil)
 // the same Kratos lifecycle. HTTP failure also releases the already built Deer.
 //
 //revive:disable-next-line:var-naming // User-mandated constructor spelling; see docs/DEER.md.
-func NewDeerApi(ctx context.Context, cfg *configv1.ServiceConfig, spec APISpec) (*DeerApi, Cleanup, error) {
+func NewDeerApi(ctx context.Context, cfg *configv1.ServiceConfig, spec APISpec, opts ...Option) (*DeerApi, Cleanup, error) {
 	if ctx == nil || cfg == nil {
 		return nil, nil, errors.New("construction context and configuration are required")
 	}
 	startup, cancel := context.WithTimeout(ctx, cfg.GetStartupTimeout().AsDuration())
 	defer cancel()
-	shared, cleanup, err := newDeer(startup, cfg, spec.Service, true)
+	shared, cleanup, err := newDeer(startup, cfg, spec.Service, true, opts...)
 	if err != nil {
 		return nil, nil, err
 	}

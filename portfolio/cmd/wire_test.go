@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"io"
 	"testing"
 
+	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/internal/testapp"
 )
 
 func TestServiceRejectsOtherIdentitiesAndAdministrationBeforeOpeningResources(t *testing.T) {
@@ -12,7 +15,7 @@ func TestServiceRejectsOtherIdentitiesAndAdministrationBeforeOpeningResources(t 
 		if name == "portfolio" {
 			continue
 		}
-		if err := runService(t.Context(), &configv1.ServiceConfig{Name: name}, io.Discard); err == nil {
+		if _, err := wireApp(t.Context(), &configv1.ServiceConfig{Name: name}, io.Discard, nil); err == nil {
 			t.Fatalf("portfolio accepted %s configuration", name)
 		}
 	}
@@ -20,7 +23,17 @@ func TestServiceRejectsOtherIdentitiesAndAdministrationBeforeOpeningResources(t 
 		Name:     "portfolio",
 		Business: &configv1.BusinessRuntime{Strategy: &configv1.StrategyRuntime{ManagementEnabled: true}},
 	}
-	if err := runService(t.Context(), cfg, io.Discard); err == nil {
+	if _, err := wireApp(t.Context(), cfg, io.Discard, nil); err == nil {
 		t.Fatal("portfolio allowed administration assembly")
 	}
+}
+
+func TestWireAppRollsBackAndCanCloseBeforeRun(t *testing.T) {
+	testapp.AssertLifecycle(t, "portfolio", func(ctx context.Context, cfg *configv1.ServiceConfig, output io.Writer, options []deer.Option) (testapp.Application, error) {
+		application, err := wireApp(ctx, cfg, output, options)
+		if err != nil {
+			return nil, err
+		}
+		return application, nil
+	})
 }

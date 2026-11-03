@@ -8,7 +8,9 @@
 - 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；API 服务封装为 DeerApi，配套构造函数 deer.NewDeerApi，详见 docs/DEER.md。
 - 外部 HTTP 使用 Hertz，服务生命周期使用 Kratos，内部通信使用 gRPC；注册发现使用 Nacos。禁止替换成 Kitex、Gin 或 Kratos HTTP。
 - 2026-11-02 后续明确指令优先：当前仅交付核心 Kratos 服务，各模块分别独立进程、独立 cmd 入口，不使用共用命令加 role 参数。已实现的 market、strategy、execution、portfolio 分别使用 Deer 提供 gRPC/业务工作循环；默认构建和 Compose 不再部署 admin、operator 或管理前端。保留单仓库、单 go.mod；每进程公共依赖只装配一次。此项替代此前两应用部署约定。
-- 当前需要的四个核心服务分别组织为 market/cmd、strategy/cmd、execution/cmd、portfolio/cmd；在各自 <service>/cmd/service.go 独立维护配置、Deer 生命周期、业务构造和 RPC/worker 注册，继续共用根 go.mod。其他 cmd 命令原样保留。直接使用对应的 typed 构造函数，禁止用共用 Run(ctx, name, ...) 或按服务名分发的业务工厂装配核心进程。coreentry 只保留健康/取消小工具，历史组合装配仅供旧入口与回归兼容。
+- 四个核心服务分别使用 <service>/cmd/{main.go,wire.go,wire_gen.go} 与各自 internal/app/{config.go,workplan.go,server.go,app.go,providers.go}；Wire ProviderSet 生成配置、工作计划、日志、服务定义及 App 的依赖调用。main 从 env/Nacos 加载配置并调用生成 injector，internal/app 独立维护本服务 Deer 生命周期及 typed 业务构造/RPC/worker 注册，继续共用根 go.mod；其他 cmd 命令原样保留。禁止用共用 Run(ctx, name, ...) 或按服务名分发的工厂装配核心进程。coreentry 只保留健康/取消工具，历史组合装配仅供旧入口兼容。
+- Wire 版本固定在 go.mod 的 tool/require 与 tools/versions.json。make wire 生成、make wire-check 只比较且不写回；两者纳入生成/verify 流程，禁止手改 wire_gen.go。每进程只有一个 Deer；业务工作计划在 Deer 基础设施就绪后同步装配，不在 provider 中启动 goroutine 或另开池。App.Run/Close 保留有 context 且返回 error 的清理合同，不能转成吞错的 func()。
+- Deer 保存 Kratos App、日志及公共依赖，NewDeer 通过 WithDB/WithRedis/WithLogger 等选项支持注入已有客户端；注入依赖为借用，调用方在 Deer 清理后关闭，未注入的依赖仍由 Deer 按配置创建和清理。Wire 透传 []deer.Option，不重复创建池；构造、启动与运行 readiness 保留依赖检查。
 - 核心服务无命令行参数：不使用 flag、-config 或 -check-ready，不从本地 JSON 启动。Nacos 连接地址、命名空间、分组、cluster、认证和 TLS 从 env 获取；服务/业务运行配置使用 Proto JSON 存放 Nacos，启动时读取并校验，不回退本地文件。配置变更显式重启，不隐式热切换交易状态；健康探针为独立无参数 readycheck。
 - 管理后台、HTTP 管理接口、React 和管理开户退出当前交付范围；已有源码、历史验收及用户未提交修改保留，核心构建不依赖管理 HTTP 入口或前端资产。核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
