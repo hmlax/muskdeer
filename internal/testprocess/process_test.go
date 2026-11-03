@@ -16,6 +16,16 @@ func (f configReadFunc) GetConfig(ctx context.Context, dataID string) ([]byte, e
 	return f(ctx, dataID)
 }
 
+func TestCommandRejectsRemovedHTTPApplications(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"api", "admin", "adminuser"} {
+		command, cleanup, err := Command(t.Context(), name, "unused.json")
+		if err == nil || command != nil || cleanup != nil {
+			t.Fatalf("Command(%q) = (%v, %v); want rejection before opening resources", name, command, err)
+		}
+	}
+}
+
 func TestPublishedConfigWaitsForVisibilityWithoutChangingContent(t *testing.T) {
 	t.Parallel()
 	expected := []byte("test-only-configuration")

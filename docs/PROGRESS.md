@@ -1442,3 +1442,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 验证：隔离 schema 37 源码生成一致性（60 Proto/OpenAPI/Wire）、Hertz 确定性与编译、格式、lint/govet（0 issues）、全包单元及核心构建通过；工作区生成检查通过。真实四核心进程 integration/race 最终四项全过，14.431 秒，覆盖成交/投影/预算、资源幂等、broker 冲突和策略接管/报价/停止。
 - 回归期间两次 execution 启动 fetch 失败；独立回读实验明确复现 Nacos 发布已确认但立即 GET 为 404。测试进程夹具现在在原 command_timeout 内等待该新配置可读，仅对 404 等待，其他错误或内容不符立即拒绝；保留原交易/启动超时和断言，失败清理已发布的测试配置。三个针对性单元/race 检查覆盖可见性、异常/内容拒绝及取消；真实四项随后全过。生产启动逻辑不变。
 - 不涉及迁移、注资或生产；当前运行容器暂未重建，待管理 HTTP/Web 清理完成统一验证。工作分支 codex/two-apps，基线 a1b06f6；本独立步骤检查通过后提交、立即推送并核验远程 SHA，见交付报告与 Git 历史。
+
+## 2026-11-03：P14.2 删除管理 HTTP/Web 并更新核心容器
+
+- 删除根 web、管理 HTTP 包、admin/adminuser/openapi 命令、API 进程夹具、前端构建资产与 Node/浏览器工具、管理 HTTP/OpenAPI 测试和配置；清理默认及历史管理 Makefile 入口、Docker 白名单、离线 schema 与 jsonschema/v6 依赖。根 api 已由 1da8847 迁至 deer/proto/rpc；四核心 gRPC、后端领域/仓储和历史迁移保持。
+- 退休应用在测试进程工厂中明确拒绝，doctor 拒绝 HTTP 配置；共享测试夹具移入后端成交测试，原资金、精度和作用域断言保留。README/当前架构和范围文档按四核心服务重写，旧管理文档标注历史，删除源码的链接指向固定历史版本。
+- 隔离 schema 37 源码完整 make verify、build-fixtures 通过：60 Proto/Wire、Hertz 生成/编译、lint/govet 0 issues、规范正反样例、29 项工具测试、全部剩余 Go 单元/race 和核心构建。完整基础设施 integration/race/goleak 26.941 秒通过；五项后端/实际核心进程 integration/race 15.650 秒通过，含接管/报价/终态停止和迁移后共享夹具的成交来源/精度检查。
+- 工作区生成检查、29 项工具及相关包 race 通过；原有未提交平仓代码的 eventwire TestPublicationRejectsChangedEnvelopeOrDecimalShape 失败保持，完整 verify 的通过范围为本次隔离提交源码，未冒充工作区全部业务已验收。49 个原有修改及已删除目录的本地依赖均有忽略备份，原业务差异未混入提交。
+- Docker Compose 已使用 .cache/apiweb-removal/rpc-source 重建四镜像及容器，全部 healthy，实际 mTLS 双源未过期 HEALTHY 回放/精确价格和 execution 查询通过。最初探针重启数为 0，后续检查发现 market 重启 1 次、execution 2 次，日志为 worker deadline_exceeded，PostgreSQL 同时记录行情租约行锁等待取消；无 OOM，当前无阻塞会话，再次 mTLS 探针通过。该运行稳定性问题尚未修复，未宣称零重启或长期稳定。四份 Nacos 配置哈希及共享 infra 的容器 ID/启动时间保持，没有迁移、注资、启用账户或生产操作。详见 [P14 验证](validation/P14-02.md)，运行/集成证据在 .cache/apiweb-removal。
+- 未运行剩余全部历史迁移集成、固定三十分钟或真实资金/生产。工作分支 codex/two-apps，P14.1 提交 1da8847 已同步；本步验证后独立提交、立即推送并核验远端 SHA，见交付报告及 Git 历史。

@@ -5,7 +5,7 @@
 
 ## 已确认工程约束
 - Go 版本在 go.mod 声明，当前为 1.27.3；开发、代码生成、测试、CI 与构建使用对应工具链。按用户最新要求，应用、维护命令及探针不再用 runtime.Version() 做启动版本判断，不硬编码运行时版本拒绝条件。P01 工具链核验及构建版本锁定记录保留；禁止 rc/beta、latest 或浮动版本代替。
-- 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；API 服务封装为 DeerApi，配套构造函数 deer.NewDeerApi，详见 docs/DEER.md。
+- 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；DeerApi/NewDeerApi 仅保留通用传输与生命周期测试能力，当前没有管理 HTTP 应用，详见 docs/DEER.md。
 - 外部 HTTP 使用 Hertz，服务生命周期使用 Kratos，内部通信使用 gRPC；注册发现使用 Nacos。禁止替换成 Kitex、Gin 或 Kratos HTTP。
 - 2026-11-02 后续明确指令优先：当前仅交付核心 Kratos 服务，各模块分别独立进程、独立 cmd 入口，不使用共用命令加 role 参数。已实现的 market、strategy、execution、portfolio 分别使用 Deer 提供 gRPC/业务工作循环；默认构建和 Compose 不再部署 admin、operator 或管理前端。保留单仓库、单 go.mod；每进程公共依赖只装配一次。此项替代此前两应用部署约定。
 - 四个核心服务分别使用 <service>/cmd/{main.go,wire.go,wire_gen.go} 与各自 internal/app/{config.go,workplan.go,server.go,app.go,providers.go}；Wire ProviderSet 生成配置、工作计划、日志、服务定义及 App 的依赖调用。main 从 env/Nacos 加载配置并调用生成 injector，internal/app 独立维护本服务 Deer 生命周期及 typed 业务构造/RPC/worker 注册，继续共用根 go.mod；其他 cmd 命令原样保留。禁止用共用 Run(ctx, name, ...) 或按服务名分发的工厂装配核心进程。coreentry 只保留健康/取消工具，历史组合装配仅供旧入口兼容。

@@ -46,7 +46,7 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if *path == "" || flags.NArg() != 0 {
 		return report(diagnostic, "config is required and positional arguments are not accepted", nil, 2)
 	}
-	if role != entry.RoleAdmin && role != entry.RoleOperator {
+	if role != entry.RoleOperator {
 		return report(diagnostic, "unsupported application", nil, 2)
 	}
 	cfg, err := deer.LoadConfig(ctx, *path)

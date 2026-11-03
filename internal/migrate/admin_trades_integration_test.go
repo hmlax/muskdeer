@@ -35,7 +35,7 @@ func TestAdminTradesReadCoreFactsHistoricalSourceAndExactOrderScope(t *testing.T
 	}
 	core, intents := executionFixture(t, db)
 	buy, sell := portfolioTrades(ctx, t, core, intents, submit)
-	publishOrderHTTPSource(ctx, t, db, actor, submit)
+	publishRequestedMarketSource(ctx, t, db, actor, submit)
 	before := adminTradePortfolioRow(ctx, t, db, submit.Input.AccountID)
 	first, err := reader.List(ctx, viewer.Token, filter)
 	if err != nil || len(first.Items) != 1 || first.Items[0].ID != buy.AggregateId || first.NextAfterID != buy.AggregateId {
@@ -194,4 +194,21 @@ func adminTradePortfolioRow(ctx context.Context, t *testing.T, db *gorm.DB, acco
 		t.Fatal(err)
 	}
 	return &row
+}
+
+func publishRequestedMarketSource(ctx context.Context, t *testing.T, db *gorm.DB, actor domain.AdminLogin, submit domain.GatewaySubmit) {
+	t.Helper()
+	before := publicationInstance(ctx, t, db, submit.Input.Authority.StrategyID)
+	publisher, err := repository.NewAdminStrategyPublisher(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	request := publicationRequest(adminCreationRequest(t, submit, domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance), before.Id, before.Revision, before.RequestedConfigVersion)
+	if _, err := publisher.Publish(ctx, actor.Token, actor.CSRF, request); err != nil {
+		t.Fatal(err)
+	}
+	after := publicationInstance(ctx, t, db, before.Id)
+	if after.RequestedConfigVersion != 2 || after.MarketDataSource != string(domain.MarketSourceOKX) {
+		t.Fatal("order source fixture did not publish a different requested source")
+	}
 }

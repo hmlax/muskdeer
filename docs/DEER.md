@@ -1,5 +1,7 @@
 # deer 公共模块与服务封装规范
 
+2026-11-03 更新：管理 HTTP/Web 应用与相关命令已删除，根 api 迁至 deer/proto/rpc。DeerApi/Hertz 的通用传输和生命周期能力仍供公共运行层测试使用，不再承载管理页面或管理 HTTP 路由。
+
 ## 命名与服务形态（已确认）
 
 2026-11-02 后续明确要求替代 operator + admin：当前交付 market、strategy、execution、portfolio 四个独立 Kratos 进程，各用自己的 Wire injector 和一个 Deer。管理后台与 HTTP 不在当前交付范围；下文 DeerApi 及管理记录作为历史实现保留，详见 [核心服务](CORE_SERVICES.md)。

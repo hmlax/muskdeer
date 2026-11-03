@@ -1,5 +1,7 @@
 # 管理页面与身份 HTTP
 
+历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
+
 2026-11-02 当前部署与鉴权边界以 [两应用说明](TWO_APPS.md) 为准：admin/Hertz 在 HTTP 边界完成会话/角色/CSRF，operator/Kratos 仅接收审计身份，两个应用各有独立入口，测试复用已有 Docker infra。以下旧模块及验证记录保持历史含义。
 
 
@@ -137,6 +139,6 @@ make verify
 make admin-browser
 ```
 
-构建产物`web/admin/dist`随源码提交并由Go embed嵌入，普通Go构建/运行无需Node；运行时React/ReactDOM/Scheduler的[许可文本](../web/admin/public/assets/third-party-notices.txt)一同嵌入。修改前端后必须重新构建并提交产物；CI从锁文件安装（ignore-scripts）、类型检查及重建差异检查，再执行实际浏览器场景。浏览器命令安装固定Playwright对应Chromium，Linux通过Playwright安装所需系统依赖；使用独有动态端口PG、实际admin/muskdeer命令，所有自建进程/数据库有界清理，不操作已有资源。截图保存在`.cache/admin-browser/run-*/`，fixture只有明确测试账户，失败日志只保留固定阶段和错误分类，避免Playwright call log回显输入或Cookie。
+构建产物`web/admin/dist`随源码提交并由Go embed嵌入，普通Go构建/运行无需Node；运行时React/ReactDOM/Scheduler的[许可文本（历史）](https://github.com/hmlax/muskdeer/blob/1da88473d9a59272c26ccc2526be6f899aed0ba5/web/admin/public/assets/third-party-notices.txt)一同嵌入。修改前端后必须重新构建并提交产物；CI从锁文件安装（ignore-scripts）、类型检查及重建差异检查，再执行实际浏览器场景。浏览器命令安装固定Playwright对应Chromium，Linux通过Playwright安装所需系统依赖；使用独有动态端口PG、实际admin/muskdeer命令，所有自建进程/数据库有界清理，不操作已有资源。截图保存在`.cache/admin-browser/run-*/`，fixture只有明确测试账户，失败日志只保留固定阶段和错误分类，避免Playwright call log回显输入或Cookie。
 
 浏览器场景覆盖错误密码、登录、角色、HTTP-only cookie/独立CSRF、深路由刷新、字符串身份字段、接口404、注销后旧会话拒绝和390px移动布局。Secure cookie的TLS属性另由Hertz协议测试验证；本地浏览器场景使用显式loopback HTTP。完整管理业务验收随后续能力接入，不把本命令成功等同完整A27。

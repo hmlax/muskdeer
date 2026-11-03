@@ -1,5 +1,7 @@
 # 两应用运行说明
 
+历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
+
 本文件为 P12 历史记录。用户后续取消管理后台并要求核心模块分别独立进程；当前构建/Compose 和启动说明以 [CORE_SERVICES.md](CORE_SERVICES.md) 为准。
 
 2026-11-02 用户要求：React 前端 + operator（Kratos/gRPC）+ admin（Hertz/HTTP），保留单仓库、单 go.mod。

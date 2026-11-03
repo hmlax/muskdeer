@@ -7,8 +7,6 @@ import (
 	"io"
 	"log/slog"
 
-	"github.com/cloudwego/hertz/pkg/app/server"
-
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -16,7 +14,6 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/internal/business"
-	"github.com/hmlax/muskdeer/internal/delivery/adminhttp"
 	"github.com/hmlax/muskdeer/internal/processlog"
 )
 
@@ -24,12 +21,8 @@ import (
 type Role string
 
 const (
-	// RoleAdmin owns HTTP delivery and management authorization.
-	RoleAdmin Role = "admin"
-	// RoleOperator owns all business modules and gRPC.
+	// RoleOperator is a legacy gRPC-only regression fixture.
 	RoleOperator Role = "operator"
-	// RoleAPI owns Hertz administration delivery; business routes arrive in P07.
-	RoleAPI Role = "api"
 	// RoleMarket owns market-data work introduced in P05.
 	RoleMarket Role = "market"
 	// RoleStrategy owns strategy work introduced in P06/P07.
@@ -46,14 +39,14 @@ const (
 func ParseRole(value string) (Role, error) {
 	role := Role(value)
 	switch role {
-	case RoleAdmin, RoleOperator, RoleAPI, RoleMarket, RoleStrategy, RoleExecution, RolePortfolio, RoleCron:
+	case RoleOperator, RoleMarket, RoleStrategy, RoleExecution, RolePortfolio, RoleCron:
 		return role, nil
 	default:
-		return "", errors.New("service role must be api, market, strategy, execution, portfolio or cron")
+		return "", errors.New("service role must be market, strategy, execution, portfolio, operator or cron")
 	}
 }
 
-// Run validates a role/config match, creates one Deer (DeerApi for api), and
+// Run validates a role/config match, creates one Deer, and
 // joins Run before returning. SDK logging is installed before dependencies or
 // transports use SDK globals. Call only once in a fresh, sole service process.
 func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.Writer) error {
@@ -64,8 +57,8 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 	if err := business.ValidateConfig(cfg); err != nil {
 		return err
 	}
-	if err := adminhttp.ValidateConfig(cfg); err != nil {
-		return err
+	if cfg.AdminHttp != nil || cfg.Http != nil {
+		return errors.New("module fixture does not support management HTTP")
 	}
 	if _, err := ParseRole(string(role)); err != nil {
 		return err
@@ -73,10 +66,7 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 	if cfg.Name != string(role) || cfg.Monitoring == nil {
 		return errors.New("service entry requires a matching name and local monitoring listener")
 	}
-	if (role == RoleAPI || role == RoleAdmin) && cfg.Http == nil || (role != RoleAPI && role != RoleAdmin) && cfg.Http != nil {
-		return errors.New("only admin requires a business HTTP listener")
-	}
-	if role != RoleAPI && role != RoleAdmin && role != RoleCron && cfg.Grpc == nil {
+	if role != RoleCron && cfg.Grpc == nil {
 		return errors.New("business service roles require a gRPC listener")
 	}
 	var logger *logging.Logger
@@ -111,38 +101,17 @@ func Run(ctx context.Context, role Role, cfg *configv1.ServiceConfig, output io.
 			return runtime.RegisterGRPC(registrar)
 		}
 	}
-	var (
-		owner       *deer.Deer
-		cleanup     deer.Cleanup
-		httpAddress string
-		err         error
-	)
-	if role == RoleAPI || role == RoleAdmin {
-		var api *deer.DeerApi
-		api, cleanup, err = deer.NewDeerApi(ctx, cfg, deer.APISpec{
-			Service: spec,
-			Routes: func(ctx context.Context, owner *deer.Deer, hertz *server.Hertz) error {
-				return adminhttp.Assemble(ctx, cfg, owner, hertz)
-			},
-		})
-		if err == nil {
-			owner = api.Deer
-			httpAddress = api.HTTPAddress()
-		}
-	} else {
-		owner, cleanup, err = deer.NewDeer(ctx, cfg, spec)
-	}
+	owner, cleanup, err := deer.NewDeer(ctx, cfg, spec)
 	if err != nil {
 		return err
 	}
-	return runOwned(ctx, owner, cleanup, httpAddress)
+	return runOwned(ctx, owner, cleanup)
 }
 
-func runOwned(ctx context.Context, owner *deer.Deer, cleanup deer.Cleanup, httpAddress string) (result error) {
+func runOwned(ctx context.Context, owner *deer.Deer, cleanup deer.Cleanup) (result error) {
 	defer func() { result = errors.Join(result, cleanup(ctx)) }()
 	if err := owner.Logger().LogAttrs(ctx, slog.LevelInfo, "service.initialized",
 		slog.String("grpc_address", owner.GRPCAddress()),
-		slog.String("http_address", httpAddress),
 		slog.String("monitoring_address", owner.MonitoringAddress())); err != nil {
 		return err
 	}

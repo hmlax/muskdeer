@@ -14,7 +14,7 @@
 
 ## doctor
 
-`make doctor` 核对实际 Go 1.27.3，并用 [服务](../configs/examples/service.json)/[API](../configs/examples/api.json) 示例及六份 local 角色配置执行本地校验。检查其他文件：
+`make doctor` 核对实际 Go 1.27.3，并校验四份核心 local 配置；其他通用示例见 [服务配置](../configs/examples/service.json)。管理 HTTP 配置会被拒绝。检查其他文件：
 
 ```sh
 python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json

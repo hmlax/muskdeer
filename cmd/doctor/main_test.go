@@ -17,9 +17,14 @@ func TestDoctorExitStatusAndSafeOutput(t *testing.T) {
 		code int
 	}{
 		{
-			name: "valid API configuration",
-			body: `{"name":"api","instanceId":"api-test","version":"test","startupTimeout":"2s","shutdownTimeout":"2s","http":{"address":"127.0.0.1:0","requestTimeout":"1s"}}`,
+			name: "valid core configuration",
+			body: `{"name":"execution","instanceId":"execution-test","version":"test","startupTimeout":"2s","shutdownTimeout":"2s","grpc":{"address":"127.0.0.1:0","requestTimeout":"1s"}}`,
 			code: 0,
+		},
+		{
+			name: "retired HTTP configuration",
+			body: `{"name":"api","instanceId":"api-test","version":"test","startupTimeout":"2s","shutdownTimeout":"2s","http":{"address":"127.0.0.1:0","requestTimeout":"1s"}}`,
+			code: 1,
 		},
 		{
 			name: "bad field hides value",

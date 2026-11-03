@@ -1,5 +1,7 @@
 # 管理账户持仓查询
 
+历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
+
 P07.44提供[AdminPortfolios](../internal/domain/admin_portfolios.go)当前viewer只读仓储，P07.45增加具体typed gRPC/HTTP，P07.46增加账户持仓列表、筛选与独立详情页面。持仓是可重建的账户投影；核心余额与成交仍是权威，不能以管理读取补账或修改核心资产。
 
 ## 范围与读取字段

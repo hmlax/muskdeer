@@ -1,6 +1,8 @@
 # 管理 OpenAPI 合同
 
-[openapi.json](openapi.json)描述现有Hertz管理边界：OpenAPI固定3.1.0，31个路径、34个GET/POST操作，71个具体schema。文档不包含服务器地址或凭据；在线文档入口见下文。可操作管理页面及其浏览器验收另见[管理入口](ADMIN_HTTP.md)，文档不能代替R08/A27操作验收。
+历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
+
+[openapi.json（历史）](https://github.com/hmlax/muskdeer/blob/1da88473d9a59272c26ccc2526be6f899aed0ba5/docs/openapi.json)描述现有Hertz管理边界：OpenAPI固定3.1.0，31个路径、34个GET/POST操作，71个具体schema。文档不包含服务器地址或凭据；在线文档入口见下文。可操作管理页面及其浏览器验收另见[管理入口](ADMIN_HTTP.md)，文档不能代替R08/A27操作验收。
 
 ## 生成与检查
 

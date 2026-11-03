@@ -1,5 +1,7 @@
 # 受审计的策略创建事务
 
+历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
+
 P07.17提供`domain.AdminStrategyCreator`和`repository.NewAdminStrategyCreator`，P07.18接入[typed创建gRPC](../deer/proto/rpc/strategy/v1/creation.proto)及实际同源HTTP，P07.19接入真实目录驱动的创建表单。已有[运行控制](ADMIN_CONTROL.md)及[授权目录](ADMIN_STRATEGIES.md)保持独立；本步不代表完整A27。
 
 请求明确包含操作者范围幂等键、唯一instance_key、已开通账户、执行instrument、code_version、Binance/OKX单一来源、LIVE/REPLAY模式、具体Maker/Grid参数及原因。身份字段有界ASCII，键16–64字符，原因trim后1–256 UTF-8字节；参数先检查十进制边界/指数再做联合与范围运算，杜绝巨大指数放大。HedgeEnabled在P08实现前拒绝，不保存一个看似开启但无执行器的对冲配置。

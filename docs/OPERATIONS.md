@@ -1,5 +1,7 @@
 # 运行与故障处理基线
 
+2026-11-03 当前范围为四个核心服务及 deer/proto/rpc；管理 HTTP/Web、开户和浏览器命令已删除。下文涉及管理客户端的步骤仅为历史记录，当前启动与验证以 CORE_SERVICES.md、IMPLEMENTATION_PLAN.md 和 PROGRESS.md 为准。
+
 2026-11-02 后续用户要求默认仅部署 market/strategy/execution/portfolio 四个独立核心进程，管理后台不再启动。当前构建、Compose、端口和准备步骤以 [核心服务运行说明](CORE_SERVICES.md) 为准；下文旧六角色/管理入口/开发容器命令均保留作历史记录，不能用于当前共享 infra 的启停。四个核心命令无参数，env 连接 Nacos 后读取远程业务配置，健康探针为独立 `/readycheck`，见 [Nacos 配置](NACOS_CONFIG.md)。当前 dev-up 将四份基础设施探针配置发布到专属 Nacos 分组，dev-down 不停止共享容器。
 
 

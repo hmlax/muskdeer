@@ -1,6 +1,6 @@
 # 独立核心服务
 
-2026-11-02 用户后续明确：核心模块分别独立 Kratos 进程，管理后台相关功能不用。当前默认构建/Compose 只包含四个核心服务，不启动 admin/operator、HTTP 管理接口或 React；原有管理源码及历史测试保留。定期报表/归档尚未实现，不部署无业务的 cron。
+2026-11-03 用户进一步确认：根 api/web 和管理 HTTP、前端、开户命令及 OpenAPI/浏览器工具已删除，核心 gRPC 契约迁至 deer/proto/rpc。默认构建/Compose 只包含四个核心服务；后端领域、历史数据库迁移及对应合同测试保留。定期报表/归档尚未实现，不部署无业务的 cron。
 
 | 服务 | 独立入口 | 本机 gRPC | Nacos 身份 | 实际工作 |
 |---|---|---|---|---|
@@ -58,4 +58,4 @@ make compose-down
 make core-test
 ```
 
-本工作区保留尚未验收的 schema 38 平仓修改。2026-11-03 按用户要求重新构建并通过 Compose 重建四个应用容器，当前运行源码为已提交的 `9f31d64`（含 Wire/Deer 注入及 deer/third_party 迁移），使用 schema 37，导出在忽略的 `.cache/compose-restart/source`；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。四容器 healthy，实际 mTLS 双源回放行情及 execution 查询通过；启动证据见 `.cache/compose-restart/{before,after,live-probe}.json`。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。原管理容器已移除，其历史数据保留。
+本工作区保留尚未验收的 schema 38 平仓修改。当前镜像使用已验证的 schema 37 清理源码，位于忽略的 `.cache/apiweb-removal/rpc-source`，包含 Wire/Deer 注入、第三方目录归入 deer、gRPC 契约迁移和管理 HTTP/Web 删除；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。四容器已重建并全部 healthy，实际 mTLS 双源回放行情及 execution 查询通过；最终检查观察到 market/execution 的 worker 超时及自动重启，运行稳定性仍待处理，详见 [P14 验证](validation/P14-02.md)。证据见 `.cache/apiweb-removal/{runtime-before,runtime-after,runtime-final,live-probe}.json`，最终提交见 PROGRESS 与 Git 历史。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。旧管理应用的历史数据与数据库迁移保留。

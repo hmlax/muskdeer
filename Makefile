@@ -1,5 +1,4 @@
-.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check openapi-generate openapi-check hz-check fmt fmt-check lint test test-race build verify integration dev-up dev-down dev-status dev-test image image-test e2e web-install web-build web-check web-generated-check admin-browser
-.PHONY: wire wire-check
+.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check hz-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-prepare compose-up compose-down compose-status core-test
 
 doctor:
 	python3 scripts/go.py version
@@ -22,12 +21,10 @@ policy-test:
 
 generate: contract-check
 	python3 scripts/generate.py
-	python3 scripts/go.py run ./cmd/openapi
 	python3 scripts/wire.py
 
 generate-check: contract-check
 	python3 scripts/generate.py --check
-	python3 scripts/go.py run ./cmd/openapi -check
 	python3 scripts/wire.py --check
 
 wire:
@@ -35,12 +32,6 @@ wire:
 
 wire-check:
 	python3 scripts/wire.py --check
-
-openapi-generate: contract-check
-	python3 scripts/go.py run ./cmd/openapi
-
-openapi-check: contract-check
-	python3 scripts/go.py run ./cmd/openapi -check
 
 hz-check:
 	python3 scripts/verify-hz.py
@@ -72,10 +63,8 @@ build:
 verify: doctor contract-check generate-check hz-check fmt-check lint policy-test test-tooling test test-race build
 
 build-fixtures: build
-	python3 scripts/go.py build -o .cache/bin/admin ./cmd/admin
 	python3 scripts/go.py build -o .cache/bin/operator ./cmd/operator
-	python3 scripts/go.py build -o .cache/bin/adminuser ./cmd/adminuser
-	@for role in api market strategy execution portfolio cron; do \
+	@for role in market strategy execution portfolio cron; do \
 		python3 scripts/go.py build -o .cache/bin/module-$$role ./internal/testservice/$$role || exit $$?; \
 	done
 
@@ -102,102 +91,15 @@ image:
 image-test: image
 	python3 scripts/image-smoke.py
 
-web-install:
-	python3 scripts/web.py install
-
-web-build:
-	python3 scripts/web.py build
-
-web-check:
-	python3 scripts/web.py check
-
-web-generated-check: web-build
-	git diff --exit-code -- web/admin/dist
-
-admin-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-browser.py
-
-admin-strategy-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-strategy-browser.py
-
-admin-control-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-control-browser.py
-
-admin-creation-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-creation-browser.py
-
-admin-publication-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-publication-browser.py
-
-admin-audit-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-audit-browser.py
-
-admin-risk-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-risk-browser.py
-
-admin-orders-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-orders-browser.py
-
-admin-cancellation-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-cancellation-browser.py
-
-.PHONY: admin-emergency-browser
-admin-emergency-browser: build-fixtures
-	python3 scripts/web.py check
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-emergency-browser.py
-
-admin-market-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-market-browser.py
-
-admin-trades-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-trades-browser.py
-
-admin-portfolios-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-portfolios-browser.py
-
-admin-risk-events-browser: build-fixtures
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-risk-events-browser.py
-
-admin-overview-browser: build-fixtures
-	python3 scripts/web.py check
-	python3 scripts/web.py browser-install
-	python3 scripts/admin-overview-browser.py
-
 e2e: core-test image-test
 
-# Historical administration regressions are explicit opt-in only.
-.PHONY: legacy-admin-e2e
-legacy-admin-e2e: integration image-test two-apps-test admin-browser admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-emergency-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
 
-.PHONY: admin-strategy-browser admin-control-browser admin-creation-browser admin-publication-browser admin-audit-browser admin-risk-browser admin-orders-browser admin-cancellation-browser admin-market-browser admin-trades-browser admin-portfolios-browser admin-risk-events-browser admin-overview-browser
-
-.PHONY: soak soak-smoke
 soak: build-fixtures
 	python3 scripts/soak.py
 
 soak-smoke: build-fixtures
 	python3 scripts/soak.py --smoke
 
-.PHONY: build-fixtures two-apps-test
-two-apps-test: build-fixtures web-install
-	python3 scripts/web.py browser-install
-	python3 scripts/two-apps-test.py
-
-.PHONY: compose-prepare compose-up compose-down compose-status
 compose-prepare:
 	python3 scripts/compose.py prepare
 
@@ -212,6 +114,5 @@ compose-down:
 compose-status:
 	docker compose --env-file .cache/compose/compose.env ps
 
-.PHONY: core-test
 core-test: build
 	python3 scripts/core-process-test.py

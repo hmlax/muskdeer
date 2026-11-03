@@ -1,5 +1,7 @@
 # 给本地 Codex 的启动指令
 
+2026-11-03 当前范围为四个核心服务及 deer/proto/rpc；管理 HTTP/Web、开户和浏览器命令已删除。下文涉及管理客户端的步骤仅为历史记录，当前启动与验证以 CORE_SERVICES.md、IMPLEMENTATION_PLAN.md 和 PROGRESS.md 为准。
+
 在 Codex 中打开 ~/go/src/gitlib/bitdatech/Muskdeer，将下面整段作为开发任务发送：
 
 ```text

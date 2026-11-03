@@ -1,72 +1,68 @@
 # Muskdeer
 
-核心服务复用既有 Docker infra：`make compose-up` 分别启动 market、strategy、execution、portfolio 四个 Kratos 进程；不启动管理后台。入口、端口及验证见[核心服务运行说明](docs/CORE_SERVICES.md)。
+连接既有交易所的自营做市与策略交易项目。当前交付 market、strategy、execution、portfolio 四个独立 Kratos 服务，使用 gRPC 和 Nacos 通信，继续共用一个 Go module。
 
-首次准备后会生成忽略的根 `.env` 入口；后续可直接使用 `docker compose ps`、`docker compose down`、`docker compose up --build -d`，自动读取本地引导设置。
+管理 HTTP、前端、管理开户命令及 OpenAPI/浏览器工具已按当前需求移除。核心服务的 mTLS、风控、幂等、状态机、租约与最终 fencing 保持；已存在的数据库迁移和历史验收记录保留。
 
-四个服务均无命令行参数：Nacos 连接信息从 env 获取，服务及业务运行配置从 Nacos 的各自配置项读取，不读取本地 JSON。字段及示例见 [Nacos 配置](docs/NACOS_CONFIG.md)。
+公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)。Go module：`github.com/hmlax/muskdeer`。
 
-服务目录分别为 `market`、`strategy`、`execution`、`portfolio`，统一使用 `cmd/main.go + wire.go + wire_gen.go` 和各自 `internal/app` ProviderSet，继续共用根 go.mod；例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。`make wire` 重新生成依赖装配，`make wire-check` 检查漂移；详细结构见 [Wire 装配](docs/WIRING.md)。其余 cmd 命令保留原样。
+## 核心服务
 
-仓库内维护的第三方源码、Proto 注解、OpenAPI schema 和许可证统一位于 [deer/third_party](deer/third_party/README.md)。
+| 服务 | 独立入口 | 本机 gRPC | 主要职责 |
+|---|---|---|---|
+| market | market/cmd | 127.0.0.1:59002 | Binance/OKX 行情、质量与参考价 |
+| strategy | strategy/cmd | 127.0.0.1:59003 | 策略实例、报价计划与执行/行情客户端 |
+| execution | execution/cmd | 127.0.0.1:59004 | 意图、OMS、风险、撤单恢复与 outbox |
+| portfolio | portfolio/cmd | 127.0.0.1:59005 | 成交消费、幂等投影与恢复查询 |
 
-基于既有撮合引擎的自营做市与可配置策略平台。
-公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)，Go module：github.com/hmlax/muskdeer。
+每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，服务/业务配置从 Nacos 的严格 Proto JSON 读取，配置更新后显式重启。
 
-## 当前交付
+公共配置、模型、事件分别位于 `deer/proto/{config,model,common}`；gRPC 契约和生成代码统一位于 `deer/proto/rpc`。仓库内维护的第三方源码、注解和许可证在 [deer/third_party](deer/third_party/README.md)。
 
-2026-11-02 后续架构调整：用户取消管理后台范围，核心模块分别独立进程。`make build` 默认构建 `.cache/bin/{market,strategy,execution,portfolio,migrate,coreinit,readycheck}`，Compose 启动四个业务进程，各自独立 cmd/Nacos 身份/端口；构建不需要 React 或管理资产。单仓库、单 go.mod、Go 1.27.3、Deer 及交易正确性保持。`make core-test` 用实际核心命令验证回放、执行、成交投影及策略接管/停止，复用既有 infra。
+## 本地启动
 
-以下管理功能记录属于历史交付；管理包、前端和旧验证命令保留，不属于当前默认构建/部署或当前验收范围。
-P01–P06已完成公共运行层、模拟现货/OMS闭环、双来源行情及做市/失效保护：Binance/OKX公开实连、实际独立业务进程及30分钟808成交核算通过。管理身份、策略创建/查询/启停及参数发布/换源、审计列表/详情、策略风险与额度页面和HTTP/gRPC及网格控制循环已分步交付；做市/网格的浏览器发布换源、模拟资金冻结/释放及暂停/停止目标保留通过，策略风险页面的资金关闭/恢复闭环也已验证。风险历史及运行概览页面也已分步交付；剩余P07验收、对冲、恢复和L1验收继续P07–P10。进度及限制见 docs/PROGRESS.md。
+复用已运行的 PostgreSQL、Redis、Nacos、NATS 及 infra-network。需要 Docker Compose、Python 3.11+ 和 OpenSSL；Go 工具链固定为 1.27.3，Wire 固定为 v0.7.0。
 
-## 开始开发
-项目 Go 版本固定为 1.27.3，开发、生成、测试、CI 和构建使用同一精确版本。
-运行 make doctor 验证并按需获取固定工具链；Go 命令使用 python3 scripts/go.py，例如 python3 scripts/go.py version。make test-tooling 验证工具链入口的版本检查及失败处理。
-运行 make tools 安装固定版本 protoc 与插件，make generate 生成模型及 RPC，make verify 执行生成一致性、hz 生成/编译、格式、lint、工具链测试、Go 单元/race 测试与构建。make integration 复用现有 Docker infra 的 PostgreSQL/Redis/NATS/Nacos，仅创建和清理独立逻辑测试资源，执行模型、客户端/池/超时/TTL/生命周期、JetStream 确认丢失、Nacos 认证与 namespace 隔离测试；仅绑定 127.0.0.1，由 Docker 动态分配端口并传给本次测试进程，本机需 Docker 可用。Nacos 使用现有凭据和独立测试命名空间，不初始化管理员或启动新基础服务镜像。
+```sh
+# 首次准备、显式初始化本地逻辑资源并启动
+make compose-up
+# 后续直接重建和启动
+docker compose up --build -d --wait
+docker compose ps
+# 停止本项目应用
+docker compose down
+```
 
-make doctor 同时验证精确工具链及服务/API 示例配置；其他文件使用 `python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json`。严格 Proto JSON、相对路径与校验范围见 [配置说明](docs/CONFIGURATION.md)。
-`make build` 构建四个独立核心命令及维护/探针工具。设置 Nacos env 后直接运行 `.cache/bin/market` 等命令，SIGTERM/CTRL-C 有序停止；默认实际业务启动使用 `make compose-up`，见 [核心服务运行说明](docs/CORE_SERVICES.md)。下述管理页面文档保留为历史实现记录，当前核心部署不启用。
-`make dev-up` 连接已有 infra，将四个基础设施探针配置发布到工作区专属 Nacos 分组，并生成 `.cache/dev/environment.sh`；source 后可无参数启动各核心命令。该开发探针模式不准备交易业务。`make dev-down` 只解除本工作区关联，保留共享服务。`make dev-test` 验证重复关联、实际依赖就绪和数据保留，结束只清理该测试资源。
+准备脚本创建忽略的根 `.env` 入口，自动读取 `.cache/compose/compose.env`。已有用户 `.env` 保持原样，此时使用显式 `--env-file .cache/compose/compose.env`。构建源码位置由该配置记录；工作区存在未提交业务修改时，使用已验证的隔离源码，避免混入运行镜像。详细配置与端口见 [核心运行说明](docs/CORE_SERVICES.md)。
 
-可选 `business` 配置启用实际 execution RPC/outbox、portfolio消费、market工作器/行情RPC和strategy账户控制循环；需要显式迁移、准备绑定或模拟账户/持仓起点/预算及消息资源，服务不自动创建或开放风险。`make integration` 包含实际成交双命令、双来源market及双strategy接管/报价/终态停止的 Nacos/mTLS 闭环，见 [业务运行](docs/BUSINESS_RUNTIME.md)。
-`make soak-smoke` 检查12秒真实策略驱动；`make soak` 使用独有测试基础设施执行固定30分钟场景，保存资金/预算/成交投影采样及实际业务进程日志。短场景不能计为30分钟验收，见 [长运行说明](docs/STRATEGY_SOAK.md)。
-`make web-install web-check web-build`使用项目内精确Node/npm构建React管理页面，产物提交后由Go embed/Hertz托管；普通Go构建无需Node。`make admin-browser`验证真实登录/刷新/注销，`make admin-strategy-browser`验证真实策略查询，`make admin-control-browser`通过四个独立业务命令验证Grid启停、资金及幂等结果，`make admin-creation-browser`验证真实目录/两模板双源创建及原键重试；均使用独有基础设施和Chromium，见[管理入口](docs/ADMIN_HTTP.md)。
-`make admin-publication-browser`验证真实参数发布/版本冲突/原键重试，以及做市/网格在模拟资金下的换源、冷来源等待、预算切换及暂停/停止保留，见[发布合同](docs/ADMIN_PUBLICATION.md)。
-`make admin-audit-browser`验证真实审计列表/详情、精确筛选/分页、原文和高位修订，以及当前会话失效后拒绝读取。
-`make admin-risk-browser`验证实际资金下的风险关闭/原键重试、待确认取消时拒绝恢复、确认当前目标后的管理员恢复、只读角色与精确金额展示，见[风险合同](docs/ADMIN_RISK.md)。
-`make admin-orders-browser`验证真实资金下订单列表/详情、历史来源、OMS与核心不同事实、分页/过滤、只读与失效会话，见[订单合同](docs/ADMIN_ORDERS.md)。
-`make admin-cancellation-browser`验证指定订单撤单的确认表单、真实提交后丢回包的原键重试、只读收据深链接，以及撤单待确认期间成交和最终资金结算，见[撤单合同](docs/ADMIN_CANCELLATIONS.md)。
-`make admin-emergency-browser`验证策略范围紧急撤单的范围/风险修订确认、原键重试、历史与持久结果，以及两个挂单的冻结保留、竞态成交和最终结算，见[范围合同](docs/ADMIN_EMERGENCY_CANCELLATIONS.md)。
-`make admin-market-browser`验证真实API/strategy及两个独立market回放进程的行情监控、精确价格、来源/模式/产品筛选、深链接、采样到期提示和单源停机后的隔离展示，见[行情监控](docs/ADMIN_MARKETS.md)。
-`make image` 使用固定 digest 的 Go 1.27.3 分别构建 `muskdeer-admin:local`、`muskdeer-operator:local`，runtime 使用非 root 的 scratch；`make image-test` 验证只读/禁网运行、实际 readiness、日志及 SIGTERM。`make e2e` 汇总当前integration、image-test、two-apps-test及十五组管理浏览器流程；完整交易/策略管理验收随业务接入，不将当前命令等同于完整业务验收。
-指定订单的[管理撤单仓储、控制器、typed API及页面](docs/ADMIN_CANCELLATIONS.md)已交付：持久请求/审计、有效执行者沿原键处理及OMS终态结果。受理不代表订单终止，仍运行的策略可能重新报价；暂停、停止、关闭新风险及平仓语义分别处理。
-管理[行情监控仓储、typed API及页面](docs/ADMIN_MARKETS.md)已提供来源/交易对/模式隔离、快照与发布者健康的数据库时间重检；采样价格、当前时效与历史诊断分开展示，不将绑定存在或历史HEALTHY当作当前健康。
+默认本地场景使用双源 REPLAY 和禁用、未注资的模拟账户；回放价格不代表交易所实时行情。应用不自动迁移、注资或启用策略。真实接口和生产交易验收继续按 [进度](docs/PROGRESS.md) 与 [验收范围](docs/ACCEPTANCE.md) 单独记录。
 
-[成交查询仓储、typed API与页面](docs/ADMIN_TRADES.md)以核心真实成交为准，保留历史来源、原始提交关联和精确费用，单独观察持仓侧事实是否收录；读取不补账或释放OMS预留。`make admin-trades-browser`验证真实浏览器成交查询、筛选、详情深链接、收录延迟及权限边界。
+## 开发与验证
 
-[账户持仓仓储、typed API与页面](docs/ADMIN_PORTFOLIOS.md)分别读取账户投影的存储诊断、核心成交/收录统计与核心可用/冻结余额；共享账户不拆成策略独占持仓，查询不补账或授权新增风险。`make admin-portfolios-browser`验证账户/产品筛选、详情/刷新、精确负损益、缺失余额及真实会话失效。
-[风险诊断历史仓储、typed接口与页面](docs/RISK_EVENTS.md)提供真实记录列表、精确筛选与详情；保留原始许可/对账诊断、配置来源和可空行情绑定，源快照移除后仍可查询，读取不刷新风险或补账。`make admin-risk-events-browser`验证实际浏览器历史查询、筛选、详情/登录恢复及会话撤销。
-[运行概览页面及typed接口](docs/ADMIN_OVERVIEW.md)分别显示策略存储状态/请求目标/租约事实与实际服务readiness，保留采样、成员范围及声明版本的含义。`make admin-overview-browser`验证真实双节点/停机、三种租约记录、独立筛选分页、精度与会话撤销。
-数据库升级使用实际构建的 `.cache/bin/migrate -apply -config /path/to/service.json`，有版本/校验和、事务锁和回滚；服务不自动迁移。当前版本37含交易对/实例/配置来源身份、typed做市/网格参数、策略/执行/行情租约、模拟核心资金/订单/成交、OMS意图/预算/撤单/outbox、成交inbox/持仓、行情快照/定价基准、最终所选行情门禁、平台/交易对额度、持久动作/运行incarnation、管理身份/审计、独立请求运行目标及[管理操作收据/结果](docs/ADMIN_CONTROL.md)、[策略创建事务收据](docs/ADMIN_CREATION.md)、激活预算同步、[配置发布事务/待激活门禁](docs/ADMIN_PUBLICATION.md)、[策略风险控制仓储/最终开关](docs/ADMIN_RISK.md)与[风险快照诊断历史](docs/RISK_EVENTS.md)，交易表继续增加，见[迁移说明](docs/MIGRATIONS.md)和[参数说明](docs/STRATEGY_PARAMETERS.md)。
-`make contract-check` 检查 Proto/模型字段和 Go 小数/选表语法，`make policy-test` 用真实 linter 的正反样例验证禁止规则；两者已接入 verify，见 [自动规范检查](docs/POLICY_CHECKS.md)。
-在 Codex 中打开此仓库，发送 docs/CODEX_START.md 中的启动指令。Codex 检查现有实现与 PROGRESS，从首个未完成任务持续推进至模拟 MVP 验收通过。真实接口缺失时记录依赖并继续独立工作。
-每个最小步骤完成并通过相关测试/检查后，立即提交并推送到该远程仓库，确认同步后继续下一步。文档步骤验证文档与文件完整性，不宣称业务测试已通过。
+```sh
+make doctor
+make tools
+make generate-check
+make wire-check
+make verify
+make core-test
+make integration
+```
 
-## 文档导航
-- [管理 OpenAPI 与生成门禁](docs/OPENAPI.md)
-- [需求与默认范围](docs/PRD.md)
-- [架构及状态归属](docs/ARCHITECTURE.md)
-- [公共 Deer、DeerApi 与日志规范](docs/DEER.md)
-- [Proto 与 ORM 生成规范](docs/PROTO_AND_MODEL.md)
-- [交易所适配合同](docs/EXCHANGE_CONTRACT.md)
-- [接口、状态与事件](docs/INTERFACES.md)
-- [任务顺序](docs/IMPLEMENTATION_PLAN.md)
-- [验收矩阵](docs/ACCEPTANCE.md)
-- [运维与故障处理](docs/OPERATIONS.md)
-- [开发进度](docs/PROGRESS.md)
-- [默认决策与待确认](docs/DECISIONS.md)
-- [Codex 启动指令](docs/CODEX_START.md)
+Go 命令统一通过 `python3 scripts/go.py` 使用固定工具链；例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。`make generate` 更新 Proto/Wire 生成物，禁止手改生成代码。`make verify` 检查格式、生成一致性、lint、规范正反样例、工具测试、单元/race 与核心构建。
 
-## 安装范围
-公共路径与包名采用 deer，各 Kratos 业务服务分别使用 deer.NewDeer 构造的 Deer 封装；api 用作平台管理界面，包含可操作的管理前端页面和后端接口，使用 deer.NewDeerApi 构造的 DeerApi，复用 Deer 并托管 Hertz 入口，见 docs/DEER.md。管理界面范围与交付验收见 docs/PRD.md 的 R08、docs/ACCEPTANCE.md 的 A27；当前身份页面/接口与完整策略管理范围分别记录于docs/ADMIN_HTTP.md及PROGRESS。
+`make core-test` 验证实际独立核心命令的成交投影、预算、接管、报价与停止；`make integration` 验证保留的基础设施、迁移和业务合同。测试只创建隔离逻辑资源，保留共享基础容器。`make dev-up/dev-down` 关联或解除本工作区的开发资源；`make image-test` 检查核心镜像生命周期。
+
+金额、价格、数量和费率在协议中使用十进制 string，在 Go 中使用 decimal.Decimal；持久化结构唯一来源为 Proto，数据访问显式 WithContext/Model，使用版本化迁移。工程约定见 [AGENTS.md](AGENTS.md)。
+
+## 文档
+
+- [当前需求与历史范围](docs/PRD.md)
+- [架构与状态归属](docs/ARCHITECTURE.md)
+- [Deer 与依赖所有权](docs/DEER.md)
+- [Wire 装配](docs/WIRING.md)
+- [Proto 与模型规范](docs/PROTO_AND_MODEL.md)
+- [Nacos 配置](docs/NACOS_CONFIG.md)
+- [交易与接口合同](docs/TRADING_CONTRACT.md)
+- [实施计划](docs/IMPLEMENTATION_PLAN.md)
+- [开发进度与实际验证](docs/PROGRESS.md)

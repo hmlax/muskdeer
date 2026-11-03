@@ -1,5 +1,7 @@
 # 受审计的参数版本发布与换源事务
 
+历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
+
 P07.21提供`domain.AdminStrategyPublisher`与`repository.NewAdminStrategyPublisher`，借用已有数据库，构造无I/O/工作器。P07.22提供[StrategyPublication typed gRPC](../deer/proto/rpc/strategy/v1/publication.proto)及同源HTTP，页面继续后续步骤；[创建](ADMIN_CREATION.md)、[运行控制](ADMIN_CONTROL.md)与[激活预算](STRATEGY_LIFECYCLE.md)各自保持原有职责。
 
 请求包含actor范围幂等键、strategy ID、expected_revision、expected_config_version、明确binance/okx、完整typed Maker/Grid参数及原因。ID/版本正整数并拒绝溢出，键16–64有界ASCII，原因trim后1–256 UTF-8字节；参数联合、decimal范围/巨大指数及HedgeEnabled门禁复用创建规则。模板必须保持一致，账户、instrument、code_version与LIVE/REPLAY模式来自现有实例，不能在发布请求中改写。
