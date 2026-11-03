@@ -92,7 +92,8 @@ func NewClient(ctx context.Context, cfg Config, guard SubmissionGuard) (*Client,
 		return nil, err
 	}
 	options := append([]grpc.DialOption{}, cfg.DialOptions...)
-	options = append(options, grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithNoProxy())
+	options = append(options, grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithNoProxy(),
+		grpc.WithChainUnaryInterceptor(invokeSDKOnce))
 	sdk, err := orderclient.New(ctx, cfg.Target,
 		orderclient.WithAuthToken(cfg.Token),
 		orderclient.WithTimeout(cfg.Timeout),
