@@ -18,6 +18,8 @@ func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.HimalayaSnapshot, err
 		return nil, err
 	}
 	market := input.Market.Market
+	maker, _ := native.Value(market.MakerFeeRate, true, true)
+	taker, _ := native.Value(market.TakerFeeRate, true, true)
 	base, quote := -int32(market.EffectiveBasePrecision), -int32(market.EffectiveQuotePrecision)
 	result := &commonv1.HimalayaSnapshot{
 		Scope: &commonv1.HimalayaScope{
@@ -33,6 +35,7 @@ func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.HimalayaSnapshot, err
 			MinimumNotional: decimal.NewFromInt(market.QuoteMinSize).Shift(-8).String(),
 			MarkPrice:       decimal.NewFromUint64(input.Market.Health.MarkPriceTicks).Shift(quote).String(),
 			MaximumLeverage: uint32(market.MaxLeverage),
+			WorstFeeRate:    decimal.Max(decimal.Zero, maker, taker).String(),
 		},
 		Available:    input.Account.Available,
 		StartedAtMs:  input.StartedAt.UnixMilli(),
@@ -128,6 +131,11 @@ func validateNativeSnapshot(input *SDKSnapshot, scope Scope) error {
 
 	if _, err := native.Value(input.Account.Available, false, true); err != nil {
 		return ErrInvalidSnapshot
+	}
+	for _, rate := range []string{market.MakerFeeRate, market.TakerFeeRate} {
+		if _, err := native.Value(rate, true, true); err != nil {
+			return ErrInvalidSnapshot
+		}
 	}
 	return nil
 }

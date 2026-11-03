@@ -3,6 +3,7 @@ syntax = "proto3";
 package muskdeer.model.v1;
 
 import "tagger/tagger.proto";
+import "deer/proto/common/v1/himalaya.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1";
 
@@ -31,6 +32,11 @@ message HimalayaBudget {
   string reserved_notional = 10 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
   int64 snapshot_expires_at = 11 [(tagger.tags) = "gorm:\"column:snapshot_expires_at;type:bigint;not null\""];
   bool enabled = 12 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  string available_quote = 13 [(tagger.tags) = "gorm:\"column:available_quote;type:numeric(76,36);not null;default:0\""];
+  string maximum_order_notional = 14 [(tagger.tags) = "gorm:\"column:maximum_order_notional;type:numeric(76,36);not null;default:0\""];
+  uint32 leverage = 15 [(tagger.tags) = "gorm:\"column:leverage;type:integer;not null\""];
+  string worst_fee_rate = 16 [(tagger.tags) = "gorm:\"column:worst_fee_rate;type:numeric(76,36);not null;default:0\""];
+  bool cutover_completed = 17 [(tagger.tags) = "gorm:\"column:cutover_completed;type:boolean;not null\""];
 }
 
 // HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
@@ -55,4 +61,41 @@ message HimalayaIntent {
   string state = 17 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
   string order_id = 18 [(tagger.tags) = "gorm:\"column:order_id;type:varchar(20);not null\""];
   string reserved_notional = 19 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+  int64 expires_at = 20 [(tagger.tags) = "gorm:\"column:expires_at;type:bigint;not null\""];
+  string strategy_account_id = 21 [(tagger.tags) = "gorm:\"column:strategy_account_id;type:varchar(64);not null\""];
+  string strategy_owner_id = 22 [(tagger.tags) = "gorm:\"column:strategy_owner_id;type:varchar(128);not null\""];
+  int64 strategy_epoch = 23 [(tagger.tags) = "gorm:\"column:strategy_epoch;type:bigint;not null\""];
+  string source_account_id = 24 [(tagger.tags) = "gorm:\"column:source_account_id;type:varchar(64);not null\""];
+  string source_owner_id = 25 [(tagger.tags) = "gorm:\"column:source_owner_id;type:varchar(128);not null\""];
+  int64 source_epoch = 26 [(tagger.tags) = "gorm:\"column:source_epoch;type:bigint;not null\""];
+  int64 source_until = 27 [(tagger.tags) = "gorm:\"column:source_until;type:bigint;not null\""];
+}
+
+// HimalayaCancellation separates a cancel acknowledgement from terminal proof.
+message HimalayaCancellation {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;index:idx_himalaya_cancel_account\""];
+  int64 user_id = 6 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;not null\""];
+  int64 fund_id = 7 [(tagger.tags) = "gorm:\"column:fund_id;type:bigint;not null\""];
+  string symbol = 8 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(32);not null\""];
+  string order_id = 9 [(tagger.tags) = "gorm:\"column:order_id;type:varchar(20);not null\""];
+  string owner_id = 10 [(tagger.tags) = "gorm:\"column:owner_id;type:varchar(128);not null\""];
+  int64 owner_epoch = 11 [(tagger.tags) = "gorm:\"column:owner_epoch;type:bigint;not null\""];
+  string request_digest = 12 [(tagger.tags) = "gorm:\"column:request_digest;type:varchar(64);not null\""];
+  string state = 13 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+}
+
+// HimalayaProjection is a rebuildable, typed observation from the native API.
+message HimalayaProjection {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\""];
+  muskdeer.common.v1.HimalayaSnapshot snapshot = 6 [(tagger.tags) = "gorm:\"column:snapshot;type:jsonb;serializer:json;not null\""];
+  string publisher_owner_id = 7 [(tagger.tags) = "gorm:\"column:publisher_owner_id;type:varchar(128);not null\""];
+  int64 publisher_epoch = 8 [(tagger.tags) = "gorm:\"column:publisher_epoch;type:bigint;not null\""];
 }

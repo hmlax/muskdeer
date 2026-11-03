@@ -57,6 +57,10 @@ func AccountID(userID, fundID int64) string {
 // Prepare reserves gross notional and persists the exact intent atomically.
 // It does not dispatch or authorize a later call without another epoch check.
 func (s *Store) Prepare(ctx context.Context, lease domain.LeaseToken, request SubmitRequest) (Prepared, error) {
+	return s.prepare(ctx, lease, request, nil)
+}
+
+func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request SubmitRequest, live *LiveAuthority) (Prepared, error) {
 	if s == nil || s.db == nil {
 		return Prepared{}, ErrInvalidConfig
 	}
@@ -111,6 +115,15 @@ func (s *Store) Prepare(ctx context.Context, lease domain.LeaseToken, request Su
 			Leverage:         request.Leverage,
 			State:            IntentPrepared,
 			ReservedNotional: notional.String(),
+		}
+		if live != nil {
+			if err := checkLiveBudget(budget, request, reserved.Add(notional)); err != nil {
+				return err
+			}
+			setLiveAuthority(ctx, row, live, now)
+			if _, err := checkLiveAuthority(ctx, tx, row, now); err != nil {
+				return err
+			}
 		}
 		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Create(row).Error; err != nil {
 			return err
@@ -182,6 +195,14 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 		if !matchesAdmission(&row, admission) {
 			return ErrInvalidSubmit
 		}
+		if err := checkPersistedLiveBudget(budget, &row); err != nil {
+			return err
+		}
+		left, err := checkLiveAuthority(ctx, tx, &row, now)
+		if err != nil {
+			return err
+		}
+		remaining = min(remaining, left)
 		bounded, cancel := context.WithTimeout(ctx, remaining)
 		defer cancel()
 		callErr = send(bounded)
@@ -250,8 +271,21 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if !matchesAdmission(&row, admission) {
 			return ErrInvalidSubmit
 		}
+		if _, err := checkLiveAuthority(ctx, tx, &row, now); err != nil {
+			return err
+		}
+		if err := checkPersistedLiveBudget(budget, &row); err != nil {
+			return err
+		}
 		var pending int64
 		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+			Where("account_id = ? AND state = ?", account, IntentDispatched).Count(&pending).Error; err != nil {
+			return err
+		}
+		if pending > 0 {
+			return domain.ErrOutcomeUnknown
+		}
+		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaCancellation{}).
 			Where("account_id = ? AND state = ?", account, IntentDispatched).Count(&pending).Error; err != nil {
 			return err
 		}

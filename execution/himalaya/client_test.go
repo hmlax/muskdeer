@@ -124,13 +124,16 @@ func (g *testAdmission) WithSubmission(ctx context.Context, admission Admission,
 
 type sdkPeer struct {
 	pb.UnimplementedOrderServer
-	mu        sync.Mutex
-	calls     int
-	received  *pb.PlaceRequest
-	fail      bool
-	protocol  string
-	token     string
-	wrongFund bool
+	mu             sync.Mutex
+	calls          int
+	received       *pb.PlaceRequest
+	fail           bool
+	protocol       string
+	token          string
+	wrongFund      bool
+	historyOrder   *pb.OrderRow
+	historyRequest *pb.ListOrdersRequest
+	cancelCalls    int
 }
 
 func (p *sdkPeer) Place(ctx context.Context, request *pb.PlaceRequest) (*pb.PlaceOrderResponse, error) {
@@ -178,8 +181,25 @@ func (p *sdkPeer) ListPositions(_ context.Context, request *pb.ListPositionsRequ
 	}}, nil
 }
 
-func (*sdkPeer) ListOrders(context.Context, *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+func (p *sdkPeer) ListOrders(_ context.Context, request *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.historyRequest = proto.CloneOf(request)
+	if request.History && p.historyOrder != nil {
+		return &pb.ListOrdersResponse{Orders: []*pb.OrderRow{proto.CloneOf(p.historyOrder)}}, nil
+	}
 	return &pb.ListOrdersResponse{}, nil
+}
+
+func (p *sdkPeer) CancelOrder(context.Context, *pb.CancelOrderRequest) (*pb.CancelOrderResponse, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.cancelCalls++
+	return &pb.CancelOrderResponse{Success: true}, nil
+}
+
+func (*testAdmission) WithCancellation(ctx context.Context, _ CancelAdmission, send func(context.Context) error) error {
+	return send(ctx)
 }
 
 func (p *sdkPeer) count() int {

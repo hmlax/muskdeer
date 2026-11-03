@@ -3,8 +3,11 @@ package himalaya
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
+	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	pb "gitlab.com/himalaya/lukla-go/pb"
 )
 
@@ -19,6 +22,33 @@ type Scope struct {
 	UserID int64
 	FundID int64
 	Symbol string
+}
+
+// FindKnown seeks the native unique ID in durable terminal history. The SDK's
+// cursor is an exclusive order-ID boundary; no client-ID uniqueness is assumed.
+// A missing row leaves the outcome unknown and cannot release a reservation.
+func (c *Client) FindKnown(ctx context.Context, scope Scope, id uint64, basePrecision int32) (*commonv1.HimalayaOrder, error) {
+	if c == nil || c.sdk == nil || ctx == nil || id == 0 || id == math.MaxUint64 || basePrecision < 0 || basePrecision > 18 ||
+		scope.UserID <= 0 || scope.FundID <= 0 || !validSymbol(scope.Symbol) {
+		return nil, ErrInvalidSubmit
+	}
+	op, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	response, err := c.sdk.Raw().ListOrders(op, &pb.ListOrdersRequest{
+		UserId:  scope.UserID,
+		FundId:  scope.FundID,
+		Symbol:  scope.Symbol,
+		History: true,
+		Limit:   1,
+		Before:  &pb.OrderHistoryCursor{OrderId: id + 1},
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(response.Orders) != 1 || response.Orders[0].OrderId != id {
+		return nil, domain.ErrOutcomeUnknown
+	}
+	return normalizeOrder(response.Orders[0], scope, -basePrecision)
 }
 
 // SDKSnapshot retains the SDK's typed responses. Its separate upstream queries

@@ -7,6 +7,7 @@
 package modelv1
 
 import (
+	v1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	_ "github.com/srikrsna/protoc-gen-gotag/tagger"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -110,21 +111,26 @@ func (x *HimalayaSchemaMigration) GetChecksum() string {
 // HimalayaBudget reserves additional gross notional across a whole fund.
 // Observed native obligations and unobserved local reservations are additive.
 type HimalayaBudget struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
-	CreateAt          int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
-	UpdateAt          int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
-	DeleteAt          *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
-	AccountId         string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_budget_account"`
-	UserId            int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
-	FundId            int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
-	MaximumNotional   string                 `protobuf:"bytes,8,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty" gorm:"column:maximum_notional;type:numeric(76,36);not null"`
-	ObservedNotional  string                 `protobuf:"bytes,9,opt,name=observed_notional,json=observedNotional,proto3" json:"observed_notional,omitempty" gorm:"column:observed_notional;type:numeric(76,36);not null"`
-	ReservedNotional  string                 `protobuf:"bytes,10,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
-	SnapshotExpiresAt int64                  `protobuf:"varint,11,opt,name=snapshot_expires_at,json=snapshotExpiresAt,proto3" json:"snapshot_expires_at,omitempty" gorm:"column:snapshot_expires_at;type:bigint;not null"`
-	Enabled           bool                   `protobuf:"varint,12,opt,name=enabled,proto3" json:"enabled,omitempty" gorm:"column:enabled;type:boolean;not null"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Id                   int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt             int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt             int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt             *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId            string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_budget_account"`
+	UserId               int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
+	FundId               int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
+	MaximumNotional      string                 `protobuf:"bytes,8,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty" gorm:"column:maximum_notional;type:numeric(76,36);not null"`
+	ObservedNotional     string                 `protobuf:"bytes,9,opt,name=observed_notional,json=observedNotional,proto3" json:"observed_notional,omitempty" gorm:"column:observed_notional;type:numeric(76,36);not null"`
+	ReservedNotional     string                 `protobuf:"bytes,10,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
+	SnapshotExpiresAt    int64                  `protobuf:"varint,11,opt,name=snapshot_expires_at,json=snapshotExpiresAt,proto3" json:"snapshot_expires_at,omitempty" gorm:"column:snapshot_expires_at;type:bigint;not null"`
+	Enabled              bool                   `protobuf:"varint,12,opt,name=enabled,proto3" json:"enabled,omitempty" gorm:"column:enabled;type:boolean;not null"`
+	AvailableQuote       string                 `protobuf:"bytes,13,opt,name=available_quote,json=availableQuote,proto3" json:"available_quote,omitempty" gorm:"column:available_quote;type:numeric(76,36);not null;default:0"`
+	MaximumOrderNotional string                 `protobuf:"bytes,14,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty" gorm:"column:maximum_order_notional;type:numeric(76,36);not null;default:0"`
+	Leverage             uint32                 `protobuf:"varint,15,opt,name=leverage,proto3" json:"leverage,omitempty" gorm:"column:leverage;type:integer;not null"`
+	WorstFeeRate         string                 `protobuf:"bytes,16,opt,name=worst_fee_rate,json=worstFeeRate,proto3" json:"worst_fee_rate,omitempty" gorm:"column:worst_fee_rate;type:numeric(76,36);not null;default:0"`
+	CutoverCompleted     bool                   `protobuf:"varint,17,opt,name=cutover_completed,json=cutoverCompleted,proto3" json:"cutover_completed,omitempty" gorm:"column:cutover_completed;type:boolean;not null"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *HimalayaBudget) Reset() {
@@ -241,31 +247,74 @@ func (x *HimalayaBudget) GetEnabled() bool {
 	return false
 }
 
+func (x *HimalayaBudget) GetAvailableQuote() string {
+	if x != nil {
+		return x.AvailableQuote
+	}
+	return ""
+}
+
+func (x *HimalayaBudget) GetMaximumOrderNotional() string {
+	if x != nil {
+		return x.MaximumOrderNotional
+	}
+	return ""
+}
+
+func (x *HimalayaBudget) GetLeverage() uint32 {
+	if x != nil {
+		return x.Leverage
+	}
+	return 0
+}
+
+func (x *HimalayaBudget) GetWorstFeeRate() string {
+	if x != nil {
+		return x.WorstFeeRate
+	}
+	return ""
+}
+
+func (x *HimalayaBudget) GetCutoverCompleted() bool {
+	if x != nil {
+		return x.CutoverCompleted
+	}
+	return false
+}
+
 // HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
 // dispatched again, including after process death or ownership handover.
 type HimalayaIntent struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
-	CreateAt         int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
-	UpdateAt         int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
-	DeleteAt         *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
-	AccountId        string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;index:idx_himalaya_intent_account"`
-	UserId           int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
-	FundId           int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
-	Symbol           string                 `protobuf:"bytes,8,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);not null"`
-	ClientId         string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" gorm:"column:client_id;type:varchar(128);not null;uniqueIndex:uk_himalaya_intent_client"`
-	OwnerId          string                 `protobuf:"bytes,10,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty" gorm:"column:owner_id;type:varchar(128);not null"`
-	OwnerEpoch       int64                  `protobuf:"varint,11,opt,name=owner_epoch,json=ownerEpoch,proto3" json:"owner_epoch,omitempty" gorm:"column:owner_epoch;type:bigint;not null"`
-	RequestDigest    string                 `protobuf:"bytes,12,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty" gorm:"column:request_digest;type:varchar(64);not null"`
-	Side             string                 `protobuf:"bytes,13,opt,name=side,proto3" json:"side,omitempty" gorm:"column:side;type:varchar(8);not null"`
-	Price            string                 `protobuf:"bytes,14,opt,name=price,proto3" json:"price,omitempty" gorm:"column:price;type:numeric(76,36);not null"`
-	Quantity         string                 `protobuf:"bytes,15,opt,name=quantity,proto3" json:"quantity,omitempty" gorm:"column:quantity;type:numeric(76,36);not null"`
-	Leverage         uint32                 `protobuf:"varint,16,opt,name=leverage,proto3" json:"leverage,omitempty" gorm:"column:leverage;type:integer;not null"`
-	State            string                 `protobuf:"bytes,17,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null"`
-	OrderId          string                 `protobuf:"bytes,18,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty" gorm:"column:order_id;type:varchar(20);not null"`
-	ReservedNotional string                 `protobuf:"bytes,19,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Id                int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt          int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt          int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt          *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId         string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;index:idx_himalaya_intent_account"`
+	UserId            int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
+	FundId            int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
+	Symbol            string                 `protobuf:"bytes,8,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);not null"`
+	ClientId          string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" gorm:"column:client_id;type:varchar(128);not null;uniqueIndex:uk_himalaya_intent_client"`
+	OwnerId           string                 `protobuf:"bytes,10,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty" gorm:"column:owner_id;type:varchar(128);not null"`
+	OwnerEpoch        int64                  `protobuf:"varint,11,opt,name=owner_epoch,json=ownerEpoch,proto3" json:"owner_epoch,omitempty" gorm:"column:owner_epoch;type:bigint;not null"`
+	RequestDigest     string                 `protobuf:"bytes,12,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty" gorm:"column:request_digest;type:varchar(64);not null"`
+	Side              string                 `protobuf:"bytes,13,opt,name=side,proto3" json:"side,omitempty" gorm:"column:side;type:varchar(8);not null"`
+	Price             string                 `protobuf:"bytes,14,opt,name=price,proto3" json:"price,omitempty" gorm:"column:price;type:numeric(76,36);not null"`
+	Quantity          string                 `protobuf:"bytes,15,opt,name=quantity,proto3" json:"quantity,omitempty" gorm:"column:quantity;type:numeric(76,36);not null"`
+	Leverage          uint32                 `protobuf:"varint,16,opt,name=leverage,proto3" json:"leverage,omitempty" gorm:"column:leverage;type:integer;not null"`
+	State             string                 `protobuf:"bytes,17,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null"`
+	OrderId           string                 `protobuf:"bytes,18,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty" gorm:"column:order_id;type:varchar(20);not null"`
+	ReservedNotional  string                 `protobuf:"bytes,19,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
+	ExpiresAt         int64                  `protobuf:"varint,20,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" gorm:"column:expires_at;type:bigint;not null"`
+	StrategyAccountId string                 `protobuf:"bytes,21,opt,name=strategy_account_id,json=strategyAccountId,proto3" json:"strategy_account_id,omitempty" gorm:"column:strategy_account_id;type:varchar(64);not null"`
+	StrategyOwnerId   string                 `protobuf:"bytes,22,opt,name=strategy_owner_id,json=strategyOwnerId,proto3" json:"strategy_owner_id,omitempty" gorm:"column:strategy_owner_id;type:varchar(128);not null"`
+	StrategyEpoch     int64                  `protobuf:"varint,23,opt,name=strategy_epoch,json=strategyEpoch,proto3" json:"strategy_epoch,omitempty" gorm:"column:strategy_epoch;type:bigint;not null"`
+	SourceAccountId   string                 `protobuf:"bytes,24,opt,name=source_account_id,json=sourceAccountId,proto3" json:"source_account_id,omitempty" gorm:"column:source_account_id;type:varchar(64);not null"`
+	SourceOwnerId     string                 `protobuf:"bytes,25,opt,name=source_owner_id,json=sourceOwnerId,proto3" json:"source_owner_id,omitempty" gorm:"column:source_owner_id;type:varchar(128);not null"`
+	SourceEpoch       int64                  `protobuf:"varint,26,opt,name=source_epoch,json=sourceEpoch,proto3" json:"source_epoch,omitempty" gorm:"column:source_epoch;type:bigint;not null"`
+	SourceUntil       int64                  `protobuf:"varint,27,opt,name=source_until,json=sourceUntil,proto3" json:"source_until,omitempty" gorm:"column:source_until;type:bigint;not null"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *HimalayaIntent) Reset() {
@@ -431,11 +480,309 @@ func (x *HimalayaIntent) GetReservedNotional() string {
 	return ""
 }
 
+func (x *HimalayaIntent) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *HimalayaIntent) GetStrategyAccountId() string {
+	if x != nil {
+		return x.StrategyAccountId
+	}
+	return ""
+}
+
+func (x *HimalayaIntent) GetStrategyOwnerId() string {
+	if x != nil {
+		return x.StrategyOwnerId
+	}
+	return ""
+}
+
+func (x *HimalayaIntent) GetStrategyEpoch() int64 {
+	if x != nil {
+		return x.StrategyEpoch
+	}
+	return 0
+}
+
+func (x *HimalayaIntent) GetSourceAccountId() string {
+	if x != nil {
+		return x.SourceAccountId
+	}
+	return ""
+}
+
+func (x *HimalayaIntent) GetSourceOwnerId() string {
+	if x != nil {
+		return x.SourceOwnerId
+	}
+	return ""
+}
+
+func (x *HimalayaIntent) GetSourceEpoch() int64 {
+	if x != nil {
+		return x.SourceEpoch
+	}
+	return 0
+}
+
+func (x *HimalayaIntent) GetSourceUntil() int64 {
+	if x != nil {
+		return x.SourceUntil
+	}
+	return 0
+}
+
+// HimalayaCancellation separates a cancel acknowledgement from terminal proof.
+type HimalayaCancellation struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt      int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt      int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt      *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId     string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;index:idx_himalaya_cancel_account"`
+	UserId        int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
+	FundId        int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
+	Symbol        string                 `protobuf:"bytes,8,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);not null"`
+	OrderId       string                 `protobuf:"bytes,9,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty" gorm:"column:order_id;type:varchar(20);not null"`
+	OwnerId       string                 `protobuf:"bytes,10,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty" gorm:"column:owner_id;type:varchar(128);not null"`
+	OwnerEpoch    int64                  `protobuf:"varint,11,opt,name=owner_epoch,json=ownerEpoch,proto3" json:"owner_epoch,omitempty" gorm:"column:owner_epoch;type:bigint;not null"`
+	RequestDigest string                 `protobuf:"bytes,12,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty" gorm:"column:request_digest;type:varchar(64);not null"`
+	State         string                 `protobuf:"bytes,13,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HimalayaCancellation) Reset() {
+	*x = HimalayaCancellation{}
+	mi := &file_deer_proto_model_v1_himalaya_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HimalayaCancellation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HimalayaCancellation) ProtoMessage() {}
+
+func (x *HimalayaCancellation) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_himalaya_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HimalayaCancellation.ProtoReflect.Descriptor instead.
+func (*HimalayaCancellation) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_himalaya_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *HimalayaCancellation) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *HimalayaCancellation) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetFundId() int64 {
+	if x != nil {
+		return x.FundId
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *HimalayaCancellation) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+func (x *HimalayaCancellation) GetOwnerId() string {
+	if x != nil {
+		return x.OwnerId
+	}
+	return ""
+}
+
+func (x *HimalayaCancellation) GetOwnerEpoch() int64 {
+	if x != nil {
+		return x.OwnerEpoch
+	}
+	return 0
+}
+
+func (x *HimalayaCancellation) GetRequestDigest() string {
+	if x != nil {
+		return x.RequestDigest
+	}
+	return ""
+}
+
+func (x *HimalayaCancellation) GetState() string {
+	if x != nil {
+		return x.State
+	}
+	return ""
+}
+
+// HimalayaProjection is a rebuildable, typed observation from the native API.
+type HimalayaProjection struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt         int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt         int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt         *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId        string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account"`
+	Snapshot         *v1.HimalayaSnapshot   `protobuf:"bytes,6,opt,name=snapshot,proto3" json:"snapshot,omitempty" gorm:"column:snapshot;type:jsonb;serializer:json;not null"`
+	PublisherOwnerId string                 `protobuf:"bytes,7,opt,name=publisher_owner_id,json=publisherOwnerId,proto3" json:"publisher_owner_id,omitempty" gorm:"column:publisher_owner_id;type:varchar(128);not null"`
+	PublisherEpoch   int64                  `protobuf:"varint,8,opt,name=publisher_epoch,json=publisherEpoch,proto3" json:"publisher_epoch,omitempty" gorm:"column:publisher_epoch;type:bigint;not null"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *HimalayaProjection) Reset() {
+	*x = HimalayaProjection{}
+	mi := &file_deer_proto_model_v1_himalaya_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HimalayaProjection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HimalayaProjection) ProtoMessage() {}
+
+func (x *HimalayaProjection) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_model_v1_himalaya_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HimalayaProjection.ProtoReflect.Descriptor instead.
+func (*HimalayaProjection) Descriptor() ([]byte, []int) {
+	return file_deer_proto_model_v1_himalaya_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *HimalayaProjection) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *HimalayaProjection) GetCreateAt() int64 {
+	if x != nil {
+		return x.CreateAt
+	}
+	return 0
+}
+
+func (x *HimalayaProjection) GetUpdateAt() int64 {
+	if x != nil {
+		return x.UpdateAt
+	}
+	return 0
+}
+
+func (x *HimalayaProjection) GetDeleteAt() int64 {
+	if x != nil && x.DeleteAt != nil {
+		return *x.DeleteAt
+	}
+	return 0
+}
+
+func (x *HimalayaProjection) GetAccountId() string {
+	if x != nil {
+		return x.AccountId
+	}
+	return ""
+}
+
+func (x *HimalayaProjection) GetSnapshot() *v1.HimalayaSnapshot {
+	if x != nil {
+		return x.Snapshot
+	}
+	return nil
+}
+
+func (x *HimalayaProjection) GetPublisherOwnerId() string {
+	if x != nil {
+		return x.PublisherOwnerId
+	}
+	return ""
+}
+
+func (x *HimalayaProjection) GetPublisherEpoch() int64 {
+	if x != nil {
+		return x.PublisherEpoch
+	}
+	return 0
+}
+
 var File_deer_proto_model_v1_himalaya_proto protoreflect.FileDescriptor
 
 const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\n" +
-	"\"deer/proto/model/v1/himalaya.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\xd1\x04\n" +
+	"\"deer/proto/model/v1/himalaya.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\x1a#deer/proto/common/v1/himalaya.proto\"\xd1\x04\n" +
 	"\x17HimalayaSchemaMigration\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -444,7 +791,7 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\aversion\x18\x05 \x01(\x03BY\x9a\x84\x9e\x03Tgorm:\"column:version;type:bigint;not null;uniqueIndex:uk_himalaya_migration_version\"R\aversion\x12Q\n" +
 	"\bchecksum\x18\x06 \x01(\tB5\x9a\x84\x9e\x030gorm:\"column:checksum;type:varchar(64);not null\"R\bchecksumB\f\n" +
 	"\n" +
-	"_delete_at\"\x99\t\n" +
+	"_delete_at\"\xbe\r\n" +
 	"\x0eHimalayaBudget\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -459,9 +806,14 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\x11reserved_notional\x18\n" +
 	" \x01(\tBA\x9a\x84\x9e\x03<gorm:\"column:reserved_notional;type:numeric(76,36);not null\"R\x10reservedNotional\x12k\n" +
 	"\x13snapshot_expires_at\x18\v \x01(\x03B;\x9a\x84\x9e\x036gorm:\"column:snapshot_expires_at;type:bigint;not null\"R\x11snapshotExpiresAt\x12J\n" +
-	"\aenabled\x18\f \x01(\bB0\x9a\x84\x9e\x03+gorm:\"column:enabled;type:boolean;not null\"R\aenabledB\f\n" +
+	"\aenabled\x18\f \x01(\bB0\x9a\x84\x9e\x03+gorm:\"column:enabled;type:boolean;not null\"R\aenabled\x12r\n" +
+	"\x0favailable_quote\x18\r \x01(\tBI\x9a\x84\x9e\x03Dgorm:\"column:available_quote;type:numeric(76,36);not null;default:0\"R\x0eavailableQuote\x12\x86\x01\n" +
+	"\x16maximum_order_notional\x18\x0e \x01(\tBP\x9a\x84\x9e\x03Kgorm:\"column:maximum_order_notional;type:numeric(76,36);not null;default:0\"R\x14maximumOrderNotional\x12M\n" +
+	"\bleverage\x18\x0f \x01(\rB1\x9a\x84\x9e\x03,gorm:\"column:leverage;type:integer;not null\"R\bleverage\x12n\n" +
+	"\x0eworst_fee_rate\x18\x10 \x01(\tBH\x9a\x84\x9e\x03Cgorm:\"column:worst_fee_rate;type:numeric(76,36);not null;default:0\"R\fworstFeeRate\x12g\n" +
+	"\x11cutover_completed\x18\x11 \x01(\bB:\x9a\x84\x9e\x035gorm:\"column:cutover_completed;type:boolean;not null\"R\x10cutoverCompletedB\f\n" +
 	"\n" +
-	"_delete_at\"\xa8\r\n" +
+	"_delete_at\"\xbe\x13\n" +
 	"\x0eHimalayaIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -484,7 +836,47 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\bleverage\x18\x10 \x01(\rB1\x9a\x84\x9e\x03,gorm:\"column:leverage;type:integer;not null\"R\bleverage\x12H\n" +
 	"\x05state\x18\x11 \x01(\tB2\x9a\x84\x9e\x03-gorm:\"column:state;type:varchar(16);not null\"R\x05state\x12P\n" +
 	"\border_id\x18\x12 \x01(\tB5\x9a\x84\x9e\x030gorm:\"column:order_id;type:varchar(20);not null\"R\aorderId\x12n\n" +
-	"\x11reserved_notional\x18\x13 \x01(\tBA\x9a\x84\x9e\x03<gorm:\"column:reserved_notional;type:numeric(76,36);not null\"R\x10reservedNotionalB\f\n" +
+	"\x11reserved_notional\x18\x13 \x01(\tBA\x9a\x84\x9e\x03<gorm:\"column:reserved_notional;type:numeric(76,36);not null\"R\x10reservedNotional\x12Q\n" +
+	"\n" +
+	"expires_at\x18\x14 \x01(\x03B2\x9a\x84\x9e\x03-gorm:\"column:expires_at;type:bigint;not null\"R\texpiresAt\x12p\n" +
+	"\x13strategy_account_id\x18\x15 \x01(\tB@\x9a\x84\x9e\x03;gorm:\"column:strategy_account_id;type:varchar(64);not null\"R\x11strategyAccountId\x12k\n" +
+	"\x11strategy_owner_id\x18\x16 \x01(\tB?\x9a\x84\x9e\x03:gorm:\"column:strategy_owner_id;type:varchar(128);not null\"R\x0fstrategyOwnerId\x12]\n" +
+	"\x0estrategy_epoch\x18\x17 \x01(\x03B6\x9a\x84\x9e\x031gorm:\"column:strategy_epoch;type:bigint;not null\"R\rstrategyEpoch\x12j\n" +
+	"\x11source_account_id\x18\x18 \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:source_account_id;type:varchar(64);not null\"R\x0fsourceAccountId\x12e\n" +
+	"\x0fsource_owner_id\x18\x19 \x01(\tB=\x9a\x84\x9e\x038gorm:\"column:source_owner_id;type:varchar(128);not null\"R\rsourceOwnerId\x12W\n" +
+	"\fsource_epoch\x18\x1a \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_epoch;type:bigint;not null\"R\vsourceEpoch\x12W\n" +
+	"\fsource_until\x18\x1b \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_until;type:bigint;not null\"R\vsourceUntilB\f\n" +
+	"\n" +
+	"_delete_at\"\x8a\t\n" +
+	"\x14HimalayaCancellation\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12x\n" +
+	"\n" +
+	"account_id\x18\x05 \x01(\tBY\x9a\x84\x9e\x03Tgorm:\"column:account_id;type:varchar(64);not null;index:idx_himalaya_cancel_account\"R\taccountId\x12H\n" +
+	"\auser_id\x18\x06 \x01(\x03B/\x9a\x84\x9e\x03*gorm:\"column:user_id;type:bigint;not null\"R\x06userId\x12H\n" +
+	"\afund_id\x18\a \x01(\x03B/\x9a\x84\x9e\x03*gorm:\"column:fund_id;type:bigint;not null\"R\x06fundId\x12K\n" +
+	"\x06symbol\x18\b \x01(\tB3\x9a\x84\x9e\x03.gorm:\"column:symbol;type:varchar(32);not null\"R\x06symbol\x12P\n" +
+	"\border_id\x18\t \x01(\tB5\x9a\x84\x9e\x030gorm:\"column:order_id;type:varchar(20);not null\"R\aorderId\x12Q\n" +
+	"\bowner_id\x18\n" +
+	" \x01(\tB6\x9a\x84\x9e\x031gorm:\"column:owner_id;type:varchar(128);not null\"R\aownerId\x12T\n" +
+	"\vowner_epoch\x18\v \x01(\x03B3\x9a\x84\x9e\x03.gorm:\"column:owner_epoch;type:bigint;not null\"R\n" +
+	"ownerEpoch\x12b\n" +
+	"\x0erequest_digest\x18\f \x01(\tB;\x9a\x84\x9e\x036gorm:\"column:request_digest;type:varchar(64);not null\"R\rrequestDigest\x12H\n" +
+	"\x05state\x18\r \x01(\tB2\x9a\x84\x9e\x03-gorm:\"column:state;type:varchar(16);not null\"R\x05stateB\f\n" +
+	"\n" +
+	"_delete_at\"\xde\x06\n" +
+	"\x12HimalayaProjection\x12J\n" +
+	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
+	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
+	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12\x81\x01\n" +
+	"\n" +
+	"account_id\x18\x05 \x01(\tBb\x9a\x84\x9e\x03]gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\"R\taccountId\x12\x81\x01\n" +
+	"\bsnapshot\x18\x06 \x01(\v2$.muskdeer.common.v1.HimalayaSnapshotB?\x9a\x84\x9e\x03:gorm:\"column:snapshot;type:jsonb;serializer:json;not null\"R\bsnapshot\x12n\n" +
+	"\x12publisher_owner_id\x18\a \x01(\tB@\x9a\x84\x9e\x03;gorm:\"column:publisher_owner_id;type:varchar(128);not null\"R\x10publisherOwnerId\x12`\n" +
+	"\x0fpublisher_epoch\x18\b \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:publisher_epoch;type:bigint;not null\"R\x0epublisherEpochB\f\n" +
 	"\n" +
 	"_delete_atB7Z5github.com/hmlax/muskdeer/deer/proto/model/v1;modelv1b\x06proto3"
 
@@ -500,18 +892,22 @@ func file_deer_proto_model_v1_himalaya_proto_rawDescGZIP() []byte {
 	return file_deer_proto_model_v1_himalaya_proto_rawDescData
 }
 
-var file_deer_proto_model_v1_himalaya_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deer_proto_model_v1_himalaya_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_deer_proto_model_v1_himalaya_proto_goTypes = []any{
 	(*HimalayaSchemaMigration)(nil), // 0: muskdeer.model.v1.HimalayaSchemaMigration
 	(*HimalayaBudget)(nil),          // 1: muskdeer.model.v1.HimalayaBudget
 	(*HimalayaIntent)(nil),          // 2: muskdeer.model.v1.HimalayaIntent
+	(*HimalayaCancellation)(nil),    // 3: muskdeer.model.v1.HimalayaCancellation
+	(*HimalayaProjection)(nil),      // 4: muskdeer.model.v1.HimalayaProjection
+	(*v1.HimalayaSnapshot)(nil),     // 5: muskdeer.common.v1.HimalayaSnapshot
 }
 var file_deer_proto_model_v1_himalaya_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	5, // 0: muskdeer.model.v1.HimalayaProjection.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_model_v1_himalaya_proto_init() }
@@ -522,13 +918,15 @@ func file_deer_proto_model_v1_himalaya_proto_init() {
 	file_deer_proto_model_v1_himalaya_proto_msgTypes[0].OneofWrappers = []any{}
 	file_deer_proto_model_v1_himalaya_proto_msgTypes[1].OneofWrappers = []any{}
 	file_deer_proto_model_v1_himalaya_proto_msgTypes[2].OneofWrappers = []any{}
+	file_deer_proto_model_v1_himalaya_proto_msgTypes[3].OneofWrappers = []any{}
+	file_deer_proto_model_v1_himalaya_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_model_v1_himalaya_proto_rawDesc), len(file_deer_proto_model_v1_himalaya_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

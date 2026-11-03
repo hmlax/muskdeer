@@ -327,6 +327,7 @@ type HimalayaMarket struct {
 	MinimumNotional string                 `protobuf:"bytes,5,opt,name=minimum_notional,json=minimumNotional,proto3" json:"minimum_notional,omitempty"`
 	MarkPrice       string                 `protobuf:"bytes,6,opt,name=mark_price,json=markPrice,proto3" json:"mark_price,omitempty"`
 	MaximumLeverage uint32                 `protobuf:"varint,7,opt,name=maximum_leverage,json=maximumLeverage,proto3" json:"maximum_leverage,omitempty"`
+	WorstFeeRate    string                 `protobuf:"bytes,8,opt,name=worst_fee_rate,json=worstFeeRate,proto3" json:"worst_fee_rate,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -408,6 +409,13 @@ func (x *HimalayaMarket) GetMaximumLeverage() uint32 {
 		return x.MaximumLeverage
 	}
 	return 0
+}
+
+func (x *HimalayaMarket) GetWorstFeeRate() string {
+	if x != nil {
+		return x.WorstFeeRate
+	}
+	return ""
 }
 
 type HimalayaOrder struct {
@@ -760,7 +768,7 @@ const file_deer_proto_common_v1_himalaya_proto_rawDesc = "" +
 	"\x04bids\x18\b \x03(\v2!.muskdeer.common.v1.HimalayaLevelR\x04bids\x125\n" +
 	"\x04asks\x18\t \x03(\v2!.muskdeer.common.v1.HimalayaLevelR\x04asks\x12C\n" +
 	"\tpublisher\x18\n" +
-	" \x01(\v2%.muskdeer.common.v1.HimalayaAuthorityR\tpublisher\"\x9f\x02\n" +
+	" \x01(\v2%.muskdeer.common.v1.HimalayaAuthorityR\tpublisher\"\xc5\x02\n" +
 	"\x0eHimalayaMarket\x12\x1d\n" +
 	"\n" +
 	"price_tick\x18\x01 \x01(\tR\tpriceTick\x12#\n" +
@@ -770,7 +778,8 @@ const file_deer_proto_common_v1_himalaya_proto_rawDesc = "" +
 	"\x10minimum_notional\x18\x05 \x01(\tR\x0fminimumNotional\x12\x1d\n" +
 	"\n" +
 	"mark_price\x18\x06 \x01(\tR\tmarkPrice\x12)\n" +
-	"\x10maximum_leverage\x18\a \x01(\rR\x0fmaximumLeverage\"\xd2\x01\n" +
+	"\x10maximum_leverage\x18\a \x01(\rR\x0fmaximumLeverage\x12$\n" +
+	"\x0eworst_fee_rate\x18\b \x01(\tR\fworstFeeRate\"\xd2\x01\n" +
 	"\rHimalayaOrder\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x1b\n" +
 	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12\x12\n" +

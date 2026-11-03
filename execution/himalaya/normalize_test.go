@@ -25,6 +25,8 @@ func TestSDKNormalizationUsesEffectiveUnitsAndSignedPositions(t *testing.T) {
 				EffectiveBasePrecision:  3,
 				Status:                  1,
 				MaxLeverage:             10,
+				MakerFeeRate:            "0.0002",
+				TakerFeeRate:            "0.0005",
 			},
 			Health: &pb.MarketHealth{
 				Ok:             true,
@@ -65,7 +67,7 @@ func TestSDKNormalizationUsesEffectiveUnitsAndSignedPositions(t *testing.T) {
 		Symbol: "BTCUSDT",
 	}
 	view, err := Normalize(input, scope)
-	if err != nil || view.Market.PriceTick != "0.1" || view.Market.QuantityStep != "0.001" || view.Market.MinimumNotional != "5" || view.Positions[0].SignedQuantity != "-0.003" || view.Orders[0].Quantity != "0.007" || view.Orders[0].ExecutedQuantity != "0.002" {
+	if err != nil || view.Market.PriceTick != "0.1" || view.Market.QuantityStep != "0.001" || view.Market.MinimumNotional != "5" || view.Market.WorstFeeRate != "0.0005" || view.Positions[0].SignedQuantity != "-0.003" || view.Orders[0].Quantity != "0.007" || view.Orders[0].ExecutedQuantity != "0.002" {
 		t.Fatalf("SDK units were translated incorrectly: %v %v", view, err)
 	}
 	input.Positions[0].Symbol = "ETHUSDT"

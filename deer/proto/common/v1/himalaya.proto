@@ -38,6 +38,7 @@ message HimalayaMarket {
   string minimum_notional = 5;
   string mark_price = 6;
   uint32 maximum_leverage = 7;
+  string worst_fee_rate = 8;
 }
 message HimalayaOrder {
   string order_id = 1;
