@@ -1,0 +1,23 @@
+{
+  "module": "gitlab.com/himalaya/lukla-go",
+  "source": "Himalaya/sdk/go/lukla-go",
+  "sha256": "f11736d0c7e823b96bad89f64dde80938f18e36897133eeb84d60b5438620ff4",
+  "files": {
+    "go.mod": "c02949080ae52bbe7d4b2d1063b18022ee45107b0b4cef6ee63500a47bf2b2ea",
+    "options.go": "2e6751f4969586f5f8ec259845d041e92383fb2f1ae45fe161cf1ed3a3ca8d47",
+    "orders.go": "ee328f8bc0a79e4c6d18e555605ae45ed8c2d5633df73351692d52ddc5ef8da0",
+    "client.go": "88bf96fa15b92181f9281b1d0efc19d1daf14df139817a2a5899acc396d472cc",
+    "go.sum": "780a80c6ba0ac5fa3681bfdf46bbe90d87043c687f1faecfffadeb49f372e4f3",
+    "README.md": "cab800b60058b9576a24d36f209b862fcb13ce5bc56933009de27f7b6cacaf16",
+    "fund_client_test.go": "888235a62ad38ed2dd5570ff8e167d5dac228c844561fa9e0e4b1b803b197b6a",
+    "client_test.go": "c722db5fa2af8be499cb4e38e90895711902fa14badf439e3d303c7b38e99df3",
+    "errors.go": "a74774300ea76f87813ff0462dd1105396a71686416cb2f2dafed0c2aa5cd1c1",
+    "pb/market_rpc.pb.go": "d1f8f996822d6abed52ba3a96de92643a41852c1df68553a784f6d78f5dbcb5c",
+    "pb/position.pb.go": "8b458b628105bdb48a7f1ffc1c39b0ddb1e53977f63843ced0f1315600a2babc",
+    "pb/account.pb.go": "69707d1c99059d01498ad8d0932a2d6fa5e6ab624479547b56a864b01db776f3",
+    "pb/service_grpc.pb.go": "a87939cd08af7143a65c960059eb47afb370906928c9b1c8e643fa5b7ea4bbce",
+    "pb/service.pb.go": "59fc4779b19c33abf91875cf3ebc1f912a18eccccc4063cc1b2182afc6b42038",
+    "pb/order.pb.go": "03e3c57297461e106ad3f76ef56ebf94f10f6cfaf00d1d36a26f79c6d5f7ff02",
+    "pb/common.pb.go": "92df872498c0edb7b5d86167be42a8f6e1fd03f790907b7609e3e496a510477a"
+  }
+}

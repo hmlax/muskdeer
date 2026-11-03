@@ -15,6 +15,7 @@ require (
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/shopspring/decimal v1.6.0
 	github.com/srikrsna/protoc-gen-gotag v1.0.2
+	gitlab.com/himalaya/lukla-go v0.0.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/crypto v0.57.0
 	golang.org/x/net v0.58.0
@@ -99,3 +100,5 @@ require (
 )
 
 tool github.com/google/wire/cmd/wire
+
+replace gitlab.com/himalaya/lukla-go => ./deer/third_party/lukla-go

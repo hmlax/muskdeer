@@ -1477,3 +1477,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 原生 matching-engine/order-service 的 20 个受影响路径均先核验本轮增量的完整哈希，再恢复原内容或仅移除我的新增文件；恢复后逐字节验证。原有未提交业务保持。原生运行容器从未升级，未操作资金、旧挂单或仓位，没有应用迁移到运行库。
 - 移除 Muskdeer 中未部署的自定义网关 Proto/客户端、Rust 支持和迁移工具；SDK 模块、README、Place/Cancel/ForFund 查询及认证实现已只读核验。后续只在 Muskdeer 执行、行情、策略及持仓消费侧适配现有 SDK，不虚构目标 epoch 或幂等支持；BTC/ETH 做市仍未启动。
 - 验证：撤回后的隔离提交源码与 9f34646 相比仅有四份边界文档差异；格式、60 Proto/Wire 生成一致性、contract-check、四核心及维护命令构建通过。原 Go SDK 使用项目固定 Go 1.27.3 执行 `go test -mod=readonly ./...` 通过，未修改 SDK。Muskdeer 原有 49 个文件再次逐字节核验保持；本步没有运行策略或宣称接管完成。
+
+## 2026-11-03：P16.2.1 消费既有 Go SDK
+
+- 将用户提供的 lukla-go 16 个依赖文件原样固定在 deer/third_party，以逐文件 SHA-256 清单验证；保留 SDK 模块声明，通过根 go.mod replace 引用。SDK 源码及生成文件均未修改，应用工具链仍为 Go 1.27.3。make sdk-check 已纳入 verify。
+- execution/himalaya 使用 SDK 的既有 Place 和 ForFund 查询；下单采用精确 decimal、POST_ONLY/CROSS、显式账户及持久身份，禁用配置重试。没有最终 Muskdeer Admission 的客户端只读；发送后错误标记 UNKNOWN，保留身份且不补发。此步定义 Admission 接口，尚未接入持久化守卫或服务工作循环，不代表目标撮合支持 epoch 或 client_id 唯一去重。
+- SDK 原测试及六项适配行为测试 race 通过；隔离提交源码的格式、lint/govet（0 issues）、contract-check、60 Proto/Wire 一致性、四核心及维护命令构建通过。首次静态检查发现三处错误信息大小写问题，修正后重跑通过。未运行全量单元/race、数据库集成或镜像构建；原有 49 个业务修改未混入验证源码。
+- 真实只读 SDK 探针已成功连接原地址，BTC/ETH 账户与市场查询通过，分别仍有 40/39 张旧挂单，各有一条仓位，市场健康。之前的握手失败目前未再出现，未将原因归结为已证实的网关问题；没有重启共享基础设施、下单、撤单、注资或平仓。做市接管尚未完成。
+- 基线 53b2135，工作分支 codex/two-apps；本独立步骤验证后提交并立即推送，核对远端 SHA 后继续持久化和生命周期接入。
