@@ -14,6 +14,7 @@ import (
 type quoteRetention struct {
 	orders  map[string]bool
 	targets map[string]bool
+	pending bool
 }
 
 func retainQuoteOrders(profile *configv1.HimalayaProfile, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, cutover bool) (*quoteRetention, error) {
@@ -39,6 +40,27 @@ func retainQuoteOrders(profile *configv1.HimalayaProfile, snapshot *commonv1.Him
 	}
 	if err := retainBridgeOrders(profile, snapshot, wanted, retained); err != nil {
 		return nil, err
+	}
+	if err := retainRollingOrders(profile, snapshot, wanted, retained); err != nil {
+		return nil, err
+	}
+	occupied := make(map[string]bool)
+	for _, order := range snapshot.Orders {
+		if !retained.orders[order.OrderId] {
+			continue
+		}
+		key, quantity, err := orderKey(order)
+		if err != nil {
+			return nil, err
+		}
+		target := wanted[key]
+		if occupied[key] || target == nil || !quantity.Equal(target.Quantity) {
+			retained.pending = true
+		}
+		occupied[key] = true
+		if target != nil {
+			retained.targets[key] = true
+		}
 	}
 	return retained, nil
 }

@@ -23,6 +23,7 @@ type quoteCycle struct {
 	snapshot  *commonv1.HimalayaSnapshot
 	retained  *quoteRetention
 	result    *himalayav1.QuoteResult
+	admitted  []*commonv1.HimalayaTarget
 }
 
 func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *commonv1.HimalayaTarget) error {
@@ -52,6 +53,7 @@ func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *co
 		return err
 	}
 	cycle.result.Placed++
+	cycle.admitted = append(cycle.admitted, target)
 	return nil
 }
 
@@ -61,6 +63,9 @@ func (r *Runtime) seedQuoteSides(ctx context.Context, cycle *quoteCycle) error {
 		return err
 	}
 	for _, target := range quoteSeedTargets(cycle.snapshot, cycle.targets, cycle.retained) {
+		if !cycle.canPlace(target) {
+			continue
+		}
 		if err := r.submitQuote(ctx, cycle, target); err != nil {
 			return err
 		}

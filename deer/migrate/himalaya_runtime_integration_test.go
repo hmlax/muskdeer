@@ -5,14 +5,12 @@ package migrate
 import (
 	"context"
 	"errors"
-	"io"
 	"net"
 	"strconv"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/shopspring/decimal"
 	pb "gitlab.com/himalaya/lukla-go/pb"
 	"gorm.io/gorm"
 
@@ -21,7 +19,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/deer/logging"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
@@ -29,41 +26,63 @@ import (
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
+	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 	nativeportfolio "github.com/hmlax/muskdeer/portfolio/native"
 	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 )
 
 func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
-	testNativeWorkers(t, 0, 0, false)
+	testNativeWorkers(t, nativeWorkerScenario{})
 }
 
 func TestHimalayaNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
-	testNativeWorkers(t, 40, 0, false)
+	testNativeWorkers(t, nativeWorkerScenario{legacy: 40})
 }
 
 func TestHimalayaNativeRepricingKeepsBothSidesWhileCancelProofIsPending(t *testing.T) {
-	testNativeWorkers(t, 0, 1, false)
+	testNativeWorkers(t, nativeWorkerScenario{reprice: 1})
 }
 
 func TestHimalayaNativePriceJumpSeedsSafeSideBeforeCancellingOldQuote(t *testing.T) {
-	testNativeWorkers(t, 0, 5, false)
+	testNativeWorkers(t, nativeWorkerScenario{reprice: 5})
 }
 
 func TestHimalayaNativeReplyLossRecoversPositiveHistoryWithoutResubmission(t *testing.T) {
-	testNativeWorkers(t, 0, 0, true)
+	testNativeWorkers(t, nativeWorkerScenario{lostReply: true})
 }
 
-func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) {
+type nativeWorkerScenario struct {
+	legacy    int
+	reprice   int64
+	lostReply bool
+	depth     uint32
+	resize    bool
+}
+
+func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 	t.Helper()
+	legacy, reprice, lostReply := scenario.legacy, scenario.reprice, scenario.lostReply
+	depth := max(1, scenario.depth)
 	db, store, executionLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	t.Cleanup(cancel)
+	maximumNotional := "1000"
+	if depth > 1 {
+		maximumNotional = "2000"
+		// This scenario needs forty old/new quote reservations in addition
+		// to the fixture's retained 900 obligation. Existing tests keep 1000.
+		if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", executionLease.Key.AccountID).
+			Update("maximum_notional", maximumNotional).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
 	authority := liveAuthorityFixture(ctx, t, db, executionLease, request.Symbol)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
 	sdk.lostTerminalReply.Store(lostReply)
-	if reprice > 0 {
+	if reprice > 0 || scenario.resize {
 		sdk.historyEntered = make(chan struct{}, 1)
 		sdk.historyRelease = make(chan struct{})
 	}
@@ -98,24 +117,30 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) 
 	sdkAddress := startNativeSDK(t, sdk)
 	ca := testcert.New(t)
 	discovery := &nativeDiscoveryFixture{entries: make(map[string]nacos.Instance)}
-	market := &nativeMarketFixture{authority: authority.Book.Publisher}
+	sourceLeases, err := repository.NewLeases(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	market := &nativeMarketFixture{
+		authority: authority.Book.Publisher,
+		depth:     depth,
+		leases:    sourceLeases,
+		lease: domain.LeaseToken{
+			Key: domain.LeaseKey{
+				Kind:      domain.LeaseKindExecution,
+				AccountID: authority.Book.Publisher.AccountId,
+			},
+			OwnerID:   authority.Book.Publisher.OwnerId,
+			Epoch:     authority.Book.Publisher.Epoch,
+			ExpiresAt: time.UnixMilli(authority.Book.Publisher.ExpiresAtMs),
+		},
+	}
 	discovery.entries[rpcsecurity.ServiceMarket] = nacos.Instance{
 		ID:      "market-test",
 		Service: rpcsecurity.ServiceMarket,
 		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { himalayav1.RegisterMarketServer(server, market) }),
 	}
-	logger, err := logging.New(ctx, nil, logging.Identity{
-		Service:  "execution",
-		Instance: "sdk-test",
-	}, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := logger.Close(); err != nil {
-			t.Error(err)
-		}
-	})
+	logger := nativeWorkerLogger(ctx, t, executionLease.OwnerID)
 	t.Setenv("NATIVE_TEST_TOKEN", "test-token")
 	cfg := &configv1.BusinessRuntime{
 		Enabled:          true,
@@ -125,7 +150,7 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) 
 		Himalaya: &configv1.HimalayaRuntime{
 			Target:           sdkAddress,
 			TokenEnv:         "NATIVE_TEST_TOKEN",
-			Depth:            1,
+			Depth:            depth,
 			QuantityFraction: "0.1",
 			LeaseTtl:         durationpb.New(10 * time.Second),
 			Profiles: []*configv1.HimalayaProfile{{
@@ -136,10 +161,13 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) 
 				MarketDataSource:     native.Source,
 				PriceTick:            "0.1",
 				QuantityStep:         "0.001",
-				MaximumNotional:      "1000",
+				MaximumNotional:      maximumNotional,
 				MaximumOrderNotional: "1000",
 			}},
 		},
+	}
+	if depth > 1 {
+		cfg.OperationTimeout = durationpb.New(2 * time.Second)
 	}
 	execution, err := himalaya.NewRuntime(db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
 	if err != nil {
@@ -168,52 +196,27 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) 
 	runNativeWorkers(ctx, t, workers)
 	nativeWait(ctx, t, func() bool {
 		pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID)
-		return err == nil && len(pending) == 2 && sdk.active() == 2
+		return err == nil && len(pending) == int(2*depth) && sdk.active() == int(2*depth)
 	})
-	if pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID); err != nil || len(pending) != 2 {
-		t.Fatalf("PendingIDs(after history recovery) = %d, %v, want two live orders", len(pending), err)
+	if pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID); err != nil || len(pending) != int(2*depth) {
+		t.Fatalf("PendingIDs(after history recovery) = %d, %v, want %d live orders", len(pending), err, 2*depth)
 	}
 	if lostReply {
 		assertLostReplyRecovery(t, db, sdk)
 	}
+	if scenario.resize {
+		t.Log("initial twenty-level ladder ready")
+		assertNativeRollingResize(ctx, t, nativeRollingCheck{
+			sdk:    sdk,
+			market: market,
+			depth:  int(depth),
+		})
+	}
 	if reprice > 0 {
-		release := sync.OnceFunc(func() { close(sdk.historyRelease) })
-		t.Cleanup(release)
-		sdk.historyHold.Store(true)
-		market.offset.Store(reprice)
-		select {
-		case <-sdk.historyEntered:
-		case <-ctx.Done():
-			t.Fatal("repricing did not reach terminal-history barrier")
-		}
-		sdk.mu.Lock()
-		buys, sells := 0, 0
-		for _, order := range sdk.orders {
-			if native.Active(order.Status) {
-				if order.Side == pb.Side_SIDE_BUY {
-					buys++
-				} else {
-					sells++
-				}
-			}
-		}
-		sdk.mu.Unlock()
-		if buys == 0 || sells == 0 {
-			t.Fatalf("repricing while cancel proof pending has buys=%d sells=%d, want both sides present", buys, sells)
-		}
-		release()
-		nativeWait(ctx, t, func() bool {
-			sdk.mu.Lock()
-			defer sdk.mu.Unlock()
-			current := 0
-			bid := decimal.RequireFromString("99.9").Add(decimal.NewFromInt(reprice).Shift(-1)).String()
-			ask := decimal.RequireFromString("100.1").Add(decimal.NewFromInt(reprice).Shift(-1)).String()
-			for _, order := range sdk.orders {
-				if native.Active(order.Status) && (order.Price == bid || order.Price == ask) {
-					current++
-				}
-			}
-			return current == 2
+		assertNativeReprice(ctx, t, nativeRepriceCheck{
+			sdk:    sdk,
+			market: market,
+			offset: reprice,
 		})
 	}
 	var count int64
@@ -224,6 +227,9 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) 
 		t.Fatal(err)
 	}
 	market.stop.Store(true)
+	if scenario.resize {
+		t.Log("source ownership lost; awaiting controlled cancellation")
+	}
 	nativeWait(ctx, t, func() bool { return sdk.active() == 0 })
 }
 
@@ -232,7 +238,7 @@ func assertLostReplyRecovery(t *testing.T, db *gorm.DB, sdk *nativeSDKFixture) {
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	var recovered []*modelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("state = ?", himalaya.IntentTerminal).Find(&recovered).Error; err != nil || len(recovered) != 1 || recovered[0].OrderId != "1" {
+	if err := db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("state = ? AND order_id != ''", himalaya.IntentTerminal).Find(&recovered).Error; err != nil || len(recovered) != 1 || recovered[0].OrderId != "1" {
 		t.Fatalf("lost reply native fact not recovered: %v, %v", recovered, err)
 	}
 	sdk.mu.Lock()

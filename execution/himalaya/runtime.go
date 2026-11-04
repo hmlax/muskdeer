@@ -289,6 +289,14 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 		return nil, ErrRiskLimit
 	}
 	result := &himalayav1.QuoteResult{State: native.StateRecovering}
+	if recoveryErr != nil {
+		return result, recoveryErr
+	}
+	// Finish the preceding batch before draining another set of live levels.
+	// Unresolved work does not renew the previous plan's expiry protection.
+	if pending, err := r.unresolvedCancels(ctx, lease.Key.AccountID); err != nil || pending {
+		return result, err
+	}
 	wanted, err := r.targets(profile, plan)
 	if err != nil {
 		return nil, err
@@ -307,13 +315,13 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 			Strategy: plan.Strategy,
 			Book:     book,
 		},
-		targets:  plan.Targets,
+		targets:  quoteMaintenanceOrder(plan.Targets, snapshot),
 		snapshot: snapshot,
 		retained: retained,
 		result:   result,
 	}
 	var seedErr error
-	if recoveryErr == nil && budget.CutoverCompleted {
+	if budget.CutoverCompleted {
 		seedErr = r.seedQuoteSides(ctx, cycle)
 	}
 	err = r.cancelObsolete(ctx, profile, lease, snapshot, retained, result)
@@ -323,14 +331,13 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 	if seedErr != nil {
 		return result, seedErr
 	}
-	if recoveryErr != nil {
-		return result, recoveryErr
-	}
 	if result.Cancelled > 0 {
-		_, err = r.refresh(ctx, profile, lease, book)
+		snapshot, err = r.refresh(ctx, profile, lease, book)
 		if err != nil {
 			return nil, err
 		}
+		cycle.snapshot = snapshot
+		cycle.admitted = nil
 	}
 	// All obsolete native IDs must have positive terminal proof, not absence.
 	if pending, err := r.unresolvedCancels(ctx, lease.Key.AccountID); err != nil || pending {
@@ -341,19 +348,25 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 			return nil, err
 		}
 	}
-	for _, target := range quoteSubmissionOrder(plan.Targets) {
+	for _, target := range cycle.targets {
 		price, _ := native.Value(target.Price, false, false)
 		key := target.Side + "/" + price.String()
 		if retained.targets[key] {
+			continue
+		}
+		if !cycle.canPlace(target) {
+			retained.pending = true
 			continue
 		}
 		if err := r.submitQuote(ctx, cycle, target); err != nil {
 			return nil, err
 		}
 	}
-	result.State = native.StateRunning
+	if !retained.pending {
+		result.State = native.StateRunning
+	}
 	r.plans[lease.Key.AccountID].Store(book.ValidUntilMs)
-	if err := r.logger.LogAttrs(ctx, slog.LevelInfo, native.StateRunning, slog.String("symbol", profile.Symbol), slog.Uint64("placed", uint64(result.Placed)), slog.Uint64("cancelled", uint64(result.Cancelled)), slog.Uint64("retained", uint64(result.Retained))); err != nil {
+	if err := r.logger.LogAttrs(ctx, slog.LevelInfo, result.State, slog.String("symbol", profile.Symbol), slog.Uint64("placed", uint64(result.Placed)), slog.Uint64("cancelled", uint64(result.Cancelled)), slog.Uint64("retained", uint64(result.Retained))); err != nil {
 		return nil, err
 	}
 	return result, nil

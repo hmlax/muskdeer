@@ -22,6 +22,7 @@ import (
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
@@ -30,23 +31,52 @@ type nativeMarketFixture struct {
 	authority *commonv1.HimalayaAuthority
 	stop      atomic.Bool
 	offset    atomic.Int64
+	depth     uint32
+	quantity  atomic.Int64
+	renewal   sync.Mutex
+	leases    domain.LeaseRepository
+	lease     domain.LeaseToken
 }
 
-func (m *nativeMarketFixture) GetBook(context.Context, *himalayav1.BookRequest) (*commonv1.HimalayaBook, error) {
+func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *himalayav1.BookRequest) (*commonv1.HimalayaBook, error) {
 	if m.stop.Load() {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
+	publisher := proto.CloneOf(m.authority)
+	if m.leases != nil {
+		m.renewal.Lock()
+		token, err := m.leases.Renew(ctx, m.lease, 10*time.Second)
+		if err == nil {
+			m.lease = token
+		}
+		m.renewal.Unlock()
+		if err != nil {
+			return nil, status.Error(codes.Unavailable, native.MessageInvalid)
+		}
+		publisher = native.Authority(token)
+	}
 	offset := decimal.NewFromInt(m.offset.Load()).Shift(-1)
-	return &commonv1.HimalayaBook{
+	book := &commonv1.HimalayaBook{
 		Symbol:       "BTCUSDT",
 		Source:       native.Source,
 		Segment:      native.Segment,
 		Sequence:     1,
 		ValidUntilMs: time.Now().Add(native.BookAge).UnixMilli(),
-		Publisher:    proto.CloneOf(m.authority),
-		Bids:         []*commonv1.HimalayaLevel{{Price: decimal.RequireFromString("99.9").Add(offset).String(), Quantity: "1"}},
-		Asks:         []*commonv1.HimalayaLevel{{Price: decimal.RequireFromString("100.1").Add(offset).String(), Quantity: "1"}},
-	}, nil
+		Publisher:    publisher,
+	}
+	for level := range max(1, int(m.depth)) {
+		distance := decimal.NewFromInt(int64(level)).Shift(-1)
+		quantity := decimal.NewFromInt(max(1, m.quantity.Load())).String()
+		book.Bids = append(book.Bids, &commonv1.HimalayaLevel{
+			Price:    decimal.RequireFromString("99.9").Add(offset).Sub(distance).String(),
+			Quantity: quantity,
+		})
+		book.Asks = append(book.Asks, &commonv1.HimalayaLevel{
+			Price:    decimal.RequireFromString("100.1").Add(offset).Add(distance).String(),
+			Quantity: quantity,
+		})
+	}
+	return book, nil
 }
 
 type nativeSDKFixture struct {
