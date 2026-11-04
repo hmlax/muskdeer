@@ -1752,3 +1752,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - clean/user-overlay 两套迁移前后各 65 份完整文件描述符除 go_package 外逐项一致，包括消息、字段、枚举、服务、RPC、注解和保留编号；两套各 46 个生成模型的 GORM 表名、列和元数据逐项一致。715 个已有手写 Go 文件仅更新导入路径和相应 gofmt；原有 50 处待提交业务修改按新路径独立保留，不纳入本次提交。
 - 隔离源码全包 race、81 Proto 生成比较、五 Wire diff、Hertz 确定性生成/共享 DTO 编译、doctor 双 YAML、合同/规范正反样例、格式、服务依赖图及 lint/govet（0 issues）通过；实际工作区含原有修改的全 integration 标签编译通过。五服务及维护命令构建通过，新构建 cron 独立进程从现有 Nacos 的隔离双 YAML 启动、健康 RPC 和正常退出的 integration/race 通过（1.29 秒）。
 - 初次 race/Hertz 编译因磁盘空间不足中断，保留失败记录；仅清理本项目可重建的 Go 编译缓存，恢复约 23 GiB 空间后复核通过，没有改动测试断言。完整工作区业务测试、全量 integration/e2e/soak 和镜像部署未运行；未重启交易服务、未发布业务配置或变更订单策略。本轮目录与兼容验收完成，提交及远程结果见本轮报告。
+
+
+## 2026-11-04：P24 移除 Hertz Proto 注解
+
+- 按用户要求移除 deer/pb/common/hertz 生成包和其唯一使用方算术探针的 HTTP 路由/参数注解，删除 deer/third_party/hertz 的 api.proto/许可证。算术探针的消息字段、编号及 gRPC 方法保持，query tag 继续由 tagger 生成，供现有手工 HTTP 绑定测试使用。Hertz 运行时仍为公共监控提供 HTTP 服务。
+- 删除 scripts/verify-hz.py、make hz-check、verify 中的对应依赖及 tools/versions.json 的 hz 插件；生成器不再传入 Hertz Proto 或导入映射。重新生成受影响的 probe Go 文件，源码和生成目录均无 Hertz 注解引用，历史验收记录保留。
+- make generate-check（80 个 Proto Go 文件、五 Wire）、fmt-check、服务布局、lint/govet（0 issues）、44 项 Python 工具测试及全包 go build 通过；Deer、frameworkprobe、JetStream 和五服务入口的相关 race 回归通过，覆盖 gRPC、HTTP 十进制 query 绑定、监控生命周期及健康检查。
+- 原有 50 处待提交修改逐字节保持，与本次 20 个文件清理独立。完整工作区业务测试、全量 integration/e2e/soak 未运行；未重启交易服务、发布配置或改动数据库。提交与远程结果见本轮报告。

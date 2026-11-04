@@ -1,7 +1,7 @@
 # Proto、GORM 与迁移规范
 
 ## 结构唯一来源
-全部 config: deer/proto/common/config/v1/config.proto；数据库结构: deer/proto/<service>/model/v1，共享模型在 common/model/v1；公共枚举/错误: deer/proto/common/v1；gRPC 服务合同: deer/proto/<service>/v1，SDK 内部合同在所属服务 himalaya/v1。完整归属见 [Proto 目录](../deer/proto/README.md)。生成的 Go 消息、GORM 模型、gRPC stub 和 Hertz 注解统一位于 deer/pb，按源文件的 common/服务子目录对应；deer/proto 只保存协议源文件。go_package 指向 deer/pb，生成目录由工具配置固定，严禁手改；根 api 目录已移除，Proto package、字段编号和 RPC 方法名保持。
+全部 config: deer/proto/common/config/v1/config.proto；数据库结构: deer/proto/<service>/model/v1，共享模型在 common/model/v1；公共枚举/错误: deer/proto/common/v1；gRPC 服务合同: deer/proto/<service>/v1，SDK 内部合同在所属服务 himalaya/v1。完整归属见 [Proto 目录](../deer/proto/README.md)。生成的 Go 消息、GORM 模型、gRPC stub统一位于 deer/pb，按源文件的 common/服务子目录对应；deer/proto 只保存协议源文件。go_package 指向 deer/pb，生成目录由工具配置固定，严禁手改；根 api 目录已移除，Proto package、字段编号和 RPC 方法名保持。
 用户要求使用 GORM tag 自动生成 model，不再手工定义 model。默认优先验证“Proto 生成的结构直接带 GORM tag 并作为持久化类型”。若必须使用专用 .gorm.pb.go ORM 生成类型才能满足类型要求，提交技术验证结果和取舍，请用户决定，不能静默引入第二套结构。
 
 ## 每张表的必备字段（强制）
@@ -34,7 +34,7 @@ Model 查询方式参考：[GORM 官方查询文档](https://gorm.io/docs/query.
 
 ## P01 技术验证必须先于大规模业务生成
 P01 已验证的直接生成路线与时间/小数表示见 [ADR 0001](decisions/0001-proto-gorm.md)。公共持久化时间使用 UTC Unix 毫秒：create_at/update_at 为 int64、NOT NULL bigint，delete_at 为 optional int64、nullable bigint；对外时间 DTO 与业务 time.Time 在边界转换。完整业务模型及软删除语义由 P03 继续实现。
-Go 固定为 1.27.3。固定 protoc、protoc-gen-go、protoc-gen-go-grpc、Hertz hz、tag 注入/ORM 插件的精确版本及来源，并在 Go 1.27.3 下验证 GORM v2、PostgreSQL 驱动及生成工具兼容性。区分 protobuf tag 注入工具与 protoc-gen-gorm 专用类型生成，不混用命令或猜测 option 名。
+Go 固定为 1.27.3。固定 protoc、protoc-gen-go、protoc-gen-go-grpc、tag 注入/ORM 插件的精确版本及来源，并在 Go 1.27.3 下验证 GORM v2、PostgreSQL 驱动及生成工具兼容性。区分 protobuf tag 注入工具与 protoc-gen-gorm 专用类型生成，不混用命令或猜测 option 名。
 用最小 Proto 在真实 PostgreSQL 测试：Id 自增主键、createAt/updateAt 的 NOT NULL 与自动赋值/更新、deleteAt 的 NULL/时间往返、联合唯一索引、nullable、0/false 更新、timestamp、numeric(精度,小数位)、反序列化、查询扫描、重复生成。所有数据操作使用 Model；确认 GORM 忽略 protobuf 内部字段。软删除如启用，额外验证删除及过滤行为。
 string 的 gorm:type:numeric 标签本身不提供精确运算能力；生成字段需有验证过的转换/Scanner/Valuer 或仓储边界转换，业务计算用明确 decimal 值对象。
 
@@ -65,7 +65,7 @@ Instrument、StrategyTemplate、StrategyInstance、StrategyConfigVersion、Strat
 StrategyInstance/StrategyConfigVersion 的模型与接口 Proto 显式定义 market_data_source，保存实例当前生效选择及各配置版本的来源；候选值及接入状态分开校验。运行状态区分请求配置与 active_market_data_source，重启/接管从持久化版本恢复。来源标识集中定义，首批 binance/okx，候选 bitget/bybit；不能仅在进程内保存选择或修改生成文件添加字段。
 
 ## 生成与迁移
-make generate：Proto 校验 → Go/gRPC/Hertz 代码 → 经验证的 tag/ORM 生成 → gofmt。make generate-check 在干净临时目录重生成比较，禁止覆盖用户未提交文件后声称无差异。
+make generate：Proto 校验 → Go/gRPC 代码 → 经验证的 tag/ORM 生成 → gofmt。make generate-check 在干净临时目录重生成比较，禁止覆盖用户未提交文件后声称无差异。
 数据库迁移按版本执行，有校验和、执行记录及锁；不由所有服务启动时并发迁移。结构性破坏变更单独审查，生成器不会代替迁移设计。仓库必须包含从空库升级及已有库兼容测试。
 
 P03.2 已实现内嵌版本 SQL、生成的 SchemaMigration 记录、事务 advisory lock/回滚及显式 migrate -apply 工具，见 [迁移说明](MIGRATIONS.md)。当前业务实体仍按后续版本加入；此工具不执行启动 AutoMigrate，不改写不一致历史。

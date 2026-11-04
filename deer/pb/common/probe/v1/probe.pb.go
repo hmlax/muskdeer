@@ -7,7 +7,6 @@
 package probev1
 
 import (
-	_ "github.com/hmlax/muskdeer/deer/pb/common/hertz"
 	_ "github.com/srikrsna/protoc-gen-gotag/tagger"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -123,14 +122,14 @@ var File_deer_proto_common_probe_v1_probe_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_probe_v1_probe_proto_rawDesc = "" +
 	"\n" +
-	"&deer/proto/common/probe/v1/probe.proto\x12\x11muskdeer.probe.v1\x1a\x0fhertz/api.proto\x1a\x13tagger/tagger.proto\"\x83\x01\n" +
-	"\x0fMultiplyRequest\x121\n" +
-	"\x05price\x18\x01 \x01(\tB\x1b\xb2\xbb\x18\x05price\x9a\x84\x9e\x03\rquery:\"price\"R\x05price\x12=\n" +
-	"\bquantity\x18\x02 \x01(\tB!\xb2\xbb\x18\bquantity\x9a\x84\x9e\x03\x10query:\"quantity\"R\bquantity\"+\n" +
+	"&deer/proto/common/probe/v1/probe.proto\x12\x11muskdeer.probe.v1\x1a\x13tagger/tagger.proto\"n\n" +
+	"\x0fMultiplyRequest\x12(\n" +
+	"\x05price\x18\x01 \x01(\tB\x12\x9a\x84\x9e\x03\rquery:\"price\"R\x05price\x121\n" +
+	"\bquantity\x18\x02 \x01(\tB\x15\x9a\x84\x9e\x03\x10query:\"quantity\"R\bquantity\"+\n" +
 	"\rMultiplyReply\x12\x1a\n" +
-	"\bnotional\x18\x01 \x01(\tR\bnotional2x\n" +
-	"\x0fArithmeticProbe\x12e\n" +
-	"\bMultiply\x12\".muskdeer.probe.v1.MultiplyRequest\x1a .muskdeer.probe.v1.MultiplyReply\"\x13\xca\xc1\x18\x0f/probe/notionalB;Z9github.com/hmlax/muskdeer/deer/pb/common/probe/v1;probev1b\x06proto3"
+	"\bnotional\x18\x01 \x01(\tR\bnotional2c\n" +
+	"\x0fArithmeticProbe\x12P\n" +
+	"\bMultiply\x12\".muskdeer.probe.v1.MultiplyRequest\x1a .muskdeer.probe.v1.MultiplyReplyB;Z9github.com/hmlax/muskdeer/deer/pb/common/probe/v1;probev1b\x06proto3"
 
 var (
 	file_deer_proto_common_probe_v1_probe_proto_rawDescOnce sync.Once

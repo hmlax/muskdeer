@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// ArithmeticProbe checks the transport/generator stack before business services.
+// ArithmeticProbe checks the transport stack before business services.
 type ArithmeticProbeClient interface {
 	Multiply(ctx context.Context, in *MultiplyRequest, opts ...grpc.CallOption) (*MultiplyReply, error)
 }
@@ -53,7 +53,7 @@ func (c *arithmeticProbeClient) Multiply(ctx context.Context, in *MultiplyReques
 // All implementations must embed UnimplementedArithmeticProbeServer
 // for forward compatibility.
 //
-// ArithmeticProbe checks the transport/generator stack before business services.
+// ArithmeticProbe checks the transport stack before business services.
 type ArithmeticProbeServer interface {
 	Multiply(context.Context, *MultiplyRequest) (*MultiplyReply, error)
 	mustEmbedUnimplementedArithmeticProbeServer()

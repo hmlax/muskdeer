@@ -1,13 +1,13 @@
 # 按服务归属组织 Proto
 
-项目 Proto 源文件的第一层目录只允许 common、market、strategy、execution、portfolio、cron。业务 RPC 位于 `<service>/v1`，模型位于 `<service>/model/v1`，所有服务配置统一位于 `common/config/v1/config.proto`；Himalaya 内部 RPC 位于对应服务的 `<service>/himalaya/v1`。HimalayaAuthority 继续保留在 common/v1，字段和含义不变。生成的 Go 消息、GORM 模型、gRPC stub 和 Hertz 注解单独放在 deer/pb，按相同的 common/服务子目录对应；deer/proto 不再保存 Go 文件。
+项目 Proto 源文件的第一层目录只允许 common、market、strategy、execution、portfolio、cron。业务 RPC 位于 `<service>/v1`，模型位于 `<service>/model/v1`，所有服务配置统一位于 `common/config/v1/config.proto`；Himalaya 内部 RPC 位于对应服务的 `<service>/himalaya/v1`。HimalayaAuthority 继续保留在 common/v1，字段和含义不变。生成的 Go 消息、GORM 模型、gRPC stub单独放在 deer/pb，按相同的 common/服务子目录对应；deer/proto 不再保存 Go 文件。
 
 | 目录 | 定义归属 |
 |---|---|
 | common/v1 | 跨服务交易值、事件、行情与 SDK 观察合同 |
 | common/config/v1 | 单一 config.proto：data.yaml/service.yaml 信封、基础连接和各服务运行参数 |
 | common/model/v1 | 共享资金预算、交易品种、身份审计、通用租约及迁移账本/框架探针 |
-| common/probe/v1 | 公共框架探针；第三方 HTTP 注解仅生成到 deer/pb/common/hertz |
+| common/probe/v1 | 公共框架 gRPC/消息探针 |
 | market | 行情 RPC、SDK 行情读取 RPC、feed/snapshot/行情发布租约 |
 | strategy | 策略 RPC、实例/配置版本/动作/预算/租约和持久管理命令 |
 | execution | 执行 RPC、SDK 执行 RPC、OMS/outbox/撤单/模拟网关/风险和测试成交记录 |

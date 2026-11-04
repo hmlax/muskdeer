@@ -1,4 +1,4 @@
-.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check hz-check sdk-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-prepare compose-up compose-down compose-status core-test
+.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check sdk-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-prepare compose-up compose-down compose-status core-test
 
 doctor:
 	python3 scripts/go.py version
@@ -33,9 +33,6 @@ wire:
 wire-check:
 	python3 scripts/wire.py --check
 
-hz-check:
-	python3 scripts/verify-hz.py
-
 sdk-check:
 	python3 scripts/check-himalaya-sdk.py
 	python3 scripts/go.py test -race gitlab.com/himalaya/lukla-go/...
@@ -67,7 +64,7 @@ build:
 		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
 	done
 
-verify: doctor contract-check generate-check hz-check sdk-check fmt-check lint policy-test test-tooling test test-race build
+verify: doctor contract-check generate-check sdk-check fmt-check lint policy-test test-tooling test test-race build
 
 build-fixtures: build
 	@for role in market strategy execution portfolio; do \

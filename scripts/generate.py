@@ -34,17 +34,16 @@ def generate(verify: bool) -> None:
         environment['PATH'] = str(ROOT / '.cache/bin') + os.pathsep + environment['PATH']
         compiler = protoc()
         arguments = [str(compiler), '-I.', '-Ideer/third_party', '-I' + str(compiler.parent.parent / 'include')]
-        files = [path.relative_to(ROOT).as_posix() for path in inputs] + ['hertz/api.proto']
-        mapping = 'Mhertz/api.proto=github.com/hmlax/muskdeer/deer/pb/common/hertz;api'
+        files = [path.relative_to(ROOT).as_posix() for path in inputs]
         subprocess.run([
-            *arguments, '--go_out=.', '--go_opt=module=github.com/hmlax/muskdeer', '--go_opt=' + mapping,
+            *arguments, '--go_out=.', '--go_opt=module=github.com/hmlax/muskdeer',
             *files,
         ], cwd=stage, env=environment, check=True)
         rpc_files = [path.relative_to(ROOT).as_posix() for path in inputs if re.search(r'^service\s+\w+\s*\{', path.read_text(), re.MULTILINE)]
         if rpc_files:
             subprocess.run([
                 *arguments, '--go-grpc_out=.', '--go-grpc_opt=module=github.com/hmlax/muskdeer',
-                '--go-grpc_opt=' + mapping, *rpc_files,
+                *rpc_files,
             ], cwd=stage, env=environment, check=True)
         tag_files = [path.relative_to(ROOT).as_posix() for path in inputs]
         subprocess.run([

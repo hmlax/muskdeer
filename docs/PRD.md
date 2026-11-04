@@ -1,6 +1,8 @@
 # MVP 需求规格 v0.1
 
-2026-11-04 用户进一步要求：Proto 源文件保留在 deer/proto，生成的 Go 消息、GORM 模型、gRPC stub 和 Hertz 注解统一放到 deer/pb，按原服务子目录对应；go_package 和 Go 导入路径同步更新。所有配置仍共用 common/config/v1/config.proto，协议全名、字段和 RPC 方法保持。Wire injector 继续由各服务 cmd 管理。
+2026-11-04 用户要求移除 Hertz Proto HTTP 注解：删除生成包、第三方 api.proto 和 hz 生成/校验工具链。公共算术探针继续用于 gRPC/监控回归，HTTP 监听继续直接使用 Hertz 运行时。
+
+2026-11-04 用户进一步要求：Proto 源文件保留在 deer/proto，生成的 Go 消息、GORM 模型、gRPC stub统一放到 deer/pb，按原服务子目录对应；go_package 和 Go 导入路径同步更新。所有配置仍共用 common/config/v1/config.proto，协议全名、字段和 RPC 方法保持。Wire injector 继续由各服务 cmd 管理。
 
 2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
 
