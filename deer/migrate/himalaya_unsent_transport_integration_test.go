@@ -46,8 +46,8 @@ func TestHimalayaFailedStreamCreationCannotLeaveUnknownOrder(t *testing.T) {
 	if _, err := client.Submit(ctx, prepared.Request); err == nil || errors.Is(err, domain.ErrOutcomeUnknown) {
 		t.Fatalf("Submit(no request stream) = %v, want known no-effect failure", err)
 	}
-	var row executionmodelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+	var row executionmodelv1.VenueOrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	budget, err := store.Budget(ctx, lease.Key.AccountID)

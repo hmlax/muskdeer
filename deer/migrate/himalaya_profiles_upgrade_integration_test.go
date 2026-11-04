@@ -14,7 +14,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
@@ -29,7 +29,7 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 	if _, err := Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
-	paths, err := filepath.Glob("himalaya/sql/000[1-5]_*.sql")
+	paths, err := filepath.Glob("venue/sql/000[1-5]_*.sql")
 	if err != nil || len(paths) != 5 {
 		t.Fatalf("version five migration fixture: %v", err)
 	}
@@ -38,13 +38,12 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaSchemaMigration{}).Exec(string(data)).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Exec(string(data)).Error; err != nil {
 			t.Fatal(err)
 		}
-		if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaSchemaMigration{}).Create(&commonmodelv1.HimalayaSchemaMigration{
-			Version:  int64(i + 1),
-			Checksum: fmt.Sprintf("%x", sha256.Sum256(data)),
-		}).Error; err != nil {
+		// Explicit legacy fixture: the removed ORM types are not recreated.
+		if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).
+			Exec("INSERT INTO himalaya_schema_migrations (create_at, update_at, version, checksum) VALUES (1, 1, ?, ?)", int64(i+1), fmt.Sprintf("%x", sha256.Sum256(data))).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -53,7 +52,7 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		t.Fatal(err)
 	}
 	// A version-five model must not select newly added columns during insertion.
-	budget := &commonmodelv1.HimalayaBudget{
+	budget := &commonmodelv1.TradingAccountPolicy{
 		AccountId:            account,
 		UserId:               101,
 		FundId:               201,
@@ -66,9 +65,17 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		Enabled:              true,
 		CutoverCompleted:     true,
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Omit("Symbol", "MarketDataSource", "PriceTick", "QuantityStep").Create(budget).Error; err != nil {
+	// Seed a historical row through reviewed migration SQL, without a legacy model.
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Raw(`
+        INSERT INTO himalaya_budgets (create_at, update_at, account_id, user_id, fund_id,
+            maximum_notional, maximum_order_notional, observed_notional, reserved_notional,
+            available_quote, leverage, enabled, cutover_completed, snapshot_expires_at)
+        VALUES (101, 102, ?, 101, 201, 1000, 100, 900, 50, 123, 10, true, true, 999999)
+        RETURNING *`, account).Scan(budget).Error; err != nil {
 		t.Fatal(err)
 	}
+
+	checkVenueRecords := seedVenueUpgradeRecords(ctx, t, db, account)
 	audit := &executionmodelv1.SyntheticTapeIntent{
 		RunId:        "schema-five",
 		Symbol:       "BTCUSDT",
@@ -90,23 +97,26 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := himalayamigrate.Check(ctx, db); !errors.Is(err, himalayamigrate.ErrHistory) {
+
+	assertVenueUpgradeRollback(ctx, t, db, account, budget)
+	if err := venuemigrate.Check(ctx, db); !errors.Is(err, venuemigrate.ErrHistory) {
 		t.Fatalf("old schema accepted before explicit upgrade: %v", err)
 	}
 	for range 2 {
-		if err := himalayamigrate.Apply(ctx, db); err != nil {
+		if err := venuemigrate.Apply(ctx, db); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := himalayamigrate.Check(ctx, db); err != nil {
+	if err := venuemigrate.Check(ctx, db); err != nil {
 		t.Fatal(err)
 	}
+	checkVenueRecords()
 	var after executionmodelv1.SyntheticTapeIntent
 	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
 		t.Fatalf("database profile upgrade rewrote tape audit: %v", err)
 	}
-	var retained commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&retained).Error; err != nil {
+	var retained commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&retained).Error; err != nil {
 		t.Fatal(err)
 	}
 	for _, value := range []struct{ raw, want string }{

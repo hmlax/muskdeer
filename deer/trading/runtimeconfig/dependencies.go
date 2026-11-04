@@ -7,7 +7,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
-	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -30,7 +30,7 @@ func Data(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*
 		return nil, "", err
 	}
 	if cfg.Business.ExecutionVenue == native.Venue {
-		if err := himalayamigrate.Check(ctx, db); err != nil {
+		if err := venuemigrate.Check(ctx, db); err != nil {
 			return nil, "", err
 		}
 	}

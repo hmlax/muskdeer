@@ -17,8 +17,8 @@ const (
 )
 
 func (s *Store) pendingClientIDs(ctx context.Context, account string) ([]string, error) {
-	var rows []*executionmodelv1.HimalayaIntent
-	if err := s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
+	var rows []*executionmodelv1.VenueOrderIntent
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
 		Where("account_id = ? AND state = ? AND order_id = '' AND historical_approval_reference = '' AND delete_at IS NULL", account, IntentDispatched).
 		Select("ClientId").Limit(257).Find(&rows).Error; err != nil {
 		return nil, err

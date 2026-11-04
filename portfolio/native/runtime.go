@@ -116,12 +116,12 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePol
 	if snapshot.ValidUntilMs <= time.Now().UnixMilli() || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId || snapshot.Scope.Symbol != profile.Symbol {
 		return values.ErrInvalid
 	}
-	return r.db.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Transaction(func(tx *gorm.DB) error {
+	return r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Transaction(func(tx *gorm.DB) error {
 		if _, err := repository.LockNativeAuthority(ctx, tx, values.Authority(token)); err != nil {
 			return err
 		}
-		var row portfoliomodelv1.HimalayaProjection
-		err := tx.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Where("account_id = ?", values.ScopeKey(profile.UserId, profile.FundId)).First(&row).Error
+		var row portfoliomodelv1.VenueAccountSnapshot
+		err := tx.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("account_id = ?", values.ScopeKey(profile.UserId, profile.FundId)).First(&row).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
@@ -129,9 +129,9 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePol
 		row.AccountId = values.ScopeKey(profile.UserId, profile.FundId)
 		row.Snapshot, row.PublisherOwnerId, row.PublisherEpoch = proto.CloneOf(snapshot), token.OwnerID, token.Epoch
 		if fresh {
-			return tx.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Create(&row).Error
+			return tx.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Create(&row).Error
 		}
-		return tx.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Where("id = ?", row.Id).
+		return tx.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("id = ?", row.Id).
 			Select("Snapshot", "PublisherOwnerId", "PublisherEpoch").Updates(&row).Error
 	})
 }
@@ -144,8 +144,8 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope
 	if _, err := values.Profile(r.cfg.Himalaya, scope); err != nil {
 		return nil, status.Error(codes.InvalidArgument, values.MessageInvalid)
 	}
-	var row portfoliomodelv1.HimalayaProjection
-	if err := r.db.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {
+	var row portfoliomodelv1.VenueAccountSnapshot
+	if err := r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {
 		return nil, status.Error(codes.Unavailable, values.MessageInvalid)
 	}
 	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, &commonv1.HimalayaAuthority{

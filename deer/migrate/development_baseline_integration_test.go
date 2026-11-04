@@ -32,7 +32,7 @@ func TestDevelopmentBaselineKeepsUnknownAuditAndRiskAndIsOneTime(t *testing.T) {
 		t.Fatal("preview did not retain the whole legacy order risk")
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Count(&count).Error; err != nil || count != 0 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.ExecutionRecoveryBaseline{}).Count(&count).Error; err != nil || count != 0 {
 		t.Fatalf("assessment mutated audit: count=%d err=%v", count, err)
 	}
 	if err := store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
@@ -46,8 +46,8 @@ func TestDevelopmentBaselineKeepsUnknownAuditAndRiskAndIsOneTime(t *testing.T) {
 	if err := store.ApplyDevelopmentBaseline(ctx, lease, changed, snapshot); err == nil {
 		t.Fatal("second baseline on the same account was accepted")
 	}
-	var old executionmodelv1.HimalayaCancellation
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaCancellation{}).First(&old).Error; err != nil || old.State != himalaya.IntentDispatched {
+	var old executionmodelv1.VenueCancellation
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueCancellation{}).First(&old).Error; err != nil || old.State != himalaya.IntentDispatched {
 		t.Fatalf("old unknown audit was rewritten: state=%s err=%v", old.State, err)
 	}
 	if pending, err := store.PendingIDs(ctx, lease.Key.AccountID); err != nil || len(pending) != 0 {
@@ -150,7 +150,7 @@ func TestDevelopmentBaselineRejectsUnsafeOrStaleApproval(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("state", himalaya.IntentDispatched).Error; err != nil {
+				if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("state", himalaya.IntentDispatched).Error; err != nil {
 					t.Fatal(err)
 				}
 			case "stale_owner":
@@ -162,7 +162,7 @@ func TestDevelopmentBaselineRejectsUnsafeOrStaleApproval(t *testing.T) {
 				t.Fatal("unsafe development baseline was applied")
 			}
 			var count int64
-			if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Count(&count).Error; err != nil || count != 0 {
+			if err := db.WithContext(ctx).Model(&executionmodelv1.ExecutionRecoveryBaseline{}).Count(&count).Error; err != nil || count != 0 {
 				t.Fatalf("failed approval left audit: count=%d err=%v", count, err)
 			}
 		})
@@ -176,7 +176,7 @@ func TestDevelopmentBaselineFailsClosedIfRetainedRiskIsReduced(t *testing.T) {
 	if err := store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("observed_notional", "899").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("observed_notional", "899").Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.PendingIDs(ctx, lease.Key.AccountID); err == nil {

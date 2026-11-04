@@ -46,7 +46,7 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.Himalay
 	slices.SortFunc(profiles, func(a, b *commonv1.HimalayaProfilePolicy) int {
 		return strings.Compare(native.ScopeKey(a.UserId, a.FundId), native.ScopeKey(b.UserId, b.FundId))
 	})
-	return s.db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
 		for _, profile := range profiles {
 			if err := configureProfile(ctx, tx, profile, enabled); err != nil {
 				return err
@@ -56,8 +56,8 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.Himalay
 	})
 }
 
-func budgetProfile(p *commonv1.HimalayaProfilePolicy) *commonmodelv1.HimalayaBudget {
-	return &commonmodelv1.HimalayaBudget{
+func budgetProfile(p *commonv1.HimalayaProfilePolicy) *commonmodelv1.TradingAccountPolicy {
+	return &commonmodelv1.TradingAccountPolicy{
 		AccountId:            native.ScopeKey(p.GetUserId(), p.GetFundId()),
 		UserId:               p.GetUserId(),
 		FundId:               p.GetFundId(),
@@ -83,13 +83,13 @@ func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.HimalayaProf
 	if err := lockProfileMaintenance(ctx, tx, input.AccountId, p); err != nil {
 		return err
 	}
-	var current commonmodelv1.HimalayaBudget
-	err := tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", input.AccountId).Clauses(clause.Locking{Strength: "UPDATE"}).First(&current).Error
+	var current commonmodelv1.TradingAccountPolicy
+	err := tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", input.AccountId).Clauses(clause.Locking{Strength: "UPDATE"}).First(&current).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		if enabled != nil {
 			input.Enabled = *enabled
 		}
-		return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Create(input).Error
+		return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Create(input).Error
 	}
 	if err != nil {
 		return err
@@ -108,7 +108,7 @@ func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.HimalayaProf
 	if enabled != nil {
 		input.Enabled = *enabled
 	}
-	return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", current.Id).
+	return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", current.Id).
 		Select("MaximumNotional", "MaximumOrderNotional", "Leverage", "Symbol", "MarketDataSource", "PriceTick", "QuantityStep", "Enabled").Updates(input).Error
 }
 

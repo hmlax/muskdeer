@@ -20,20 +20,20 @@ func TestHimalayaLiveMarginAndExpiredUnsentIntentRemainSafe(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	authority := liveAuthorityFixture(ctx, t, db, lease, request.Symbol)
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("available_quote", "1").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("available_quote", "1").Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.PrepareLive(ctx, lease, request, authority); !errors.Is(err, himalaya.ErrRiskLimit) {
 		t.Fatalf("margin shortage accepted: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("available_quote", "1000").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("available_quote", "1000").Error; err != nil {
 		t.Fatal(err)
 	}
 	prepared, err := store.PrepareLive(ctx, lease, request, authority)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("expires_at", 1).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("expires_at", 1).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{Scope: &commonv1.HimalayaScope{

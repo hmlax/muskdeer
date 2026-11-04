@@ -36,7 +36,7 @@ func TestHimalayaLiveSourceAndStrategyEpochAreCheckedAtFinalSDKCall(t *testing.T
 				key = authority.Strategy.AccountId
 			}
 			if changed == "deadline" {
-				err = db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("expires_at", 1).Error
+				err = db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("expires_at", 1).Error
 			} else {
 				err = db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", key).UpdateColumn("epoch", 2).Error
 			}
@@ -96,8 +96,8 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 	if err := store.WithCancellation(ctx, cancellation, func(context.Context) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
-	var budget commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&budget).Error; err != nil {
+	var budget commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).First(&budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(budget.ReservedNotional).Equal(decimal.NewFromInt(100)) {
@@ -116,7 +116,7 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 			t.Fatal(err)
 		}
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&budget).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).First(&budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(budget.ReservedNotional).Equal(decimal.NewFromInt(25)) {
@@ -148,8 +148,8 @@ func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execut
 			ExpiresAtMs: token.ExpiresAt.UnixMilli(),
 		}
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", execution.Key.AccountID).
-		Updates(&commonmodelv1.HimalayaBudget{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", execution.Key.AccountID).
+		Updates(&commonmodelv1.TradingAccountPolicy{
 			AvailableQuote:       "1000",
 			MaximumOrderNotional: "1000",
 			Leverage:             10,

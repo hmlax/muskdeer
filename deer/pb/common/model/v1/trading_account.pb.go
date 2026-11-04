@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v5.29.3
-// source: deer/proto/common/model/v1/himalaya_budget.proto
+// source: deer/proto/common/model/v1/trading_account.proto
 
 package modelv1
 
@@ -22,9 +22,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HimalayaBudget reserves additional gross notional across a whole fund.
+// TradingAccountPolicy reserves additional gross notional across a whole fund.
 // Observed native obligations and unobserved local reservations are additive.
-type HimalayaBudget struct {
+type TradingAccountPolicy struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Id                   int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	CreateAt             int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
@@ -51,21 +51,21 @@ type HimalayaBudget struct {
 	sizeCache            protoimpl.SizeCache
 }
 
-func (x *HimalayaBudget) Reset() {
-	*x = HimalayaBudget{}
-	mi := &file_deer_proto_common_model_v1_himalaya_budget_proto_msgTypes[0]
+func (x *TradingAccountPolicy) Reset() {
+	*x = TradingAccountPolicy{}
+	mi := &file_deer_proto_common_model_v1_trading_account_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HimalayaBudget) String() string {
+func (x *TradingAccountPolicy) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HimalayaBudget) ProtoMessage() {}
+func (*TradingAccountPolicy) ProtoMessage() {}
 
-func (x *HimalayaBudget) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_common_model_v1_himalaya_budget_proto_msgTypes[0]
+func (x *TradingAccountPolicy) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_model_v1_trading_account_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -76,164 +76,164 @@ func (x *HimalayaBudget) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HimalayaBudget.ProtoReflect.Descriptor instead.
-func (*HimalayaBudget) Descriptor() ([]byte, []int) {
-	return file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use TradingAccountPolicy.ProtoReflect.Descriptor instead.
+func (*TradingAccountPolicy) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_model_v1_trading_account_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HimalayaBudget) GetId() int64 {
+func (x *TradingAccountPolicy) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetCreateAt() int64 {
+func (x *TradingAccountPolicy) GetCreateAt() int64 {
 	if x != nil {
 		return x.CreateAt
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetUpdateAt() int64 {
+func (x *TradingAccountPolicy) GetUpdateAt() int64 {
 	if x != nil {
 		return x.UpdateAt
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetDeleteAt() int64 {
+func (x *TradingAccountPolicy) GetDeleteAt() int64 {
 	if x != nil && x.DeleteAt != nil {
 		return *x.DeleteAt
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetAccountId() string {
+func (x *TradingAccountPolicy) GetAccountId() string {
 	if x != nil {
 		return x.AccountId
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetUserId() int64 {
+func (x *TradingAccountPolicy) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetFundId() int64 {
+func (x *TradingAccountPolicy) GetFundId() int64 {
 	if x != nil {
 		return x.FundId
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetMaximumNotional() string {
+func (x *TradingAccountPolicy) GetMaximumNotional() string {
 	if x != nil {
 		return x.MaximumNotional
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetObservedNotional() string {
+func (x *TradingAccountPolicy) GetObservedNotional() string {
 	if x != nil {
 		return x.ObservedNotional
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetReservedNotional() string {
+func (x *TradingAccountPolicy) GetReservedNotional() string {
 	if x != nil {
 		return x.ReservedNotional
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetSnapshotExpiresAt() int64 {
+func (x *TradingAccountPolicy) GetSnapshotExpiresAt() int64 {
 	if x != nil {
 		return x.SnapshotExpiresAt
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetEnabled() bool {
+func (x *TradingAccountPolicy) GetEnabled() bool {
 	if x != nil {
 		return x.Enabled
 	}
 	return false
 }
 
-func (x *HimalayaBudget) GetAvailableQuote() string {
+func (x *TradingAccountPolicy) GetAvailableQuote() string {
 	if x != nil {
 		return x.AvailableQuote
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetMaximumOrderNotional() string {
+func (x *TradingAccountPolicy) GetMaximumOrderNotional() string {
 	if x != nil {
 		return x.MaximumOrderNotional
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetLeverage() uint32 {
+func (x *TradingAccountPolicy) GetLeverage() uint32 {
 	if x != nil {
 		return x.Leverage
 	}
 	return 0
 }
 
-func (x *HimalayaBudget) GetWorstFeeRate() string {
+func (x *TradingAccountPolicy) GetWorstFeeRate() string {
 	if x != nil {
 		return x.WorstFeeRate
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetCutoverCompleted() bool {
+func (x *TradingAccountPolicy) GetCutoverCompleted() bool {
 	if x != nil {
 		return x.CutoverCompleted
 	}
 	return false
 }
 
-func (x *HimalayaBudget) GetSymbol() string {
+func (x *TradingAccountPolicy) GetSymbol() string {
 	if x != nil {
 		return x.Symbol
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetMarketDataSource() string {
+func (x *TradingAccountPolicy) GetMarketDataSource() string {
 	if x != nil {
 		return x.MarketDataSource
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetPriceTick() string {
+func (x *TradingAccountPolicy) GetPriceTick() string {
 	if x != nil {
 		return x.PriceTick
 	}
 	return ""
 }
 
-func (x *HimalayaBudget) GetQuantityStep() string {
+func (x *TradingAccountPolicy) GetQuantityStep() string {
 	if x != nil {
 		return x.QuantityStep
 	}
 	return ""
 }
 
-var File_deer_proto_common_model_v1_himalaya_budget_proto protoreflect.FileDescriptor
+var File_deer_proto_common_model_v1_trading_account_proto protoreflect.FileDescriptor
 
-const file_deer_proto_common_model_v1_himalaya_budget_proto_rawDesc = "" +
+const file_deer_proto_common_model_v1_trading_account_proto_rawDesc = "" +
 	"\n" +
-	"0deer/proto/common/model/v1/himalaya_budget.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\xb5\x11\n" +
-	"\x0eHimalayaBudget\x12J\n" +
+	"0deer/proto/common/model/v1/trading_account.proto\x12\x11muskdeer.model.v1\x1a\x13tagger/tagger.proto\"\xbb\x11\n" +
+	"\x14TradingAccountPolicy\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
@@ -262,22 +262,22 @@ const file_deer_proto_common_model_v1_himalaya_budget_proto_rawDesc = "" +
 	"_delete_atB;Z9github.com/hmlax/muskdeer/deer/pb/common/model/v1;modelv1b\x06proto3"
 
 var (
-	file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescOnce sync.Once
-	file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescData []byte
+	file_deer_proto_common_model_v1_trading_account_proto_rawDescOnce sync.Once
+	file_deer_proto_common_model_v1_trading_account_proto_rawDescData []byte
 )
 
-func file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescGZIP() []byte {
-	file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescOnce.Do(func() {
-		file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_deer_proto_common_model_v1_himalaya_budget_proto_rawDesc), len(file_deer_proto_common_model_v1_himalaya_budget_proto_rawDesc)))
+func file_deer_proto_common_model_v1_trading_account_proto_rawDescGZIP() []byte {
+	file_deer_proto_common_model_v1_trading_account_proto_rawDescOnce.Do(func() {
+		file_deer_proto_common_model_v1_trading_account_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_deer_proto_common_model_v1_trading_account_proto_rawDesc), len(file_deer_proto_common_model_v1_trading_account_proto_rawDesc)))
 	})
-	return file_deer_proto_common_model_v1_himalaya_budget_proto_rawDescData
+	return file_deer_proto_common_model_v1_trading_account_proto_rawDescData
 }
 
-var file_deer_proto_common_model_v1_himalaya_budget_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_deer_proto_common_model_v1_himalaya_budget_proto_goTypes = []any{
-	(*HimalayaBudget)(nil), // 0: muskdeer.model.v1.HimalayaBudget
+var file_deer_proto_common_model_v1_trading_account_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_deer_proto_common_model_v1_trading_account_proto_goTypes = []any{
+	(*TradingAccountPolicy)(nil), // 0: muskdeer.model.v1.TradingAccountPolicy
 }
-var file_deer_proto_common_model_v1_himalaya_budget_proto_depIdxs = []int32{
+var file_deer_proto_common_model_v1_trading_account_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
 	0, // [0:0] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -285,27 +285,27 @@ var file_deer_proto_common_model_v1_himalaya_budget_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_deer_proto_common_model_v1_himalaya_budget_proto_init() }
-func file_deer_proto_common_model_v1_himalaya_budget_proto_init() {
-	if File_deer_proto_common_model_v1_himalaya_budget_proto != nil {
+func init() { file_deer_proto_common_model_v1_trading_account_proto_init() }
+func file_deer_proto_common_model_v1_trading_account_proto_init() {
+	if File_deer_proto_common_model_v1_trading_account_proto != nil {
 		return
 	}
-	file_deer_proto_common_model_v1_himalaya_budget_proto_msgTypes[0].OneofWrappers = []any{}
+	file_deer_proto_common_model_v1_trading_account_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_model_v1_himalaya_budget_proto_rawDesc), len(file_deer_proto_common_model_v1_himalaya_budget_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_model_v1_trading_account_proto_rawDesc), len(file_deer_proto_common_model_v1_trading_account_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_deer_proto_common_model_v1_himalaya_budget_proto_goTypes,
-		DependencyIndexes: file_deer_proto_common_model_v1_himalaya_budget_proto_depIdxs,
-		MessageInfos:      file_deer_proto_common_model_v1_himalaya_budget_proto_msgTypes,
+		GoTypes:           file_deer_proto_common_model_v1_trading_account_proto_goTypes,
+		DependencyIndexes: file_deer_proto_common_model_v1_trading_account_proto_depIdxs,
+		MessageInfos:      file_deer_proto_common_model_v1_trading_account_proto_msgTypes,
 	}.Build()
-	File_deer_proto_common_model_v1_himalaya_budget_proto = out.File
-	file_deer_proto_common_model_v1_himalaya_budget_proto_goTypes = nil
-	file_deer_proto_common_model_v1_himalaya_budget_proto_depIdxs = nil
+	File_deer_proto_common_model_v1_trading_account_proto = out.File
+	file_deer_proto_common_model_v1_trading_account_proto_goTypes = nil
+	file_deer_proto_common_model_v1_trading_account_proto_depIdxs = nil
 }

@@ -33,7 +33,7 @@ func (s *Store) PrepareLive(ctx context.Context, execution domain.LeaseToken, re
 	return s.prepare(ctx, execution, request, &authority)
 }
 
-func setLiveAuthority(ctx context.Context, row *executionmodelv1.HimalayaIntent, authority *LiveAuthority, now int64) {
+func setLiveAuthority(ctx context.Context, row *executionmodelv1.VenueOrderIntent, authority *LiveAuthority, now int64) {
 	deadline, _ := ctx.Deadline()
 	row.ExpiresAt = now + min(time.Until(deadline), maximumOperationTimeout).Milliseconds()
 	row.StrategyAccountId = authority.Strategy.AccountId
@@ -45,7 +45,7 @@ func setLiveAuthority(ctx context.Context, row *executionmodelv1.HimalayaIntent,
 	row.SourceUntil = authority.Book.ValidUntilMs
 }
 
-func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *executionmodelv1.HimalayaIntent, now int64) (time.Duration, error) {
+func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *executionmodelv1.VenueOrderIntent, now int64) (time.Duration, error) {
 	if row.StrategyEpoch == 0 && row.SourceEpoch == 0 {
 		return maximumOperationTimeout, nil // The original transport-only seam.
 	}
@@ -76,7 +76,7 @@ func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *executionmodelv1.
 	return remaining, nil
 }
 
-func checkLiveBudget(budget *commonmodelv1.HimalayaBudget, request SubmitRequest, total decimal.Decimal) error {
+func checkLiveBudget(budget *commonmodelv1.TradingAccountPolicy, request SubmitRequest, total decimal.Decimal) error {
 	available, e1 := domain.ParseLedgerDecimal(budget.AvailableQuote, false, true)
 	limit, e2 := domain.ParseLedgerDecimal(budget.MaximumOrderNotional, false, false)
 	fee, e3 := domain.ParseLedgerDecimal(budget.WorstFeeRate, false, true)
@@ -93,7 +93,7 @@ func checkLiveBudget(budget *commonmodelv1.HimalayaBudget, request SubmitRequest
 	return nil
 }
 
-func checkPersistedLiveBudget(budget *commonmodelv1.HimalayaBudget, row *executionmodelv1.HimalayaIntent) error {
+func checkPersistedLiveBudget(budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent) error {
 	if row.SourceEpoch == 0 {
 		return nil
 	}
@@ -113,7 +113,7 @@ func checkPersistedLiveBudget(budget *commonmodelv1.HimalayaBudget, row *executi
 	}, reserved)
 }
 
-func liveSubmissionWindow(ctx context.Context, row *executionmodelv1.HimalayaIntent, remaining time.Duration) (time.Duration, error) {
+func liveSubmissionWindow(ctx context.Context, row *executionmodelv1.VenueOrderIntent, remaining time.Duration) (time.Duration, error) {
 	if row.SourceEpoch == 0 {
 		return remaining, nil
 	}

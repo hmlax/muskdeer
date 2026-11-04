@@ -6,9 +6,9 @@ import "tagger/tagger.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/common/model/v1;modelv1";
 
-// HimalayaBudget reserves additional gross notional across a whole fund.
+// TradingAccountPolicy reserves additional gross notional across a whole fund.
 // Observed native obligations and unobserved local reservations are additive.
-message HimalayaBudget {
+message TradingAccountPolicy {
   int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
   int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
   int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];

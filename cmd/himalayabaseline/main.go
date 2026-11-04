@@ -18,7 +18,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
-	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
@@ -119,7 +119,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	if err := migrate.CheckCurrent(ctx, db.GORM()); err != nil {
 		return err
 	}
-	if err := himalayamigrate.Check(ctx, db.GORM()); err != nil {
+	if err := venuemigrate.Check(ctx, db.GORM()); err != nil {
 		return err
 	}
 	settings, err := native.LoadRuntime(ctx, db.GORM(), cfg.Business)
@@ -147,7 +147,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	if err != nil {
 		return err
 	}
-	rows := make([]*executionmodelv1.HimalayaDevelopmentBaseline, 0, len(batch.Requests))
+	rows := make([]*executionmodelv1.ExecutionRecoveryBaseline, 0, len(batch.Requests))
 	runner := baselineRunner{
 		db:     db.GORM(),
 		store:  store,
@@ -181,7 +181,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	return nil
 }
 
-func (r *baselineRunner) assess(ctx context.Context, request *commonv1.DevelopmentBaselineRequest) (*executionmodelv1.HimalayaDevelopmentBaseline, error) {
+func (r *baselineRunner) assess(ctx context.Context, request *commonv1.DevelopmentBaselineRequest) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
 	profile, err := native.Profile(r.cfg, request.GetScope())
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (r *baselineRunner) assess(ctx context.Context, request *commonv1.Developme
 		if err := r.store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
 			return nil, err
 		}
-		if err := r.db.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Where("account_id = ?", row.AccountId).First(row).Error; err != nil {
+		if err := r.db.WithContext(ctx).Model(&executionmodelv1.ExecutionRecoveryBaseline{}).Where("account_id = ?", row.AccountId).First(row).Error; err != nil {
 			return nil, err
 		}
 	}

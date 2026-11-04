@@ -20,7 +20,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	"gorm.io/gorm"
 
-	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
@@ -65,8 +65,8 @@ func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.
 	err = store.WithSubmission(ctx, prepared.Admission, func(context.Context) error {
 		calls++
 		// A separate connection must see the committed claim before the effect.
-		var row executionmodelv1.HimalayaIntent
-		if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+		var row executionmodelv1.VenueOrderIntent
+		if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 			return err
 		}
 		if row.State != himalaya.IntentDispatched {
@@ -80,8 +80,8 @@ func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.
 	if err := store.WithSubmission(ctx, prepared.Admission, func(context.Context) error { calls++; return nil }); !errors.Is(err, domain.ErrOutcomeUnknown) || calls != 1 {
 		t.Fatalf("ambiguous order was dispatched again: calls=%d err=%v", calls, err)
 	}
-	var row commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
+	var row commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(row.ReservedNotional).Equal(decimal.NewFromInt(100)) {
@@ -158,11 +158,11 @@ func TestHimalayaSDKPersistedMutationAndExpiredRiskCannotDispatch(t *testing.T) 
 			}
 			switch change {
 			case "price":
-				err = db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("price", "101").Error
+				err = db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("price", "101").Error
 			case "snapshot_expires_at":
-				err = db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("snapshot_expires_at", 0).Error
+				err = db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("snapshot_expires_at", 0).Error
 			case "maximum_notional":
-				err = db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("maximum_notional", "999").Error
+				err = db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("maximum_notional", "999").Error
 			}
 			if err != nil {
 				t.Fatal(err)
@@ -179,16 +179,16 @@ func TestHimalayaSDKExtensionHistoryDoesNotChangeCoreLedger(t *testing.T) {
 	db, _, _, _ := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	if err := himalayamigrate.Apply(ctx, db); err != nil {
+	if err := venuemigrate.Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
 	if err := CheckCurrent(ctx, db); err != nil {
 		t.Fatalf("extension changed core migration history: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaSchemaMigration{}).Where("version = ?", 1).UpdateColumn("checksum", "changed").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Where("version = ?", 1).UpdateColumn("checksum", "changed").Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := himalayamigrate.Apply(ctx, db); !errors.Is(err, himalayamigrate.ErrHistory) {
+	if err := venuemigrate.Apply(ctx, db); !errors.Is(err, venuemigrate.ErrHistory) {
 		t.Fatalf("changed SDK schema history was accepted: %v", err)
 	}
 }
@@ -213,8 +213,8 @@ func TestHimalayaSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) 
 			t.Fatal(err)
 		}
 	}
-	var row executionmodelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+	var row executionmodelv1.VenueOrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.State != himalaya.IntentAcknowledged || row.OrderId != "42" {
@@ -256,8 +256,8 @@ func TestHimalayaSDKConcurrentPreparationsShareOneFundBudget(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	var row commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
+	var row commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if successes != 1 || rejected != 1 || !decimal.RequireFromString(row.ReservedNotional).Equal(decimal.NewFromInt(100)) {
@@ -273,7 +273,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	if _, err := Apply(ctx, db); err != nil {
 		t.Fatalf("core migration fixture: %v; cause: %v", err, errors.Unwrap(err))
 	}
-	if err := himalayamigrate.Apply(ctx, db); err != nil {
+	if err := venuemigrate.Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
 	store, err := himalaya.NewStore(db)
@@ -295,7 +295,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	if err != nil {
 		t.Fatal(err)
 	}
-	budget := &commonmodelv1.HimalayaBudget{
+	budget := &commonmodelv1.TradingAccountPolicy{
 		AccountId:         lease.Key.AccountID,
 		UserId:            10001,
 		FundId:            10001,
@@ -305,7 +305,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 		SnapshotExpiresAt: time.Now().Add(10 * time.Second).UnixMilli(),
 		Enabled:           true,
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Create(budget).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Create(budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	return db, store, lease, himalaya.SubmitRequest{

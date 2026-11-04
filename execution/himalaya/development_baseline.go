@@ -21,7 +21,7 @@ import (
 )
 
 // AssessDevelopmentBaseline is read-only and never changes cancellation proof.
-func (s *Store) AssessDevelopmentBaseline(ctx context.Context, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot) (*executionmodelv1.HimalayaDevelopmentBaseline, error) {
+func (s *Store) AssessDevelopmentBaseline(ctx context.Context, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
 	if !validStoreContext(ctx) {
 		return nil, ErrInvalidSubmit
 	}
@@ -34,7 +34,7 @@ func (s *Store) ApplyDevelopmentBaseline(ctx context.Context, lease domain.Lease
 	if !validStoreContext(ctx) || lease.Key.AccountID != native.ScopeKey(request.GetScope().GetUserId(), request.GetScope().GetFundId()) {
 		return ErrInvalidSubmit
 	}
-	return s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&executionmodelv1.ExecutionRecoveryBaseline{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch)); err != nil {
 			return err
 		}
@@ -45,14 +45,14 @@ func (s *Store) ApplyDevelopmentBaseline(ctx context.Context, lease domain.Lease
 		if candidate.Id != 0 {
 			return nil
 		}
-		if err := tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).Update("observed_notional", candidate.MinimumObservedNotional).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).Update("observed_notional", candidate.MinimumObservedNotional).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Create(candidate).Error
+		return tx.WithContext(ctx).Model(&executionmodelv1.ExecutionRecoveryBaseline{}).Create(candidate).Error
 	})
 }
 
-func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot, lock bool) (*executionmodelv1.HimalayaDevelopmentBaseline, error) {
+func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot, lock bool) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
 	if snapshot.GetStartedAtMs() <= 0 || snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || snapshot.ValidUntilMs-snapshot.StartedAtMs > native.SnapshotAge.Milliseconds() || len(snapshot.GetOrders()) != 0 {
 		return nil, ErrInvalidSnapshot
 	}
@@ -76,7 +76,7 @@ func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commo
 		return existing, nil
 	}
 	var intents int64
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("account_id = ? AND state != ?", account, IntentTerminal).Count(&intents).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("account_id = ? AND state != ?", account, IntentTerminal).Count(&intents).Error; err != nil {
 		return nil, err
 	}
 	if intents != 0 {
@@ -85,7 +85,7 @@ func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commo
 	if err := matchDevelopmentCancellations(ctx, db, account, request); err != nil {
 		return nil, err
 	}
-	var budget *commonmodelv1.HimalayaBudget
+	var budget *commonmodelv1.TradingAccountPolicy
 	if lock {
 		budget, err = lockSDKBudget(ctx, db, account)
 	} else {
@@ -102,7 +102,7 @@ func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commo
 	if !budget.Enabled || budget.UserId != request.Scope.UserId || budget.FundId != request.Scope.FundId || minimum.Add(reserved).GreaterThan(maximum) {
 		return nil, ErrRiskLimit
 	}
-	row := &executionmodelv1.HimalayaDevelopmentBaseline{
+	row := &executionmodelv1.ExecutionRecoveryBaseline{
 		AccountId:               account,
 		Request:                 proto.CloneOf(request),
 		RequestDigest:           digest,
@@ -157,8 +157,8 @@ func developmentOrderAmount(symbol string, order *commonv1.HimalayaOrder, mark d
 }
 
 func matchDevelopmentCancellations(ctx context.Context, db *gorm.DB, account string, request *commonv1.DevelopmentBaselineRequest) error {
-	var rows []*executionmodelv1.HimalayaCancellation
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaCancellation{}).Where("account_id = ? AND state != ?", account, CancelConfirmed).Limit(257).Find(&rows).Error; err != nil {
+	var rows []*executionmodelv1.VenueCancellation
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueCancellation{}).Where("account_id = ? AND state != ?", account, CancelConfirmed).Limit(257).Find(&rows).Error; err != nil {
 		return err
 	}
 	if len(rows) == 0 || len(rows) > 256 {
@@ -181,9 +181,9 @@ func matchDevelopmentCancellations(ctx context.Context, db *gorm.DB, account str
 	return nil
 }
 
-func loadDevelopmentBaseline(ctx context.Context, db *gorm.DB, account string) (*executionmodelv1.HimalayaDevelopmentBaseline, error) {
-	var row executionmodelv1.HimalayaDevelopmentBaseline
-	err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Where("account_id = ?", account).First(&row).Error
+func loadDevelopmentBaseline(ctx context.Context, db *gorm.DB, account string) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
+	var row executionmodelv1.ExecutionRecoveryBaseline
+	err := db.WithContext(ctx).Model(&executionmodelv1.ExecutionRecoveryBaseline{}).Where("account_id = ?", account).First(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -215,7 +215,7 @@ func developmentRequestDigest(request *commonv1.DevelopmentBaselineRequest) (str
 	return fmt.Sprintf("%x", sha256.Sum256(encoded)), err
 }
 
-func developmentEvidenceDigest(row *executionmodelv1.HimalayaDevelopmentBaseline) (string, error) {
+func developmentEvidenceDigest(row *executionmodelv1.ExecutionRecoveryBaseline) (string, error) {
 	evidence := proto.CloneOf(row)
 	evidence.Id, evidence.CreateAt, evidence.UpdateAt = 0, 0, 0
 	evidence.DeleteAt = nil
@@ -231,7 +231,7 @@ func developmentEvidenceDigest(row *executionmodelv1.HimalayaDevelopmentBaseline
 }
 
 func pendingSDKCancellations(ctx context.Context, db *gorm.DB, account string) (*gorm.DB, error) {
-	query := db.WithContext(ctx).Model(&executionmodelv1.HimalayaCancellation{}).Where("account_id = ?", account)
+	query := db.WithContext(ctx).Model(&executionmodelv1.VenueCancellation{}).Where("account_id = ?", account)
 	baseline, err := loadDevelopmentBaseline(ctx, db, account)
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func pendingSDKCancellations(ctx context.Context, db *gorm.DB, account string) (
 	return query.Where("order_id NOT IN ?", ids), nil
 }
 
-func checkDevelopmentRiskHold(ctx context.Context, db *gorm.DB, budget *commonmodelv1.HimalayaBudget) error {
+func checkDevelopmentRiskHold(ctx context.Context, db *gorm.DB, budget *commonmodelv1.TradingAccountPolicy) error {
 	baseline, err := loadDevelopmentBaseline(ctx, db, budget.AccountId)
 	if err != nil || baseline == nil {
 		return err

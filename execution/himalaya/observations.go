@@ -32,7 +32,7 @@ func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *
 		}
 		byClient[order.ClientId] = order
 	}
-	return s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, now, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch))
 		if err != nil {
 			return err
@@ -41,8 +41,8 @@ func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *
 		if err != nil {
 			return err
 		}
-		var rows []*executionmodelv1.HimalayaIntent
-		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
+		var rows []*executionmodelv1.VenueOrderIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
 			Where("account_id = ? AND state != ?", lease.Key.AccountID, IntentTerminal).Clauses(clause.Locking{Strength: "UPDATE"}).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -66,19 +66,19 @@ func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *
 		}
 		for _, order := range snapshot.Orders {
 			if native.Terminal(order.Status) {
-				if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaCancellation{}).
+				if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueCancellation{}).
 					Where("account_id = ? AND symbol = ? AND order_id = ?", lease.Key.AccountID, snapshot.Scope.Symbol, order.OrderId).
 					Update("state", CancelConfirmed).Error; err != nil {
 					return err
 				}
 			}
 		}
-		return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", budget.Id).
+		return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", budget.Id).
 			Select("ReservedNotional").Updates(budget).Error
 	})
 }
 
-func expireUnsent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.HimalayaBudget, row *executionmodelv1.HimalayaIntent) error {
+func expireUnsent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent) error {
 	reserved, e1 := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)
 	release, e2 := domain.ParseLedgerDecimal(row.ReservedNotional, false, false)
 	if e1 != nil || e2 != nil || release.GreaterThan(reserved) {
@@ -86,10 +86,10 @@ func expireUnsent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.Himala
 	}
 	budget.ReservedNotional = reserved.Sub(release).String()
 	row.State = IntentTerminal
-	return tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", row.Id).Select("State").Updates(row).Error
+	return tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", row.Id).Select("State").Updates(row).Error
 }
 
-func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.HimalayaBudget, row *executionmodelv1.HimalayaIntent, order *commonv1.HimalayaOrder, scope *commonv1.HimalayaScope) error {
+func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent, order *commonv1.HimalayaOrder, scope *commonv1.HimalayaScope) error {
 	price, e1 := native.Value(order.Price, false, false)
 	quantity, e2 := native.Value(order.Quantity, false, false)
 	executed, e3 := native.Value(order.ExecutedQuantity, false, true)
@@ -113,18 +113,18 @@ func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.Himal
 		budget.ReservedNotional = reserved.Sub(release).String()
 		row.State = IntentTerminal
 	}
-	return tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", row.Id).
+	return tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", row.Id).
 		Select("State", "OrderId").Updates(row).Error
 }
 
 // PendingIDs includes known orders and cancellation targets requiring lookup.
 func (s *Store) PendingIDs(ctx context.Context, account string) ([]uint64, error) {
-	var intents []*executionmodelv1.HimalayaIntent
-	if err := s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
+	var intents []*executionmodelv1.VenueOrderIntent
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
 		Where("account_id = ? AND state != ? AND order_id != ''", account, IntentTerminal).Limit(257).Find(&intents).Error; err != nil {
 		return nil, err
 	}
-	var cancels []*executionmodelv1.HimalayaCancellation
+	var cancels []*executionmodelv1.VenueCancellation
 	query, err := pendingSDKCancellations(ctx, s.db, account)
 	if err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (s *Store) PendingIDs(ctx context.Context, account string) ([]uint64, error
 // SyncBudget updates observations without enabling a disabled fund. Observed
 // gross obligation never decreases automatically, preserving legacy/fill risk.
 func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, observed decimal.Decimal) error {
-	return s.db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch)); err != nil {
 			return err
 		}
@@ -195,25 +195,25 @@ func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapsho
 		row.AvailableQuote = snapshot.Available
 		row.WorstFeeRate = snapshot.Market.WorstFeeRate
 		row.SnapshotExpiresAt = snapshot.ValidUntilMs
-		return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", row.Id).
+		return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", row.Id).
 			Select("ObservedNotional", "AvailableQuote", "WorstFeeRate", "SnapshotExpiresAt").Updates(row).Error
 	})
 }
 
 // Budget reads policy only; a read is never submission authority.
-func (s *Store) Budget(ctx context.Context, account string) (*commonmodelv1.HimalayaBudget, error) {
-	var row commonmodelv1.HimalayaBudget
-	err := s.db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ? AND delete_at IS NULL", account).First(&row).Error
+func (s *Store) Budget(ctx context.Context, account string) (*commonmodelv1.TradingAccountPolicy, error) {
+	var row commonmodelv1.TradingAccountPolicy
+	err := s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ? AND delete_at IS NULL", account).First(&row).Error
 	return &row, err
 }
 
 // CompleteCutover is called only after a full native query confirms legacy quotes
 // are gone. Subsequent legacy quote appearance blocks new risk instead of fighting another producer.
 func (s *Store) CompleteCutover(ctx context.Context, lease domain.LeaseToken) error {
-	return s.db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch)); err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).Update("cutover_completed", true).Error
+		return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).Update("cutover_completed", true).Error
 	})
 }

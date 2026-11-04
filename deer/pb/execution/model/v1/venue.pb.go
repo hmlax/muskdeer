@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v5.29.3
-// source: deer/proto/execution/model/v1/himalaya.proto
+// source: deer/proto/execution/model/v1/venue.proto
 
 package modelv1
 
@@ -23,9 +23,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
+// VenueOrderIntent is persisted before dispatch. An ambiguous attempt cannot be
 // dispatched again, including after process death or ownership handover.
-type HimalayaIntent struct {
+type VenueOrderIntent struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Id                          int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	CreateAt                    int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
@@ -60,21 +60,21 @@ type HimalayaIntent struct {
 	sizeCache                   protoimpl.SizeCache
 }
 
-func (x *HimalayaIntent) Reset() {
-	*x = HimalayaIntent{}
-	mi := &file_deer_proto_execution_model_v1_himalaya_proto_msgTypes[0]
+func (x *VenueOrderIntent) Reset() {
+	*x = VenueOrderIntent{}
+	mi := &file_deer_proto_execution_model_v1_venue_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HimalayaIntent) String() string {
+func (x *VenueOrderIntent) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HimalayaIntent) ProtoMessage() {}
+func (*VenueOrderIntent) ProtoMessage() {}
 
-func (x *HimalayaIntent) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_model_v1_himalaya_proto_msgTypes[0]
+func (x *VenueOrderIntent) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_model_v1_venue_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -85,216 +85,216 @@ func (x *HimalayaIntent) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HimalayaIntent.ProtoReflect.Descriptor instead.
-func (*HimalayaIntent) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_model_v1_himalaya_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use VenueOrderIntent.ProtoReflect.Descriptor instead.
+func (*VenueOrderIntent) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_model_v1_venue_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HimalayaIntent) GetId() int64 {
+func (x *VenueOrderIntent) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetCreateAt() int64 {
+func (x *VenueOrderIntent) GetCreateAt() int64 {
 	if x != nil {
 		return x.CreateAt
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetUpdateAt() int64 {
+func (x *VenueOrderIntent) GetUpdateAt() int64 {
 	if x != nil {
 		return x.UpdateAt
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetDeleteAt() int64 {
+func (x *VenueOrderIntent) GetDeleteAt() int64 {
 	if x != nil && x.DeleteAt != nil {
 		return *x.DeleteAt
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetAccountId() string {
+func (x *VenueOrderIntent) GetAccountId() string {
 	if x != nil {
 		return x.AccountId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetUserId() int64 {
+func (x *VenueOrderIntent) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetFundId() int64 {
+func (x *VenueOrderIntent) GetFundId() int64 {
 	if x != nil {
 		return x.FundId
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetSymbol() string {
+func (x *VenueOrderIntent) GetSymbol() string {
 	if x != nil {
 		return x.Symbol
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetClientId() string {
+func (x *VenueOrderIntent) GetClientId() string {
 	if x != nil {
 		return x.ClientId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetOwnerId() string {
+func (x *VenueOrderIntent) GetOwnerId() string {
 	if x != nil {
 		return x.OwnerId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetOwnerEpoch() int64 {
+func (x *VenueOrderIntent) GetOwnerEpoch() int64 {
 	if x != nil {
 		return x.OwnerEpoch
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetRequestDigest() string {
+func (x *VenueOrderIntent) GetRequestDigest() string {
 	if x != nil {
 		return x.RequestDigest
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetSide() string {
+func (x *VenueOrderIntent) GetSide() string {
 	if x != nil {
 		return x.Side
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetPrice() string {
+func (x *VenueOrderIntent) GetPrice() string {
 	if x != nil {
 		return x.Price
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetQuantity() string {
+func (x *VenueOrderIntent) GetQuantity() string {
 	if x != nil {
 		return x.Quantity
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetLeverage() uint32 {
+func (x *VenueOrderIntent) GetLeverage() uint32 {
 	if x != nil {
 		return x.Leverage
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetState() string {
+func (x *VenueOrderIntent) GetState() string {
 	if x != nil {
 		return x.State
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetOrderId() string {
+func (x *VenueOrderIntent) GetOrderId() string {
 	if x != nil {
 		return x.OrderId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetReservedNotional() string {
+func (x *VenueOrderIntent) GetReservedNotional() string {
 	if x != nil {
 		return x.ReservedNotional
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetExpiresAt() int64 {
+func (x *VenueOrderIntent) GetExpiresAt() int64 {
 	if x != nil {
 		return x.ExpiresAt
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetStrategyAccountId() string {
+func (x *VenueOrderIntent) GetStrategyAccountId() string {
 	if x != nil {
 		return x.StrategyAccountId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetStrategyOwnerId() string {
+func (x *VenueOrderIntent) GetStrategyOwnerId() string {
 	if x != nil {
 		return x.StrategyOwnerId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetStrategyEpoch() int64 {
+func (x *VenueOrderIntent) GetStrategyEpoch() int64 {
 	if x != nil {
 		return x.StrategyEpoch
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetSourceAccountId() string {
+func (x *VenueOrderIntent) GetSourceAccountId() string {
 	if x != nil {
 		return x.SourceAccountId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetSourceOwnerId() string {
+func (x *VenueOrderIntent) GetSourceOwnerId() string {
 	if x != nil {
 		return x.SourceOwnerId
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetSourceEpoch() int64 {
+func (x *VenueOrderIntent) GetSourceEpoch() int64 {
 	if x != nil {
 		return x.SourceEpoch
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetSourceUntil() int64 {
+func (x *VenueOrderIntent) GetSourceUntil() int64 {
 	if x != nil {
 		return x.SourceUntil
 	}
 	return 0
 }
 
-func (x *HimalayaIntent) GetHistoricalApprovalReference() string {
+func (x *VenueOrderIntent) GetHistoricalApprovalReference() string {
 	if x != nil {
 		return x.HistoricalApprovalReference
 	}
 	return ""
 }
 
-func (x *HimalayaIntent) GetHistoricalSnapshot() *v1.HimalayaSnapshot {
+func (x *VenueOrderIntent) GetHistoricalSnapshot() *v1.HimalayaSnapshot {
 	if x != nil {
 		return x.HistoricalSnapshot
 	}
 	return nil
 }
 
-// HimalayaCancellation separates a cancel acknowledgement from terminal proof.
-type HimalayaCancellation struct {
+// VenueCancellation separates a cancel acknowledgement from terminal proof.
+type VenueCancellation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	CreateAt      int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
@@ -313,21 +313,21 @@ type HimalayaCancellation struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *HimalayaCancellation) Reset() {
-	*x = HimalayaCancellation{}
-	mi := &file_deer_proto_execution_model_v1_himalaya_proto_msgTypes[1]
+func (x *VenueCancellation) Reset() {
+	*x = VenueCancellation{}
+	mi := &file_deer_proto_execution_model_v1_venue_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HimalayaCancellation) String() string {
+func (x *VenueCancellation) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HimalayaCancellation) ProtoMessage() {}
+func (*VenueCancellation) ProtoMessage() {}
 
-func (x *HimalayaCancellation) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_model_v1_himalaya_proto_msgTypes[1]
+func (x *VenueCancellation) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_model_v1_venue_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -338,108 +338,108 @@ func (x *HimalayaCancellation) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HimalayaCancellation.ProtoReflect.Descriptor instead.
-func (*HimalayaCancellation) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_model_v1_himalaya_proto_rawDescGZIP(), []int{1}
+// Deprecated: Use VenueCancellation.ProtoReflect.Descriptor instead.
+func (*VenueCancellation) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_model_v1_venue_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *HimalayaCancellation) GetId() int64 {
+func (x *VenueCancellation) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetCreateAt() int64 {
+func (x *VenueCancellation) GetCreateAt() int64 {
 	if x != nil {
 		return x.CreateAt
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetUpdateAt() int64 {
+func (x *VenueCancellation) GetUpdateAt() int64 {
 	if x != nil {
 		return x.UpdateAt
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetDeleteAt() int64 {
+func (x *VenueCancellation) GetDeleteAt() int64 {
 	if x != nil && x.DeleteAt != nil {
 		return *x.DeleteAt
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetAccountId() string {
+func (x *VenueCancellation) GetAccountId() string {
 	if x != nil {
 		return x.AccountId
 	}
 	return ""
 }
 
-func (x *HimalayaCancellation) GetUserId() int64 {
+func (x *VenueCancellation) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetFundId() int64 {
+func (x *VenueCancellation) GetFundId() int64 {
 	if x != nil {
 		return x.FundId
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetSymbol() string {
+func (x *VenueCancellation) GetSymbol() string {
 	if x != nil {
 		return x.Symbol
 	}
 	return ""
 }
 
-func (x *HimalayaCancellation) GetOrderId() string {
+func (x *VenueCancellation) GetOrderId() string {
 	if x != nil {
 		return x.OrderId
 	}
 	return ""
 }
 
-func (x *HimalayaCancellation) GetOwnerId() string {
+func (x *VenueCancellation) GetOwnerId() string {
 	if x != nil {
 		return x.OwnerId
 	}
 	return ""
 }
 
-func (x *HimalayaCancellation) GetOwnerEpoch() int64 {
+func (x *VenueCancellation) GetOwnerEpoch() int64 {
 	if x != nil {
 		return x.OwnerEpoch
 	}
 	return 0
 }
 
-func (x *HimalayaCancellation) GetRequestDigest() string {
+func (x *VenueCancellation) GetRequestDigest() string {
 	if x != nil {
 		return x.RequestDigest
 	}
 	return ""
 }
 
-func (x *HimalayaCancellation) GetState() string {
+func (x *VenueCancellation) GetState() string {
 	if x != nil {
 		return x.State
 	}
 	return ""
 }
 
-var File_deer_proto_execution_model_v1_himalaya_proto protoreflect.FileDescriptor
+var File_deer_proto_execution_model_v1_venue_proto protoreflect.FileDescriptor
 
-const file_deer_proto_execution_model_v1_himalaya_proto_rawDesc = "" +
+const file_deer_proto_execution_model_v1_venue_proto_rawDesc = "" +
 	"\n" +
-	",deer/proto/execution/model/v1/himalaya.proto\x12\x11muskdeer.model.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xf6\x15\n" +
-	"\x0eHimalayaIntent\x12J\n" +
+	")deer/proto/execution/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xf8\x15\n" +
+	"\x10VenueOrderIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
@@ -474,8 +474,8 @@ const file_deer_proto_execution_model_v1_himalaya_proto_rawDesc = "" +
 	"\x1dhistorical_approval_reference\x18\x1c \x01(\tBV\x9a\x84\x9e\x03Qgorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\"R\x1bhistoricalApprovalReference\x12\x98\x01\n" +
 	"\x13historical_snapshot\x18\x1d \x01(\v2$.muskdeer.common.v1.HimalayaSnapshotBA\x9a\x84\x9e\x03<gorm:\"column:historical_snapshot;type:jsonb;serializer:json\"R\x12historicalSnapshotB\f\n" +
 	"\n" +
-	"_delete_at\"\x8a\t\n" +
-	"\x14HimalayaCancellation\x12J\n" +
+	"_delete_at\"\x87\t\n" +
+	"\x11VenueCancellation\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
@@ -496,25 +496,25 @@ const file_deer_proto_execution_model_v1_himalaya_proto_rawDesc = "" +
 	"_delete_atB>Z<github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1b\x06proto3"
 
 var (
-	file_deer_proto_execution_model_v1_himalaya_proto_rawDescOnce sync.Once
-	file_deer_proto_execution_model_v1_himalaya_proto_rawDescData []byte
+	file_deer_proto_execution_model_v1_venue_proto_rawDescOnce sync.Once
+	file_deer_proto_execution_model_v1_venue_proto_rawDescData []byte
 )
 
-func file_deer_proto_execution_model_v1_himalaya_proto_rawDescGZIP() []byte {
-	file_deer_proto_execution_model_v1_himalaya_proto_rawDescOnce.Do(func() {
-		file_deer_proto_execution_model_v1_himalaya_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_deer_proto_execution_model_v1_himalaya_proto_rawDesc), len(file_deer_proto_execution_model_v1_himalaya_proto_rawDesc)))
+func file_deer_proto_execution_model_v1_venue_proto_rawDescGZIP() []byte {
+	file_deer_proto_execution_model_v1_venue_proto_rawDescOnce.Do(func() {
+		file_deer_proto_execution_model_v1_venue_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_deer_proto_execution_model_v1_venue_proto_rawDesc), len(file_deer_proto_execution_model_v1_venue_proto_rawDesc)))
 	})
-	return file_deer_proto_execution_model_v1_himalaya_proto_rawDescData
+	return file_deer_proto_execution_model_v1_venue_proto_rawDescData
 }
 
-var file_deer_proto_execution_model_v1_himalaya_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_deer_proto_execution_model_v1_himalaya_proto_goTypes = []any{
-	(*HimalayaIntent)(nil),       // 0: muskdeer.model.v1.HimalayaIntent
-	(*HimalayaCancellation)(nil), // 1: muskdeer.model.v1.HimalayaCancellation
-	(*v1.HimalayaSnapshot)(nil),  // 2: muskdeer.common.v1.HimalayaSnapshot
+var file_deer_proto_execution_model_v1_venue_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_deer_proto_execution_model_v1_venue_proto_goTypes = []any{
+	(*VenueOrderIntent)(nil),    // 0: muskdeer.model.v1.VenueOrderIntent
+	(*VenueCancellation)(nil),   // 1: muskdeer.model.v1.VenueCancellation
+	(*v1.HimalayaSnapshot)(nil), // 2: muskdeer.common.v1.HimalayaSnapshot
 }
-var file_deer_proto_execution_model_v1_himalaya_proto_depIdxs = []int32{
-	2, // 0: muskdeer.model.v1.HimalayaIntent.historical_snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+var file_deer_proto_execution_model_v1_venue_proto_depIdxs = []int32{
+	2, // 0: muskdeer.model.v1.VenueOrderIntent.historical_snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -522,28 +522,28 @@ var file_deer_proto_execution_model_v1_himalaya_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_deer_proto_execution_model_v1_himalaya_proto_init() }
-func file_deer_proto_execution_model_v1_himalaya_proto_init() {
-	if File_deer_proto_execution_model_v1_himalaya_proto != nil {
+func init() { file_deer_proto_execution_model_v1_venue_proto_init() }
+func file_deer_proto_execution_model_v1_venue_proto_init() {
+	if File_deer_proto_execution_model_v1_venue_proto != nil {
 		return
 	}
-	file_deer_proto_execution_model_v1_himalaya_proto_msgTypes[0].OneofWrappers = []any{}
-	file_deer_proto_execution_model_v1_himalaya_proto_msgTypes[1].OneofWrappers = []any{}
+	file_deer_proto_execution_model_v1_venue_proto_msgTypes[0].OneofWrappers = []any{}
+	file_deer_proto_execution_model_v1_venue_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_model_v1_himalaya_proto_rawDesc), len(file_deer_proto_execution_model_v1_himalaya_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_model_v1_venue_proto_rawDesc), len(file_deer_proto_execution_model_v1_venue_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_deer_proto_execution_model_v1_himalaya_proto_goTypes,
-		DependencyIndexes: file_deer_proto_execution_model_v1_himalaya_proto_depIdxs,
-		MessageInfos:      file_deer_proto_execution_model_v1_himalaya_proto_msgTypes,
+		GoTypes:           file_deer_proto_execution_model_v1_venue_proto_goTypes,
+		DependencyIndexes: file_deer_proto_execution_model_v1_venue_proto_depIdxs,
+		MessageInfos:      file_deer_proto_execution_model_v1_venue_proto_msgTypes,
 	}.Build()
-	File_deer_proto_execution_model_v1_himalaya_proto = out.File
-	file_deer_proto_execution_model_v1_himalaya_proto_goTypes = nil
-	file_deer_proto_execution_model_v1_himalaya_proto_depIdxs = nil
+	File_deer_proto_execution_model_v1_venue_proto = out.File
+	file_deer_proto_execution_model_v1_venue_proto_goTypes = nil
+	file_deer_proto_execution_model_v1_venue_proto_depIdxs = nil
 }

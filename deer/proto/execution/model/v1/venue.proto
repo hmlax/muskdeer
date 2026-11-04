@@ -7,9 +7,9 @@ import "tagger/tagger.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1";
 
-// HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
+// VenueOrderIntent is persisted before dispatch. An ambiguous attempt cannot be
 // dispatched again, including after process death or ownership handover.
-message HimalayaIntent {
+message VenueOrderIntent {
   int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
   int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
   int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
@@ -41,8 +41,8 @@ message HimalayaIntent {
   muskdeer.common.v1.HimalayaSnapshot historical_snapshot = 29 [(tagger.tags) = "gorm:\"column:historical_snapshot;type:jsonb;serializer:json\""];
 }
 
-// HimalayaCancellation separates a cancel acknowledgement from terminal proof.
-message HimalayaCancellation {
+// VenueCancellation separates a cancel acknowledgement from terminal proof.
+message VenueCancellation {
   int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
   int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
   int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];

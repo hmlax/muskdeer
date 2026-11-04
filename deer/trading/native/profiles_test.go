@@ -13,8 +13,8 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 )
 
-func profileBudgetFixture() *commonmodelv1.HimalayaBudget {
-	return &commonmodelv1.HimalayaBudget{
+func profileBudgetFixture() *commonmodelv1.TradingAccountPolicy {
+	return &commonmodelv1.TradingAccountPolicy{
 		AccountId:            ScopeKey(101, 201),
 		UserId:               101,
 		FundId:               201,
@@ -33,15 +33,15 @@ func TestDatabaseProfileRejectsInvalidBusinessPolicy(t *testing.T) {
 	if p, err := ProfileFromBudget(row); err != nil || p.GetPriceTick() != "0.1" || p.GetMaximumNotional() != "1000" {
 		t.Fatalf("database numeric normalization: %v, %v", p, err)
 	}
-	for _, mutate := range []func(*commonmodelv1.HimalayaBudget){
-		func(p *commonmodelv1.HimalayaBudget) { p.AccountId = ScopeKey(102, 201) },
-		func(p *commonmodelv1.HimalayaBudget) { p.Leverage = 11 },
-		func(p *commonmodelv1.HimalayaBudget) { p.PriceTick = "0" },
-		func(p *commonmodelv1.HimalayaBudget) { p.QuantityStep = "0" },
-		func(p *commonmodelv1.HimalayaBudget) { p.MarketDataSource = "okx" },
-		func(p *commonmodelv1.HimalayaBudget) { p.MaximumNotional = "0" },
-		func(p *commonmodelv1.HimalayaBudget) { p.MaximumOrderNotional = "1001" },
-		func(p *commonmodelv1.HimalayaBudget) { p.DeleteAt = proto.Int64(1) },
+	for _, mutate := range []func(*commonmodelv1.TradingAccountPolicy){
+		func(p *commonmodelv1.TradingAccountPolicy) { p.AccountId = ScopeKey(102, 201) },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.Leverage = 11 },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.PriceTick = "0" },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.QuantityStep = "0" },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.MarketDataSource = "okx" },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.MaximumNotional = "0" },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.MaximumOrderNotional = "1001" },
+		func(p *commonmodelv1.TradingAccountPolicy) { p.DeleteAt = proto.Int64(1) },
 	} {
 		changed := proto.CloneOf(row)
 		mutate(changed)

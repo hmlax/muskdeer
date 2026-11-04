@@ -8,9 +8,9 @@ import "tagger/tagger.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1";
 
-// HimalayaDevelopmentBaseline retains legacy unknown risk independently of
+// ExecutionRecoveryBaseline retains legacy unknown risk independently of
 // native cancellation proof. Each account can be baselined only once.
-message HimalayaDevelopmentBaseline {
+message ExecutionRecoveryBaseline {
   int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
   int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
   int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];

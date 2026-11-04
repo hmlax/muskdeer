@@ -17,3 +17,5 @@
 所有配置消息由同一个 config.proto 定义并生成到同一 configv1 包；各服务按需读取对应字段，data.yaml/service.yaml 继续分别承载基础/业务数据和服务监听/生命周期。model Proto 定义本项目数据库实体，生成带 GORM 标签的 Go 结构，仓储直接使用；不定义第三方数据库或仅供演示的技术模型。模型目录仅表达定义归属，共用 repository 的资金、幂等和 fencing 事务边界保持；服务仍可引用其他服务拥有的生成模型，不复制模型或重划数据库。
 
 迁移保留既有 Proto package、消息全名、字段号/类型、GORM tag 和 RPC 方法名；仅源文件位置与 go_package/Go 导入路径改变。原 rpc/himalaya 中三个服务拆为各自文件，仍使用既有 muskdeer.himalaya.v1 线协议名称。数据库不需要迁移，配置 YAML 不需要改写。Go 源码使用方需要切换到新的导入路径；运行中的 gRPC 客户端继续使用原有方法全名与消息字段。Go 导入使用 github.com/hmlax/muskdeer/deer/pb/...，源文件 import 仍引用 deer/proto/...；第三方原始源码保持在 deer/third_party。生成统一使用 make generate，生成比较与目录/模型规范门禁不能通过手改 pb.go 绕过。
+
+通道持久化模型使用业务名称 TradingAccountPolicy、VenueOrderIntent、VenueCancellation、VenueAccountSnapshot、ExecutionRecoveryBaseline 和 VenueSchemaMigration，分别归 common/execution/portfolio；原 Himalaya 专属 Model 已移除。存量数据由 deer/migrate/venue 的显式 0007 升级原子保留；内部 RPC 的旧消息名称暂按线协议兼容保留。

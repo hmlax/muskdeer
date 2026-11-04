@@ -17,7 +17,7 @@ import (
 func (s *Store) abandonUnsent(ctx context.Context, admission Admission) error {
 	cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
-	return s.db.WithContext(cleanup).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(cleanup).Model(&executionmodelv1.VenueOrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		account := AccountID(admission.UserID, admission.FundID)
 		var lease commonmodelv1.ExecutionShardLease
 		if err := tx.WithContext(cleanup).Model(&commonmodelv1.ExecutionShardLease{}).
@@ -28,8 +28,8 @@ func (s *Store) abandonUnsent(ctx context.Context, admission Admission) error {
 		if err != nil {
 			return err
 		}
-		var row executionmodelv1.HimalayaIntent
-		if err := tx.WithContext(cleanup).Model(&executionmodelv1.HimalayaIntent{}).
+		var row executionmodelv1.VenueOrderIntent
+		if err := tx.WithContext(cleanup).Model(&executionmodelv1.VenueOrderIntent{}).
 			Where("id = ? AND delete_at IS NULL", admission.IntentID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
 		}
@@ -39,7 +39,7 @@ func (s *Store) abandonUnsent(ctx context.Context, admission Admission) error {
 		if err := expireUnsent(cleanup, tx, budget, &row); err != nil {
 			return err
 		}
-		return tx.WithContext(cleanup).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", budget.Id).
+		return tx.WithContext(cleanup).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", budget.Id).
 			Select("ReservedNotional").Updates(budget).Error
 	})
 }

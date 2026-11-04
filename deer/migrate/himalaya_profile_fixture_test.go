@@ -15,13 +15,13 @@ import (
 
 func configureNativeProfileFixture(ctx context.Context, t *testing.T, db *gorm.DB, request himalaya.SubmitRequest) {
 	t.Helper()
-	row := &commonmodelv1.HimalayaBudget{
+	row := &commonmodelv1.TradingAccountPolicy{
 		Symbol:           request.Symbol,
 		MarketDataSource: native.Source,
 		PriceTick:        "0.1",
 		QuantityStep:     "0.001",
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", native.ScopeKey(request.UserID, request.FundID)).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", native.ScopeKey(request.UserID, request.FundID)).
 		Select("Symbol", "MarketDataSource", "PriceTick", "QuantityStep").Updates(row).Error; err != nil {
 		t.Fatal(err)
 	}

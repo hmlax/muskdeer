@@ -63,8 +63,8 @@ func TestSyntheticTapeReplyLossAndConcurrentRetriesConsumeOneSlot(t *testing.T) 
 	if calls.Load() != 1 {
 		t.Fatalf("PublishSynthetic(concurrent retry) = %d effects, want 1", calls.Load())
 	}
-	var budget commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&budget).Error; err != nil {
+	var budget commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	reserved, err := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)

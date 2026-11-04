@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v5.29.3
-// source: deer/proto/portfolio/model/v1/himalaya.proto
+// source: deer/proto/portfolio/model/v1/venue.proto
 
 package modelv1
 
@@ -23,8 +23,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HimalayaProjection is a rebuildable, typed observation from the native API.
-type HimalayaProjection struct {
+// VenueAccountSnapshot is a rebuildable, typed observation from the native API.
+type VenueAccountSnapshot struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	CreateAt         int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
@@ -38,21 +38,21 @@ type HimalayaProjection struct {
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *HimalayaProjection) Reset() {
-	*x = HimalayaProjection{}
-	mi := &file_deer_proto_portfolio_model_v1_himalaya_proto_msgTypes[0]
+func (x *VenueAccountSnapshot) Reset() {
+	*x = VenueAccountSnapshot{}
+	mi := &file_deer_proto_portfolio_model_v1_venue_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HimalayaProjection) String() string {
+func (x *VenueAccountSnapshot) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HimalayaProjection) ProtoMessage() {}
+func (*VenueAccountSnapshot) ProtoMessage() {}
 
-func (x *HimalayaProjection) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_portfolio_model_v1_himalaya_proto_msgTypes[0]
+func (x *VenueAccountSnapshot) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_portfolio_model_v1_venue_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -63,73 +63,73 @@ func (x *HimalayaProjection) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HimalayaProjection.ProtoReflect.Descriptor instead.
-func (*HimalayaProjection) Descriptor() ([]byte, []int) {
-	return file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescGZIP(), []int{0}
+// Deprecated: Use VenueAccountSnapshot.ProtoReflect.Descriptor instead.
+func (*VenueAccountSnapshot) Descriptor() ([]byte, []int) {
+	return file_deer_proto_portfolio_model_v1_venue_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HimalayaProjection) GetId() int64 {
+func (x *VenueAccountSnapshot) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *HimalayaProjection) GetCreateAt() int64 {
+func (x *VenueAccountSnapshot) GetCreateAt() int64 {
 	if x != nil {
 		return x.CreateAt
 	}
 	return 0
 }
 
-func (x *HimalayaProjection) GetUpdateAt() int64 {
+func (x *VenueAccountSnapshot) GetUpdateAt() int64 {
 	if x != nil {
 		return x.UpdateAt
 	}
 	return 0
 }
 
-func (x *HimalayaProjection) GetDeleteAt() int64 {
+func (x *VenueAccountSnapshot) GetDeleteAt() int64 {
 	if x != nil && x.DeleteAt != nil {
 		return *x.DeleteAt
 	}
 	return 0
 }
 
-func (x *HimalayaProjection) GetAccountId() string {
+func (x *VenueAccountSnapshot) GetAccountId() string {
 	if x != nil {
 		return x.AccountId
 	}
 	return ""
 }
 
-func (x *HimalayaProjection) GetSnapshot() *v1.HimalayaSnapshot {
+func (x *VenueAccountSnapshot) GetSnapshot() *v1.HimalayaSnapshot {
 	if x != nil {
 		return x.Snapshot
 	}
 	return nil
 }
 
-func (x *HimalayaProjection) GetPublisherOwnerId() string {
+func (x *VenueAccountSnapshot) GetPublisherOwnerId() string {
 	if x != nil {
 		return x.PublisherOwnerId
 	}
 	return ""
 }
 
-func (x *HimalayaProjection) GetPublisherEpoch() int64 {
+func (x *VenueAccountSnapshot) GetPublisherEpoch() int64 {
 	if x != nil {
 		return x.PublisherEpoch
 	}
 	return 0
 }
 
-var File_deer_proto_portfolio_model_v1_himalaya_proto protoreflect.FileDescriptor
+var File_deer_proto_portfolio_model_v1_venue_proto protoreflect.FileDescriptor
 
-const file_deer_proto_portfolio_model_v1_himalaya_proto_rawDesc = "" +
+const file_deer_proto_portfolio_model_v1_venue_proto_rawDesc = "" +
 	"\n" +
-	",deer/proto/portfolio/model/v1/himalaya.proto\x12\x11muskdeer.model.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xde\x06\n" +
-	"\x12HimalayaProjection\x12J\n" +
+	")deer/proto/portfolio/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xe0\x06\n" +
+	"\x14VenueAccountSnapshot\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
@@ -143,24 +143,24 @@ const file_deer_proto_portfolio_model_v1_himalaya_proto_rawDesc = "" +
 	"_delete_atB>Z<github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1;modelv1b\x06proto3"
 
 var (
-	file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescOnce sync.Once
-	file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescData []byte
+	file_deer_proto_portfolio_model_v1_venue_proto_rawDescOnce sync.Once
+	file_deer_proto_portfolio_model_v1_venue_proto_rawDescData []byte
 )
 
-func file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescGZIP() []byte {
-	file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescOnce.Do(func() {
-		file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_deer_proto_portfolio_model_v1_himalaya_proto_rawDesc), len(file_deer_proto_portfolio_model_v1_himalaya_proto_rawDesc)))
+func file_deer_proto_portfolio_model_v1_venue_proto_rawDescGZIP() []byte {
+	file_deer_proto_portfolio_model_v1_venue_proto_rawDescOnce.Do(func() {
+		file_deer_proto_portfolio_model_v1_venue_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_deer_proto_portfolio_model_v1_venue_proto_rawDesc), len(file_deer_proto_portfolio_model_v1_venue_proto_rawDesc)))
 	})
-	return file_deer_proto_portfolio_model_v1_himalaya_proto_rawDescData
+	return file_deer_proto_portfolio_model_v1_venue_proto_rawDescData
 }
 
-var file_deer_proto_portfolio_model_v1_himalaya_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
-var file_deer_proto_portfolio_model_v1_himalaya_proto_goTypes = []any{
-	(*HimalayaProjection)(nil),  // 0: muskdeer.model.v1.HimalayaProjection
-	(*v1.HimalayaSnapshot)(nil), // 1: muskdeer.common.v1.HimalayaSnapshot
+var file_deer_proto_portfolio_model_v1_venue_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_deer_proto_portfolio_model_v1_venue_proto_goTypes = []any{
+	(*VenueAccountSnapshot)(nil), // 0: muskdeer.model.v1.VenueAccountSnapshot
+	(*v1.HimalayaSnapshot)(nil),  // 1: muskdeer.common.v1.HimalayaSnapshot
 }
-var file_deer_proto_portfolio_model_v1_himalaya_proto_depIdxs = []int32{
-	1, // 0: muskdeer.model.v1.HimalayaProjection.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+var file_deer_proto_portfolio_model_v1_venue_proto_depIdxs = []int32{
+	1, // 0: muskdeer.model.v1.VenueAccountSnapshot.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -168,27 +168,27 @@ var file_deer_proto_portfolio_model_v1_himalaya_proto_depIdxs = []int32{
 	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_deer_proto_portfolio_model_v1_himalaya_proto_init() }
-func file_deer_proto_portfolio_model_v1_himalaya_proto_init() {
-	if File_deer_proto_portfolio_model_v1_himalaya_proto != nil {
+func init() { file_deer_proto_portfolio_model_v1_venue_proto_init() }
+func file_deer_proto_portfolio_model_v1_venue_proto_init() {
+	if File_deer_proto_portfolio_model_v1_venue_proto != nil {
 		return
 	}
-	file_deer_proto_portfolio_model_v1_himalaya_proto_msgTypes[0].OneofWrappers = []any{}
+	file_deer_proto_portfolio_model_v1_venue_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_portfolio_model_v1_himalaya_proto_rawDesc), len(file_deer_proto_portfolio_model_v1_himalaya_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_portfolio_model_v1_venue_proto_rawDesc), len(file_deer_proto_portfolio_model_v1_venue_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_deer_proto_portfolio_model_v1_himalaya_proto_goTypes,
-		DependencyIndexes: file_deer_proto_portfolio_model_v1_himalaya_proto_depIdxs,
-		MessageInfos:      file_deer_proto_portfolio_model_v1_himalaya_proto_msgTypes,
+		GoTypes:           file_deer_proto_portfolio_model_v1_venue_proto_goTypes,
+		DependencyIndexes: file_deer_proto_portfolio_model_v1_venue_proto_depIdxs,
+		MessageInfos:      file_deer_proto_portfolio_model_v1_venue_proto_msgTypes,
 	}.Build()
-	File_deer_proto_portfolio_model_v1_himalaya_proto = out.File
-	file_deer_proto_portfolio_model_v1_himalaya_proto_goTypes = nil
-	file_deer_proto_portfolio_model_v1_himalaya_proto_depIdxs = nil
+	File_deer_proto_portfolio_model_v1_venue_proto = out.File
+	file_deer_proto_portfolio_model_v1_venue_proto_goTypes = nil
+	file_deer_proto_portfolio_model_v1_venue_proto_depIdxs = nil
 }

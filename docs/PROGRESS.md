@@ -1768,3 +1768,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 生成契约、PostgreSQL 持久化与基础设施回归改用真实 Instrument 和 AccountBudget；隔离夹具复用迁移 0002/0007 的表定义及约束。保留主键、13 列模型元数据、numeric(38,18)、联合唯一键、时间自动更新、NULL/显式零删除时间、事务回滚等断言。额度模型验证 false/零预留写回和保留 revision，并验证显式整数零实际送达数据库后按业务约束返回 23514；没有放宽真实业务约束。lint 正例也改用 Instrument。
 - 相关 persistenceprobe/policy 单元 race、79 个 Proto Go 文件与五 Wire 生成比较、格式、依赖图、lint/govet（0 issues）、规范正反样例、44 项 Python 和全包构建通过。复用现有 infra-postgres 的独立临时数据库，PostgresContract 的五组及 PostgresInfrastructure 的六组 integration/race 均通过，覆盖精确小数、约束/NULL、更新/回滚、连接池、超时、readiness 和认证错误；测试逻辑资源已按原流程清理，未新增/停止共享基础容器。
 - 原有 50 处未提交修改逐字节保持，实际业务模型和所有数据库版本化迁移未修改。完整工作区业务测试、全量 integration/e2e/soak 未运行；未重启交易服务或发布运行配置。本轮清理与相关验收完成，提交和远程结果见本轮报告。
+
+
+## 2026-11-04：P26.1 通道业务模型与存量升级
+
+- 按最新要求移除六个 Himalaya 命名的持久化类型，改由 TradingAccountPolicy、VenueOrderIntent、VenueCancellation、VenueAccountSnapshot、ExecutionRecoveryBaseline 和 VenueSchemaMigration 承担业务记录；定义与生成代码按 common/execution/portfolio 归属。字段、精度、请求摘要和既有状态值保持，未将 UNKNOWN 当作失败释放额度。Himalaya 适配层的进一步职责拆分属于下一步 P26.2，本记录不宣称整项完成。
+- 显式迁移模块归 deer/migrate/venue，历史六份 SQL 逐字节保持；新增 0007 原子升级既有表名，保留主键、数据和约束。新代码启动只读检查完整版本，升级只由维护命令显式调用。旧版升级回归额外写入 UNKNOWN 下单、未决撤单、持仓观察和恢复基线，逐项验证升级后完整消息一致；目的表冲突时验证 ledger/额度回滚，随后两次升级验证幂等。
+- clean/user-overlay 两套 integration 标签全包编译通过；clean 全包 race（复核采用 -p 1）、79 Proto 和五 Wire 比较、格式/合同/布局及 lint/govet 0 issues、44 项工具测试和全包构建通过。现有 PostgreSQL 的隔离库中相关 SDK 准入/金额/配置维护/历史升级、并发预留、未知不重发及合成成交额度/重放的 integration/race 通过。
+- 初次并行验证保留两处失败：Deer 短期限 RPC 用例在建连阶段 deadline 到期、尝试数为零；并发额度用例在核心迁移夹具处触发原 statement_timeout。未改期限或断言，顺序复核全包 race 和相关 PostgreSQL 组通过；本轮不宣称已修复长期负载稳定性。原有 50 处用户修改逐字节保持；未升级当前交易数据库或重启交易容器。P26.2 继续收敛适配层，提交与远程核验见当前工作记录。

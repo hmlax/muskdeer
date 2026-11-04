@@ -15,7 +15,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
-	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -85,7 +85,7 @@ func run(ctx context.Context, enable bool, profiles *commonv1.HimalayaProfileImp
 	if err := migrate.CheckCurrent(ctx, database.GORM()); err != nil {
 		return err
 	}
-	if err := himalayamigrate.Apply(ctx, database.GORM()); err != nil {
+	if err := venuemigrate.Apply(ctx, database.GORM()); err != nil {
 		return err
 	}
 	if !enable && profiles == nil {

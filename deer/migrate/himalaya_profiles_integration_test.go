@@ -48,8 +48,8 @@ func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) 
 	if err := store.ImportProfiles(ctx, batch); err != nil {
 		t.Fatal(err)
 	}
-	var rows []*commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Order("user_id").Find(&rows).Error; err != nil || len(rows) != 2 {
+	var rows []*commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Order("user_id").Find(&rows).Error; err != nil || len(rows) != 2 {
 		t.Fatalf("import rows=%d err=%v", len(rows), err)
 	}
 	oldRisk, e1 := domain.ParseLedgerDecimal(rows[0].ObservedNotional, false, true)
@@ -57,7 +57,7 @@ func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) 
 	if !rows[0].Enabled || rows[1].Enabled || e1 != nil || e2 != nil || !oldRisk.IsPositive() || !newRisk.IsZero() {
 		t.Fatal("profile import reset or enabled financial resources")
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", rows[1].Id).UpdateColumn("observed_notional", "900").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", rows[1].Id).UpdateColumn("observed_notional", "900").Error; err != nil {
 		t.Fatal(err)
 	}
 	first.PriceTick = "0.2"
@@ -65,8 +65,8 @@ func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) 
 	if err := store.ImportProfiles(ctx, batch); !errors.Is(err, himalaya.ErrRiskLimit) {
 		t.Fatalf("profile batch reduced limit below retained risk: %v", err)
 	}
-	var retained commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", rows[0].Id).First(&retained).Error; err != nil {
+	var retained commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", rows[0].Id).First(&retained).Error; err != nil {
 		t.Fatal(err)
 	}
 	tick, err := domain.ParseLedgerDecimal(retained.PriceTick, false, false)
@@ -92,8 +92,8 @@ func TestHimalayaProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	var before commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&before).Error; err != nil {
+	var before commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	profile := &commonv1.HimalayaProfilePolicy{
@@ -110,8 +110,8 @@ func TestHimalayaProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T
 	if err := store.InitializeBudget(ctx, profile, true); !errors.Is(err, domain.ErrLeaseHeld) {
 		t.Fatalf("business policy changed under an active execution owner: %v", err)
 	}
-	var after commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
+	var after commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
 		t.Fatalf("rejected maintenance mutated retained budget: %v", err)
 	}
 	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("expires_at", 0).Error; err != nil {
@@ -120,7 +120,7 @@ func TestHimalayaProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T
 	if err := store.InitializeBudget(ctx, profile, true); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&after).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&after).Error; err != nil {
 		t.Fatal(err)
 	}
 	if after.ObservedNotional != before.ObservedNotional || after.ReservedNotional != before.ReservedNotional || after.AvailableQuote != before.AvailableQuote || after.SnapshotExpiresAt != before.SnapshotExpiresAt || after.Id != before.Id || after.CreateAt != before.CreateAt || after.Symbol != request.Symbol {
@@ -145,25 +145,25 @@ func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 		t.Fatalf("unconfigured legacy budget silently supplied a profile: %v", err)
 	}
 	configureNativeProfileFixture(ctx, t, db, request)
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("user_id = ?", request.UserID).Select("MaximumOrderNotional", "Leverage").Updates(&commonmodelv1.HimalayaBudget{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("user_id = ?", request.UserID).Select("MaximumOrderNotional", "Leverage").Updates(&commonmodelv1.TradingAccountPolicy{
 		MaximumOrderNotional: "100",
 		Leverage:             10,
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	var before commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&before).Error; err != nil {
+	var before commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	settings, err := native.LoadRuntime(ctx, db, cfg)
 	if err != nil || len(settings.Himalaya.Profiles) != 1 || settings.Himalaya.Profiles[0].MaximumNotional != "1000" || settings.Himalaya.Profiles[0].PriceTick != "0.1" {
 		t.Fatalf("database profile load: %v, %v", settings, err)
 	}
-	var after commonmodelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
+	var after commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
 		t.Fatalf("startup wrote budget data: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", before.Id).UpdateColumn("price_tick", "0.2").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", before.Id).UpdateColumn("price_tick", "0.2").Error; err != nil {
 		t.Fatal(err)
 	}
 	if settings.Himalaya.Profiles[0].PriceTick != "0.1" {

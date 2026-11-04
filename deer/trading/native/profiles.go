@@ -29,8 +29,8 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	}
 	op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
 	defer cancel()
-	var rows []*commonmodelv1.HimalayaBudget
-	if err := db.WithContext(op).Model(&commonmodelv1.HimalayaBudget{}).Where("delete_at IS NULL").Order("id").Limit(9).Find(&rows).Error; err != nil {
+	var rows []*commonmodelv1.TradingAccountPolicy
+	if err := db.WithContext(op).Model(&commonmodelv1.TradingAccountPolicy{}).Where("delete_at IS NULL").Order("id").Limit(9).Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	if len(rows) == 0 || len(rows) > 8 {
@@ -66,7 +66,7 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 
 // ProfileFromBudget maps the generated model directly to immutable business
 // fields, normalizing database numeric padding without a JSON conversion bridge.
-func ProfileFromBudget(row *commonmodelv1.HimalayaBudget) (*commonv1.HimalayaProfilePolicy, error) {
+func ProfileFromBudget(row *commonmodelv1.TradingAccountPolicy) (*commonv1.HimalayaProfilePolicy, error) {
 	if row == nil || row.DeleteAt != nil || row.AccountId != ScopeKey(row.UserId, row.FundId) {
 		return nil, ErrInvalid
 	}

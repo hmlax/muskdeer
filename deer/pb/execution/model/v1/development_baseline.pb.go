@@ -23,9 +23,9 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// HimalayaDevelopmentBaseline retains legacy unknown risk independently of
+// ExecutionRecoveryBaseline retains legacy unknown risk independently of
 // native cancellation proof. Each account can be baselined only once.
-type HimalayaDevelopmentBaseline struct {
+type ExecutionRecoveryBaseline struct {
 	state                   protoimpl.MessageState         `protogen:"open.v1"`
 	Id                      int64                          `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	CreateAt                int64                          `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
@@ -42,20 +42,20 @@ type HimalayaDevelopmentBaseline struct {
 	sizeCache               protoimpl.SizeCache
 }
 
-func (x *HimalayaDevelopmentBaseline) Reset() {
-	*x = HimalayaDevelopmentBaseline{}
+func (x *ExecutionRecoveryBaseline) Reset() {
+	*x = ExecutionRecoveryBaseline{}
 	mi := &file_deer_proto_execution_model_v1_development_baseline_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HimalayaDevelopmentBaseline) String() string {
+func (x *ExecutionRecoveryBaseline) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HimalayaDevelopmentBaseline) ProtoMessage() {}
+func (*ExecutionRecoveryBaseline) ProtoMessage() {}
 
-func (x *HimalayaDevelopmentBaseline) ProtoReflect() protoreflect.Message {
+func (x *ExecutionRecoveryBaseline) ProtoReflect() protoreflect.Message {
 	mi := &file_deer_proto_execution_model_v1_development_baseline_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -67,82 +67,82 @@ func (x *HimalayaDevelopmentBaseline) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HimalayaDevelopmentBaseline.ProtoReflect.Descriptor instead.
-func (*HimalayaDevelopmentBaseline) Descriptor() ([]byte, []int) {
+// Deprecated: Use ExecutionRecoveryBaseline.ProtoReflect.Descriptor instead.
+func (*ExecutionRecoveryBaseline) Descriptor() ([]byte, []int) {
 	return file_deer_proto_execution_model_v1_development_baseline_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HimalayaDevelopmentBaseline) GetId() int64 {
+func (x *ExecutionRecoveryBaseline) GetId() int64 {
 	if x != nil {
 		return x.Id
 	}
 	return 0
 }
 
-func (x *HimalayaDevelopmentBaseline) GetCreateAt() int64 {
+func (x *ExecutionRecoveryBaseline) GetCreateAt() int64 {
 	if x != nil {
 		return x.CreateAt
 	}
 	return 0
 }
 
-func (x *HimalayaDevelopmentBaseline) GetUpdateAt() int64 {
+func (x *ExecutionRecoveryBaseline) GetUpdateAt() int64 {
 	if x != nil {
 		return x.UpdateAt
 	}
 	return 0
 }
 
-func (x *HimalayaDevelopmentBaseline) GetDeleteAt() int64 {
+func (x *ExecutionRecoveryBaseline) GetDeleteAt() int64 {
 	if x != nil && x.DeleteAt != nil {
 		return *x.DeleteAt
 	}
 	return 0
 }
 
-func (x *HimalayaDevelopmentBaseline) GetAccountId() string {
+func (x *ExecutionRecoveryBaseline) GetAccountId() string {
 	if x != nil {
 		return x.AccountId
 	}
 	return ""
 }
 
-func (x *HimalayaDevelopmentBaseline) GetRequest() *v1.DevelopmentBaselineRequest {
+func (x *ExecutionRecoveryBaseline) GetRequest() *v1.DevelopmentBaselineRequest {
 	if x != nil {
 		return x.Request
 	}
 	return nil
 }
 
-func (x *HimalayaDevelopmentBaseline) GetRequestDigest() string {
+func (x *ExecutionRecoveryBaseline) GetRequestDigest() string {
 	if x != nil {
 		return x.RequestDigest
 	}
 	return ""
 }
 
-func (x *HimalayaDevelopmentBaseline) GetSnapshot() *v1.HimalayaSnapshot {
+func (x *ExecutionRecoveryBaseline) GetSnapshot() *v1.HimalayaSnapshot {
 	if x != nil {
 		return x.Snapshot
 	}
 	return nil
 }
 
-func (x *HimalayaDevelopmentBaseline) GetLegacyNotional() string {
+func (x *ExecutionRecoveryBaseline) GetLegacyNotional() string {
 	if x != nil {
 		return x.LegacyNotional
 	}
 	return ""
 }
 
-func (x *HimalayaDevelopmentBaseline) GetMinimumObservedNotional() string {
+func (x *ExecutionRecoveryBaseline) GetMinimumObservedNotional() string {
 	if x != nil {
 		return x.MinimumObservedNotional
 	}
 	return ""
 }
 
-func (x *HimalayaDevelopmentBaseline) GetEvidenceDigest() string {
+func (x *ExecutionRecoveryBaseline) GetEvidenceDigest() string {
 	if x != nil {
 		return x.EvidenceDigest
 	}
@@ -153,8 +153,8 @@ var File_deer_proto_execution_model_v1_development_baseline_proto protoreflect.F
 
 const file_deer_proto_execution_model_v1_development_baseline_proto_rawDesc = "" +
 	"\n" +
-	"8deer/proto/execution/model/v1/development_baseline.proto\x12\x11muskdeer.model.v1\x1a/deer/proto/common/v1/development_baseline.proto\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xdf\t\n" +
-	"\x1bHimalayaDevelopmentBaseline\x12J\n" +
+	"8deer/proto/execution/model/v1/development_baseline.proto\x12\x11muskdeer.model.v1\x1a/deer/proto/common/v1/development_baseline.proto\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xdd\t\n" +
+	"\x19ExecutionRecoveryBaseline\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
@@ -185,13 +185,13 @@ func file_deer_proto_execution_model_v1_development_baseline_proto_rawDescGZIP()
 
 var file_deer_proto_execution_model_v1_development_baseline_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_deer_proto_execution_model_v1_development_baseline_proto_goTypes = []any{
-	(*HimalayaDevelopmentBaseline)(nil),   // 0: muskdeer.model.v1.HimalayaDevelopmentBaseline
+	(*ExecutionRecoveryBaseline)(nil),     // 0: muskdeer.model.v1.ExecutionRecoveryBaseline
 	(*v1.DevelopmentBaselineRequest)(nil), // 1: muskdeer.common.v1.DevelopmentBaselineRequest
 	(*v1.HimalayaSnapshot)(nil),           // 2: muskdeer.common.v1.HimalayaSnapshot
 }
 var file_deer_proto_execution_model_v1_development_baseline_proto_depIdxs = []int32{
-	1, // 0: muskdeer.model.v1.HimalayaDevelopmentBaseline.request:type_name -> muskdeer.common.v1.DevelopmentBaselineRequest
-	2, // 1: muskdeer.model.v1.HimalayaDevelopmentBaseline.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	1, // 0: muskdeer.model.v1.ExecutionRecoveryBaseline.request:type_name -> muskdeer.common.v1.DevelopmentBaselineRequest
+	2, // 1: muskdeer.model.v1.ExecutionRecoveryBaseline.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

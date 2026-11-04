@@ -24,7 +24,7 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 	db, store, lease, order := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).
 		UpdateColumn("maximum_notional", "1500").Error; err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 		IntentIds:         []int64{old.Request.IntentID},
 	}
 	var clock struct{ NowMS int64 }
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", old.Request.IntentID).
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", old.Request.IntentID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +60,8 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 	if err := store.AssessHistoricalIntents(ctx, lease, approval, snapshot); err != nil {
 		t.Fatal(err)
 	}
-	var preview executionmodelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", old.Request.IntentID).First(&preview).Error; err != nil || preview.HistoricalApprovalReference != "" {
+	var preview executionmodelv1.VenueOrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", old.Request.IntentID).First(&preview).Error; err != nil || preview.HistoricalApprovalReference != "" {
 		t.Fatalf("AssessHistoricalIntents mutated approval: %q, %v", preview.HistoricalApprovalReference, err)
 	}
 	for range 2 {
@@ -69,8 +69,8 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 			t.Fatal(err)
 		}
 	}
-	var row executionmodelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", old.Request.IntentID).First(&row).Error; err != nil {
+	var row executionmodelv1.VenueOrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", old.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.State != himalaya.IntentDispatched || row.OrderId != "" || !proto.Equal(row.HistoricalSnapshot, snapshot) {
@@ -139,7 +139,7 @@ func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T)
 			case "missing_id":
 				approval.IntentIds = append(approval.IntentIds, prepared.Request.IntentID+1)
 			case "reduced_reservation":
-				err = db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("reserved_notional", "0").Error
+				err = db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("reserved_notional", "0").Error
 			case "stale_epoch":
 				lease.Epoch++
 			}
@@ -149,8 +149,8 @@ func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T)
 			if err := store.ApproveHistoricalIntents(ctx, lease, approval, snapshot); err == nil {
 				t.Fatalf("ApproveHistoricalIntents(%s) = nil, want rejection", changed)
 			}
-			var row executionmodelv1.HimalayaIntent
-			if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil || row.HistoricalApprovalReference != "" || row.State != himalaya.IntentDispatched {
+			var row executionmodelv1.VenueOrderIntent
+			if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil || row.HistoricalApprovalReference != "" || row.State != himalaya.IntentDispatched {
 				t.Fatalf("failed approval left a partial mutation: %v, %v", &row, err)
 			}
 		})
@@ -168,7 +168,7 @@ func TestHimalayaUnsentFinalGuardFailureDoesNotCreatePermanentUnknown(t *testing
 	const hook = "test:change-epoch-after-durable-claim"
 	injected := false
 	if err := db.Callback().Update().After("gorm:update").Register(hook, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Model.(*executionmodelv1.HimalayaIntent); !ok || injected {
+		if _, ok := tx.Statement.Model.(*executionmodelv1.VenueOrderIntent); !ok || injected {
 			return
 		}
 		injected = true
@@ -189,8 +189,8 @@ func TestHimalayaUnsentFinalGuardFailureDoesNotCreatePermanentUnknown(t *testing
 	if !errors.Is(err, domain.ErrLeaseLost) || calls != 0 || !injected {
 		t.Fatalf("WithSubmission(changed epoch) calls=%d err=%v injected=%t, want lease lost before send", calls, err, injected)
 	}
-	var row executionmodelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+	var row executionmodelv1.VenueOrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	budget, err := store.Budget(ctx, lease.Key.AccountID)

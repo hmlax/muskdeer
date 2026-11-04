@@ -35,11 +35,11 @@ func TestDevelopmentBaselineRechecksRetainedRiskAfterDispatchClaim(t *testing.T)
 	const hook = "test:reduce-development-hold-after-claim"
 	injected := false
 	err = db.Callback().Update().After("gorm:update").Register(hook, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Model.(*executionmodelv1.HimalayaIntent); !ok || injected {
+		if _, ok := tx.Statement.Model.(*executionmodelv1.VenueOrderIntent); !ok || injected {
 			return
 		}
 		injected = true
-		change := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("observed_notional", "899")
+		change := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("observed_notional", "899")
 		if change.Error != nil {
 			t.Error(change.Error)
 		}
