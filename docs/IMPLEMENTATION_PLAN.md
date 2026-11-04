@@ -1,5 +1,11 @@
 # Codex 实施任务
 
+## P27：通道接口全面使用业务名称
+
+状态：新合同切换与旧入口拒绝验收完成；实际验证范围见 PROGRESS。
+
+本轮验收：Venue* 公共消息、服务专属 venue.v1 RPC、business.venue 配置、gateway 执行入口与 venueinit/venuebaseline 维护命令一起更新；旧消息/服务不注册、旧配置键和旧执行值拒绝、旧命令无别名。新增实际 gRPC 回归验证旧有副作用方法返回 Unimplemented 且不进入 handler，新客户端恰好调用一次。资金/租约/UNKNOWN 规则与第三方 SDK 不变，原有未提交业务修改保留；实际部署不属于本轮。
+
 ## P26：Himalaya 收敛为第三方适配层
 
 状态：P26.1 通用业务模型/存量升级与 P26.2 适配层职责拆分验收完成；实际检查范围和首次失败记录见 PROGRESS。

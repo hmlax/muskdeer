@@ -20,16 +20,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Execution_GetSnapshot_FullMethodName      = "/muskdeer.himalaya.v1.Execution/GetSnapshot"
-	Execution_Reconcile_FullMethodName        = "/muskdeer.himalaya.v1.Execution/Reconcile"
-	Execution_PublishSynthetic_FullMethodName = "/muskdeer.himalaya.v1.Execution/PublishSynthetic"
+	Execution_GetSnapshot_FullMethodName      = "/muskdeer.execution.venue.v1.Execution/GetSnapshot"
+	Execution_Reconcile_FullMethodName        = "/muskdeer.execution.venue.v1.Execution/Reconcile"
+	Execution_PublishSynthetic_FullMethodName = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
 )
 
 // ExecutionClient is the client API for Execution service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExecutionClient interface {
-	GetSnapshot(ctx context.Context, in *v1.HimalayaScope, opts ...grpc.CallOption) (*v1.HimalayaSnapshot, error)
+	GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error)
 	Reconcile(ctx context.Context, in *QuotePlan, opts ...grpc.CallOption) (*QuoteResult, error)
 	PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
 }
@@ -42,9 +42,9 @@ func NewExecutionClient(cc grpc.ClientConnInterface) ExecutionClient {
 	return &executionClient{cc}
 }
 
-func (c *executionClient) GetSnapshot(ctx context.Context, in *v1.HimalayaScope, opts ...grpc.CallOption) (*v1.HimalayaSnapshot, error) {
+func (c *executionClient) GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(v1.HimalayaSnapshot)
+	out := new(v1.VenueSnapshot)
 	err := c.cc.Invoke(ctx, Execution_GetSnapshot_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (c *executionClient) PublishSynthetic(ctx context.Context, in *v1.Synthetic
 // All implementations must embed UnimplementedExecutionServer
 // for forward compatibility.
 type ExecutionServer interface {
-	GetSnapshot(context.Context, *v1.HimalayaScope) (*v1.HimalayaSnapshot, error)
+	GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error)
 	Reconcile(context.Context, *QuotePlan) (*QuoteResult, error)
 	PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error)
 	mustEmbedUnimplementedExecutionServer()
@@ -89,7 +89,7 @@ type ExecutionServer interface {
 // pointer dereference when methods are called.
 type UnimplementedExecutionServer struct{}
 
-func (UnimplementedExecutionServer) GetSnapshot(context.Context, *v1.HimalayaScope) (*v1.HimalayaSnapshot, error) {
+func (UnimplementedExecutionServer) GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSnapshot not implemented")
 }
 func (UnimplementedExecutionServer) Reconcile(context.Context, *QuotePlan) (*QuoteResult, error) {
@@ -120,7 +120,7 @@ func RegisterExecutionServer(s grpc.ServiceRegistrar, srv ExecutionServer) {
 }
 
 func _Execution_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(v1.HimalayaScope)
+	in := new(v1.VenueScope)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func _Execution_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: Execution_GetSnapshot_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ExecutionServer).GetSnapshot(ctx, req.(*v1.HimalayaScope))
+		return srv.(ExecutionServer).GetSnapshot(ctx, req.(*v1.VenueScope))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -177,7 +177,7 @@ func _Execution_PublishSynthetic_Handler(srv interface{}, ctx context.Context, d
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Execution_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "muskdeer.himalaya.v1.Execution",
+	ServiceName: "muskdeer.execution.venue.v1.Execution",
 	HandlerType: (*ExecutionServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

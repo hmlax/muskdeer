@@ -21,12 +21,12 @@ import (
 func (r *Runtime) acquireSynthetic(ctx context.Context, symbol string) (domain.LeaseToken, error) {
 	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
-		AccountID: native.SyntheticExecutionKey(r.cfg.Himalaya.SyntheticTape.RunId, symbol),
-	}, r.owner, r.cfg.Himalaya.LeaseTtl.AsDuration())
+		AccountID: native.SyntheticExecutionKey(r.cfg.Venue.SyntheticTape.RunId, symbol),
+	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return domain.LeaseToken{}, err
 	}
-	return r.leases.Renew(ctx, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	return r.leases.Renew(ctx, token, r.cfg.Venue.LeaseTtl.AsDuration())
 }
 
 // PublishSynthetic emits development market data only. Execution refreshes the
@@ -35,10 +35,10 @@ func (r *Runtime) PublishSynthetic(ctx context.Context, proposal *commonv1.Synth
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
-	if r.closing.Load() || r.client.Load() == nil || !r.cfg.Himalaya.GetSyntheticTape().GetEnabled() {
+	if r.closing.Load() || r.client.Load() == nil || !r.cfg.Venue.GetSyntheticTape().GetEnabled() {
 		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
 	}
-	if proposal.GetRunId() != r.cfg.Himalaya.SyntheticTape.RunId || proposal.GetStrategy().GetAccountId() != native.SyntheticStrategyKey(proposal.RunId, proposal.GetSymbol()) {
+	if proposal.GetRunId() != r.cfg.Venue.SyntheticTape.RunId || proposal.GetStrategy().GetAccountId() != native.SyntheticStrategyKey(proposal.RunId, proposal.GetSymbol()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
 	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
@@ -51,14 +51,14 @@ func (r *Runtime) PublishSynthetic(ctx context.Context, proposal *commonv1.Synth
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
-	if err := r.client.Load().CheckSyntheticMarket(op, native.SyntheticMarket(r.cfg.Himalaya, plan.Symbol), plan); err != nil {
+	if err := r.client.Load().CheckSyntheticMarket(op, native.SyntheticMarket(r.cfg.Venue, plan.Symbol), plan); err != nil {
 		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
 	}
 	lease, err := r.acquireSynthetic(op, plan.Symbol)
 	if err != nil {
 		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
 	}
-	result, err := r.store.PublishSynthetic(op, lease, r.cfg.Himalaya, plan, r.client.Load().PublishSynthetic)
+	result, err := r.store.PublishSynthetic(op, lease, r.cfg.Venue, plan, r.client.Load().PublishSynthetic)
 	if err != nil {
 		code := codes.FailedPrecondition
 		if errors.Is(err, ErrRiskLimit) {
@@ -76,12 +76,12 @@ func (r *Runtime) PublishSynthetic(ctx context.Context, proposal *commonv1.Synth
 	return result, nil
 }
 
-func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.SyntheticTapePlan, book *commonv1.HimalayaBook) (*commonv1.SyntheticTapePlan, error) {
-	if r.cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK {
+func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.SyntheticTapePlan, book *commonv1.VenueBook) (*commonv1.SyntheticTapePlan, error) {
+	if r.cfg.Venue.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK {
 		if proposal.SourceTrade != nil {
 			return nil, ErrInvalidSubmit
 		}
-		plan, err := native.SyntheticPlan(r.cfg.Himalaya, proposal.Symbol, proposal.Sequence, book, proposal.Strategy)
+		plan, err := native.SyntheticPlan(r.cfg.Venue, proposal.Symbol, proposal.Sequence, book, proposal.Strategy)
 		if err != nil || proposal.Side != plan.GetSide() || proposal.Quantity != plan.GetQuantity() {
 			return nil, ErrInvalidSubmit
 		}
@@ -89,7 +89,7 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 	}
 	// An aggregate-mode client must explicitly supply that source intent. The
 	// actual sample can advance before execution reads the authoritative stream.
-	expected, err := native.SyntheticSourcePlan(r.cfg.Himalaya, proposal)
+	expected, err := native.SyntheticSourcePlan(r.cfg.Venue, proposal)
 	if err != nil || !proto.Equal(expected, proposal) {
 		return nil, ErrInvalidSubmit
 	}
@@ -101,7 +101,7 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 	if err != nil {
 		return nil, err
 	}
-	return native.SyntheticSourcePlan(r.cfg.Himalaya, &commonv1.SyntheticTapePlan{
+	return native.SyntheticSourcePlan(r.cfg.Venue, &commonv1.SyntheticTapePlan{
 		RunId:       proposal.RunId,
 		Symbol:      proposal.Symbol,
 		Sequence:    proposal.Sequence,
@@ -112,10 +112,10 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 }
 
 func (r *Runtime) renewSyntheticScopes(ctx context.Context) error {
-	if !r.cfg.Himalaya.GetSyntheticTape().GetEnabled() {
+	if !r.cfg.Venue.GetSyntheticTape().GetEnabled() {
 		return nil
 	}
-	for _, profile := range r.cfg.Himalaya.SyntheticTape.Profiles {
+	for _, profile := range r.cfg.Venue.SyntheticTape.Profiles {
 		op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 		_, err := r.acquireSynthetic(op, profile.Symbol)
 		cancel()

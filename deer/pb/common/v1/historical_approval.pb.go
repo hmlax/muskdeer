@@ -27,7 +27,7 @@ const (
 type HistoricalIntentApproval struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	ApprovalReference string                 `protobuf:"bytes,1,opt,name=approval_reference,json=approvalReference,proto3" json:"approval_reference,omitempty"`
-	Scope             *HimalayaScope         `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"`
+	Scope             *VenueScope            `protobuf:"bytes,2,opt,name=scope,proto3" json:"scope,omitempty"`
 	IntentIds         []int64                `protobuf:"varint,3,rep,packed,name=intent_ids,json=intentIds,proto3" json:"intent_ids,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -70,7 +70,7 @@ func (x *HistoricalIntentApproval) GetApprovalReference() string {
 	return ""
 }
 
-func (x *HistoricalIntentApproval) GetScope() *HimalayaScope {
+func (x *HistoricalIntentApproval) GetScope() *VenueScope {
 	if x != nil {
 		return x.Scope
 	}
@@ -132,10 +132,10 @@ var File_deer_proto_common_v1_historical_approval_proto protoreflect.FileDescrip
 
 const file_deer_proto_common_v1_historical_approval_proto_rawDesc = "" +
 	"\n" +
-	".deer/proto/common/v1/historical_approval.proto\x12\x12muskdeer.common.v1\x1a#deer/proto/common/v1/himalaya.proto\"\xa1\x01\n" +
+	".deer/proto/common/v1/historical_approval.proto\x12\x12muskdeer.common.v1\x1a deer/proto/common/v1/venue.proto\"\x9e\x01\n" +
 	"\x18HistoricalIntentApproval\x12-\n" +
-	"\x12approval_reference\x18\x01 \x01(\tR\x11approvalReference\x127\n" +
-	"\x05scope\x18\x02 \x01(\v2!.muskdeer.common.v1.HimalayaScopeR\x05scope\x12\x1d\n" +
+	"\x12approval_reference\x18\x01 \x01(\tR\x11approvalReference\x124\n" +
+	"\x05scope\x18\x02 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x12\x1d\n" +
 	"\n" +
 	"intent_ids\x18\x03 \x03(\x03R\tintentIds\"i\n" +
 	"\x1dHistoricalIntentApprovalBatch\x12H\n" +
@@ -157,10 +157,10 @@ var file_deer_proto_common_v1_historical_approval_proto_msgTypes = make([]protoi
 var file_deer_proto_common_v1_historical_approval_proto_goTypes = []any{
 	(*HistoricalIntentApproval)(nil),      // 0: muskdeer.common.v1.HistoricalIntentApproval
 	(*HistoricalIntentApprovalBatch)(nil), // 1: muskdeer.common.v1.HistoricalIntentApprovalBatch
-	(*HimalayaScope)(nil),                 // 2: muskdeer.common.v1.HimalayaScope
+	(*VenueScope)(nil),                    // 2: muskdeer.common.v1.VenueScope
 }
 var file_deer_proto_common_v1_historical_approval_proto_depIdxs = []int32{
-	2, // 0: muskdeer.common.v1.HistoricalIntentApproval.scope:type_name -> muskdeer.common.v1.HimalayaScope
+	2, // 0: muskdeer.common.v1.HistoricalIntentApproval.scope:type_name -> muskdeer.common.v1.VenueScope
 	0, // 1: muskdeer.common.v1.HistoricalIntentApprovalBatch.requests:type_name -> muskdeer.common.v1.HistoricalIntentApproval
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
@@ -174,7 +174,7 @@ func file_deer_proto_common_v1_historical_approval_proto_init() {
 	if File_deer_proto_common_v1_historical_approval_proto != nil {
 		return
 	}
-	file_deer_proto_common_v1_himalaya_proto_init()
+	file_deer_proto_common_v1_venue_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

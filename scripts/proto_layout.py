@@ -19,6 +19,14 @@ def validate_layout(root: Path):
         text = source.read_text()
         if 'model' in relative.parts and re.search(r'^message\s+Himalaya\w*\s*\{', text, re.MULTILINE):
             failures.append(f'{relative}: provider-specific models belong to business-neutral definitions')
+        if 'model' not in relative.parts and re.search(r'^message\s+Himalaya\w*\s*\{', text, re.MULTILINE):
+            failures.append(f'{relative}: provider-specific business messages are retired')
+        if re.search(r'^package\s+muskdeer\.himalaya(?:\.|\s*;)', text, re.MULTILINE):
+            failures.append(f'{relative}: provider-specific RPC namespace is retired')
+        if 'venue' in relative.parts and re.search(r'^service\s+', text, re.MULTILINE):
+            namespace = f'muskdeer.{relative.parts[0]}.venue.v1'
+            if not re.search(r'^package\s+' + re.escape(namespace) + r'\s*;', text, re.MULTILINE):
+                failures.append(f'{relative}: venue RPC namespace must follow its service owner')
         is_config = 'config' in relative.parts or re.search(r'^package\s+muskdeer\.config\.v1\s*;', text, re.MULTILINE)
         if is_config and relative.as_posix() != 'common/config/v1/config.proto':
             failures.append(f'{relative}: configuration definitions must share common/config/v1/config.proto')

@@ -32,7 +32,7 @@ type aggregateDispatchState struct {
 	store     *venueexecution.Store
 	execution domain.LeaseToken
 	source    domain.LeaseToken
-	cfg       *commonv1.HimalayaPolicy
+	cfg       *commonv1.VenuePolicy
 	base      *commonv1.SyntheticTapePlan
 }
 
@@ -72,7 +72,7 @@ func (s *aggregateDispatchState) plan(t *testing.T, sequence uint32, id int64) *
 	input := proto.CloneOf(s.base)
 	input.Sequence = sequence
 	input.Book.ValidUntilMs = now.Add(native.BookAge).UnixMilli()
-	input.SourceTrade = &commonv1.HimalayaTrade{
+	input.SourceTrade = &commonv1.VenueTrade{
 		Symbol:       input.Symbol,
 		Source:       native.Source,
 		Segment:      native.Segment,

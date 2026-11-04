@@ -32,12 +32,12 @@ message BusinessRuntime {
   google.protobuf.Duration execution_lease_ttl = 8;
   SimulatorScenarioRuntime simulator = 9;
   StrategyRuntime strategy = 10;
-  HimalayaRuntime himalaya = 11;
+  VenueRuntime venue = 11;
 }
 
-// HimalayaRuntime opts into the existing SDK on the development environment.
+// VenueRuntime opts into the existing SDK on the development environment.
 // Secrets are resolved from env only by the execution worker lifecycle.
-message HimalayaRuntime {
+message VenueRuntime {
   string target = 1;
   string token_env = 2;
   // Account/product/risk policy is loaded from PostgreSQL, never Nacos.

@@ -21,7 +21,7 @@ import (
 )
 
 // AssessDevelopmentBaseline is read-only and never changes cancellation proof.
-func (s *Store) AssessDevelopmentBaseline(ctx context.Context, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
+func (s *Store) AssessDevelopmentBaseline(ctx context.Context, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.VenueSnapshot) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
 	if !validStoreContext(ctx) {
 		return nil, ErrInvalidSubmit
 	}
@@ -30,7 +30,7 @@ func (s *Store) AssessDevelopmentBaseline(ctx context.Context, request *commonv1
 
 // ApplyDevelopmentBaseline is an explicit, one-time development maintenance action.
 // It preserves original unknown records and permanently holds their gross risk.
-func (s *Store) ApplyDevelopmentBaseline(ctx context.Context, lease domain.LeaseToken, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot) error {
+func (s *Store) ApplyDevelopmentBaseline(ctx context.Context, lease domain.LeaseToken, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.VenueSnapshot) error {
 	if !validStoreContext(ctx) || lease.Key.AccountID != native.ScopeKey(request.GetScope().GetUserId(), request.GetScope().GetFundId()) {
 		return ErrInvalidSubmit
 	}
@@ -52,7 +52,7 @@ func (s *Store) ApplyDevelopmentBaseline(ctx context.Context, lease domain.Lease
 	})
 }
 
-func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot, lock bool) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
+func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.VenueSnapshot, lock bool) (*executionmodelv1.ExecutionRecoveryBaseline, error) {
 	if snapshot.GetStartedAtMs() <= 0 || snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || snapshot.ValidUntilMs-snapshot.StartedAtMs > native.SnapshotAge.Milliseconds() || len(snapshot.GetOrders()) != 0 {
 		return nil, ErrInvalidSnapshot
 	}
@@ -114,7 +114,7 @@ func prepareDevelopmentBaseline(ctx context.Context, db *gorm.DB, request *commo
 	return row, err
 }
 
-func developmentAmounts(request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.HimalayaSnapshot) (decimal.Decimal, decimal.Decimal, error) {
+func developmentAmounts(request *commonv1.DevelopmentBaselineRequest, snapshot *commonv1.VenueSnapshot) (decimal.Decimal, decimal.Decimal, error) {
 	if request.GetBaselineId() == "" || len(request.BaselineId) > 64 || request.GetApprovalReference() == "" || len(request.ApprovalReference) > 128 ||
 		request.GetScope().GetUserId() <= 0 || request.Scope.FundId <= 0 || !native.Symbol(request.Scope.Symbol) || !proto.Equal(request.Scope, snapshot.GetScope()) || len(request.OriginalOrders) == 0 || len(request.OriginalOrders) > 256 {
 		return decimal.Zero, decimal.Zero, ErrInvalidSubmit
@@ -144,7 +144,7 @@ func developmentAmounts(request *commonv1.DevelopmentBaselineRequest, snapshot *
 	return legacy, current, nil
 }
 
-func developmentOrderAmount(symbol string, order *commonv1.HimalayaOrder, mark decimal.Decimal) (decimal.Decimal, error) {
+func developmentOrderAmount(symbol string, order *commonv1.VenueOrder, mark decimal.Decimal) (decimal.Decimal, error) {
 	id, err := strconv.ParseUint(order.GetOrderId(), 10, 64)
 	price, e1 := native.Value(order.GetPrice(), false, false)
 	quantity, e2 := native.Value(order.GetQuantity(), false, false)

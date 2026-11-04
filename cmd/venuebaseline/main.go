@@ -1,4 +1,4 @@
-// Command himalayabaseline applies explicit development ledger decisions.
+// Command venuebaseline applies explicit development ledger decisions.
 package main
 
 import (
@@ -32,7 +32,7 @@ import (
 )
 
 const (
-	messageManifestRequired = "himalayabaseline requires -manifest"
+	messageManifestRequired = "venuebaseline requires -manifest"
 	messageBaselineFailed   = "development baseline failed: "
 	reasonDependency        = "dependency or approval failure"
 	reasonRiskLimit         = "retained risk exceeds existing policy"
@@ -47,7 +47,7 @@ type baselineRunner struct {
 	client *himalaya.Client
 	leases domain.LeaseRepository
 	owner  string
-	cfg    *commonv1.HimalayaPolicy
+	cfg    *commonv1.VenuePolicy
 	apply  bool
 }
 
@@ -133,8 +133,8 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 		return err
 	}
 	client, err := himalaya.NewClient(ctx, venueexecution.Config{
-		Target:  cfg.Business.Himalaya.Target,
-		Token:   os.Getenv(cfg.Business.Himalaya.TokenEnv),
+		Target:  cfg.Business.Venue.Target,
+		Token:   os.Getenv(cfg.Business.Venue.TokenEnv),
 		Timeout: cfg.Business.OperationTimeout.AsDuration(),
 	}, nil)
 	if err != nil {
@@ -156,7 +156,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 		client: client,
 		leases: leases,
 		owner:  owner,
-		cfg:    settings.Himalaya,
+		cfg:    settings.Venue,
 		apply:  apply,
 	}
 	if historical {
@@ -221,7 +221,7 @@ func (r *baselineRunner) assess(ctx context.Context, request *commonv1.Developme
 	return row, nil
 }
 
-func (r *baselineRunner) acquire(ctx context.Context, scope *commonv1.HimalayaScope) (domain.LeaseToken, error) {
+func (r *baselineRunner) acquire(ctx context.Context, scope *commonv1.VenueScope) (domain.LeaseToken, error) {
 	for ctx.Err() == nil {
 		token, err := r.leases.Acquire(ctx, domain.LeaseKey{
 			Kind:      domain.LeaseKindExecution,
@@ -237,8 +237,8 @@ func (r *baselineRunner) acquire(ctx context.Context, scope *commonv1.HimalayaSc
 	return domain.LeaseToken{}, ctx.Err()
 }
 
-func stableSnapshot(ctx context.Context, client *himalaya.Client, scope venueexecution.Scope) (*commonv1.HimalayaSnapshot, error) {
-	read := func() (*commonv1.HimalayaSnapshot, error) {
+func stableSnapshot(ctx context.Context, client *himalaya.Client, scope venueexecution.Scope) (*commonv1.VenueSnapshot, error) {
+	read := func() (*commonv1.VenueSnapshot, error) {
 		raw, err := client.Read(ctx, scope)
 		if err != nil {
 			return nil, err

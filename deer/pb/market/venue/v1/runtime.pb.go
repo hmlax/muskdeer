@@ -114,14 +114,14 @@ var File_deer_proto_market_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_market_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"(deer/proto/market/venue/v1/runtime.proto\x12\x14muskdeer.himalaya.v1\x1a#deer/proto/common/v1/himalaya.proto\"%\n" +
+	"(deer/proto/market/venue/v1/runtime.proto\x12\x18muskdeer.market.venue.v1\x1a deer/proto/common/v1/venue.proto\"%\n" +
 	"\vBookRequest\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\"&\n" +
 	"\fTradeRequest\x12\x16\n" +
-	"\x06symbol\x18\x01 \x01(\tR\x06symbol2\xab\x01\n" +
-	"\x06Market\x12N\n" +
-	"\aGetBook\x12!.muskdeer.himalaya.v1.BookRequest\x1a .muskdeer.common.v1.HimalayaBook\x12Q\n" +
-	"\bGetTrade\x12\".muskdeer.himalaya.v1.TradeRequest\x1a!.muskdeer.common.v1.HimalayaTradeB;Z9github.com/hmlax/muskdeer/deer/pb/market/venue/v1;venuev1b\x06proto3"
+	"\x06symbol\x18\x01 \x01(\tR\x06symbol2\xad\x01\n" +
+	"\x06Market\x12O\n" +
+	"\aGetBook\x12%.muskdeer.market.venue.v1.BookRequest\x1a\x1d.muskdeer.common.v1.VenueBook\x12R\n" +
+	"\bGetTrade\x12&.muskdeer.market.venue.v1.TradeRequest\x1a\x1e.muskdeer.common.v1.VenueTradeB;Z9github.com/hmlax/muskdeer/deer/pb/market/venue/v1;venuev1b\x06proto3"
 
 var (
 	file_deer_proto_market_venue_v1_runtime_proto_rawDescOnce sync.Once
@@ -137,16 +137,16 @@ func file_deer_proto_market_venue_v1_runtime_proto_rawDescGZIP() []byte {
 
 var file_deer_proto_market_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_deer_proto_market_venue_v1_runtime_proto_goTypes = []any{
-	(*BookRequest)(nil),      // 0: muskdeer.himalaya.v1.BookRequest
-	(*TradeRequest)(nil),     // 1: muskdeer.himalaya.v1.TradeRequest
-	(*v1.HimalayaBook)(nil),  // 2: muskdeer.common.v1.HimalayaBook
-	(*v1.HimalayaTrade)(nil), // 3: muskdeer.common.v1.HimalayaTrade
+	(*BookRequest)(nil),   // 0: muskdeer.market.venue.v1.BookRequest
+	(*TradeRequest)(nil),  // 1: muskdeer.market.venue.v1.TradeRequest
+	(*v1.VenueBook)(nil),  // 2: muskdeer.common.v1.VenueBook
+	(*v1.VenueTrade)(nil), // 3: muskdeer.common.v1.VenueTrade
 }
 var file_deer_proto_market_venue_v1_runtime_proto_depIdxs = []int32{
-	0, // 0: muskdeer.himalaya.v1.Market.GetBook:input_type -> muskdeer.himalaya.v1.BookRequest
-	1, // 1: muskdeer.himalaya.v1.Market.GetTrade:input_type -> muskdeer.himalaya.v1.TradeRequest
-	2, // 2: muskdeer.himalaya.v1.Market.GetBook:output_type -> muskdeer.common.v1.HimalayaBook
-	3, // 3: muskdeer.himalaya.v1.Market.GetTrade:output_type -> muskdeer.common.v1.HimalayaTrade
+	0, // 0: muskdeer.market.venue.v1.Market.GetBook:input_type -> muskdeer.market.venue.v1.BookRequest
+	1, // 1: muskdeer.market.venue.v1.Market.GetTrade:input_type -> muskdeer.market.venue.v1.TradeRequest
+	2, // 2: muskdeer.market.venue.v1.Market.GetBook:output_type -> muskdeer.common.v1.VenueBook
+	3, // 3: muskdeer.market.venue.v1.Market.GetTrade:output_type -> muskdeer.common.v1.VenueTrade
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

@@ -18,7 +18,7 @@ const (
 // FindClientOrders returns positive native facts only. Missing history is never
 // a rejection or cancellation proof. Correlation does not imply SDK deduplication;
 // conflicting native identities for a requested client remain invalid.
-func (c *Client) FindClientOrders(ctx context.Context, scope Scope, clients []string, basePrecision int32) ([]*commonv1.HimalayaOrder, error) {
+func (c *Client) FindClientOrders(ctx context.Context, scope Scope, clients []string, basePrecision int32) ([]*commonv1.VenueOrder, error) {
 	if c == nil || c.sdk == nil || ctx == nil || !validClientRecoveryScope(scope, basePrecision) || len(clients) == 0 || len(clients) > 256 {
 		return nil, ErrInvalidSubmit
 	}
@@ -29,7 +29,7 @@ func (c *Client) FindClientOrders(ctx context.Context, scope Scope, clients []st
 		}
 		wanted[client] = true
 	}
-	found := make(map[string]*commonv1.HimalayaOrder)
+	found := make(map[string]*commonv1.VenueOrder)
 	op, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	var cursor *pb.OrderHistoryCursor
@@ -69,7 +69,7 @@ func (c *Client) FindClientOrders(ctx context.Context, scope Scope, clients []st
 		}
 		cursor = response.Next
 	}
-	orders := make([]*commonv1.HimalayaOrder, 0, len(found))
+	orders := make([]*commonv1.VenueOrder, 0, len(found))
 	for _, client := range clients {
 		if order := found[client]; order != nil {
 			orders = append(orders, order)

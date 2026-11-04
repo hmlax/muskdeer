@@ -76,4 +76,4 @@ Go 命令统一通过 `python3 scripts/go.py` 使用固定工具链；例如 `py
 - [实施计划](docs/IMPLEMENTATION_PLAN.md)
 - [开发进度与实际验证](docs/PROGRESS.md)
 
-Himalaya SDK/gRPC 接入集中在 `execution/adapters/himalaya`，通过 `execution/venue/gateway` 的强类型接口接入业务。`execution/venue` 持有持久化、额度、撤单和恢复循环，`deer/trading/venueconfig` 加载数据库业务策略；适配器不依赖数据库、ORM 模型或仓储。内部通道 RPC 归 `deer/proto/<service>/venue/v1`，旧线协议名称和配置字段保留兼容。存量数据库需显式执行已验证的通道 0007 升级，再部署新版本；应用启动只校验版本。
+Himalaya SDK/gRPC 接入集中在 `execution/adapters/himalaya`，通过 `execution/venue/gateway` 的强类型接口接入业务。`execution/venue` 持有持久化、额度、撤单和恢复循环，`deer/trading/venueconfig` 加载数据库业务策略；适配器不依赖数据库、ORM 模型或仓储。内部通道 RPC 归 `deer/proto/<service>/venue/v1`，消息使用 Venue*，RPC 全名按服务归属，不保留旧路由或消息别名。配置只接受 business.venue 和 execution_venue=gateway，维护命令为 venueinit/venuebaseline；服务与调用端需配套更新。存量数据库需显式执行已验证的通道 0007 升级，再部署新版本；应用启动只校验版本。

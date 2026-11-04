@@ -28,8 +28,8 @@ type DevelopmentBaselineRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	BaselineId        string                 `protobuf:"bytes,1,opt,name=baseline_id,json=baselineId,proto3" json:"baseline_id,omitempty"`
 	ApprovalReference string                 `protobuf:"bytes,2,opt,name=approval_reference,json=approvalReference,proto3" json:"approval_reference,omitempty"`
-	Scope             *HimalayaScope         `protobuf:"bytes,3,opt,name=scope,proto3" json:"scope,omitempty"`
-	OriginalOrders    []*HimalayaOrder       `protobuf:"bytes,4,rep,name=original_orders,json=originalOrders,proto3" json:"original_orders,omitempty"`
+	Scope             *VenueScope            `protobuf:"bytes,3,opt,name=scope,proto3" json:"scope,omitempty"`
+	OriginalOrders    []*VenueOrder          `protobuf:"bytes,4,rep,name=original_orders,json=originalOrders,proto3" json:"original_orders,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -78,14 +78,14 @@ func (x *DevelopmentBaselineRequest) GetApprovalReference() string {
 	return ""
 }
 
-func (x *DevelopmentBaselineRequest) GetScope() *HimalayaScope {
+func (x *DevelopmentBaselineRequest) GetScope() *VenueScope {
 	if x != nil {
 		return x.Scope
 	}
 	return nil
 }
 
-func (x *DevelopmentBaselineRequest) GetOriginalOrders() []*HimalayaOrder {
+func (x *DevelopmentBaselineRequest) GetOriginalOrders() []*VenueOrder {
 	if x != nil {
 		return x.OriginalOrders
 	}
@@ -140,13 +140,13 @@ var File_deer_proto_common_v1_development_baseline_proto protoreflect.FileDescri
 
 const file_deer_proto_common_v1_development_baseline_proto_rawDesc = "" +
 	"\n" +
-	"/deer/proto/common/v1/development_baseline.proto\x12\x12muskdeer.common.v1\x1a#deer/proto/common/v1/himalaya.proto\"\xf1\x01\n" +
+	"/deer/proto/common/v1/development_baseline.proto\x12\x12muskdeer.common.v1\x1a deer/proto/common/v1/venue.proto\"\xeb\x01\n" +
 	"\x1aDevelopmentBaselineRequest\x12\x1f\n" +
 	"\vbaseline_id\x18\x01 \x01(\tR\n" +
 	"baselineId\x12-\n" +
-	"\x12approval_reference\x18\x02 \x01(\tR\x11approvalReference\x127\n" +
-	"\x05scope\x18\x03 \x01(\v2!.muskdeer.common.v1.HimalayaScopeR\x05scope\x12J\n" +
-	"\x0foriginal_orders\x18\x04 \x03(\v2!.muskdeer.common.v1.HimalayaOrderR\x0eoriginalOrders\"f\n" +
+	"\x12approval_reference\x18\x02 \x01(\tR\x11approvalReference\x124\n" +
+	"\x05scope\x18\x03 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x12G\n" +
+	"\x0foriginal_orders\x18\x04 \x03(\v2\x1e.muskdeer.common.v1.VenueOrderR\x0eoriginalOrders\"f\n" +
 	"\x18DevelopmentBaselineBatch\x12J\n" +
 	"\brequests\x18\x01 \x03(\v2..muskdeer.common.v1.DevelopmentBaselineRequestR\brequestsB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
 
@@ -166,12 +166,12 @@ var file_deer_proto_common_v1_development_baseline_proto_msgTypes = make([]proto
 var file_deer_proto_common_v1_development_baseline_proto_goTypes = []any{
 	(*DevelopmentBaselineRequest)(nil), // 0: muskdeer.common.v1.DevelopmentBaselineRequest
 	(*DevelopmentBaselineBatch)(nil),   // 1: muskdeer.common.v1.DevelopmentBaselineBatch
-	(*HimalayaScope)(nil),              // 2: muskdeer.common.v1.HimalayaScope
-	(*HimalayaOrder)(nil),              // 3: muskdeer.common.v1.HimalayaOrder
+	(*VenueScope)(nil),                 // 2: muskdeer.common.v1.VenueScope
+	(*VenueOrder)(nil),                 // 3: muskdeer.common.v1.VenueOrder
 }
 var file_deer_proto_common_v1_development_baseline_proto_depIdxs = []int32{
-	2, // 0: muskdeer.common.v1.DevelopmentBaselineRequest.scope:type_name -> muskdeer.common.v1.HimalayaScope
-	3, // 1: muskdeer.common.v1.DevelopmentBaselineRequest.original_orders:type_name -> muskdeer.common.v1.HimalayaOrder
+	2, // 0: muskdeer.common.v1.DevelopmentBaselineRequest.scope:type_name -> muskdeer.common.v1.VenueScope
+	3, // 1: muskdeer.common.v1.DevelopmentBaselineRequest.original_orders:type_name -> muskdeer.common.v1.VenueOrder
 	0, // 2: muskdeer.common.v1.DevelopmentBaselineBatch.requests:type_name -> muskdeer.common.v1.DevelopmentBaselineRequest
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
@@ -185,7 +185,7 @@ func file_deer_proto_common_v1_development_baseline_proto_init() {
 	if File_deer_proto_common_v1_development_baseline_proto != nil {
 		return
 	}
-	file_deer_proto_common_v1_himalaya_proto_init()
+	file_deer_proto_common_v1_venue_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

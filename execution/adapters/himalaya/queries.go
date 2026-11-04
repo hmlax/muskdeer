@@ -15,7 +15,7 @@ import (
 // FindKnown seeks the native unique ID in durable terminal history. The SDK's
 // cursor is an exclusive order-ID boundary; no client-ID uniqueness is assumed.
 // A missing row leaves the outcome unknown and cannot release a reservation.
-func (c *Client) FindKnown(ctx context.Context, scope Scope, id uint64, basePrecision int32) (*commonv1.HimalayaOrder, error) {
+func (c *Client) FindKnown(ctx context.Context, scope Scope, id uint64, basePrecision int32) (*commonv1.VenueOrder, error) {
 	if c == nil || c.sdk == nil || ctx == nil || id == 0 || id == math.MaxUint64 || basePrecision < 0 || basePrecision > 18 ||
 		scope.UserID <= 0 || scope.FundID <= 0 || !validSymbol(scope.Symbol) {
 		return nil, ErrInvalidSubmit
@@ -127,7 +127,7 @@ func (c *Client) Read(ctx context.Context, scope Scope) (*gateway.Observation, e
 }
 
 // ReadOrders supports controlled cancellation even when mark-price health is invalid.
-func (c *Client) ReadOrders(ctx context.Context, scope Scope) ([]*commonv1.HimalayaOrder, error) {
+func (c *Client) ReadOrders(ctx context.Context, scope Scope) ([]*commonv1.VenueOrder, error) {
 	raw, err := c.readSDK(ctx, scope)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func (c *Client) ReadOrders(ctx context.Context, scope Scope) ([]*commonv1.Himal
 	if precision < 0 || precision > 18 {
 		return nil, ErrInvalidSnapshot
 	}
-	orders := make([]*commonv1.HimalayaOrder, 0, len(raw.Orders))
+	orders := make([]*commonv1.VenueOrder, 0, len(raw.Orders))
 	for _, row := range raw.Orders {
 		order, err := normalizeOrder(row, scope, -int32(precision))
 		if err != nil {

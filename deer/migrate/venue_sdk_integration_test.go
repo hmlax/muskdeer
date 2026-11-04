@@ -31,7 +31,7 @@ import (
 	gateway "github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-func TestHimalayaSDKDurableAdmissionReservesBudgetAndRejectsStaleEpoch(t *testing.T) {
+func TestVenueSDKDurableAdmissionReservesBudgetAndRejectsStaleEpoch(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -54,7 +54,7 @@ func TestHimalayaSDKDurableAdmissionReservesBudgetAndRejectsStaleEpoch(t *testin
 	}
 }
 
-func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.T) {
+func TestVenueSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -91,7 +91,7 @@ func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.
 	}
 }
 
-func TestHimalayaSDKPersistedGuardStopsSecondActualSDKCall(t *testing.T) {
+func TestVenueSDKPersistedGuardStopsSecondActualSDKCall(t *testing.T) {
 	_, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -148,7 +148,7 @@ func (p *sdkReplyLossPeer) Place(context.Context, *pb.PlaceRequest) (*pb.PlaceOr
 	return nil, status.Error(codes.Unavailable, "injected SDK reply loss")
 }
 
-func TestHimalayaSDKPersistedMutationAndExpiredRiskCannotDispatch(t *testing.T) {
+func TestVenueSDKPersistedMutationAndExpiredRiskCannotDispatch(t *testing.T) {
 	for _, change := range []string{"price", "snapshot_expires_at", "maximum_notional"} {
 		t.Run(change, func(t *testing.T) {
 			db, store, lease, request := sdkAdmissionFixture(t)
@@ -177,7 +177,7 @@ func TestHimalayaSDKPersistedMutationAndExpiredRiskCannotDispatch(t *testing.T) 
 	}
 }
 
-func TestHimalayaSDKExtensionHistoryDoesNotChangeCoreLedger(t *testing.T) {
+func TestVenueSDKExtensionHistoryDoesNotChangeCoreLedger(t *testing.T) {
 	db, _, _, _ := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -195,7 +195,7 @@ func TestHimalayaSDKExtensionHistoryDoesNotChangeCoreLedger(t *testing.T) {
 	}
 }
 
-func TestHimalayaSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) {
+func TestVenueSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -228,7 +228,7 @@ func TestHimalayaSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) 
 	}
 }
 
-func TestHimalayaSDKConcurrentPreparationsShareOneFundBudget(t *testing.T) {
+func TestVenueSDKConcurrentPreparationsShareOneFundBudget(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()

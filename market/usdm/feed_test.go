@@ -44,7 +44,7 @@ func TestDepthSessionCancellationClosesAndJoinsTheSocket(t *testing.T) {
 	feed.url = "wss" + strings.TrimPrefix(server.URL, "https")
 	feed.dialer.TLSClientConfig = server.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
 	received := 0
-	err = feed.Run(ctx, func(context.Context, *commonv1.HimalayaBook) error {
+	err = feed.Run(ctx, func(context.Context, *commonv1.VenueBook) error {
 		received++
 		cancel()
 		return nil

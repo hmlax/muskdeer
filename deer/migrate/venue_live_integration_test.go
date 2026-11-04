@@ -20,7 +20,7 @@ import (
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
-func TestHimalayaLiveSourceAndStrategyEpochAreCheckedAtFinalSDKCall(t *testing.T) {
+func TestVenueLiveSourceAndStrategyEpochAreCheckedAtFinalSDKCall(t *testing.T) {
 	for _, changed := range []string{"source", "strategy", "deadline"} {
 		t.Run(changed, func(t *testing.T) {
 			db, store, lease, request := sdkAdmissionFixture(t)
@@ -52,7 +52,7 @@ func TestHimalayaLiveSourceAndStrategyEpochAreCheckedAtFinalSDKCall(t *testing.T
 	}
 }
 
-func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *testing.T) {
+func TestVenueCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -63,7 +63,7 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 	if err := store.WithSubmission(ctx, prepared.Admission, func(context.Context) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
-	order := &commonv1.HimalayaOrder{
+	order := &commonv1.VenueOrder{
 		OrderId:          "42",
 		ClientId:         prepared.Request.ClientID,
 		Side:             string(request.Side),
@@ -72,13 +72,13 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 		ExecutedQuantity: "0.25",
 		Status:           native.StatusPartial,
 	}
-	if err := store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
-		Scope: &commonv1.HimalayaScope{
+	if err := store.Observe(ctx, lease, &commonv1.VenueSnapshot{
+		Scope: &commonv1.VenueScope{
 			UserId: request.UserID,
 			FundId: request.FundID,
 			Symbol: request.Symbol,
 		},
-		Orders: []*commonv1.HimalayaOrder{order},
+		Orders: []*commonv1.VenueOrder{order},
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -105,13 +105,13 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 	}
 	order.Status = native.StatusPartCancel
 	for range 2 {
-		if err := store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
-			Scope: &commonv1.HimalayaScope{
+		if err := store.Observe(ctx, lease, &commonv1.VenueSnapshot{
+			Scope: &commonv1.VenueScope{
 				UserId: request.UserID,
 				FundId: request.FundID,
 				Symbol: request.Symbol,
 			},
-			Orders: []*commonv1.HimalayaOrder{order},
+			Orders: []*commonv1.VenueOrder{order},
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -133,7 +133,7 @@ func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execut
 	if err != nil {
 		t.Fatal(err)
 	}
-	get := func(key string) *commonv1.HimalayaAuthority {
+	get := func(key string) *commonv1.VenueAuthority {
 		token, err := leases.Acquire(ctx, domain.LeaseKey{
 			Kind:      domain.LeaseKindExecution,
 			AccountID: key,
@@ -141,7 +141,7 @@ func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execut
 		if err != nil {
 			t.Fatal(err)
 		}
-		return &commonv1.HimalayaAuthority{
+		return &commonv1.VenueAuthority{
 			AccountId:   key,
 			OwnerId:     token.OwnerID,
 			Epoch:       token.Epoch,
@@ -160,7 +160,7 @@ func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execut
 	}
 	return venueexecution.LiveAuthority{
 		Strategy: get(native.StrategyKey(10001, 10001)),
-		Book: &commonv1.HimalayaBook{
+		Book: &commonv1.VenueBook{
 			Symbol:       symbol,
 			Source:       native.Source,
 			Segment:      native.Segment,

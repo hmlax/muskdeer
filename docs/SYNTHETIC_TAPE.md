@@ -2,13 +2,13 @@
 
 用户确认的接口是现有 Go SDK `WashTrade`：只发布开发行情的合成成交和 K 线，不创建订单，也不修改账户、仓位或资金。该数据不进入 Muskdeer 的真实成交、持仓或收益投影。撮合和原 SDK 源码保持不变。
 
-策略位于 `strategy/native`，由现有 strategy 进程拥有；execution 通过 mTLS 内部 RPC 接收意图并重新读取权威来源，最终调用 SDK。`BOOK` 模式保持原买一/卖一定价和序号交替方向；`AGG_TRADE` 模式参考 Himalaya tools/market-maker，按 Binance 最新聚合成交的主动方向、价格及 `himalaya.quantity_fraction` 缩放数量，裁剪到单次上限后向下取整到数量步长，价格按买向下/卖向上对齐原生 tick。低于原生最小数量或金额的样本跳过，不消耗发送槽。它没有资金账户参数，与订单撤单审计分开。
+策略位于 `strategy/native`，由现有 strategy 进程拥有；execution 通过 mTLS 内部 RPC 接收意图并重新读取权威来源，最终调用 SDK。`BOOK` 模式保持原买一/卖一定价和序号交替方向；`AGG_TRADE` 模式参考 Himalaya tools/market-maker，按 Binance 最新聚合成交的主动方向、价格及 `venue.quantity_fraction` 缩放数量，裁剪到单次上限后向下取整到数量步长，价格按买向下/卖向上对齐原生 tick。低于原生最小数量或金额的样本跳过，不消耗发送槽。它没有资金账户参数，与订单撤单审计分开。
 
 market 使用独立的 `aggTrade` 连接、缓存与数据库发布租约，通过强类型 `GetTrade` 提供来源 ID、原始价格/数量、方向和交易/接收时间。按 [Binance USDm WebSocket 路由](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect) 使用 `/market/ws/<symbol>@aggTrade`，深度继续使用 `/public`；成交流断开时立即清除该缓存，失效不会改用深度价格或其他交易所。新模式仍按有限频率采样最新事件，不能描述为逐笔全量复制 Binance 成交量；SDK 回执时间仍是本次开发发布的时间，原始交易时间保存在来源审计中。
 
 ## 有限运行配置
 
-默认不配置此字段，策略不会启动。以下仅为 Nacos Proto JSON 示例，在 strategy 和 execution 的 `business.himalaya` 中加入同一段配置；账户/交易对、来源和网格必须已在数据库 HimalayaBudget 中显式维护，不能再通过 `himalaya.profiles` 配置：
+默认不配置此字段，策略不会启动。以下仅为 Nacos Proto JSON 示例，在 strategy 和 execution 的 `business.venue` 中加入同一段配置；账户/交易对、来源和网格必须已在数据库 TradingAccountPolicy 中显式维护，不能再通过 `venue.profiles` 配置：
 
 ```json
 "synthetic_tape": {
@@ -29,7 +29,7 @@ market 使用独立的 `aggTrade` 连接、缓存与数据库发布租约，通�
 - `interval` 为每品种发送间隔，范围 100ms..1m；服务端使用数据库时间强制限制。
 - `maximum_events` 为每品种一轮最多消耗的发送槽数，范围 1..1000。
 - `mode` 缺省为兼容的 `SYNTHETIC_TAPE_MODE_BOOK`；新模式必须显式选择 `SYNTHETIC_TAPE_MODE_AGG_TRADE`，未知值拒绝。切换模式使用新的 `run_id`。
-- `quantity` 在 BOOK 模式是固定基础资产数量，在 AGG_TRADE 模式是单次基础资产数量上限；缩放比例沿用 `himalaya.quantity_fraction`。`maximum_notional` 为该品种一轮全部尝试的价格×数量上限，使用报价资产单位。均为精确十进制字符串，不自动扩大或补充。
+- `quantity` 在 BOOK 模式是固定基础资产数量，在 AGG_TRADE 模式是单次基础资产数量上限；缩放比例沿用 `venue.quantity_fraction`。`maximum_notional` 为该品种一轮全部尝试的价格×数量上限，使用报价资产单位。均为精确十进制字符串，不自动扩大或补充。
 - SDK 前验证市场精度、数量上下限与最小名义金额。示例数值可能不满足后来改变的市场规则，不能作为启动成功保证。
 
 ## 持久化与重复请求
@@ -42,7 +42,7 @@ AGG_TRADE 模式额外保存完整来源观察到计划与回执的 `source_trad
 
 ## 启用与停止
 
-1. 重建四核心服务镜像。部署前使用新镜像的维护命令显式升级 SDK 扩展：`docker compose --profile tools run --rm --no-deps --entrypoint /himalayainit tools -schema-only`。此模式不启用或改变基金预算，不修改原生资金/订单；没有自动启动迁移。
+1. 重建四核心服务镜像。部署前使用新镜像的维护命令显式升级 SDK 扩展：`docker compose --profile tools run --rm --no-deps --entrypoint /venueinit tools -schema-only`。此模式不启用或改变基金预算，不修改原生资金/订单；没有自动启动迁移。
 2. 在 Nacos 为 market/strategy/execution 写入审核后的相同合成运行控制，将 `enabled` 设为 `true`，显式更新这三个核心进程的合同版本；market 需要新模式配置才能启动成交流。AGG_TRADE 来源审计本身沿用已有 typed JSON；后续数据库业务配置需要扩展 0006，并在停止四核心后完成显式市场绑定导入，见 [Himalaya 开发做市](HIMALAYA.md)。相同参数映射保留旧合成轮次的指纹，不重置计数或未知槽。配置不热切换；仅 execution 环境含 SDK token。现有开发目标校验仍拒绝公网 SDK 地址。
 3. 停止时在 strategy/execution 设 `enabled=false` 并显式重启相关进程。原生已经接收的事件不能撤回；本轮计数及 UNKNOWN 审计保留。
 

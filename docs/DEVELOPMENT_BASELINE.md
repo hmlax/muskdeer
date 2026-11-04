@@ -1,12 +1,12 @@
 # 一次性开发账本基线
 
-2026-11-04 后续用户明确要求“历史订单不用关心，直接启动”BTC/ETH 做市及开发测试成交。除下述原 legacy 基线外，现有未知下单意图可按本次私有清单追加历史批准。`himalayabaseline -historical-intents -manifest <清单>` 默认预览；`-apply` 才写入批准。维护流程持有执行租约，连续读取两次无挂单且账户/仓位稳定的 SDK 观察，仅接受清单完整覆盖的既有未知意图。批准及观察附加在原意图上，原 DISPATCHED、client_id、金额、预留及原基线均保留；新未知和未知撤单不会被自动纳入。接口没有收到请求的证明，不会把“查不到”改写为拒单或终态。
+2026-11-04 后续用户明确要求“历史订单不用关心，直接启动”BTC/ETH 做市及开发测试成交。除下述原 legacy 基线外，现有未知下单意图可按本次私有清单追加历史批准。`venuebaseline -historical-intents -manifest <清单>` 默认预览；`-apply` 才写入批准。维护流程持有执行租约，连续读取两次无挂单且账户/仓位稳定的 SDK 观察，仅接受清单完整覆盖的既有未知意图。批准及观察附加在原意图上，原 DISPATCHED、client_id、金额、预留及原基线均保留；新未知和未知撤单不会被自动纳入。接口没有收到请求的证明，不会把“查不到”改写为拒单或终态。
 
 最终检查已拒绝且本次调用能证明 SDK 从未被调用的请求，可终止本地未发送意图并释放该笔预留；已经进入 SDK、响应丢失、崩溃或无法证明未发送时继续保留未知。这两条路径分别处理人工批准的历史不确定性和本地可证明的未发送事实。
 
 本轮启动中，用户明确批准：Himalaya 开发环境删除旧挂单终态后，以当前 SDK 账本建立一次基线，保留旧未知审计和全部风险额度，不重发旧单、不平仓。这是对本批旧 legacy 订单的明确处置，不是自动忽略 UNKNOWN 的一般规则。
 
-`himalayabaseline` 是维护命令，默认只预览；`-apply` 才写入。配置仍从 execution 的 Nacos Proto JSON 读取，只允许已校验的开发目标与配置账户。输入使用 typed Proto JSON `DevelopmentBaselineBatch`，包含批准引用、固定基线 ID、账户 scope 和原始 legacy 挂单快照。
+`venuebaseline` 是维护命令，默认只预览；`-apply` 才写入。配置仍从 execution 的 Nacos Proto JSON 读取，只允许已校验的开发目标与配置账户。输入使用 typed Proto JSON `DevelopmentBaselineBatch`，包含批准引用、固定基线 ID、账户 scope 和原始 legacy 挂单快照。
 
 ## 应用前提
 
@@ -17,7 +17,7 @@
 
 ## 审计及风险
 
-原 `HimalayaCancellation` 记录和状态完全保留，不写成 `CONFIRMED`。独立 `HimalayaDevelopmentBaseline` 保存批准输入、当前 SDK 观察、请求摘要和证据摘要；每账户只有一条记录，精确重复应用无副作用，改换 ID 不能再次重置。
+原 `VenueCancellation` 记录和状态完全保留，不写成 `CONFIRMED`。独立 `ExecutionRecoveryBaseline` 保存批准输入、当前 SDK 观察、请求摘要和证据摘要；每账户只有一条记录，精确重复应用无副作用，改换 ID 不能再次重置。
 
 旧风险按每笔原始订单的完整数量乘以「原价与当前 mark 较大者」累加，故部分成交也不释放历史额度；再加当前仓位名义金额，并与原有观察上界取较大值。后续每次同步风险都继续把历史保留量加到当前义务，且不自动下调原有观察上界。资金预算的限额、预留、开关和杠杆不由基线命令改变。
 
@@ -25,12 +25,12 @@
 
 ## 维护流程
 
-先从已验证源码构建镜像，停止本项目旧执行者，显式 `himalayainit -schema-only` 升级独立 SDK 扩展 0004。基线命令本身不迁移。使用只读 SDK 客户端查询，不调用任何原生交易或资金写方法。
+先从已验证源码构建镜像，停止本项目旧执行者，显式 `venueinit -schema-only` 升级独立 SDK 扩展 0004。基线命令本身不迁移。使用只读 SDK 客户端查询，不调用任何原生交易或资金写方法。
 
 ```sh
 # 路径由维护者绑定到容器；报告包含测试账户观察，只能保存到私有位置
-/himalayabaseline -manifest /input/approved-baseline.json -report /output/preview.json
-/himalayabaseline -manifest /input/approved-baseline.json -report /output/applied.json -apply
+/venuebaseline -manifest /input/approved-baseline.json -report /output/preview.json
+/venuebaseline -manifest /input/approved-baseline.json -report /output/applied.json -apply
 ```
 
 预览和应用都要在实际配置下校验；失败时保持阻断，不清空表或改写未知记录。应用后启动已匹配 schema/合同的四核心服务，核验真实挂单及风险，再核验有限的测试成交。账户原始仓位不被维护命令关闭；随后真实策略成交可能正常改变仓位。

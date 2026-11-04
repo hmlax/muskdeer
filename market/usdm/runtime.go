@@ -33,8 +33,8 @@ type Runtime struct {
 	cfg    *venueconfig.RuntimeConfig
 	leases domain.LeaseRepository
 	mu     sync.RWMutex
-	books  map[string]*commonv1.HimalayaBook
-	trades map[string]*commonv1.HimalayaTrade
+	books  map[string]*commonv1.VenueBook
+	trades map[string]*commonv1.VenueTrade
 	logger *logging.Logger
 }
 
@@ -53,8 +53,8 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 		owner:  owner,
 		cfg:    settings,
 		leases: leases,
-		books:  make(map[string]*commonv1.HimalayaBook),
-		trades: make(map[string]*commonv1.HimalayaTrade),
+		books:  make(map[string]*commonv1.VenueBook),
+		trades: make(map[string]*commonv1.VenueTrade),
 		logger: logger,
 	}, nil
 }
@@ -67,14 +67,14 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
 // Workers has one independently owned session per configured instrument.
 func (r *Runtime) Workers() []deer.Worker {
 	var result []deer.Worker
-	for _, profile := range r.cfg.Himalaya.Profiles {
+	for _, profile := range r.cfg.Venue.Profiles {
 		result = append(result, deer.Worker{
 			Name: "market.usdm." + strings.ToLower(profile.Symbol),
 			Run:  func(ctx context.Context) error { return r.run(ctx, profile.Symbol) },
 		})
 	}
-	if r.cfg.Himalaya.GetSyntheticTape().GetEnabled() && r.cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
-		for _, profile := range r.cfg.Himalaya.SyntheticTape.Profiles {
+	if r.cfg.Venue.GetSyntheticTape().GetEnabled() && r.cfg.Venue.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		for _, profile := range r.cfg.Venue.SyntheticTape.Profiles {
 			result = append(result, deer.Worker{
 				Name: tradeWorkerPrefix + strings.ToLower(profile.Symbol),
 				Run:  func(ctx context.Context) error { return r.runTrades(ctx, profile.Symbol) },
@@ -85,7 +85,7 @@ func (r *Runtime) Workers() []deer.Worker {
 }
 
 // GetBook verifies both publication freshness and retained database ownership.
-func (r *Runtime) GetBook(ctx context.Context, request *marketvenuev1.BookRequest) (*commonv1.HimalayaBook, error) {
+func (r *Runtime) GetBook(ctx context.Context, request *marketvenuev1.BookRequest) (*commonv1.VenueBook, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
@@ -120,7 +120,7 @@ func (r *Runtime) session(ctx context.Context, symbol string) error {
 	token, err := r.leases.Acquire(op, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: native.MarketKey(symbol),
-	}, r.owner, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
 	cancel()
 	if err != nil {
 		return err
@@ -129,11 +129,11 @@ func (r *Runtime) session(ctx context.Context, symbol string) error {
 	if err != nil {
 		return err
 	}
-	return feed.Run(ctx, func(work context.Context, book *commonv1.HimalayaBook) error {
-		if time.Until(token.ExpiresAt) < r.cfg.Himalaya.LeaseTtl.AsDuration()/2 {
+	return feed.Run(ctx, func(work context.Context, book *commonv1.VenueBook) error {
+		if time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {
 			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout)
 			defer cancel()
-			token, err = r.leases.Renew(bounded, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
+			token, err = r.leases.Renew(bounded, token, r.cfg.Venue.LeaseTtl.AsDuration())
 			if err != nil {
 				return err
 			}

@@ -184,7 +184,7 @@ func TestDevelopmentBaselineFailsClosedIfRetainedRiskIsReduced(t *testing.T) {
 	}
 }
 
-func developmentBaselineFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, *commonv1.DevelopmentBaselineRequest, *commonv1.HimalayaSnapshot) {
+func developmentBaselineFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, *commonv1.DevelopmentBaselineRequest, *commonv1.VenueSnapshot) {
 	t.Helper()
 	db, store, lease, order := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
@@ -204,7 +204,7 @@ func developmentBaselineFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, 
 	if err := store.WithCancellation(ctx, admission, func(context.Context) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
-	wireScope := &commonv1.HimalayaScope{
+	wireScope := &commonv1.VenueScope{
 		UserId: scope.UserID,
 		FundId: scope.FundID,
 		Symbol: scope.Symbol,
@@ -213,7 +213,7 @@ func developmentBaselineFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, 
 		BaselineId:        "development-test-1",
 		ApprovalReference: "test-explicit-development-approval",
 		Scope:             wireScope,
-		OriginalOrders: []*commonv1.HimalayaOrder{{
+		OriginalOrders: []*commonv1.VenueOrder{{
 			OrderId:          "42",
 			ClientId:         native.LegacyPrefix + scope.Symbol + "_old",
 			Side:             string(domain.SideBuy),
@@ -223,14 +223,14 @@ func developmentBaselineFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, 
 			Status:           native.StatusOpen,
 		}},
 	}
-	snapshot := &commonv1.HimalayaSnapshot{
+	snapshot := &commonv1.VenueSnapshot{
 		Scope: proto.CloneOf(wireScope),
-		Market: &commonv1.HimalayaMarket{
+		Market: &commonv1.VenueMarket{
 			MarkPrice:    "100",
 			WorstFeeRate: "0.001",
 		},
 		Available: "1000",
-		Positions: []*commonv1.HimalayaPosition{{
+		Positions: []*commonv1.VenuePosition{{
 			Symbol:         scope.Symbol,
 			SignedQuantity: "8",
 			EntryPrice:     "100",

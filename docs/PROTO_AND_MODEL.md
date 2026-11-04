@@ -71,4 +71,4 @@ make generate：Proto 校验 → Go/gRPC 代码 → 经验证的 tag/ORM 生成 
 
 P03.2 已实现内嵌版本 SQL、生成的 SchemaMigration 记录、事务 advisory lock/回滚及显式 migrate -apply 工具，见 [迁移说明](MIGRATIONS.md)。当前业务实体仍按后续版本加入；此工具不执行启动 AutoMigrate，不改写不一致历史。
 
-Himalaya 仅提供 SDK/gRPC 适配，业务持久化由通用交易账户策略、通道订单/撤单、账户观察和恢复模型承担。适配层不导入 ORM/模型/仓储，业务层通过 gateway 接口接收显式类型映射后的值；旧消息全名、配置键、账户租约键和摘要保持兼容。
+Himalaya 仅提供 SDK/gRPC 适配，业务持久化由通用交易账户策略、通道订单/撤单、账户观察和恢复模型承担。适配层不导入 ORM/模型/仓储，业务层通过 gateway 接口接收显式类型映射后的值；通道消息、RPC 与配置均使用新的业务名称，旧入口不注册；数据库记录身份和实际 SDK 请求摘要属于持久化/第三方合同，不通过协议改名清空或改写。

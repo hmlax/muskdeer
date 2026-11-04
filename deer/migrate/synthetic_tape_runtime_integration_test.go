@@ -94,7 +94,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 		ExecutionVenue:   native.Venue,
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
-		Himalaya: &configv1.HimalayaRuntime{
+		Venue: &configv1.VenueRuntime{
 			Target:           address,
 			TokenEnv:         "SYNTHETIC_TEST_TOKEN",
 			Depth:            1,
@@ -157,7 +157,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 			sdk:     sdk,
 			db:      db,
 			factory: strategyFactory,
-			cfg:     settings.Himalaya,
+			cfg:     settings.Venue,
 			owner:   lease.OwnerID,
 		})
 		market.tradeUnavailable.Store(false)
@@ -173,7 +173,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 		assertSyntheticTradeReceipts(ctx, t, db)
 	}
 	var before commonmodelv1.ExecutionShardLease
-	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", native.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, request.Symbol)).First(&before).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", native.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, request.Symbol)).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	// A new worker starts its local sequence at zero, but the persisted slots

@@ -33,7 +33,7 @@ type tradeFrame struct {
 
 // DecodeTrade maps buyer-is-maker to an aggressive sell and rejects stale,
 // malformed and foreign-symbol observations without borrowing book prices.
-func DecodeTrade(data []byte, symbol string, received time.Time) (*commonv1.HimalayaTrade, error) {
+func DecodeTrade(data []byte, symbol string, received time.Time) (*commonv1.VenueTrade, error) {
 	var frame tradeFrame
 	if len(data) > 64*1024 || json.Unmarshal(data, &frame) != nil || frame.Event != aggregateTradeEvent ||
 		frame.ID <= 0 || frame.First <= 0 || frame.Last < frame.First || frame.BuyerMaker == nil ||
@@ -44,7 +44,7 @@ func DecodeTrade(data []byte, symbol string, received time.Time) (*commonv1.Hima
 	if *frame.BuyerMaker {
 		side = domain.SideSell
 	}
-	trade := &commonv1.HimalayaTrade{
+	trade := &commonv1.VenueTrade{
 		Symbol:       frame.Symbol,
 		Source:       native.Source,
 		Segment:      native.Segment,
@@ -78,7 +78,7 @@ func NewTradeFeed(symbol string) (*TradeFeed, error) {
 }
 
 // Run publishes only strictly increasing aggregate IDs within an owned session.
-func (f *TradeFeed) Run(ctx context.Context, publish func(context.Context, *commonv1.HimalayaTrade) error) error {
+func (f *TradeFeed) Run(ctx context.Context, publish func(context.Context, *commonv1.VenueTrade) error) error {
 	if f == nil || f.session == nil || ctx == nil || publish == nil {
 		return native.ErrInvalid
 	}

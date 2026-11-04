@@ -25,7 +25,7 @@ func TestNativeRuntimeRequiresExplicitTransportAndFiniteControls(t *testing.T) {
 			ExecutionVenue:   native.Venue,
 			PollInterval:     durationpb.New(200 * time.Millisecond),
 			OperationTimeout: durationpb.New(time.Second),
-			Himalaya: &configv1.HimalayaRuntime{
+			Venue: &configv1.VenueRuntime{
 				Target:           "127.0.0.1:8080",
 				TokenEnv:         "TEST_NATIVE_TOKEN",
 				QuantityFraction: "0.1",
@@ -41,10 +41,18 @@ func TestNativeRuntimeRequiresExplicitTransportAndFiniteControls(t *testing.T) {
 			t.Fatalf("valid %s runtime rejected: %v", role, err)
 		}
 	}
+	for _, enabled := range []bool{false, true} {
+		changed := proto.CloneOf(cfg)
+		changed.Business.Enabled = enabled
+		changed.Business.ExecutionVenue = "himalaya_sdk"
+		if ValidateConfig(changed) == nil {
+			t.Fatalf("retired execution value accepted with enabled=%t", enabled)
+		}
+	}
 	for _, mutate := range []func(*configv1.ServiceConfig){
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Target = "public.example:8080" },
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.QuantityFraction = "0" },
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Depth = 0 },
+		func(c *configv1.ServiceConfig) { c.Business.Venue.Target = "public.example:8080" },
+		func(c *configv1.ServiceConfig) { c.Business.Venue.QuantityFraction = "0" },
+		func(c *configv1.ServiceConfig) { c.Business.Venue.Depth = 0 },
 	} {
 		changed := proto.CloneOf(cfg)
 		mutate(changed)

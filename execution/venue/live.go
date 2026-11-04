@@ -19,8 +19,8 @@ const minimumLiveSDKWindow = 500 * time.Millisecond
 
 // LiveAuthority binds one source observation and the current strategy owner.
 type LiveAuthority struct {
-	Strategy *commonv1.HimalayaAuthority
-	Book     *commonv1.HimalayaBook
+	Strategy *commonv1.VenueAuthority
+	Book     *commonv1.VenueBook
 }
 
 // PrepareLive admits only current selected-source plans and margin obligations.
@@ -53,7 +53,7 @@ func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *executionmodelv1.
 	if remaining <= 0 || row.StrategyAccountId != native.StrategyKey(row.UserId, row.FundId) || row.SourceAccountId != native.MarketKey(row.Symbol) {
 		return 0, domain.ErrLeaseLost
 	}
-	for _, token := range []*commonv1.HimalayaAuthority{
+	for _, token := range []*commonv1.VenueAuthority{
 		{
 			AccountId:   row.StrategyAccountId,
 			OwnerId:     row.StrategyOwnerId,

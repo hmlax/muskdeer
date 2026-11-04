@@ -7,7 +7,7 @@ import (
 )
 
 func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) {
-	profile := &commonv1.HimalayaProfilePolicy{
+	profile := &commonv1.VenueProfilePolicy{
 		UserId:               1,
 		FundId:               1,
 		Symbol:               "BTCUSDT",
@@ -16,26 +16,26 @@ func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) 
 		QuantityStep:         "0.001",
 		Leverage:             10,
 	}
-	book := &commonv1.HimalayaBook{
+	book := &commonv1.VenueBook{
 		Symbol:  "BTCUSDT",
 		Source:  "binance",
 		Segment: "usdm",
-		Bids: []*commonv1.HimalayaLevel{
+		Bids: []*commonv1.VenueLevel{
 			{Price: "100.19", Quantity: "0.01"},
 			{Price: "100.11", Quantity: "0.01"},
 		},
-		Asks: []*commonv1.HimalayaLevel{
+		Asks: []*commonv1.VenueLevel{
 			{Price: "100.21", Quantity: "0.11"},
 			{Price: "100.22", Quantity: "0.01"},
 		},
 	}
-	snapshot := &commonv1.HimalayaSnapshot{
-		Scope: &commonv1.HimalayaScope{
+	snapshot := &commonv1.VenueSnapshot{
+		Scope: &commonv1.VenueScope{
 			UserId: 1,
 			FundId: 1,
 			Symbol: "BTCUSDT",
 		},
-		Market: &commonv1.HimalayaMarket{
+		Market: &commonv1.VenueMarket{
 			PriceTick:       "0.1",
 			QuantityStep:    "0.001",
 			MinimumQuantity: "0.001",
@@ -44,7 +44,7 @@ func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) 
 			MaximumLeverage: 10,
 		},
 	}
-	plan, err := BuildTargets(&commonv1.HimalayaPolicy{
+	plan, err := BuildTargets(&commonv1.VenuePolicy{
 		Depth:            20,
 		QuantityFraction: "0.1",
 	}, profile, book, snapshot)
@@ -52,7 +52,7 @@ func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) 
 		t.Fatalf("exact native target conversion failed: %v %v", plan, err)
 	}
 	snapshot.Market.QuantityStep = "0.01"
-	if _, err := BuildTargets(&commonv1.HimalayaPolicy{
+	if _, err := BuildTargets(&commonv1.VenuePolicy{
 		Depth:            20,
 		QuantityFraction: "0.1",
 	}, profile, book, snapshot); err == nil {

@@ -14,7 +14,7 @@ import (
 )
 
 // CheckNativeAuthority validates a read publication; it does not authorize effects.
-func CheckNativeAuthority(ctx context.Context, db *gorm.DB, authority *commonv1.HimalayaAuthority) error {
+func CheckNativeAuthority(ctx context.Context, db *gorm.DB, authority *commonv1.VenueAuthority) error {
 	if !validNativeAuthority(ctx, authority) || db == nil {
 		return domain.ErrLeaseLost
 	}
@@ -33,7 +33,7 @@ func CheckNativeAuthority(ctx context.Context, db *gorm.DB, authority *commonv1.
 
 // LockNativeAuthority requires a caller transaction. The retained row lock is
 // held through the caller's effect; expiry is checked using database time.
-func LockNativeAuthority(ctx context.Context, tx *gorm.DB, authority *commonv1.HimalayaAuthority) (time.Duration, error) {
+func LockNativeAuthority(ctx context.Context, tx *gorm.DB, authority *commonv1.VenueAuthority) (time.Duration, error) {
 	if !validNativeAuthority(ctx, authority) || tx == nil {
 		return 0, domain.ErrLeaseLost
 	}
@@ -58,7 +58,7 @@ func LockNativeAuthority(ctx context.Context, tx *gorm.DB, authority *commonv1.H
 	return remaining, nil
 }
 
-func validNativeAuthority(ctx context.Context, authority *commonv1.HimalayaAuthority) bool {
+func validNativeAuthority(ctx context.Context, authority *commonv1.VenueAuthority) bool {
 	return ctx != nil && ctx.Err() == nil && authority.GetEpoch() > 0 && authority.GetAccountId() != "" &&
 		len(authority.AccountId) <= 64 && ownerid.Valid(authority.GetOwnerId())
 }

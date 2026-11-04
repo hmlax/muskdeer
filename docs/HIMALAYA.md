@@ -4,11 +4,11 @@
 
 四个核心服务继续各自拥有 Wire、Deer、入口与工作循环：market 提供 Binance USDm 完整二十档；strategy 根据选定来源产生目标订单；execution 持久化意图、预留资金并通过 SDK 执行/撤单；portfolio 从执行服务拉取权威观察并保存可重建 typed 投影。服务间使用 Nacos 发现及 mTLS gRPC，配置仍从 Nacos Proto JSON 读取。
 
-`business.execution_venue=himalaya_sdk` 显式选择此路径。账户、基金、产品、杠杆、额度、行情源及预期 tick/lot 由数据库的生成 Model `HimalayaBudget` 保存，定义见 `deer/proto/execution/model/v1/himalaya.proto`；Nacos 的 `business.himalaya` 不再包含 profiles，仅维护 SDK 连接、二十档/数量比例、租约和有限测试运行控制。四核心启动时读取数据库，缺失或无效即失败，不回退 Nacos 或自动创建。SDK 原生元数据改变时拒绝交易；所选来源失效不切源。当前开发启动选择 Binance USDm，原有 Binance/OKX 现货适配继续保留。行情连接依据 [官方 USDm 连接说明](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)，使用 public 路由。
+`business.execution_venue=gateway` 显式选择此路径。账户、基金、产品、杠杆、额度、行情源及预期 tick/lot 由数据库的生成 Model `TradingAccountPolicy` 保存，定义见 `deer/proto/common/model/v1/trading_account.proto`；Nacos 的 `business.venue` 不再包含 profiles，仅维护 SDK 连接、二十档/数量比例、租约和有限测试运行控制。四核心启动时读取数据库，缺失或无效即失败，不回退 Nacos 或自动创建。SDK 原生元数据改变时拒绝交易；所选来源失效不切源。当前开发启动选择 Binance USDm，原有 Binance/OKX 现货适配继续保留。行情连接依据 [官方 USDm 连接说明](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)，使用 public 路由。
 
-首次准备时，使用 `/himalayainit -profiles /path/to/reviewed-profiles.json` 显式升级独立 SDK 扩展并导入已审查的业务数据；这是维护输入，不是服务启动配置。输入为 `HimalayaProfileImport` 的严格 Proto JSON：`{"profiles":[{"user_id":"101","fund_id":"201","symbol":"BTCUSDT","maximum_notional":"1000","maximum_order_notional":"100","leverage":10,"market_data_source":"binance","price_tick":"0.1","quantity_step":"0.001"}]}`，以上全部为示例。新预算默认禁用；已有预算的启用状态、余额观察、风险预留、历史审计和身份保持。整批原子导入，拒绝有效的执行/策略/行情/持仓租约、已删除记录及低于保留风险的额度缩减。调整前停止相关四核心并等待租约到期，修改后显式重启。
+首次准备时，使用 `/venueinit -profiles /path/to/reviewed-profiles.json` 显式升级独立 SDK 扩展并导入已审查的业务数据；这是维护输入，不是服务启动配置。输入为 `VenueProfileImport` 的严格 Proto JSON：`{"profiles":[{"user_id":"101","fund_id":"201","symbol":"BTCUSDT","maximum_notional":"1000","maximum_order_notional":"100","leverage":10,"market_data_source":"binance","price_tick":"0.1","quantity_step":"0.001"}]}`，以上全部为示例。新预算默认禁用；已有预算的启用状态、余额观察、风险预留、历史审计和身份保持。整批原子导入，拒绝有效的执行/策略/行情/持仓租约、已删除记录及低于保留风险的额度缩减。调整前停止相关四核心并等待租约到期，修改后显式重启。
 
-`/himalayainit -enable` 仅对数据库里已完整定义的业务资料显式启用预算；不从 Nacos 产生账户或额度，也不改变原生资金、模式或仓位。`-schema-only` 仅升级扩展；迁移 0006 为旧行保留空市场绑定，禁止猜交易对/来源，必须完成显式导入。服务启动只校验，不自动迁移、导入或启用。SDK token 由 execution 环境变量注入，不写入 Nacos 或源码。Docker 构建使用隔离已验证源码，避免夹带原有未提交修改。
+`/venueinit -enable` 仅对数据库里已完整定义的业务资料显式启用预算；不从 Nacos 产生账户或额度，也不改变原生资金、模式或仓位。`-schema-only` 仅升级扩展；迁移 0006 为旧行保留空市场绑定，禁止猜交易对/来源，必须完成显式导入。服务启动只校验，不自动迁移、导入或启用。SDK token 由 execution 环境变量注入，不写入 Nacos 或源码。Docker 构建使用隔离已验证源码，避免夹带原有未提交修改。
 
 目标数量按外部盘口比例计算，再按原生 tick/lot、最小数量/金额和固定单笔额度约束；同一原生价格合并。最低数量采用稳定的最小合规数量，做市本身不生成测试成交；另见用户新增确认的[开发测试成交策略](SYNTHETIC_TAPE.md)。初次接管只处理已确认的旧 `mm_<SYMBOL>_` 报价；完成接管后若再出现旧生产者报价，拒绝新增风险，不与它争抢。未知来源订单不作为本项目订单擅自撤销。
 
@@ -29,3 +29,5 @@ SDK 观察由多个查询组成，并非原子账本快照。当前采用保守�
 原生接口不接收本项目 epoch，也未确认 client_id 唯一去重或网关失联撤单保证。SDK 出口校验与未知阻断不能撤回目标已接收的请求，进程/网络完全失效时仍有旧挂单风险。不得将本路径描述为撮合级 fencing、STP、原子快照、完整成交账本或生产完成。正常运行的执行保护循环会在来源/计划过期时受控撤单；停止流程同样尝试撤单并保留清理错误。
 
 本轮用户明确批准的旧历史缺失处置见[一次性开发账本基线](DEVELOPMENT_BASELINE.md)；它不重写原撤单证明，也不解除新未知订单的限制。
+
+内部服务仅提供新的 Venue* 消息和各服务的 venue.v1 RPC，不兼容旧接口；维护入口仅为 venueinit/venuebaseline。运行配置与调用端须配套更新，历史数据和 SDK 代码不因内部接口改名而删除。

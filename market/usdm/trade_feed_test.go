@@ -141,7 +141,7 @@ func testAggregateSession(t *testing.T, cancelAfterFirst bool) {
 	feed.session.url = "wss" + strings.TrimPrefix(server.URL, "https")
 	feed.session.dialer.TLSClientConfig = server.Client().Transport.(*http.Transport).TLSClientConfig.Clone()
 	received := 0
-	err = feed.Run(ctx, func(context.Context, *commonv1.HimalayaTrade) error {
+	err = feed.Run(ctx, func(context.Context, *commonv1.VenueTrade) error {
 		received++
 		if cancelAfterFirst {
 			cancel()

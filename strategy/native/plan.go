@@ -19,7 +19,7 @@ type target struct {
 
 // BuildTargets preserves the requested fraction, clips finite per-order risk,
 // applies deterministic minimum lot/notional and merges identical native ticks.
-func BuildTargets(cfg *commonv1.HimalayaPolicy, profile *commonv1.HimalayaProfilePolicy, book *commonv1.HimalayaBook, snapshot *commonv1.HimalayaSnapshot) ([]*commonv1.HimalayaTarget, error) {
+func BuildTargets(cfg *commonv1.VenuePolicy, profile *commonv1.VenueProfilePolicy, book *commonv1.VenueBook, snapshot *commonv1.VenueSnapshot) ([]*commonv1.VenueTarget, error) {
 	if book.GetSource() != values.Source || book.GetSegment() != values.Segment || book.GetSymbol() != profile.Symbol ||
 		snapshot.GetScope().GetSymbol() != profile.Symbol || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId ||
 		profile.PriceTick != snapshot.GetMarket().GetPriceTick() || profile.QuantityStep != snapshot.Market.QuantityStep || profile.Leverage > snapshot.Market.MaximumLeverage {
@@ -32,7 +32,7 @@ func BuildTargets(cfg *commonv1.HimalayaPolicy, profile *commonv1.HimalayaProfil
 		return nil, values.ErrInvalid
 	}
 	grouped := make(map[string]*target)
-	for index, rows := range [][]*commonv1.HimalayaLevel{book.Bids, book.Asks} {
+	for index, rows := range [][]*commonv1.VenueLevel{book.Bids, book.Asks} {
 		side := domain.SideBuy
 		if index == 1 {
 			side = domain.SideSell
@@ -84,9 +84,9 @@ func BuildTargets(cfg *commonv1.HimalayaPolicy, profile *commonv1.HimalayaProfil
 		}
 		return ordered[i].price.LessThan(ordered[j].price)
 	})
-	var result []*commonv1.HimalayaTarget
+	var result []*commonv1.VenueTarget
 	for _, candidate := range ordered {
-		result = append(result, &commonv1.HimalayaTarget{
+		result = append(result, &commonv1.VenueTarget{
 			Side:     string(candidate.side),
 			Price:    candidate.price.String(),
 			Quantity: candidate.quantity.String(),
@@ -98,7 +98,7 @@ func BuildTargets(cfg *commonv1.HimalayaPolicy, profile *commonv1.HimalayaProfil
 	return result, nil
 }
 
-func constrainedQuantity(candidate *target, market *commonv1.HimalayaMarket, capText string, step decimal.Decimal) (decimal.Decimal, error) {
+func constrainedQuantity(candidate *target, market *commonv1.VenueMarket, capText string, step decimal.Decimal) (decimal.Decimal, error) {
 	minimum, e1 := values.Value(market.MinimumQuantity, false, true)
 	notional, e2 := values.Value(market.MinimumNotional, false, true)
 	maximum, e3 := values.Value(market.MaximumQuantity, false, true)

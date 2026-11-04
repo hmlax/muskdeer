@@ -20,17 +20,17 @@ import (
 // submissions. Original state, identity and the whole reservation remain intact.
 // The maintenance caller must first obtain two stable, empty native order views.
 // This method never runs automatically and never approves a later unknown.
-func (s *Store) ApproveHistoricalIntents(ctx context.Context, lease domain.LeaseToken, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot) error {
+func (s *Store) ApproveHistoricalIntents(ctx context.Context, lease domain.LeaseToken, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.VenueSnapshot) error {
 	return s.historicalIntents(ctx, lease, request, snapshot, true)
 }
 
 // AssessHistoricalIntents validates the same finite approval without annotating
 // intents or changing financial state. The caller still owns the execution lease.
-func (s *Store) AssessHistoricalIntents(ctx context.Context, lease domain.LeaseToken, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot) error {
+func (s *Store) AssessHistoricalIntents(ctx context.Context, lease domain.LeaseToken, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.VenueSnapshot) error {
 	return s.historicalIntents(ctx, lease, request, snapshot, false)
 }
 
-func (s *Store) historicalIntents(ctx context.Context, lease domain.LeaseToken, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot, apply bool) error {
+func (s *Store) historicalIntents(ctx context.Context, lease domain.LeaseToken, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.VenueSnapshot, apply bool) error {
 	ids, err := historicalApprovalIDs(request, snapshot)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func (s *Store) historicalIntents(ctx context.Context, lease domain.LeaseToken, 
 	})
 }
 
-func historicalApprovalIDs(request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot) (map[int64]bool, error) {
+func historicalApprovalIDs(request *commonv1.HistoricalIntentApproval, snapshot *commonv1.VenueSnapshot) (map[int64]bool, error) {
 	if request.GetScope() == nil || snapshot.GetScope() == nil || request.Scope.UserId <= 0 || request.Scope.FundId <= 0 ||
 		!native.Symbol(request.Scope.Symbol) || strings.TrimSpace(request.ApprovalReference) == "" || len(request.ApprovalReference) > 256 ||
 		len(request.IntentIds) == 0 || len(request.IntentIds) > 256 || !proto.Equal(request.Scope, snapshot.Scope) || len(snapshot.Orders) != 0 {
@@ -111,7 +111,7 @@ func historicalApprovalIDs(request *commonv1.HistoricalIntentApproval, snapshot 
 	return ids, nil
 }
 
-func freshHistoricalSnapshot(snapshot *commonv1.HimalayaSnapshot) bool {
+func freshHistoricalSnapshot(snapshot *commonv1.VenueSnapshot) bool {
 	// Observation timestamps come from this caller's clock, as in Normalize
 	// and the original baseline. Lease ownership uses the database clock.
 	now := time.Now().UnixMilli()
@@ -119,7 +119,7 @@ func freshHistoricalSnapshot(snapshot *commonv1.HimalayaSnapshot) bool {
 		snapshot.ValidUntilMs > now && snapshot.ValidUntilMs-snapshot.StartedAtMs <= native.SnapshotAge.Milliseconds()
 }
 
-func matchesHistoricalApproval(row *executionmodelv1.VenueOrderIntent, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot) bool {
+func matchesHistoricalApproval(row *executionmodelv1.VenueOrderIntent, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.VenueSnapshot) bool {
 	return row.State == IntentDispatched && row.OrderId == "" && row.Symbol == request.Scope.Symbol &&
 		row.UserId == request.Scope.UserId && row.FundId == request.Scope.FundId && row.CreateAt < snapshot.StartedAtMs &&
 		(row.HistoricalApprovalReference == "" || row.HistoricalApprovalReference == request.ApprovalReference)

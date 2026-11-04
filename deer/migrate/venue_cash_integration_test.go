@@ -15,7 +15,7 @@ import (
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
-func TestHimalayaLiveMarginAndExpiredUnsentIntentRemainSafe(t *testing.T) {
+func TestVenueLiveMarginAndExpiredUnsentIntentRemainSafe(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -36,7 +36,7 @@ func TestHimalayaLiveMarginAndExpiredUnsentIntentRemainSafe(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("expires_at", 1).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{Scope: &commonv1.HimalayaScope{
+	if err := store.Observe(ctx, lease, &commonv1.VenueSnapshot{Scope: &commonv1.VenueScope{
 		UserId: request.UserID,
 		FundId: request.FundID,
 		Symbol: request.Symbol,

@@ -28,7 +28,7 @@ func TestSyntheticTradePlanUsesSourceDirectionPriceQuantityAndKeepsProvenance(t 
 	h.QuantityFraction = "0.1"
 	h.SyntheticTape.Mode = configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE
 	now := time.Now()
-	trade := &commonv1.HimalayaTrade{
+	trade := &commonv1.VenueTrade{
 		Symbol:       "BTCUSDT",
 		Source:       Source,
 		Segment:      Segment,
@@ -40,7 +40,7 @@ func TestSyntheticTradePlanUsesSourceDirectionPriceQuantityAndKeepsProvenance(t 
 		TradeAtMs:    now.UnixMilli(),
 		ReceivedAtMs: now.UnixMilli(),
 		ValidUntilMs: now.Add(TradeAge).UnixMilli(),
-		Publisher: &commonv1.HimalayaAuthority{
+		Publisher: &commonv1.VenueAuthority{
 			AccountId:   TradeKey("BTCUSDT"),
 			OwnerId:     "market-test",
 			Epoch:       1,
@@ -79,13 +79,13 @@ func TestSyntheticTradePlanUsesSourceDirectionPriceQuantityAndKeepsProvenance(t 
 		t.Fatal("below-lot aggregate quantity was manufactured into a publication")
 	}
 	trade.Quantity = "0.3"
-	for _, change := range []func(*commonv1.HimalayaTrade){
-		func(t *commonv1.HimalayaTrade) { t.ValidUntilMs = now.Add(-time.Second).UnixMilli() },
-		func(t *commonv1.HimalayaTrade) { t.Symbol = "ETHUSDT" },
-		func(t *commonv1.HimalayaTrade) { t.EventId = "042" },
-		func(t *commonv1.HimalayaTrade) { t.Side = "" },
-		func(t *commonv1.HimalayaTrade) { t.Publisher.AccountId = MarketKey(t.Symbol) },
-		func(t *commonv1.HimalayaTrade) { t.TradeAtMs = now.Add(-2 * time.Second).UnixMilli() },
+	for _, change := range []func(*commonv1.VenueTrade){
+		func(t *commonv1.VenueTrade) { t.ValidUntilMs = now.Add(-time.Second).UnixMilli() },
+		func(t *commonv1.VenueTrade) { t.Symbol = "ETHUSDT" },
+		func(t *commonv1.VenueTrade) { t.EventId = "042" },
+		func(t *commonv1.VenueTrade) { t.Side = "" },
+		func(t *commonv1.VenueTrade) { t.Publisher.AccountId = MarketKey(t.Symbol) },
+		func(t *commonv1.VenueTrade) { t.TradeAtMs = now.Add(-2 * time.Second).UnixMilli() },
 	} {
 		candidate := proto.CloneOf(input)
 		change(candidate.SourceTrade)

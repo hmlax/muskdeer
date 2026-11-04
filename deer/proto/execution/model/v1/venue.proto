@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package muskdeer.model.v1;
 
-import "deer/proto/common/v1/himalaya.proto";
+import "deer/proto/common/v1/venue.proto";
 import "tagger/tagger.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1";
@@ -38,7 +38,7 @@ message VenueOrderIntent {
   int64 source_epoch = 26 [(tagger.tags) = "gorm:\"column:source_epoch;type:bigint;not null\""];
   int64 source_until = 27 [(tagger.tags) = "gorm:\"column:source_until;type:bigint;not null\""];
   string historical_approval_reference = 28 [(tagger.tags) = "gorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\""];
-  muskdeer.common.v1.HimalayaSnapshot historical_snapshot = 29 [(tagger.tags) = "gorm:\"column:historical_snapshot;type:jsonb;serializer:json\""];
+  muskdeer.common.v1.VenueSnapshot historical_snapshot = 29 [(tagger.tags) = "gorm:\"column:historical_snapshot;type:jsonb;serializer:json\""];
 }
 
 // VenueCancellation separates a cancel acknowledgement from terminal proof.

@@ -34,7 +34,7 @@ func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.Bus
 		return nil, err
 	}
 	var workers []deer.Worker
-	for _, profile := range cfg.Himalaya.Profiles {
+	for _, profile := range cfg.Venue.Profiles {
 		workers = append(workers, deer.Worker{
 			Name: "strategy.native." + strings.ToLower(profile.Symbol),
 			Run: func(ctx context.Context) error {
@@ -60,15 +60,15 @@ func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.Bus
 	return append(workers, syntheticWorkers(db, owner, cfg, factory, logger, leases)...), nil
 }
 
-func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.HimalayaProfilePolicy) error {
+func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProfilePolicy) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.StrategyKey(profile.UserId, profile.FundId),
-	}, owner, cfg.Himalaya.LeaseTtl.AsDuration())
+	}, owner, cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
-	token, err = leases.Renew(ctx, token, cfg.Himalaya.LeaseTtl.AsDuration())
+	token, err = leases.Renew(ctx, token, cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
@@ -88,7 +88,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	targets, err := BuildTargets(cfg.Himalaya, profile, book, snapshot)
+	targets, err := BuildTargets(cfg.Venue, profile, book, snapshot)
 	if err != nil {
 		return err
 	}

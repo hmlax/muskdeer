@@ -46,7 +46,7 @@ func (c *Client) PublishSynthetic(ctx context.Context, input *gateway.SyntheticR
 }
 
 // CheckSyntheticMarket checks SDK precision and product bounds for one event.
-func (c *Client) CheckSyntheticMarket(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *commonv1.SyntheticTapePlan) error {
+func (c *Client) CheckSyntheticMarket(ctx context.Context, profile *commonv1.VenueProfilePolicy, plan *commonv1.SyntheticTapePlan) error {
 	if c == nil || c.sdk == nil || profile == nil {
 		return ErrInvalidSubmit
 	}

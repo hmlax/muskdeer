@@ -1,23 +1,23 @@
 syntax = "proto3";
 
-package muskdeer.himalaya.v1;
+package muskdeer.execution.venue.v1;
 
-import "deer/proto/common/v1/himalaya.proto";
+import "deer/proto/common/v1/venue.proto";
 import "deer/proto/common/v1/synthetic.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1";
 
 service Execution {
-  rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);
+  rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
 }
 
 message QuotePlan {
-  muskdeer.common.v1.HimalayaScope scope = 1;
-  muskdeer.common.v1.HimalayaBook book = 2;
-  muskdeer.common.v1.HimalayaAuthority strategy = 3;
-  repeated muskdeer.common.v1.HimalayaTarget targets = 4;
+  muskdeer.common.v1.VenueScope scope = 1;
+  muskdeer.common.v1.VenueBook book = 2;
+  muskdeer.common.v1.VenueAuthority strategy = 3;
+  repeated muskdeer.common.v1.VenueTarget targets = 4;
   string request_id = 5;
 }
 

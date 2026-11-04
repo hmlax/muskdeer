@@ -25,17 +25,17 @@ var File_deer_proto_portfolio_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_portfolio_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/portfolio/venue/v1/runtime.proto\x12\x14muskdeer.himalaya.v1\x1a#deer/proto/common/v1/himalaya.proto2c\n" +
-	"\tPortfolio\x12V\n" +
-	"\vGetSnapshot\x12!.muskdeer.common.v1.HimalayaScope\x1a$.muskdeer.common.v1.HimalayaSnapshotB>Z<github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1;venuev1b\x06proto3"
+	"+deer/proto/portfolio/venue/v1/runtime.proto\x12\x1bmuskdeer.portfolio.venue.v1\x1a deer/proto/common/v1/venue.proto2]\n" +
+	"\tPortfolio\x12P\n" +
+	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshotB>Z<github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1;venuev1b\x06proto3"
 
 var file_deer_proto_portfolio_venue_v1_runtime_proto_goTypes = []any{
-	(*v1.HimalayaScope)(nil),    // 0: muskdeer.common.v1.HimalayaScope
-	(*v1.HimalayaSnapshot)(nil), // 1: muskdeer.common.v1.HimalayaSnapshot
+	(*v1.VenueScope)(nil),    // 0: muskdeer.common.v1.VenueScope
+	(*v1.VenueSnapshot)(nil), // 1: muskdeer.common.v1.VenueSnapshot
 }
 var file_deer_proto_portfolio_venue_v1_runtime_proto_depIdxs = []int32{
-	0, // 0: muskdeer.himalaya.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
-	1, // 1: muskdeer.himalaya.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
+	0, // 0: muskdeer.portfolio.venue.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	1, // 1: muskdeer.portfolio.venue.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
 	1, // [1:2] is the sub-list for method output_type
 	0, // [0:1] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name

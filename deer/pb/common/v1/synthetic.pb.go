@@ -31,9 +31,9 @@ type SyntheticTapePlan struct {
 	Side          string                 `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`
 	Price         string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`
 	Quantity      string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	Strategy      *HimalayaAuthority     `protobuf:"bytes,7,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Book          *HimalayaBook          `protobuf:"bytes,8,opt,name=book,proto3" json:"book,omitempty"`
-	SourceTrade   *HimalayaTrade         `protobuf:"bytes,9,opt,name=source_trade,json=sourceTrade,proto3" json:"source_trade,omitempty"`
+	Strategy      *VenueAuthority        `protobuf:"bytes,7,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	Book          *VenueBook             `protobuf:"bytes,8,opt,name=book,proto3" json:"book,omitempty"`
+	SourceTrade   *VenueTrade            `protobuf:"bytes,9,opt,name=source_trade,json=sourceTrade,proto3" json:"source_trade,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -110,21 +110,21 @@ func (x *SyntheticTapePlan) GetQuantity() string {
 	return ""
 }
 
-func (x *SyntheticTapePlan) GetStrategy() *HimalayaAuthority {
+func (x *SyntheticTapePlan) GetStrategy() *VenueAuthority {
 	if x != nil {
 		return x.Strategy
 	}
 	return nil
 }
 
-func (x *SyntheticTapePlan) GetBook() *HimalayaBook {
+func (x *SyntheticTapePlan) GetBook() *VenueBook {
 	if x != nil {
 		return x.Book
 	}
 	return nil
 }
 
-func (x *SyntheticTapePlan) GetSourceTrade() *HimalayaTrade {
+func (x *SyntheticTapePlan) GetSourceTrade() *VenueTrade {
 	if x != nil {
 		return x.SourceTrade
 	}
@@ -139,7 +139,7 @@ type SyntheticTapeResult struct {
 	Quantity      string                 `protobuf:"bytes,4,opt,name=quantity,proto3" json:"quantity,omitempty"`
 	TimestampMs   uint64                 `protobuf:"varint,5,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
 	Replayed      bool                   `protobuf:"varint,6,opt,name=replayed,proto3" json:"replayed,omitempty"`
-	SourceTrade   *HimalayaTrade         `protobuf:"bytes,7,opt,name=source_trade,json=sourceTrade,proto3" json:"source_trade,omitempty"`
+	SourceTrade   *VenueTrade            `protobuf:"bytes,7,opt,name=source_trade,json=sourceTrade,proto3" json:"source_trade,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -216,7 +216,7 @@ func (x *SyntheticTapeResult) GetReplayed() bool {
 	return false
 }
 
-func (x *SyntheticTapeResult) GetSourceTrade() *HimalayaTrade {
+func (x *SyntheticTapeResult) GetSourceTrade() *VenueTrade {
 	if x != nil {
 		return x.SourceTrade
 	}
@@ -227,25 +227,25 @@ var File_deer_proto_common_v1_synthetic_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_synthetic_proto_rawDesc = "" +
 	"\n" +
-	"$deer/proto/common/v1/synthetic.proto\x12\x12muskdeer.common.v1\x1a#deer/proto/common/v1/himalaya.proto\"\xe3\x02\n" +
+	"$deer/proto/common/v1/synthetic.proto\x12\x12muskdeer.common.v1\x1a deer/proto/common/v1/venue.proto\"\xda\x02\n" +
 	"\x11SyntheticTapePlan\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
 	"\x06symbol\x18\x02 \x01(\tR\x06symbol\x12\x1a\n" +
 	"\bsequence\x18\x03 \x01(\rR\bsequence\x12\x12\n" +
 	"\x04side\x18\x04 \x01(\tR\x04side\x12\x14\n" +
 	"\x05price\x18\x05 \x01(\tR\x05price\x12\x1a\n" +
-	"\bquantity\x18\x06 \x01(\tR\bquantity\x12A\n" +
-	"\bstrategy\x18\a \x01(\v2%.muskdeer.common.v1.HimalayaAuthorityR\bstrategy\x124\n" +
-	"\x04book\x18\b \x01(\v2 .muskdeer.common.v1.HimalayaBookR\x04book\x12D\n" +
-	"\fsource_trade\x18\t \x01(\v2!.muskdeer.common.v1.HimalayaTradeR\vsourceTrade\"\xfd\x01\n" +
+	"\bquantity\x18\x06 \x01(\tR\bquantity\x12>\n" +
+	"\bstrategy\x18\a \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\bstrategy\x121\n" +
+	"\x04book\x18\b \x01(\v2\x1d.muskdeer.common.v1.VenueBookR\x04book\x12A\n" +
+	"\fsource_trade\x18\t \x01(\v2\x1e.muskdeer.common.v1.VenueTradeR\vsourceTrade\"\xfa\x01\n" +
 	"\x13SyntheticTapeResult\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x19\n" +
 	"\btrade_id\x18\x02 \x01(\tR\atradeId\x12\x14\n" +
 	"\x05price\x18\x03 \x01(\tR\x05price\x12\x1a\n" +
 	"\bquantity\x18\x04 \x01(\tR\bquantity\x12!\n" +
 	"\ftimestamp_ms\x18\x05 \x01(\x04R\vtimestampMs\x12\x1a\n" +
-	"\breplayed\x18\x06 \x01(\bR\breplayed\x12D\n" +
-	"\fsource_trade\x18\a \x01(\v2!.muskdeer.common.v1.HimalayaTradeR\vsourceTradeB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
+	"\breplayed\x18\x06 \x01(\bR\breplayed\x12A\n" +
+	"\fsource_trade\x18\a \x01(\v2\x1e.muskdeer.common.v1.VenueTradeR\vsourceTradeB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
 
 var (
 	file_deer_proto_common_v1_synthetic_proto_rawDescOnce sync.Once
@@ -263,15 +263,15 @@ var file_deer_proto_common_v1_synthetic_proto_msgTypes = make([]protoimpl.Messag
 var file_deer_proto_common_v1_synthetic_proto_goTypes = []any{
 	(*SyntheticTapePlan)(nil),   // 0: muskdeer.common.v1.SyntheticTapePlan
 	(*SyntheticTapeResult)(nil), // 1: muskdeer.common.v1.SyntheticTapeResult
-	(*HimalayaAuthority)(nil),   // 2: muskdeer.common.v1.HimalayaAuthority
-	(*HimalayaBook)(nil),        // 3: muskdeer.common.v1.HimalayaBook
-	(*HimalayaTrade)(nil),       // 4: muskdeer.common.v1.HimalayaTrade
+	(*VenueAuthority)(nil),      // 2: muskdeer.common.v1.VenueAuthority
+	(*VenueBook)(nil),           // 3: muskdeer.common.v1.VenueBook
+	(*VenueTrade)(nil),          // 4: muskdeer.common.v1.VenueTrade
 }
 var file_deer_proto_common_v1_synthetic_proto_depIdxs = []int32{
-	2, // 0: muskdeer.common.v1.SyntheticTapePlan.strategy:type_name -> muskdeer.common.v1.HimalayaAuthority
-	3, // 1: muskdeer.common.v1.SyntheticTapePlan.book:type_name -> muskdeer.common.v1.HimalayaBook
-	4, // 2: muskdeer.common.v1.SyntheticTapePlan.source_trade:type_name -> muskdeer.common.v1.HimalayaTrade
-	4, // 3: muskdeer.common.v1.SyntheticTapeResult.source_trade:type_name -> muskdeer.common.v1.HimalayaTrade
+	2, // 0: muskdeer.common.v1.SyntheticTapePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	3, // 1: muskdeer.common.v1.SyntheticTapePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	4, // 2: muskdeer.common.v1.SyntheticTapePlan.source_trade:type_name -> muskdeer.common.v1.VenueTrade
+	4, // 3: muskdeer.common.v1.SyntheticTapeResult.source_trade:type_name -> muskdeer.common.v1.VenueTrade
 	4, // [4:4] is the sub-list for method output_type
 	4, // [4:4] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
@@ -284,7 +284,7 @@ func file_deer_proto_common_v1_synthetic_proto_init() {
 	if File_deer_proto_common_v1_synthetic_proto != nil {
 		return
 	}
-	file_deer_proto_common_v1_himalaya_proto_init()
+	file_deer_proto_common_v1_venue_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

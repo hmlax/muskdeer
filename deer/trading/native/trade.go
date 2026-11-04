@@ -23,7 +23,7 @@ const (
 func TradeKey(symbol string) string { return tradeMarketPrefix + symbol }
 
 // TradeSequence requires a canonical positive exchange aggregate-trade ID.
-func TradeSequence(trade *commonv1.HimalayaTrade) (int64, error) {
+func TradeSequence(trade *commonv1.VenueTrade) (int64, error) {
 	id, err := strconv.ParseInt(trade.GetEventId(), 10, 64)
 	if err != nil || id <= 0 || strconv.FormatInt(id, 10) != trade.EventId {
 		return 0, ErrInvalid
@@ -33,7 +33,7 @@ func TradeSequence(trade *commonv1.HimalayaTrade) (int64, error) {
 
 // ValidateTrade checks source identity, exact values and both exchange clocks.
 // The publisher is attached and fenced separately by the market worker.
-func ValidateTrade(trade *commonv1.HimalayaTrade, symbol string, now time.Time) error {
+func ValidateTrade(trade *commonv1.VenueTrade, symbol string, now time.Time) error {
 	if trade.GetSymbol() != symbol || !Symbol(symbol) || trade.GetSource() != Source || trade.GetSegment() != Segment ||
 		trade.GetSide() != string(domain.SideBuy) && trade.GetSide() != string(domain.SideSell) {
 		return ErrInvalid
@@ -54,7 +54,7 @@ func ValidateTrade(trade *commonv1.HimalayaTrade, symbol string, now time.Time) 
 
 // SyntheticTradeTarget scales source quantity within the existing single-event
 // cap and rounds down to a lot. Too-small quantities are not manufactured.
-func SyntheticTradeTarget(h *commonv1.HimalayaPolicy, trade *commonv1.HimalayaTrade) (*commonv1.HimalayaTarget, error) {
+func SyntheticTradeTarget(h *commonv1.VenuePolicy, trade *commonv1.VenueTrade) (*commonv1.VenueTarget, error) {
 	profile := SyntheticProfile(h, trade.GetSymbol())
 	market := SyntheticMarket(h, trade.GetSymbol())
 	if profile == nil || market == nil || trade.GetSource() != Source || trade.GetSegment() != Segment {
@@ -82,7 +82,7 @@ func SyntheticTradeTarget(h *commonv1.HimalayaPolicy, trade *commonv1.HimalayaTr
 	if err != nil || !quantity.IsPositive() {
 		return nil, ErrInvalid
 	}
-	return &commonv1.HimalayaTarget{
+	return &commonv1.VenueTarget{
 		Side:     string(side),
 		Price:    price.String(),
 		Quantity: quantity.String(),
@@ -91,7 +91,7 @@ func SyntheticTradeTarget(h *commonv1.HimalayaPolicy, trade *commonv1.HimalayaTr
 
 // SyntheticSourcePlan preserves book mode and requires an owned, fresh trade in
 // aggregate mode. Callers cannot silently downgrade the configured source.
-func SyntheticSourcePlan(h *commonv1.HimalayaPolicy, input *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapePlan, error) {
+func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapePlan, error) {
 	if h == nil || input == nil || input.GetRunId() != h.GetSyntheticTape().GetRunId() {
 		return nil, ErrInvalid
 	}

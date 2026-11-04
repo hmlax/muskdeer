@@ -58,8 +58,8 @@ build:
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
 	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
-	python3 scripts/go.py build -o .cache/bin/himalayainit ./cmd/himalayainit
-	python3 scripts/go.py build -o .cache/bin/himalayabaseline ./cmd/himalayabaseline
+	python3 scripts/go.py build -o .cache/bin/venueinit ./cmd/venueinit
+	python3 scripts/go.py build -o .cache/bin/venuebaseline ./cmd/venuebaseline
 	@for name in market strategy execution portfolio cron; do \
 		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
 	done

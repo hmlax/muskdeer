@@ -19,13 +19,13 @@ import (
 type RuntimeConfig struct {
 	PollInterval     time.Duration
 	OperationTimeout time.Duration
-	Himalaya         *commonv1.HimalayaPolicy
+	Venue            *commonv1.VenuePolicy
 }
 
 // LoadRuntime borrows the existing pool and rejects missing or invalid profiles.
 // Disabled budgets remain visible for observation and controlled cancellation.
 func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime) (*RuntimeConfig, error) {
-	if ctx == nil || db == nil || cfg.GetHimalaya() == nil || cfg.GetOperationTimeout().CheckValid() != nil || cfg.OperationTimeout.AsDuration() <= 0 {
+	if ctx == nil || db == nil || cfg.GetVenue() == nil || cfg.GetOperationTimeout().CheckValid() != nil || cfg.OperationTimeout.AsDuration() <= 0 {
 		return nil, native.ErrInvalid
 	}
 	op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
@@ -37,8 +37,8 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	if len(rows) == 0 || len(rows) > 8 {
 		return nil, native.ErrInvalid
 	}
-	h := cfg.Himalaya
-	policy := &commonv1.HimalayaPolicy{
+	h := cfg.Venue
+	policy := &commonv1.VenuePolicy{
 		Target:           h.Target,
 		TokenEnv:         h.TokenEnv,
 		QuantityFraction: h.QuantityFraction,
@@ -61,13 +61,13 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	return &RuntimeConfig{
 		PollInterval:     cfg.PollInterval.AsDuration(),
 		OperationTimeout: cfg.OperationTimeout.AsDuration(),
-		Himalaya:         policy,
+		Venue:            policy,
 	}, nil
 }
 
 // ProfileFromBudget maps the generated model directly to immutable business
 // fields, normalizing database numeric padding without a JSON conversion bridge.
-func ProfileFromBudget(row *commonmodelv1.TradingAccountPolicy) (*commonv1.HimalayaProfilePolicy, error) {
+func ProfileFromBudget(row *commonmodelv1.TradingAccountPolicy) (*commonv1.VenueProfilePolicy, error) {
 	if row == nil || row.DeleteAt != nil || row.AccountId != native.ScopeKey(row.UserId, row.FundId) {
 		return nil, native.ErrInvalid
 	}
@@ -78,7 +78,7 @@ func ProfileFromBudget(row *commonmodelv1.TradingAccountPolicy) (*commonv1.Himal
 	if e1 != nil || e2 != nil || e3 != nil || e4 != nil {
 		return nil, native.ErrInvalid
 	}
-	profile := &commonv1.HimalayaProfilePolicy{
+	profile := &commonv1.VenueProfilePolicy{
 		UserId:               row.UserId,
 		FundId:               row.FundId,
 		Symbol:               row.Symbol,

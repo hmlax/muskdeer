@@ -20,14 +20,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Portfolio_GetSnapshot_FullMethodName = "/muskdeer.himalaya.v1.Portfolio/GetSnapshot"
+	Portfolio_GetSnapshot_FullMethodName = "/muskdeer.portfolio.venue.v1.Portfolio/GetSnapshot"
 )
 
 // PortfolioClient is the client API for Portfolio service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PortfolioClient interface {
-	GetSnapshot(ctx context.Context, in *v1.HimalayaScope, opts ...grpc.CallOption) (*v1.HimalayaSnapshot, error)
+	GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error)
 }
 
 type portfolioClient struct {
@@ -38,9 +38,9 @@ func NewPortfolioClient(cc grpc.ClientConnInterface) PortfolioClient {
 	return &portfolioClient{cc}
 }
 
-func (c *portfolioClient) GetSnapshot(ctx context.Context, in *v1.HimalayaScope, opts ...grpc.CallOption) (*v1.HimalayaSnapshot, error) {
+func (c *portfolioClient) GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(v1.HimalayaSnapshot)
+	out := new(v1.VenueSnapshot)
 	err := c.cc.Invoke(ctx, Portfolio_GetSnapshot_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (c *portfolioClient) GetSnapshot(ctx context.Context, in *v1.HimalayaScope,
 // All implementations must embed UnimplementedPortfolioServer
 // for forward compatibility.
 type PortfolioServer interface {
-	GetSnapshot(context.Context, *v1.HimalayaScope) (*v1.HimalayaSnapshot, error)
+	GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error)
 	mustEmbedUnimplementedPortfolioServer()
 }
 
@@ -63,7 +63,7 @@ type PortfolioServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPortfolioServer struct{}
 
-func (UnimplementedPortfolioServer) GetSnapshot(context.Context, *v1.HimalayaScope) (*v1.HimalayaSnapshot, error) {
+func (UnimplementedPortfolioServer) GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSnapshot not implemented")
 }
 func (UnimplementedPortfolioServer) mustEmbedUnimplementedPortfolioServer() {}
@@ -88,7 +88,7 @@ func RegisterPortfolioServer(s grpc.ServiceRegistrar, srv PortfolioServer) {
 }
 
 func _Portfolio_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(v1.HimalayaScope)
+	in := new(v1.VenueScope)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func _Portfolio_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec fu
 		FullMethod: Portfolio_GetSnapshot_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PortfolioServer).GetSnapshot(ctx, req.(*v1.HimalayaScope))
+		return srv.(PortfolioServer).GetSnapshot(ctx, req.(*v1.VenueScope))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -109,7 +109,7 @@ func _Portfolio_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec fu
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Portfolio_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "muskdeer.himalaya.v1.Portfolio",
+	ServiceName: "muskdeer.portfolio.venue.v1.Portfolio",
 	HandlerType: (*PortfolioServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

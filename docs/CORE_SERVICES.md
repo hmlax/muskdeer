@@ -67,3 +67,5 @@ market、strategy、execution、portfolio、cron 的 Deer 均自动注册标准 
 cron 的独立入口为 `cron/cmd`，`make build` 生成 `.cache/bin/cron`，Docker target 为 `runtime-cron`。配置示例在 `configs/local/cron/{data.yaml,service.yaml}`，示例 gRPC 为 127.0.0.1:59006。将配对配置显式发布到自己的 Nacos 命名空间、提供同其他服务的 Nacos env 后，无参数启动 `.cache/bin/cron`；不从本地示例直接启动。当前 `business.enabled` 必须关闭，不部署占位的归档/报表任务。
 
 通道适配版本升级：新代码使用 deer/migrate/venue 的完整 0007 历史及通用业务表。当前运行中的旧版本和数据库不会由代码整理自动升级。部署前需显式停止本项目的交易写入进程、执行维护升级并核验保留的未决/额度记录，再启动配套新版本；应用在旧 schema 上拒绝就绪。旧二进制不应与升级后的 schema 混用，历史 SQL 仍保留供审计。
+
+通道接口改名需要 market/strategy/execution/portfolio 与 Nacos 配置配套更新：business.venue、execution_venue=gateway；维护命令仅 venueinit/venuebaseline。旧 RPC 全名和 himalaya 配置键不接受，不存在滚动混用旧客户端的兼容入口。

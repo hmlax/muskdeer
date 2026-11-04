@@ -16,7 +16,7 @@ type quoteRetention struct {
 	pending bool
 }
 
-func retainQuoteOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, cutover bool) (*quoteRetention, error) {
+func retainQuoteOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, cutover bool) (*quoteRetention, error) {
 	retained := &quoteRetention{
 		orders:  make(map[string]bool),
 		targets: make(map[string]bool),
@@ -66,7 +66,7 @@ func retainQuoteOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *common
 
 // Keep one existing, non-crossing quote on a missing side until a replacement
 // exists. Its original reservation remains held throughout cancellation proof.
-func retainBridgeOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
+func retainBridgeOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
 	limit, err := native.Value(profile.MaximumOrderNotional, false, false)
 	if err != nil {
 		return err
@@ -84,7 +84,7 @@ func retainBridgeOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commo
 			fresh[domain.Side(order.Side)] = true
 		}
 	}
-	bridges := make(map[domain.Side]*commonv1.HimalayaOrder)
+	bridges := make(map[domain.Side]*commonv1.VenueOrder)
 	for _, order := range snapshot.Orders {
 		side := domain.Side(order.Side)
 		if fresh[side] || best[side].IsZero() || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
@@ -108,7 +108,7 @@ func retainBridgeOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commo
 	return nil
 }
 
-func bridgePrice(order *commonv1.HimalayaOrder, best map[domain.Side]decimal.Decimal, limit decimal.Decimal) (decimal.Decimal, bool) {
+func bridgePrice(order *commonv1.VenueOrder, best map[domain.Side]decimal.Decimal, limit decimal.Decimal) (decimal.Decimal, bool) {
 	price, e1 := native.Value(order.Price, false, false)
 	_, quantity, e2 := orderKey(order)
 	if e1 != nil || e2 != nil || !quantity.IsPositive() || price.Mul(quantity).GreaterThan(limit) {
@@ -124,9 +124,9 @@ func bridgePrice(order *commonv1.HimalayaOrder, best map[domain.Side]decimal.Dec
 	}
 }
 
-func quoteSubmissionOrder(targets []*commonv1.HimalayaTarget) []*commonv1.HimalayaTarget {
-	buys := make([]*commonv1.HimalayaTarget, 0, len(targets))
-	sells := make([]*commonv1.HimalayaTarget, 0, len(targets))
+func quoteSubmissionOrder(targets []*commonv1.VenueTarget) []*commonv1.VenueTarget {
+	buys := make([]*commonv1.VenueTarget, 0, len(targets))
+	sells := make([]*commonv1.VenueTarget, 0, len(targets))
 	for _, target := range targets {
 		if target.Side == string(domain.SideBuy) {
 			buys = append(buys, target)
@@ -134,7 +134,7 @@ func quoteSubmissionOrder(targets []*commonv1.HimalayaTarget) []*commonv1.Himala
 			sells = append(sells, target)
 		}
 	}
-	ordered := make([]*commonv1.HimalayaTarget, 0, len(targets))
+	ordered := make([]*commonv1.VenueTarget, 0, len(targets))
 	for i := 0; i < max(len(buys), len(sells)); i++ {
 		if i < len(buys) {
 			ordered = append(ordered, buys[i])

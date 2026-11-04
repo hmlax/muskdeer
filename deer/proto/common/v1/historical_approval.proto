@@ -1,14 +1,14 @@
 syntax = "proto3";
 package muskdeer.common.v1;
 option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
-import "deer/proto/common/v1/himalaya.proto";
+import "deer/proto/common/v1/venue.proto";
 
 // HistoricalIntentApproval is a bounded operator decision to retain historical
 // unknown risk without indefinitely blocking new development quotes. It does
 // not declare the old requests rejected, cancelled or filled.
 message HistoricalIntentApproval {
   string approval_reference = 1;
-  HimalayaScope scope = 2;
+  VenueScope scope = 2;
   repeated int64 intent_ids = 3;
 }
 message HistoricalIntentApprovalBatch {

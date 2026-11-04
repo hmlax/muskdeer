@@ -18,7 +18,7 @@ import (
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
-func TestHimalayaFailedStreamCreationCannotLeaveUnknownOrder(t *testing.T) {
+func TestVenueFailedStreamCreationCannotLeaveUnknownOrder(t *testing.T) {
 	db, store, lease, order := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()

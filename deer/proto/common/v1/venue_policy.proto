@@ -7,21 +7,21 @@ import "deer/proto/common/config/v1/config.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
-// HimalayaPolicy is an immutable startup/audit snapshot, not a Nacos schema.
-// Wire numbers retain the prior synthetic policy digest across the DB move.
-message HimalayaPolicy {
+// VenuePolicy is an immutable startup/audit snapshot, not a Nacos schema.
+// Startup policy is recorded independently of transport connection ownership.
+message VenuePolicy {
   string target = 1;
   string token_env = 2;
-  repeated HimalayaProfilePolicy profiles = 3;
+  repeated VenueProfilePolicy profiles = 3;
   string quantity_fraction = 4;
   uint32 depth = 5;
   google.protobuf.Duration lease_ttl = 6;
   muskdeer.config.v1.SyntheticTape synthetic_tape = 7;
 }
 
-// HimalayaProfilePolicy projects business fields from the generated budget
+// VenueProfilePolicy projects business fields from the generated budget
 // model. Dynamic balances, reservations and timestamps never enter its digest.
-message HimalayaProfilePolicy {
+message VenueProfilePolicy {
   int64 user_id = 1;
   int64 fund_id = 2;
   string symbol = 3;
@@ -33,7 +33,7 @@ message HimalayaProfilePolicy {
   string quantity_step = 9;
 }
 
-// HimalayaProfileImport is an explicit maintenance input, never service config.
-message HimalayaProfileImport {
-  repeated HimalayaProfilePolicy profiles = 1;
+// VenueProfileImport is an explicit maintenance input, never service config.
+message VenueProfileImport {
+  repeated VenueProfilePolicy profiles = 1;
 }

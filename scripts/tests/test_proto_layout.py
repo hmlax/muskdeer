@@ -98,3 +98,23 @@ class ProtoLayoutTest(unittest.TestCase):
             source.write_text(source.read_text() + 'message HimalayaIntent {}\n')
             with self.assertRaisesRegex(ValueError, 'provider-specific models'):
                 validate_layout(root)
+
+    def test_provider_business_messages_and_rpc_namespace_are_retired(self):
+        for content in ('message HimalayaAuthority {}', 'package muskdeer.himalaya.v1;'):
+            with self.subTest(content=content), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self.make_source(root, 'common/v1/venue.proto')
+                source = root / 'deer/proto/common/v1/venue.proto'
+                source.write_text(source.read_text() + '\n' + content + '\n')
+                with self.assertRaisesRegex(ValueError, 'provider-specific'):
+                    validate_layout(root)
+
+    def test_venue_rpc_namespace_follows_service_owner(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_source(root, 'execution/venue/v1/runtime.proto', service='service Execution {}')
+            with self.assertRaisesRegex(ValueError, 'namespace must follow its service owner'):
+                validate_layout(root)
+            source = root / 'deer/proto/execution/venue/v1/runtime.proto'
+            source.write_text(source.read_text().replace('legacy.namespace', 'muskdeer.execution.venue.v1'))
+            validate_layout(root)

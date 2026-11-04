@@ -23,7 +23,7 @@ type depthFrame struct {
 
 // Decode validates a whole partial-depth snapshot; it never merges a missing
 // side from a previous frame or treats malformed data as a heartbeat.
-func Decode(data []byte, symbol string, received time.Time) (*commonv1.HimalayaBook, error) {
+func Decode(data []byte, symbol string, received time.Time) (*commonv1.VenueBook, error) {
 	var frame depthFrame
 	if len(data) > 64*1024 || json.Unmarshal(data, &frame) != nil || frame.Event != "depthUpdate" ||
 		frame.Symbol != symbol || !native.Symbol(symbol) || frame.First <= 0 || frame.Sequence < frame.First ||
@@ -43,7 +43,7 @@ func Decode(data []byte, symbol string, received time.Time) (*commonv1.HimalayaB
 	if !bid.LessThan(ask) {
 		return nil, native.ErrInvalid
 	}
-	return &commonv1.HimalayaBook{
+	return &commonv1.VenueBook{
 		Symbol:       symbol,
 		Source:       native.Source,
 		Segment:      native.Segment,
@@ -56,11 +56,11 @@ func Decode(data []byte, symbol string, received time.Time) (*commonv1.HimalayaB
 	}, nil
 }
 
-func levels(rows [][]string, bids bool) ([]*commonv1.HimalayaLevel, error) {
+func levels(rows [][]string, bids bool) ([]*commonv1.VenueLevel, error) {
 	if len(rows) == 0 || len(rows) > 20 {
 		return nil, native.ErrInvalid
 	}
-	result := make([]*commonv1.HimalayaLevel, 0, len(rows))
+	result := make([]*commonv1.VenueLevel, 0, len(rows))
 	previous := decimal.Zero
 	for index, row := range rows {
 		if len(row) != 2 {
@@ -71,7 +71,7 @@ func levels(rows [][]string, bids bool) ([]*commonv1.HimalayaLevel, error) {
 		if e1 != nil || e2 != nil || index > 0 && (bids && !price.LessThan(previous) || !bids && !price.GreaterThan(previous)) {
 			return nil, native.ErrInvalid
 		}
-		result = append(result, &commonv1.HimalayaLevel{
+		result = append(result, &commonv1.VenueLevel{
 			Price:    row[0],
 			Quantity: row[1],
 		})

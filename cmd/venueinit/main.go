@@ -1,4 +1,4 @@
-// Command himalayainit explicitly migrates and enables reviewed SDK fund budgets.
+// Command venueinit explicitly migrates and enables reviewed SDK fund budgets.
 package main
 
 import (
@@ -43,10 +43,10 @@ func command() int {
 		}
 	}
 	if modes != 1 || flag.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "himalayainit requires exactly one of -enable, -schema-only or -profiles FILE")
+		fmt.Fprintln(os.Stderr, "venueinit requires exactly one of -enable, -schema-only or -profiles FILE")
 		return 2
 	}
-	var profiles *commonv1.HimalayaProfileImport
+	var profiles *commonv1.VenueProfileImport
 	if *profilesFile != "" {
 		var err error
 		profiles, err = readProfiles(*profilesFile)
@@ -74,7 +74,7 @@ func command() int {
 	return 0
 }
 
-func run(ctx context.Context, enable bool, profiles *commonv1.HimalayaProfileImport) (result error) {
+func run(ctx context.Context, enable bool, profiles *commonv1.VenueProfileImport) (result error) {
 	cfg, err := deer.LoadNacosConfig(ctx, "execution")
 	if err != nil || cfg.GetBusiness().GetExecutionVenue() != native.Venue || native.ValidateConfig(cfg) != nil {
 		return native.ErrInvalid
@@ -104,7 +104,7 @@ func run(ctx context.Context, enable bool, profiles *commonv1.HimalayaProfileImp
 	if err != nil {
 		return err
 	}
-	for _, profile := range settings.Himalaya.Profiles {
+	for _, profile := range settings.Venue.Profiles {
 		if err := store.InitializeBudget(ctx, profile, true); err != nil {
 			return err
 		}
@@ -112,12 +112,12 @@ func run(ctx context.Context, enable bool, profiles *commonv1.HimalayaProfileImp
 	return nil
 }
 
-func readProfiles(path string) (*commonv1.HimalayaProfileImport, error) {
+func readProfiles(path string) (*commonv1.VenueProfileImport, error) {
 	data, err := os.ReadFile(path)
 	if err != nil || len(data) > 1024*1024 {
 		return nil, native.ErrInvalid
 	}
-	var input commonv1.HimalayaProfileImport
+	var input commonv1.VenueProfileImport
 	if protojson.Unmarshal(data, &input) != nil || len(input.Profiles) == 0 || len(input.Profiles) > 8 {
 		return nil, native.ErrInvalid
 	}

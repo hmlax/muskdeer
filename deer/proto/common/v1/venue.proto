@@ -3,22 +3,22 @@ package muskdeer.common.v1;
 option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
 // Native scope and all decimal values remain explicit at service boundaries.
-message HimalayaScope {
+message VenueScope {
   int64 user_id = 1;
   int64 fund_id = 2;
   string symbol = 3;
 }
-message HimalayaLevel {
+message VenueLevel {
   string price = 1;
   string quantity = 2;
 }
-message HimalayaAuthority {
+message VenueAuthority {
   string account_id = 1;
   string owner_id = 2;
   int64 epoch = 3;
   int64 expires_at_ms = 4;
 }
-message HimalayaBook {
+message VenueBook {
   string symbol = 1;
   string source = 2;
   string segment = 3;
@@ -26,11 +26,11 @@ message HimalayaBook {
   int64 event_at_ms = 5;
   int64 received_at_ms = 6;
   int64 valid_until_ms = 7;
-  repeated HimalayaLevel bids = 8;
-  repeated HimalayaLevel asks = 9;
-  HimalayaAuthority publisher = 10;
+  repeated VenueLevel bids = 8;
+  repeated VenueLevel asks = 9;
+  VenueAuthority publisher = 10;
 }
-message HimalayaMarket {
+message VenueMarket {
   string price_tick = 1;
   string quantity_step = 2;
   string minimum_quantity = 3;
@@ -40,7 +40,7 @@ message HimalayaMarket {
   uint32 maximum_leverage = 7;
   string worst_fee_rate = 8;
 }
-message HimalayaOrder {
+message VenueOrder {
   string order_id = 1;
   string client_id = 2;
   string side = 3;
@@ -49,31 +49,31 @@ message HimalayaOrder {
   string executed_quantity = 6;
   string status = 7;
 }
-message HimalayaPosition {
+message VenuePosition {
   string symbol = 1;
   string signed_quantity = 2;
   string entry_price = 3;
   string leverage = 4;
 }
 // Separate SDK queries are observations, never an atomic ledger snapshot.
-message HimalayaSnapshot {
-  HimalayaScope scope = 1;
-  HimalayaMarket market = 2;
+message VenueSnapshot {
+  VenueScope scope = 1;
+  VenueMarket market = 2;
   string available = 3;
-  repeated HimalayaPosition positions = 4;
-  repeated HimalayaOrder orders = 5;
+  repeated VenuePosition positions = 4;
+  repeated VenueOrder orders = 5;
   int64 started_at_ms = 6;
   int64 observed_at_ms = 7;
   int64 valid_until_ms = 8;
 }
-message HimalayaTarget {
+message VenueTarget {
   string side = 1;
   string price = 2;
   string quantity = 3;
 }
 
-// HimalayaTrade is an owned, fresh external aggregate-trade observation.
-message HimalayaTrade {
+// VenueTrade is an owned, fresh external aggregate-trade observation.
+message VenueTrade {
   string symbol = 1;
   string source = 2;
   string segment = 3;
@@ -85,5 +85,5 @@ message HimalayaTrade {
   int64 trade_at_ms = 9;
   int64 received_at_ms = 10;
   int64 valid_until_ms = 11;
-  HimalayaAuthority publisher = 12;
+  VenueAuthority publisher = 12;
 }

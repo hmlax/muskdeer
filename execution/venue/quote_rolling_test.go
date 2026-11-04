@@ -13,11 +13,11 @@ import (
 
 func TestQuoteSizeRefreshKeepsNinetyPercentOfEachSide(t *testing.T) {
 	t.Parallel()
-	profile := &commonv1.HimalayaProfilePolicy{
+	profile := &commonv1.VenueProfilePolicy{
 		Symbol:               "BTCUSDT",
 		MaximumOrderNotional: "500",
 	}
-	snapshot := &commonv1.HimalayaSnapshot{}
+	snapshot := &commonv1.VenueSnapshot{}
 	wanted := make(map[string]*SubmitRequest)
 	for index, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
 		for level := range 20 {
@@ -55,7 +55,7 @@ func TestQuoteSizeRefreshKeepsNinetyPercentOfEachSide(t *testing.T) {
 
 func TestRollingQuotePlacementUsesLiveOppositePricesAndBoundedCapacity(t *testing.T) {
 	t.Parallel()
-	target := &commonv1.HimalayaTarget{
+	target := &commonv1.VenueTarget{
 		Side:     string(domain.SideBuy),
 		Price:    "100",
 		Quantity: "1",
@@ -64,8 +64,8 @@ func TestRollingQuotePlacementUsesLiveOppositePricesAndBoundedCapacity(t *testin
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
 			cycle := &quoteCycle{
-				targets:  []*commonv1.HimalayaTarget{target},
-				snapshot: &commonv1.HimalayaSnapshot{},
+				targets:  []*commonv1.VenueTarget{target},
+				snapshot: &commonv1.VenueSnapshot{},
 			}
 			want := true
 			switch kind {
@@ -84,10 +84,10 @@ func TestRollingQuotePlacementUsesLiveOppositePricesAndBoundedCapacity(t *testin
 				cycle.snapshot.Orders = append(cycle.snapshot.Orders, retentionOrder("1", domain.SideBuy, "99.9"))
 			case "at_capacity":
 				cycle.snapshot.Orders = append(cycle.snapshot.Orders, retentionOrder("1", domain.SideBuy, "99.8"))
-				cycle.admitted = []*commonv1.HimalayaTarget{target}
+				cycle.admitted = []*commonv1.VenueTarget{target}
 				want = false
 			case "admitted_ask":
-				cycle.admitted = []*commonv1.HimalayaTarget{{
+				cycle.admitted = []*commonv1.VenueTarget{{
 					Side:  string(domain.SideSell),
 					Price: "100",
 				}}
@@ -102,11 +102,11 @@ func TestRollingQuotePlacementUsesLiveOppositePricesAndBoundedCapacity(t *testin
 
 func TestRollingDuplicateQuotesRemainPendingUntilCleanupCompletes(t *testing.T) {
 	t.Parallel()
-	profile := &commonv1.HimalayaProfilePolicy{
+	profile := &commonv1.VenueProfilePolicy{
 		Symbol:               "BTCUSDT",
 		MaximumOrderNotional: "500",
 	}
-	snapshot := &commonv1.HimalayaSnapshot{Orders: []*commonv1.HimalayaOrder{
+	snapshot := &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{
 		retentionOrder("1", domain.SideBuy, "100"),
 		retentionOrder("2", domain.SideSell, "100.2"),
 		retentionOrder("3", domain.SideBuy, "100"),
@@ -136,13 +136,13 @@ func TestRollingDuplicateQuotesRemainPendingUntilCleanupCompletes(t *testing.T) 
 
 func TestRollingQuotePlacementFillsMissingPricesBeforeSizeRefreshes(t *testing.T) {
 	t.Parallel()
-	targets := []*commonv1.HimalayaTarget{
+	targets := []*commonv1.VenueTarget{
 		{Side: string(domain.SideBuy), Price: "100"},
 		{Side: string(domain.SideBuy), Price: "99.9"},
 		{Side: string(domain.SideSell), Price: "100.1"},
 		{Side: string(domain.SideSell), Price: "100.2"},
 	}
-	snapshot := &commonv1.HimalayaSnapshot{Orders: []*commonv1.HimalayaOrder{
+	snapshot := &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{
 		retentionOrder("1", domain.SideBuy, "100"),
 		retentionOrder("2", domain.SideSell, "100.1"),
 	}}

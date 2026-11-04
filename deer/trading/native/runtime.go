@@ -16,7 +16,7 @@ import (
 // ValidateConfig explicitly selects the SDK development route and its resources.
 func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	b := cfg.GetBusiness()
-	h := b.GetHimalaya()
+	h := b.GetVenue()
 	if h == nil || b.Market != nil || b.Strategy != nil || b.Simulator != nil || b.Risk != nil || b.ExecutionLeaseTtl != nil || b.PortfolioConsumer != "" ||
 		h.Depth == 0 || h.Depth > 20 || h.LeaseTtl.CheckValid() != nil ||
 		h.LeaseTtl.AsDuration() < 3*b.OperationTimeout.AsDuration() || h.LeaseTtl.AsDuration() > domain.MaxLeaseTTL {
@@ -32,7 +32,7 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	return ValidateSyntheticSettings(h)
 }
 
-func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.HimalayaRuntime) error {
+func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.VenueRuntime) error {
 	switch cfg.Name {
 	case "market":
 		return nil
@@ -54,7 +54,7 @@ func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.HimalayaRuntime
 }
 
 // ValidProfile validates immutable account trading policy values.
-func ValidProfile(p *commonv1.HimalayaProfilePolicy) bool {
+func ValidProfile(p *commonv1.VenueProfilePolicy) bool {
 	if p == nil || p.UserId <= 0 || p.FundId <= 0 || !Symbol(p.Symbol) || p.Leverage == 0 || p.Leverage > 10 || p.MarketDataSource != Source {
 		return false
 	}
@@ -79,8 +79,8 @@ func environmentName(value string) bool {
 }
 
 // Authority snapshots a retained token without making its expiry authoritative.
-func Authority(token domain.LeaseToken) *commonv1.HimalayaAuthority {
-	return &commonv1.HimalayaAuthority{
+func Authority(token domain.LeaseToken) *commonv1.VenueAuthority {
+	return &commonv1.VenueAuthority{
 		AccountId:   token.Key.AccountID,
 		OwnerId:     token.OwnerID,
 		Epoch:       token.Epoch,

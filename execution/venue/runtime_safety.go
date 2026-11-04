@@ -43,7 +43,7 @@ func safeReason(err error) string {
 	}
 }
 
-func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *executionvenuev1.QuotePlan, book *commonv1.HimalayaBook) error {
+func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.VenueProfilePolicy, plan *executionvenuev1.QuotePlan, book *commonv1.VenueBook) error {
 	if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
 		plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.Publisher.OwnerId != plan.Book.GetPublisher().GetOwnerId() || book.Publisher.Epoch != plan.Book.Publisher.Epoch ||
 		plan.Strategy.AccountId != native.StrategyKey(profile.UserId, profile.FundId) || repository.CheckNativeAuthority(ctx, r.db, plan.Strategy) != nil {
@@ -52,7 +52,7 @@ func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.H
 	return nil
 }
 
-func (r *Runtime) targets(profile *commonv1.HimalayaProfilePolicy, plan *executionvenuev1.QuotePlan) (map[string]*SubmitRequest, error) {
+func (r *Runtime) targets(profile *commonv1.VenueProfilePolicy, plan *executionvenuev1.QuotePlan) (map[string]*SubmitRequest, error) {
 	if len(plan.Book.Bids) == 0 || len(plan.Book.Asks) == 0 {
 		return nil, native.ErrInvalid
 	}
@@ -109,7 +109,7 @@ func (r *Runtime) targets(profile *commonv1.HimalayaProfilePolicy, plan *executi
 	return result, nil
 }
 
-func orderKey(order *commonv1.HimalayaOrder) (string, decimal.Decimal, error) {
+func orderKey(order *commonv1.VenueOrder) (string, decimal.Decimal, error) {
 	price, e1 := native.Value(order.Price, false, false)
 	quantity, e2 := native.Value(order.Quantity, false, false)
 	executed, e3 := native.Value(order.ExecutedQuantity, false, true)
@@ -119,7 +119,7 @@ func orderKey(order *commonv1.HimalayaOrder) (string, decimal.Decimal, error) {
 	return order.Side + "/" + price.String(), quantity.Sub(executed), nil
 }
 
-func (r *Runtime) protect(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) error {
+func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return err
@@ -137,7 +137,7 @@ func (r *Runtime) protect(ctx context.Context, profile *commonv1.HimalayaProfile
 	return err
 }
 
-func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) error {
+func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return err
@@ -163,9 +163,9 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.HimalayaP
 		if !owned && !legacy {
 			continue
 		}
-		if err := r.store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
+		if err := r.store.Observe(ctx, lease, &commonv1.VenueSnapshot{
 			Scope:  native.Scope(profile),
-			Orders: []*commonv1.HimalayaOrder{order},
+			Orders: []*commonv1.VenueOrder{order},
 		}); err != nil {
 			return err
 		}

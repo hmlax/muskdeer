@@ -22,7 +22,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testing.T) {
+func TestVenueDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testing.T) {
 	db, _ := migrationDatabase(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()

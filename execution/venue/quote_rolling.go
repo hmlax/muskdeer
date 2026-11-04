@@ -17,14 +17,14 @@ const (
 )
 
 type rollingQuote struct {
-	order *commonv1.HimalayaOrder
+	order *commonv1.VenueOrder
 	key   string
 	price decimal.Decimal
 }
 
 // Only a tenth of safe obsolete levels on each side enter cancellation at once.
 // Unsafe prices, oversized orders and legacy quotes still require cancellation.
-func retainRollingOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
+func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
 	limit, err := native.Value(profile.MaximumOrderNotional, false, false)
 	if err != nil {
 		return err
@@ -91,7 +91,7 @@ func rollingQuoteLess(left, right rollingQuote, wanted map[string]*SubmitRequest
 	return left.price.LessThan(right.price)
 }
 
-func quoteMaintenanceOrder(targets []*commonv1.HimalayaTarget, snapshot *commonv1.HimalayaSnapshot) []*commonv1.HimalayaTarget {
+func quoteMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) []*commonv1.VenueTarget {
 	present := make(map[string]bool)
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
@@ -101,8 +101,8 @@ func quoteMaintenanceOrder(targets []*commonv1.HimalayaTarget, snapshot *commonv
 			present[key] = true
 		}
 	}
-	missing := make([]*commonv1.HimalayaTarget, 0, len(targets))
-	refresh := make([]*commonv1.HimalayaTarget, 0, len(targets))
+	missing := make([]*commonv1.VenueTarget, 0, len(targets))
+	refresh := make([]*commonv1.VenueTarget, 0, len(targets))
 	for _, target := range quoteSubmissionOrder(targets) {
 		price, _ := native.Value(target.Price, false, false) // Already validated by targets.
 		if present[target.Side+"/"+price.String()] {
@@ -114,7 +114,7 @@ func quoteMaintenanceOrder(targets []*commonv1.HimalayaTarget, snapshot *commonv
 	return append(missing, refresh...)
 }
 
-func (cycle *quoteCycle) canPlace(target *commonv1.HimalayaTarget) bool {
+func (cycle *quoteCycle) canPlace(target *commonv1.VenueTarget) bool {
 	side := domain.Side(target.Side)
 	price, err := native.Value(target.Price, false, false)
 	if err != nil || side != domain.SideBuy && side != domain.SideSell {

@@ -1786,3 +1786,13 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 隔离本次提交源码的全包 race（-p 1）、integration 标签全包编译、全包构建及核心/维护/模块夹具构建通过。叠加原有用户修改后的 integration 标签全包编译通过；工作区格式、合同/布局、lint/govet 0 issues、规范正反样例、47 项 Python、79 Proto 与五个 Wire 生成比较通过。
 - 复用现有 infra-postgres 的隔离逻辑库，SDK/原生四服务/滚动报价/回复丢失/UNKNOWN/测试成交/业务策略和旧模型升级共 32 项 integration/race 中 31 项首次通过；一项在核心迁移夹具触发原 statement_timeout，保持期限及断言单独复核三个变体全部通过（5.799 秒）。首次工具检查误用系统 Python 缺少 PyYAML、规范负例与 lint 并发被工具锁拒绝，改用已有 Python 3.13 并顺序运行后通过；未更改测试合同或屏蔽错误，不宣称已修复基础设施长期负载稳定性。
 - 原有 50 处用户未提交文件逐字节保持，暂存内容与隔离提交源码逐项核对；未运行完整 integration/e2e/soak，未升级当前交易数据库、发布 Nacos 或重启交易容器。通道 0007 升级及新旧版本部署顺序已记录，实际运行环境保持原状。
+
+
+## 2026-11-04：P27 通道接口全面改名，不保留旧接口兼容
+
+- 按最新明确要求替代 P26 的旧线协议保留约定：全部 Himalaya* 公共消息/配置类型改为 Venue*，common/v1 源文件与生成文件改为 venue.proto/venue_policy.proto；execution、market、portfolio 通道 RPC 分别采用 muskdeer.<service>.venue.v1。旧类型不注册、旧路由没有别名或转发，所有服务端、客户端、测试对端及共享授权传递一起更新。VenueAuthority 仍表达业务最终授权，不作为第三方 SDK Model。
+- 配置仅使用 business.venue 与 execution_venue=gateway；旧 himalaya 配置键和 himalaya_sdk 执行值拒绝。维护源码、用法、Makefile 和 Docker 构建/复制路径统一为 venueinit、venuebaseline，原命令目录移除；新旧服务/客户端与 Nacos 配置必须配套发布。更新当前接口文档，历史验收记录不改写。
+- 新增回归先验证旧版会接受旧配置、注册旧消息与旧服务名称，按原断言在新实现通过。实际 bufconn gRPC 验证两个旧有副作用方法返回 Unimplemented、处理次数为零，新客户端各调用一次；验证新服务全名与旧类型注册缺失，JSON/YAML 旧配置拒绝、旧执行值在业务启用/关闭时均拒绝。最后审查先复现关闭状态误接受旧值，再收紧通用执行值白名单；复核全包 race、包含原修改的编译、lint 和全包构建通过。Proto 门禁新增拒绝 provider 专属业务消息/旧命名空间，并要求通道 RPC 命名空间随服务归属。
+- 隔离本次提交源码的全包 race（-p 1）、clean/user-overlay 两套 integration 标签全包编译、五服务/维护命令及四模块夹具构建通过；工作区格式/依赖布局、合同、lint/govet 0 issues、规范正反样例、49 项 Python、79 Proto 和五个 Wire 比较通过。变更 Markdown 本地链接与生产 Go 旧类型/旧路由/旧命令残留审查通过；原有 50 处用户修改逐字节保持且未纳入暂存。
+- 复用现有 infra-postgres 的隔离逻辑库，32 项相关 integration/race 全部一次通过（72.453 秒），覆盖新 RPC 下的四服务接管、二十档滚动保留、行情失效撤单、未知/回复丢失不重发、最终授权、预算、配置维护、历史升级及有限测试成交。对端为测试 SDK/gRPC，不冒充真实网关交易验收。
+- 第三方 SDK 16 文件保持原始哈希。此次仅切换内部合同，数据库记录身份、实际 SDK 请求摘要、索引和历史迁移保持；未清理既有资金/订单记录，未升级当前数据库、发布 Nacos 或重启交易容器。完整 integration/e2e/soak 与镜像构建本轮未运行。

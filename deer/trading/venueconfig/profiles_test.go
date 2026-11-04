@@ -57,10 +57,10 @@ func TestDatabasePolicyKeepsLegacySyntheticFingerprint(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	policy := &commonv1.HimalayaPolicy{
+	policy := &commonv1.VenuePolicy{
 		Target:           "127.0.0.1:8080",
 		TokenEnv:         "TEST_TOKEN",
-		Profiles:         []*commonv1.HimalayaProfilePolicy{p},
+		Profiles:         []*commonv1.VenueProfilePolicy{p},
 		QuantityFraction: "0.1",
 		Depth:            20,
 		LeaseTtl:         durationpb.New(10 * time.Second),

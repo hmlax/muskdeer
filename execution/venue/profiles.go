@@ -20,21 +20,21 @@ import (
 // ImportProfiles explicitly provisions database business policy while paused.
 // Existing enablement and all financial observations/reservations are preserved;
 // a new budget starts disabled and does not fund the native account.
-func (s *Store) ImportProfiles(ctx context.Context, input *commonv1.HimalayaProfileImport) error {
+func (s *Store) ImportProfiles(ctx context.Context, input *commonv1.VenueProfileImport) error {
 	return s.configureProfiles(ctx, input.GetProfiles(), nil)
 }
 
 // InitializeBudget explicitly enables a reviewed database profile. It is never
 // called by application startup and rejects any still-active affected owner.
-func (s *Store) InitializeBudget(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, enabled bool) error {
-	return s.configureProfiles(ctx, []*commonv1.HimalayaProfilePolicy{profile}, &enabled)
+func (s *Store) InitializeBudget(ctx context.Context, profile *commonv1.VenueProfilePolicy, enabled bool) error {
+	return s.configureProfiles(ctx, []*commonv1.VenueProfilePolicy{profile}, &enabled)
 }
 
-func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.HimalayaProfilePolicy, enabled *bool) error {
+func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.VenueProfilePolicy, enabled *bool) error {
 	if !validStoreContext(ctx) || len(input) == 0 || len(input) > 8 {
 		return ErrInvalidSubmit
 	}
-	profiles := make([]*commonv1.HimalayaProfilePolicy, 0, len(input))
+	profiles := make([]*commonv1.VenueProfilePolicy, 0, len(input))
 	funds, symbols := make(map[string]bool), make(map[string]bool)
 	for _, profile := range input {
 		row := budgetProfile(profile)
@@ -44,7 +44,7 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.Himalay
 		funds[row.AccountId], symbols[row.Symbol] = true, true
 		profiles = append(profiles, proto.CloneOf(profile))
 	}
-	slices.SortFunc(profiles, func(a, b *commonv1.HimalayaProfilePolicy) int {
+	slices.SortFunc(profiles, func(a, b *commonv1.VenueProfilePolicy) int {
 		return strings.Compare(native.ScopeKey(a.UserId, a.FundId), native.ScopeKey(b.UserId, b.FundId))
 	})
 	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
@@ -57,7 +57,7 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.Himalay
 	})
 }
 
-func budgetProfile(p *commonv1.HimalayaProfilePolicy) *commonmodelv1.TradingAccountPolicy {
+func budgetProfile(p *commonv1.VenueProfilePolicy) *commonmodelv1.TradingAccountPolicy {
 	return &commonmodelv1.TradingAccountPolicy{
 		AccountId:            native.ScopeKey(p.GetUserId(), p.GetFundId()),
 		UserId:               p.GetUserId(),
@@ -76,7 +76,7 @@ func budgetProfile(p *commonv1.HimalayaProfilePolicy) *commonmodelv1.TradingAcco
 	}
 }
 
-func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.HimalayaProfilePolicy, enabled *bool) error {
+func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.VenueProfilePolicy, enabled *bool) error {
 	input := budgetProfile(p)
 	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Clauses(clause.OnConflict{DoNothing: true}).Create(&commonmodelv1.ExecutionShardLease{AccountId: input.AccountId}).Error; err != nil {
 		return err
@@ -113,7 +113,7 @@ func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.HimalayaProf
 		Select("MaximumNotional", "MaximumOrderNotional", "Leverage", "Symbol", "MarketDataSource", "PriceTick", "QuantityStep", "Enabled").Updates(input).Error
 }
 
-func lockProfileMaintenance(ctx context.Context, tx *gorm.DB, account string, p *commonv1.HimalayaProfilePolicy) error {
+func lockProfileMaintenance(ctx context.Context, tx *gorm.DB, account string, p *commonv1.VenueProfilePolicy) error {
 	keys := []string{account, native.StrategyKey(p.UserId, p.FundId), native.PortfolioKey(p.UserId, p.FundId), native.MarketKey(p.Symbol), native.TradeKey(p.Symbol)}
 	var owners []*commonmodelv1.ExecutionShardLease
 	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id IN ?", keys).Order("account_id").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&owners).Error; err != nil {

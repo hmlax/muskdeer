@@ -1,5 +1,7 @@
 # MVP 需求规格 v0.1
 
+2026-11-04 用户最新要求本次通道接口全部改用业务名称，不保留旧协议兼容。公共消息使用 Venue*，通道 RPC 使用 muskdeer.<service>.venue.v1，运行配置使用 business.venue 与 execution_venue=gateway，维护命令改为 venueinit/venuebaseline；旧消息、RPC 路由、配置键和命令不提供别名或转发。本条替代此前保留 HimalayaAuthority 名称、旧 RPC 全名和配置键的约定。第三方 SDK 自身协议保持原样，数据库持久化身份与历史迁移不因接口重命名而清空或重建。
+
 2026-11-04 用户要求 Himalaya 只作为第三方 SDK/gRPC 适配层，不再定义 Himalaya 专属持久化模型。订单、撤单、额度、持仓观察与恢复基线由业务模块持有；历史数据通过显式版本化升级保留，交易状态、预算预留、未知恢复和最终 fencing 合同保持。
 
 2026-11-04 用户要求 model 目录只保留业务及必要运行记录的 Proto。移除仅供技术验证的 StorageProbe 源文件和生成代码；持久化/基础设施测试复用 Instrument、AccountBudget 等真实业务模型。业务模型仍由 Proto 生成 GORM 结构，原有业务表与版本化迁移保持。
@@ -10,13 +12,13 @@
 
 2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
 
-2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。
+2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，VenueAuthority 不改。
 
 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
 
 2026-11-04 最新配置格式：用户要求配置拆为 data.yaml（PostgreSQL、Redis、NATS/JetStream 连接和业务运行控制）与 service.yaml（身份、gRPC/HTTP/监控监听、TLS、日志和生命周期）。继续使用 Nacos/env 引导，每服务独立两份 YAML，强类型校验、版本/内容绑定后装配，替代此前单份 Proto JSON；缺失、混用或非法内容拒绝启动，不热切换。已入库的账户业务策略不迁回 YAML。
 
-2026-11-04 最新业务配置边界：用户要求 HimalayaProfile 的账户、基金、交易对、额度、杠杆、行情源及 tick/step 保存在数据库，不再放入 Nacos。复用 HimalayaBudget 的已有资金策略字段并补充市场绑定；服务启动只读同一份数据库策略，Nacos 保留连接、循环控制和有限合成成交运行控制。此项替代此前通过 Nacos profiles 定义这些业务参数的做法，变更仍需显式停止/重启，不热切换交易状态。
+2026-11-04 最新业务配置边界：用户要求 VenueProfilePolicy 的账户、基金、交易对、额度、杠杆、行情源及 tick/step 保存在数据库，不再放入 Nacos。复用 TradingAccountPolicy 的已有资金策略字段并补充市场绑定；服务启动只读同一份数据库策略，Nacos 保留连接、循环控制和有限合成成交运行控制。此项替代此前通过 Nacos profiles 定义这些业务参数的做法，变更仍需显式停止/重启，不热切换交易状态。
 
 2026-11-04 后续用户要求历史订单不再阻止启动 BTC/ETH 做市和开发测试成交。对当前明确清单内的旧未知下单意图，可在独立维护流程中记录本次批准及稳定 SDK 观察，保留原状态、身份和全额风险预留后解除其历史阻塞；未来未知仍受正常门禁。这是本次开发启动的显式处置，不改变生产合同。
 

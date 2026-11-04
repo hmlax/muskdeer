@@ -167,7 +167,7 @@ type BusinessRuntime struct {
 	ExecutionLeaseTtl *durationpb.Duration      `protobuf:"bytes,8,opt,name=execution_lease_ttl,json=executionLeaseTtl,proto3" json:"execution_lease_ttl,omitempty"`
 	Simulator         *SimulatorScenarioRuntime `protobuf:"bytes,9,opt,name=simulator,proto3" json:"simulator,omitempty"`
 	Strategy          *StrategyRuntime          `protobuf:"bytes,10,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Himalaya          *HimalayaRuntime          `protobuf:"bytes,11,opt,name=himalaya,proto3" json:"himalaya,omitempty"`
+	Venue             *VenueRuntime             `protobuf:"bytes,11,opt,name=venue,proto3" json:"venue,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -272,16 +272,16 @@ func (x *BusinessRuntime) GetStrategy() *StrategyRuntime {
 	return nil
 }
 
-func (x *BusinessRuntime) GetHimalaya() *HimalayaRuntime {
+func (x *BusinessRuntime) GetVenue() *VenueRuntime {
 	if x != nil {
-		return x.Himalaya
+		return x.Venue
 	}
 	return nil
 }
 
-// HimalayaRuntime opts into the existing SDK on the development environment.
+// VenueRuntime opts into the existing SDK on the development environment.
 // Secrets are resolved from env only by the execution worker lifecycle.
-type HimalayaRuntime struct {
+type VenueRuntime struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Target           string                 `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	TokenEnv         string                 `protobuf:"bytes,2,opt,name=token_env,json=tokenEnv,proto3" json:"token_env,omitempty"`
@@ -293,20 +293,20 @@ type HimalayaRuntime struct {
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *HimalayaRuntime) Reset() {
-	*x = HimalayaRuntime{}
+func (x *VenueRuntime) Reset() {
+	*x = VenueRuntime{}
 	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *HimalayaRuntime) String() string {
+func (x *VenueRuntime) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*HimalayaRuntime) ProtoMessage() {}
+func (*VenueRuntime) ProtoMessage() {}
 
-func (x *HimalayaRuntime) ProtoReflect() protoreflect.Message {
+func (x *VenueRuntime) ProtoReflect() protoreflect.Message {
 	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -318,47 +318,47 @@ func (x *HimalayaRuntime) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use HimalayaRuntime.ProtoReflect.Descriptor instead.
-func (*HimalayaRuntime) Descriptor() ([]byte, []int) {
+// Deprecated: Use VenueRuntime.ProtoReflect.Descriptor instead.
+func (*VenueRuntime) Descriptor() ([]byte, []int) {
 	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *HimalayaRuntime) GetTarget() string {
+func (x *VenueRuntime) GetTarget() string {
 	if x != nil {
 		return x.Target
 	}
 	return ""
 }
 
-func (x *HimalayaRuntime) GetTokenEnv() string {
+func (x *VenueRuntime) GetTokenEnv() string {
 	if x != nil {
 		return x.TokenEnv
 	}
 	return ""
 }
 
-func (x *HimalayaRuntime) GetQuantityFraction() string {
+func (x *VenueRuntime) GetQuantityFraction() string {
 	if x != nil {
 		return x.QuantityFraction
 	}
 	return ""
 }
 
-func (x *HimalayaRuntime) GetDepth() uint32 {
+func (x *VenueRuntime) GetDepth() uint32 {
 	if x != nil {
 		return x.Depth
 	}
 	return 0
 }
 
-func (x *HimalayaRuntime) GetLeaseTtl() *durationpb.Duration {
+func (x *VenueRuntime) GetLeaseTtl() *durationpb.Duration {
 	if x != nil {
 		return x.LeaseTtl
 	}
 	return nil
 }
 
-func (x *HimalayaRuntime) GetSyntheticTape() *SyntheticTape {
+func (x *VenueRuntime) GetSyntheticTape() *SyntheticTape {
 	if x != nil {
 		return x.SyntheticTape
 	}
@@ -2259,7 +2259,7 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\x05redis\x18\n" +
 	" \x01(\v2\x19.muskdeer.config.v1.RedisR\x05redis\x12;\n" +
 	"\tjetstream\x18\v \x01(\v2\x1d.muskdeer.config.v1.JetStreamR\tjetstream\x12?\n" +
-	"\bbusiness\x18\x10 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\bbusiness\"\x94\x05\n" +
+	"\bbusiness\x18\x10 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\bbusiness\"\x8b\x05\n" +
 	"\x0fBusinessRuntime\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12'\n" +
 	"\x0fexecution_venue\x18\x02 \x01(\tR\x0eexecutionVenue\x12>\n" +
@@ -2271,9 +2271,9 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\x13execution_lease_ttl\x18\b \x01(\v2\x19.google.protobuf.DurationR\x11executionLeaseTtl\x12J\n" +
 	"\tsimulator\x18\t \x01(\v2,.muskdeer.config.v1.SimulatorScenarioRuntimeR\tsimulator\x12?\n" +
 	"\bstrategy\x18\n" +
-	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\x12?\n" +
-	"\bhimalaya\x18\v \x01(\v2#.muskdeer.config.v1.HimalayaRuntimeR\bhimalaya\"\x9b\x02\n" +
-	"\x0fHimalayaRuntime\x12\x16\n" +
+	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\x126\n" +
+	"\x05venue\x18\v \x01(\v2 .muskdeer.config.v1.VenueRuntimeR\x05venue\"\x98\x02\n" +
+	"\fVenueRuntime\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
 	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\x12+\n" +
 	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
@@ -2487,7 +2487,7 @@ var file_deer_proto_common_config_v1_config_proto_goTypes = []any{
 	(SyntheticTapeMode)(0),           // 0: muskdeer.config.v1.SyntheticTapeMode
 	(*DataConfig)(nil),               // 1: muskdeer.config.v1.DataConfig
 	(*BusinessRuntime)(nil),          // 2: muskdeer.config.v1.BusinessRuntime
-	(*HimalayaRuntime)(nil),          // 3: muskdeer.config.v1.HimalayaRuntime
+	(*VenueRuntime)(nil),             // 3: muskdeer.config.v1.VenueRuntime
 	(*SyntheticTape)(nil),            // 4: muskdeer.config.v1.SyntheticTape
 	(*SyntheticTapeProfile)(nil),     // 5: muskdeer.config.v1.SyntheticTapeProfile
 	(*JetStream)(nil),                // 6: muskdeer.config.v1.JetStream
@@ -2523,9 +2523,9 @@ var file_deer_proto_common_config_v1_config_proto_depIdxs = []int32{
 	25, // 8: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
 	23, // 9: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
 	22, // 10: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
-	3,  // 11: muskdeer.config.v1.BusinessRuntime.himalaya:type_name -> muskdeer.config.v1.HimalayaRuntime
-	25, // 12: muskdeer.config.v1.HimalayaRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	4,  // 13: muskdeer.config.v1.HimalayaRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
+	3,  // 11: muskdeer.config.v1.BusinessRuntime.venue:type_name -> muskdeer.config.v1.VenueRuntime
+	25, // 12: muskdeer.config.v1.VenueRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	4,  // 13: muskdeer.config.v1.VenueRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
 	25, // 14: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
 	5,  // 15: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
 	0,  // 16: muskdeer.config.v1.SyntheticTape.mode:type_name -> muskdeer.config.v1.SyntheticTapeMode

@@ -36,23 +36,23 @@ import (
 	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 )
 
-func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
+func TestVenueNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
 	testNativeWorkers(t, nativeWorkerScenario{})
 }
 
-func TestHimalayaNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
+func TestVenueNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
 	testNativeWorkers(t, nativeWorkerScenario{legacy: 40})
 }
 
-func TestHimalayaNativeRepricingKeepsBothSidesWhileCancelProofIsPending(t *testing.T) {
+func TestVenueNativeRepricingKeepsBothSidesWhileCancelProofIsPending(t *testing.T) {
 	testNativeWorkers(t, nativeWorkerScenario{reprice: 1})
 }
 
-func TestHimalayaNativePriceJumpSeedsSafeSideBeforeCancellingOldQuote(t *testing.T) {
+func TestVenueNativePriceJumpSeedsSafeSideBeforeCancellingOldQuote(t *testing.T) {
 	testNativeWorkers(t, nativeWorkerScenario{reprice: 5})
 }
 
-func TestHimalayaNativeReplyLossRecoversPositiveHistoryWithoutResubmission(t *testing.T) {
+func TestVenueNativeReplyLossRecoversPositiveHistoryWithoutResubmission(t *testing.T) {
 	testNativeWorkers(t, nativeWorkerScenario{lostReply: true})
 }
 
@@ -149,7 +149,7 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 		ExecutionVenue:   native.Venue,
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
-		Himalaya: &configv1.HimalayaRuntime{
+		Venue: &configv1.VenueRuntime{
 			Target:           sdkAddress,
 			TokenEnv:         "NATIVE_TEST_TOKEN",
 			Depth:            depth,

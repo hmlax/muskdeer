@@ -29,7 +29,7 @@ type syntheticTradeOutageCheck struct {
 	sdk     *nativeSDKFixture
 	db      *gorm.DB
 	factory *rpcclient.Factory
-	cfg     *commonv1.HimalayaPolicy
+	cfg     *commonv1.VenuePolicy
 	owner   string
 }
 
@@ -62,7 +62,7 @@ func assertSyntheticTradeOutage(ctx context.Context, t *testing.T, check synthet
 		Price:    "100.1",
 		Quantity: "0.1",
 		Book:     book,
-		Strategy: &commonv1.HimalayaAuthority{
+		Strategy: &commonv1.VenueAuthority{
 			AccountId: native.SyntheticStrategyKey(check.cfg.SyntheticTape.RunId, "BTCUSDT"),
 			OwnerId:   check.owner,
 			Epoch:     1,

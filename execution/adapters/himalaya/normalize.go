@@ -13,7 +13,7 @@ import (
 
 // Normalize translates raw SDK integer ticks at the boundary and rejects
 // non-ONE_WAY/non-normal funds and positions outside the configured instrument.
-func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.HimalayaSnapshot, error) {
+func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.VenueSnapshot, error) {
 	if err := validateNativeSnapshot(input, scope); err != nil {
 		return nil, err
 	}
@@ -21,13 +21,13 @@ func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.HimalayaSnapshot, err
 	maker, _ := native.Value(market.MakerFeeRate, true, true)
 	taker, _ := native.Value(market.TakerFeeRate, true, true)
 	base, quote := -int32(market.EffectiveBasePrecision), -int32(market.EffectiveQuotePrecision)
-	result := &commonv1.HimalayaSnapshot{
-		Scope: &commonv1.HimalayaScope{
+	result := &commonv1.VenueSnapshot{
+		Scope: &commonv1.VenueScope{
 			UserId: scope.UserID,
 			FundId: scope.FundID,
 			Symbol: scope.Symbol,
 		},
-		Market: &commonv1.HimalayaMarket{
+		Market: &commonv1.VenueMarket{
 			PriceTick:       decimal.NewFromInt(market.PriceTickTicks).Shift(quote).String(),
 			QuantityStep:    decimal.NewFromInt(market.BaseIncrement).Shift(base).String(),
 			MinimumQuantity: decimal.NewFromInt(market.BaseMinSize).Shift(base).String(),
@@ -59,7 +59,7 @@ func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.HimalayaSnapshot, err
 	return result, nil
 }
 
-func normalizeOrder(row *pb.OrderRow, scope Scope, base int32) (*commonv1.HimalayaOrder, error) {
+func normalizeOrder(row *pb.OrderRow, scope Scope, base int32) (*commonv1.VenueOrder, error) {
 	if row == nil || row.OrderId == 0 || row.UserId != scope.UserID || row.FundId != scope.FundID || row.Symbol != scope.Symbol ||
 		row.ExecutedQuantity > row.Quantity || row.Quantity == 0 || !native.Active(row.Status) && !native.Terminal(row.Status) {
 		return nil, ErrInvalidSnapshot
@@ -76,7 +76,7 @@ func normalizeOrder(row *pb.OrderRow, scope Scope, base int32) (*commonv1.Himala
 	default:
 		return nil, ErrInvalidSnapshot
 	}
-	return &commonv1.HimalayaOrder{
+	return &commonv1.VenueOrder{
 		OrderId:          strconv.FormatUint(row.OrderId, 10),
 		ClientId:         row.ClientId,
 		Side:             string(side),
@@ -87,7 +87,7 @@ func normalizeOrder(row *pb.OrderRow, scope Scope, base int32) (*commonv1.Himala
 	}, nil
 }
 
-func normalizePosition(row *pb.PositionRow, scope Scope) (*commonv1.HimalayaPosition, error) {
+func normalizePosition(row *pb.PositionRow, scope Scope) (*commonv1.VenuePosition, error) {
 	if row == nil || row.UserId != scope.UserID || row.FundId != scope.FundID || row.Symbol != scope.Symbol || row.PositionType != pb.PositionType_POSITION_TYPE_CROSS {
 		return nil, ErrInvalidSnapshot
 	}
@@ -108,7 +108,7 @@ func normalizePosition(row *pb.PositionRow, scope Scope) (*commonv1.HimalayaPosi
 	if _, err := native.Value(row.Leverage, false, false); err != nil {
 		return nil, ErrInvalidSnapshot
 	}
-	return &commonv1.HimalayaPosition{
+	return &commonv1.VenuePosition{
 		Symbol:         row.Symbol,
 		SignedQuantity: quantity.String(),
 		EntryPrice:     row.EntryPrice,

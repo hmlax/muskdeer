@@ -15,17 +15,17 @@ import (
 // quoteCycle is owned by one admitted reconcile call; all request pointers are
 // borrowed and immutable, while retention and result belong only to that call.
 type quoteCycle struct {
-	profile   *commonv1.HimalayaProfilePolicy
+	profile   *commonv1.VenueProfilePolicy
 	lease     domain.LeaseToken
 	authority LiveAuthority
-	targets   []*commonv1.HimalayaTarget
-	snapshot  *commonv1.HimalayaSnapshot
+	targets   []*commonv1.VenueTarget
+	snapshot  *commonv1.VenueSnapshot
 	retained  *quoteRetention
 	result    *executionvenuev1.QuoteResult
-	admitted  []*commonv1.HimalayaTarget
+	admitted  []*commonv1.VenueTarget
 }
 
-func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *commonv1.HimalayaTarget) error {
+func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *commonv1.VenueTarget) error {
 	price, e1 := native.Value(target.Price, false, false)
 	quantity, e2 := native.Value(target.Quantity, false, false)
 	if e1 != nil || e2 != nil {
@@ -74,7 +74,7 @@ func (r *Runtime) seedQuoteSides(ctx context.Context, cycle *quoteCycle) error {
 	return nil
 }
 
-func quoteSeedTargets(snapshot *commonv1.HimalayaSnapshot, targets []*commonv1.HimalayaTarget, retained *quoteRetention) []*commonv1.HimalayaTarget {
+func quoteSeedTargets(snapshot *commonv1.VenueSnapshot, targets []*commonv1.VenueTarget, retained *quoteRetention) []*commonv1.VenueTarget {
 	present := make(map[domain.Side]bool)
 	bestBid, bestAsk := decimal.Zero, decimal.Zero
 	for _, order := range snapshot.Orders {
@@ -92,7 +92,7 @@ func quoteSeedTargets(snapshot *commonv1.HimalayaSnapshot, targets []*commonv1.H
 			bestAsk = price
 		}
 	}
-	seeds := make([]*commonv1.HimalayaTarget, 0, 2)
+	seeds := make([]*commonv1.VenueTarget, 0, 2)
 	for _, target := range quoteSubmissionOrder(targets) {
 		side := domain.Side(target.Side)
 		if present[side] {

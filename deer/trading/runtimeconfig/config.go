@@ -29,6 +29,10 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	case rpcsecurity.ServiceOperator, rpcsecurity.ServiceAPI, rpcsecurity.ServiceAdmin:
 		return ErrInvalidConfig
 	}
+	venue := cfg.GetBusiness().GetExecutionVenue()
+	if venue != "" && venue != native.Venue && venue != domain.ExecutionVenueSimulator {
+		return ErrInvalidConfig
+	}
 	if !cfg.GetBusiness().GetEnabled() {
 		return nil
 	}
@@ -41,7 +45,7 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	if cfg.Business.ExecutionVenue == native.Venue {
 		return native.ValidateConfig(cfg)
 	}
-	if cfg.Business.ExecutionVenue != domain.ExecutionVenueSimulator || cfg.Business.Himalaya != nil {
+	if cfg.Business.ExecutionVenue != domain.ExecutionVenueSimulator || cfg.Business.Venue != nil {
 		return ErrInvalidConfig
 	}
 	return validateBusinessRole(cfg)

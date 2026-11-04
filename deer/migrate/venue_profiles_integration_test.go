@@ -21,8 +21,8 @@ import (
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
-func databaseProfileFixture() *commonv1.HimalayaProfilePolicy {
-	return &commonv1.HimalayaProfilePolicy{
+func databaseProfileFixture() *commonv1.VenueProfilePolicy {
+	return &commonv1.VenueProfilePolicy{
 		UserId:               10001,
 		FundId:               10001,
 		Symbol:               "BTCUSDT",
@@ -35,7 +35,7 @@ func databaseProfileFixture() *commonv1.HimalayaProfilePolicy {
 	}
 }
 
-func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) {
+func TestVenueProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) {
 	db, store, lease, _ := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -45,7 +45,7 @@ func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) 
 	first := databaseProfileFixture()
 	second := proto.CloneOf(first)
 	second.UserId, second.FundId, second.Symbol = 10002, 10002, "ETHUSDT"
-	batch := &commonv1.HimalayaProfileImport{Profiles: []*commonv1.HimalayaProfilePolicy{first, second}}
+	batch := &commonv1.VenueProfileImport{Profiles: []*commonv1.VenueProfilePolicy{first, second}}
 	if err := store.ImportProfiles(ctx, batch); err != nil {
 		t.Fatal(err)
 	}
@@ -84,12 +84,12 @@ func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) 
 	}, lease.OwnerID, 10*time.Second); err != nil {
 		t.Fatal(err)
 	}
-	if err := store.ImportProfiles(ctx, &commonv1.HimalayaProfileImport{Profiles: []*commonv1.HimalayaProfilePolicy{first}}); !errors.Is(err, domain.ErrLeaseHeld) {
+	if err := store.ImportProfiles(ctx, &commonv1.VenueProfileImport{Profiles: []*commonv1.VenueProfilePolicy{first}}); !errors.Is(err, domain.ErrLeaseHeld) {
 		t.Fatalf("profile import changed a live source binding: %v", err)
 	}
 }
 
-func TestHimalayaProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T) {
+func TestVenueProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T) {
 	db, store, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -97,7 +97,7 @@ func TestHimalayaProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
-	profile := &commonv1.HimalayaProfilePolicy{
+	profile := &commonv1.VenueProfilePolicy{
 		UserId:               request.UserID,
 		FundId:               request.FundID,
 		Symbol:               request.Symbol,
@@ -129,14 +129,14 @@ func TestHimalayaProfileMaintenanceRejectsActiveOwnerAndRetainsRisk(t *testing.T
 	}
 }
 
-func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
+func TestVenueRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 	db, _, _, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	cfg := &configv1.BusinessRuntime{
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
-		Himalaya: &configv1.HimalayaRuntime{
+		Venue: &configv1.VenueRuntime{
 			QuantityFraction: "0.1",
 			Depth:            20,
 			LeaseTtl:         durationpb.New(10 * time.Second),
@@ -157,7 +157,7 @@ func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 		t.Fatal(err)
 	}
 	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
-	if err != nil || len(settings.Himalaya.Profiles) != 1 || settings.Himalaya.Profiles[0].MaximumNotional != "1000" || settings.Himalaya.Profiles[0].PriceTick != "0.1" {
+	if err != nil || len(settings.Venue.Profiles) != 1 || settings.Venue.Profiles[0].MaximumNotional != "1000" || settings.Venue.Profiles[0].PriceTick != "0.1" {
 		t.Fatalf("database profile load: %v, %v", settings, err)
 	}
 	var after commonmodelv1.TradingAccountPolicy
@@ -167,11 +167,11 @@ func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", before.Id).UpdateColumn("price_tick", "0.2").Error; err != nil {
 		t.Fatal(err)
 	}
-	if settings.Himalaya.Profiles[0].PriceTick != "0.1" {
+	if settings.Venue.Profiles[0].PriceTick != "0.1" {
 		t.Fatal("database update silently hot-switched an active startup snapshot")
 	}
 	restarted, err := venueconfig.LoadRuntime(ctx, db, cfg)
-	if err != nil || restarted.Himalaya.Profiles[0].PriceTick != "0.2" {
+	if err != nil || restarted.Venue.Profiles[0].PriceTick != "0.2" {
 		t.Fatalf("explicit restart did not reload database policy: %v", err)
 	}
 }

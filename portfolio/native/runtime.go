@@ -68,7 +68,7 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
 // Workers owns one bounded projection loop per fund.
 func (r *Runtime) Workers() []deer.Worker {
 	var result []deer.Worker
-	for _, profile := range r.cfg.Himalaya.Profiles {
+	for _, profile := range r.cfg.Venue.Profiles {
 		result = append(result, deer.Worker{
 			Name: "portfolio.native." + strings.ToLower(profile.Symbol),
 			Run: func(ctx context.Context) error {
@@ -94,15 +94,15 @@ func (r *Runtime) Workers() []deer.Worker {
 	return result
 }
 
-func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) error {
+func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
 	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.PortfolioKey(profile.UserId, profile.FundId),
-	}, r.owner, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
-	token, err = r.leases.Renew(ctx, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	token, err = r.leases.Renew(ctx, token, r.cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
@@ -138,18 +138,18 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePol
 }
 
 // GetSnapshot returns no stale or unfenced observation as current state.
-func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope) (*commonv1.HimalayaSnapshot, error) {
+func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (*commonv1.VenueSnapshot, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, values.MessageInvalid)
 	}
-	if _, err := values.Profile(r.cfg.Himalaya, scope); err != nil {
+	if _, err := values.Profile(r.cfg.Venue, scope); err != nil {
 		return nil, status.Error(codes.InvalidArgument, values.MessageInvalid)
 	}
 	var row portfoliomodelv1.VenueAccountSnapshot
 	if err := r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {
 		return nil, status.Error(codes.Unavailable, values.MessageInvalid)
 	}
-	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, &commonv1.HimalayaAuthority{
+	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, &commonv1.VenueAuthority{
 		AccountId: values.PortfolioKey(scope.UserId, scope.FundId),
 		OwnerId:   row.PublisherOwnerId,
 		Epoch:     row.PublisherEpoch,

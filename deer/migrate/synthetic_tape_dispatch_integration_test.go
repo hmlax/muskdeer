@@ -142,22 +142,22 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	}
 }
 
-func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, *commonv1.HimalayaPolicy, *commonv1.SyntheticTapePlan) {
+func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, *commonv1.VenuePolicy, *commonv1.SyntheticTapePlan) {
 	t.Helper()
 	db, store, fundLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	authority := liveAuthorityFixture(ctx, t, db, fundLease, request.Symbol)
-	authority.Book.Bids = []*commonv1.HimalayaLevel{{
+	authority.Book.Bids = []*commonv1.VenueLevel{{
 		Price:    "99.9",
 		Quantity: "1",
 	}}
-	authority.Book.Asks = []*commonv1.HimalayaLevel{{
+	authority.Book.Asks = []*commonv1.VenueLevel{{
 		Price:    "100.1",
 		Quantity: "1",
 	}}
-	cfg := &commonv1.HimalayaPolicy{
-		Profiles: []*commonv1.HimalayaProfilePolicy{{
+	cfg := &commonv1.VenuePolicy{
+		Profiles: []*commonv1.VenueProfilePolicy{{
 			Symbol:       request.Symbol,
 			PriceTick:    "0.1",
 			QuantityStep: "0.001",

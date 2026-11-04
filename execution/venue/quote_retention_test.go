@@ -12,7 +12,7 @@ import (
 
 func TestQuoteRefreshKeepsBothSidesUntilTheirReplacementsExist(t *testing.T) {
 	t.Parallel()
-	profile := &commonv1.HimalayaProfilePolicy{
+	profile := &commonv1.VenueProfilePolicy{
 		Symbol:               "BTCUSDT",
 		MaximumOrderNotional: "500",
 	}
@@ -31,7 +31,7 @@ func TestQuoteRefreshKeepsBothSidesUntilTheirReplacementsExist(t *testing.T) {
 		},
 	}
 	for _, replaced := range []bool{false, true} {
-		snapshot := &commonv1.HimalayaSnapshot{Orders: []*commonv1.HimalayaOrder{oldBuy, oldSell}}
+		snapshot := &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{oldBuy, oldSell}}
 		if replaced {
 			snapshot.Orders = append(snapshot.Orders, retentionOrder("3", domain.SideBuy, "100.1"), retentionOrder("4", domain.SideSell, "100.5"))
 		}
@@ -49,8 +49,8 @@ func TestQuoteRefreshKeepsBothSidesUntilTheirReplacementsExist(t *testing.T) {
 	}
 }
 
-func retentionOrder(id string, side domain.Side, price string) *commonv1.HimalayaOrder {
-	return &commonv1.HimalayaOrder{
+func retentionOrder(id string, side domain.Side, price string) *commonv1.VenueOrder {
+	return &commonv1.VenueOrder{
 		OrderId:          id,
 		ClientId:         native.ClientPrefix + "BTCUSDT_" + id,
 		Side:             string(side),
@@ -63,7 +63,7 @@ func retentionOrder(id string, side domain.Side, price string) *commonv1.Himalay
 
 func TestQuoteSubmissionStartsBothSidesBeforeFillingTheLadder(t *testing.T) {
 	t.Parallel()
-	targets := []*commonv1.HimalayaTarget{
+	targets := []*commonv1.VenueTarget{
 		{Side: string(domain.SideBuy), Price: "100"},
 		{Side: string(domain.SideBuy), Price: "99.9"},
 		{Side: string(domain.SideBuy), Price: "99.8"},
@@ -84,7 +84,7 @@ func TestQuoteRefreshDoesNotBridgeCrossingLegacyOrOversizedOrders(t *testing.T) 
 	for _, kind := range []string{"crossing", "legacy", "over_cap"} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
-			profile := &commonv1.HimalayaProfilePolicy{
+			profile := &commonv1.VenueProfilePolicy{
 				Symbol:               "BTCUSDT",
 				MaximumOrderNotional: "500",
 			}
@@ -111,7 +111,7 @@ func TestQuoteRefreshDoesNotBridgeCrossingLegacyOrOversizedOrders(t *testing.T) 
 					Quantity: decimal.NewFromInt(1),
 				},
 			}
-			kept, err := retainQuoteOrders(profile, &commonv1.HimalayaSnapshot{Orders: []*commonv1.HimalayaOrder{buy, sell}}, wanted, false)
+			kept, err := retainQuoteOrders(profile, &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{buy, sell}}, wanted, false)
 			if err != nil || len(kept.orders) != 0 {
 				t.Fatalf("retainQuoteOrders(%s) = %v, %v, want no unsafe bridges", kind, kept, err)
 			}
@@ -145,11 +145,11 @@ func TestQuoteSeedsUseTheSideThatCannotCrossRestingOrders(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			snapshot := &commonv1.HimalayaSnapshot{Orders: []*commonv1.HimalayaOrder{
+			snapshot := &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{
 				retentionOrder("1", domain.SideBuy, "99.9"),
 				retentionOrder("2", domain.SideSell, "100.1"),
 			}}
-			targets := []*commonv1.HimalayaTarget{
+			targets := []*commonv1.VenueTarget{
 				{
 					Side:     string(domain.SideBuy),
 					Price:    test.buy,

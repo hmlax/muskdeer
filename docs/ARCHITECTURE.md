@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-04 用户最新要求本次通道接口全部改用业务名称，不保留旧协议兼容。公共消息使用 Venue*，通道 RPC 使用 muskdeer.<service>.venue.v1，运行配置使用 business.venue 与 execution_venue=gateway，维护命令改为 venueinit/venuebaseline；旧消息、RPC 路由、配置键和命令不提供别名或转发。本条替代此前保留 HimalayaAuthority 名称、旧 RPC 全名和配置键的约定。第三方 SDK 自身协议保持原样，数据库持久化身份与历史迁移不因接口重命名而清空或重建。
+
 2026-11-04 用户要求 Himalaya 只作为第三方 SDK/gRPC 适配层，不再定义 Himalaya 专属持久化模型。订单、撤单、额度、持仓观察与恢复基线由业务模块持有；历史数据通过显式版本化升级保留，交易状态、预算预留、未知恢复和最终 fencing 合同保持。
 
 2026-11-04 用户要求 model 目录只保留业务及必要运行记录的 Proto。移除仅供技术验证的 StorageProbe 源文件和生成代码；持久化/基础设施测试复用 Instrument、AccountBudget 等真实业务模型。业务模型仍由 Proto 生成 GORM 结构，原有业务表与版本化迁移保持。
@@ -10,7 +12,7 @@
 
 2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
 
-2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。
+2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，VenueAuthority 不改。
 
 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
 
@@ -34,7 +36,7 @@
 
 核心入口无 flags 或本地 JSON：Nacos 连接从 env 引导，服务及业务运行参数从 Nacos 严格解析为 Proto 配置，启动时读取并校验；变更显式重启。持仓、订单、资金与业务版本的存储权威仍按下文执行。具体环境变量见 [Nacos 配置](NACOS_CONFIG.md)。
 
-2026-11-04 用户明确将 Himalaya 账户/基金、交易对、额度、杠杆、行情源及 tick/step 移入 PostgreSQL 的 HimalayaBudget，避免 Nacos 重复保存资金策略。四核心在各自业务装配中借用 Deer 的同一进程数据库连接池，只读生成 Model 并形成不可变启动快照；缺失、无效或重复绑定拒绝启动。Nacos 不再接受 profiles，仍提供连接与循环/有限测试运行控制。公共快照 Proto 仅用于业务传递和既有审计指纹，不能用作 Nacos 配置或新的数据库模型。
+2026-11-04 用户明确将 Himalaya 账户/基金、交易对、额度、杠杆、行情源及 tick/step 移入 PostgreSQL 的 TradingAccountPolicy，避免 Nacos 重复保存资金策略。四核心在各自业务装配中借用 Deer 的同一进程数据库连接池，只读生成 Model 并形成不可变启动快照；缺失、无效或重复绑定拒绝启动。Nacos 不再接受 profiles，仍提供连接与循环/有限测试运行控制。公共快照 Proto 仅用于业务传递和既有审计指纹，不能用作 Nacos 配置或新的数据库模型。
 
 ## 旧管理范围与部署对应（历史说明）
 | 服务 | 公共封装 | 职责 | 扩容与所有权 |

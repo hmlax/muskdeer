@@ -55,7 +55,7 @@ type VenueOrderIntent struct {
 	SourceEpoch                 int64                  `protobuf:"varint,26,opt,name=source_epoch,json=sourceEpoch,proto3" json:"source_epoch,omitempty" gorm:"column:source_epoch;type:bigint;not null"`
 	SourceUntil                 int64                  `protobuf:"varint,27,opt,name=source_until,json=sourceUntil,proto3" json:"source_until,omitempty" gorm:"column:source_until;type:bigint;not null"`
 	HistoricalApprovalReference string                 `protobuf:"bytes,28,opt,name=historical_approval_reference,json=historicalApprovalReference,proto3" json:"historical_approval_reference,omitempty" gorm:"column:historical_approval_reference;type:varchar(256);not null;default:''"`
-	HistoricalSnapshot          *v1.HimalayaSnapshot   `protobuf:"bytes,29,opt,name=historical_snapshot,json=historicalSnapshot,proto3" json:"historical_snapshot,omitempty" gorm:"column:historical_snapshot;type:jsonb;serializer:json"`
+	HistoricalSnapshot          *v1.VenueSnapshot      `protobuf:"bytes,29,opt,name=historical_snapshot,json=historicalSnapshot,proto3" json:"historical_snapshot,omitempty" gorm:"column:historical_snapshot;type:jsonb;serializer:json"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -286,7 +286,7 @@ func (x *VenueOrderIntent) GetHistoricalApprovalReference() string {
 	return ""
 }
 
-func (x *VenueOrderIntent) GetHistoricalSnapshot() *v1.HimalayaSnapshot {
+func (x *VenueOrderIntent) GetHistoricalSnapshot() *v1.VenueSnapshot {
 	if x != nil {
 		return x.HistoricalSnapshot
 	}
@@ -438,7 +438,7 @@ var File_deer_proto_execution_model_v1_venue_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_model_v1_venue_proto_rawDesc = "" +
 	"\n" +
-	")deer/proto/execution/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xf8\x15\n" +
+	")deer/proto/execution/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\xf5\x15\n" +
 	"\x10VenueOrderIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -471,8 +471,8 @@ const file_deer_proto_execution_model_v1_venue_proto_rawDesc = "" +
 	"\x0fsource_owner_id\x18\x19 \x01(\tB=\x9a\x84\x9e\x038gorm:\"column:source_owner_id;type:varchar(128);not null\"R\rsourceOwnerId\x12W\n" +
 	"\fsource_epoch\x18\x1a \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_epoch;type:bigint;not null\"R\vsourceEpoch\x12W\n" +
 	"\fsource_until\x18\x1b \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_until;type:bigint;not null\"R\vsourceUntil\x12\x9a\x01\n" +
-	"\x1dhistorical_approval_reference\x18\x1c \x01(\tBV\x9a\x84\x9e\x03Qgorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\"R\x1bhistoricalApprovalReference\x12\x98\x01\n" +
-	"\x13historical_snapshot\x18\x1d \x01(\v2$.muskdeer.common.v1.HimalayaSnapshotBA\x9a\x84\x9e\x03<gorm:\"column:historical_snapshot;type:jsonb;serializer:json\"R\x12historicalSnapshotB\f\n" +
+	"\x1dhistorical_approval_reference\x18\x1c \x01(\tBV\x9a\x84\x9e\x03Qgorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\"R\x1bhistoricalApprovalReference\x12\x95\x01\n" +
+	"\x13historical_snapshot\x18\x1d \x01(\v2!.muskdeer.common.v1.VenueSnapshotBA\x9a\x84\x9e\x03<gorm:\"column:historical_snapshot;type:jsonb;serializer:json\"R\x12historicalSnapshotB\f\n" +
 	"\n" +
 	"_delete_at\"\x87\t\n" +
 	"\x11VenueCancellation\x12J\n" +
@@ -509,12 +509,12 @@ func file_deer_proto_execution_model_v1_venue_proto_rawDescGZIP() []byte {
 
 var file_deer_proto_execution_model_v1_venue_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_deer_proto_execution_model_v1_venue_proto_goTypes = []any{
-	(*VenueOrderIntent)(nil),    // 0: muskdeer.model.v1.VenueOrderIntent
-	(*VenueCancellation)(nil),   // 1: muskdeer.model.v1.VenueCancellation
-	(*v1.HimalayaSnapshot)(nil), // 2: muskdeer.common.v1.HimalayaSnapshot
+	(*VenueOrderIntent)(nil),  // 0: muskdeer.model.v1.VenueOrderIntent
+	(*VenueCancellation)(nil), // 1: muskdeer.model.v1.VenueCancellation
+	(*v1.VenueSnapshot)(nil),  // 2: muskdeer.common.v1.VenueSnapshot
 }
 var file_deer_proto_execution_model_v1_venue_proto_depIdxs = []int32{
-	2, // 0: muskdeer.model.v1.VenueOrderIntent.historical_snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	2, // 0: muskdeer.model.v1.VenueOrderIntent.historical_snapshot:type_name -> muskdeer.common.v1.VenueSnapshot
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

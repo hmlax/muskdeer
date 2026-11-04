@@ -96,7 +96,7 @@ services:
     environment:
       NACOS_DATA_CONFIG_ID: execution.data.yaml
       NACOS_SERVICE_CONFIG_ID: execution.service.yaml
-      MUSKDEER_HIMALAYA_TOKEN: "${MUSKDEER_HIMALAYA_TOKEN:-}"
+      MUSKDEER_VENUE_TOKEN: "${MUSKDEER_VENUE_TOKEN:-}"
     volumes:
       - type: bind
         source: "${MUSKDEER_RUNTIME_DIR}/config/execution/certs"

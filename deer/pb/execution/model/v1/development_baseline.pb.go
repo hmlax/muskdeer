@@ -34,7 +34,7 @@ type ExecutionRecoveryBaseline struct {
 	AccountId               string                         `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_dev_baseline_account"`
 	Request                 *v1.DevelopmentBaselineRequest `protobuf:"bytes,6,opt,name=request,proto3" json:"request,omitempty" gorm:"column:request;type:jsonb;serializer:json;not null"`
 	RequestDigest           string                         `protobuf:"bytes,7,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty" gorm:"column:request_digest;type:varchar(64);not null"`
-	Snapshot                *v1.HimalayaSnapshot           `protobuf:"bytes,8,opt,name=snapshot,proto3" json:"snapshot,omitempty" gorm:"column:snapshot;type:jsonb;serializer:json;not null"`
+	Snapshot                *v1.VenueSnapshot              `protobuf:"bytes,8,opt,name=snapshot,proto3" json:"snapshot,omitempty" gorm:"column:snapshot;type:jsonb;serializer:json;not null"`
 	LegacyNotional          string                         `protobuf:"bytes,9,opt,name=legacy_notional,json=legacyNotional,proto3" json:"legacy_notional,omitempty" gorm:"column:legacy_notional;type:numeric(76,36);not null"`
 	MinimumObservedNotional string                         `protobuf:"bytes,10,opt,name=minimum_observed_notional,json=minimumObservedNotional,proto3" json:"minimum_observed_notional,omitempty" gorm:"column:minimum_observed_notional;type:numeric(76,36);not null"`
 	EvidenceDigest          string                         `protobuf:"bytes,11,opt,name=evidence_digest,json=evidenceDigest,proto3" json:"evidence_digest,omitempty" gorm:"column:evidence_digest;type:varchar(64);not null"`
@@ -121,7 +121,7 @@ func (x *ExecutionRecoveryBaseline) GetRequestDigest() string {
 	return ""
 }
 
-func (x *ExecutionRecoveryBaseline) GetSnapshot() *v1.HimalayaSnapshot {
+func (x *ExecutionRecoveryBaseline) GetSnapshot() *v1.VenueSnapshot {
 	if x != nil {
 		return x.Snapshot
 	}
@@ -153,7 +153,7 @@ var File_deer_proto_execution_model_v1_development_baseline_proto protoreflect.F
 
 const file_deer_proto_execution_model_v1_development_baseline_proto_rawDesc = "" +
 	"\n" +
-	"8deer/proto/execution/model/v1/development_baseline.proto\x12\x11muskdeer.model.v1\x1a/deer/proto/common/v1/development_baseline.proto\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xdd\t\n" +
+	"8deer/proto/execution/model/v1/development_baseline.proto\x12\x11muskdeer.model.v1\x1a/deer/proto/common/v1/development_baseline.proto\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\xd9\t\n" +
 	"\x19ExecutionRecoveryBaseline\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -162,8 +162,8 @@ const file_deer_proto_execution_model_v1_development_baseline_proto_rawDesc = ""
 	"\n" +
 	"account_id\x18\x05 \x01(\tBd\x9a\x84\x9e\x03_gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_dev_baseline_account\"R\taccountId\x12\x88\x01\n" +
 	"\arequest\x18\x06 \x01(\v2..muskdeer.common.v1.DevelopmentBaselineRequestB>\x9a\x84\x9e\x039gorm:\"column:request;type:jsonb;serializer:json;not null\"R\arequest\x12b\n" +
-	"\x0erequest_digest\x18\a \x01(\tB;\x9a\x84\x9e\x036gorm:\"column:request_digest;type:varchar(64);not null\"R\rrequestDigest\x12\x81\x01\n" +
-	"\bsnapshot\x18\b \x01(\v2$.muskdeer.common.v1.HimalayaSnapshotB?\x9a\x84\x9e\x03:gorm:\"column:snapshot;type:jsonb;serializer:json;not null\"R\bsnapshot\x12h\n" +
+	"\x0erequest_digest\x18\a \x01(\tB;\x9a\x84\x9e\x036gorm:\"column:request_digest;type:varchar(64);not null\"R\rrequestDigest\x12~\n" +
+	"\bsnapshot\x18\b \x01(\v2!.muskdeer.common.v1.VenueSnapshotB?\x9a\x84\x9e\x03:gorm:\"column:snapshot;type:jsonb;serializer:json;not null\"R\bsnapshot\x12h\n" +
 	"\x0flegacy_notional\x18\t \x01(\tB?\x9a\x84\x9e\x03:gorm:\"column:legacy_notional;type:numeric(76,36);not null\"R\x0elegacyNotional\x12\x85\x01\n" +
 	"\x19minimum_observed_notional\x18\n" +
 	" \x01(\tBI\x9a\x84\x9e\x03Dgorm:\"column:minimum_observed_notional;type:numeric(76,36);not null\"R\x17minimumObservedNotional\x12e\n" +
@@ -187,11 +187,11 @@ var file_deer_proto_execution_model_v1_development_baseline_proto_msgTypes = mak
 var file_deer_proto_execution_model_v1_development_baseline_proto_goTypes = []any{
 	(*ExecutionRecoveryBaseline)(nil),     // 0: muskdeer.model.v1.ExecutionRecoveryBaseline
 	(*v1.DevelopmentBaselineRequest)(nil), // 1: muskdeer.common.v1.DevelopmentBaselineRequest
-	(*v1.HimalayaSnapshot)(nil),           // 2: muskdeer.common.v1.HimalayaSnapshot
+	(*v1.VenueSnapshot)(nil),              // 2: muskdeer.common.v1.VenueSnapshot
 }
 var file_deer_proto_execution_model_v1_development_baseline_proto_depIdxs = []int32{
 	1, // 0: muskdeer.model.v1.ExecutionRecoveryBaseline.request:type_name -> muskdeer.common.v1.DevelopmentBaselineRequest
-	2, // 1: muskdeer.model.v1.ExecutionRecoveryBaseline.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	2, // 1: muskdeer.model.v1.ExecutionRecoveryBaseline.snapshot:type_name -> muskdeer.common.v1.VenueSnapshot
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name

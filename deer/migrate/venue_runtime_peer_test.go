@@ -28,7 +28,7 @@ import (
 
 type nativeMarketFixture struct {
 	marketvenuev1.UnimplementedMarketServer
-	authority        *commonv1.HimalayaAuthority
+	authority        *commonv1.VenueAuthority
 	stop             atomic.Bool
 	offset           atomic.Int64
 	depth            uint32
@@ -36,14 +36,14 @@ type nativeMarketFixture struct {
 	renewal          sync.Mutex
 	leases           domain.LeaseRepository
 	lease            domain.LeaseToken
-	tradeAuthority   *commonv1.HimalayaAuthority
+	tradeAuthority   *commonv1.VenueAuthority
 	tradeLease       domain.LeaseToken
 	tradeRequests    atomic.Int64
 	tradeSequence    atomic.Int64
 	tradeUnavailable atomic.Bool
 }
 
-func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *marketvenuev1.TradeRequest) (*commonv1.HimalayaTrade, error) {
+func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *marketvenuev1.TradeRequest) (*commonv1.VenueTrade, error) {
 	m.tradeRequests.Add(1)
 	if m.tradeUnavailable.Load() || m.tradeAuthority == nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
@@ -62,7 +62,7 @@ func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *marketvenuev1.Tra
 		publisher = native.Authority(token)
 	}
 	now := time.Now()
-	return &commonv1.HimalayaTrade{
+	return &commonv1.VenueTrade{
 		Symbol:       "BTCUSDT",
 		Source:       native.Source,
 		Segment:      native.Segment,
@@ -78,7 +78,7 @@ func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *marketvenuev1.Tra
 	}, nil
 }
 
-func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *marketvenuev1.BookRequest) (*commonv1.HimalayaBook, error) {
+func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *marketvenuev1.BookRequest) (*commonv1.VenueBook, error) {
 	if m.stop.Load() {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
@@ -96,7 +96,7 @@ func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *marketvenuev1.Book
 		publisher = native.Authority(token)
 	}
 	offset := decimal.NewFromInt(m.offset.Load()).Shift(-1)
-	book := &commonv1.HimalayaBook{
+	book := &commonv1.VenueBook{
 		Symbol:       "BTCUSDT",
 		Source:       native.Source,
 		Segment:      native.Segment,
@@ -107,11 +107,11 @@ func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *marketvenuev1.Book
 	for level := range max(1, int(m.depth)) {
 		distance := decimal.NewFromInt(int64(level)).Shift(-1)
 		quantity := decimal.NewFromInt(max(1, m.quantity.Load())).String()
-		book.Bids = append(book.Bids, &commonv1.HimalayaLevel{
+		book.Bids = append(book.Bids, &commonv1.VenueLevel{
 			Price:    decimal.RequireFromString("99.9").Add(offset).Sub(distance).String(),
 			Quantity: quantity,
 		})
-		book.Asks = append(book.Asks, &commonv1.HimalayaLevel{
+		book.Asks = append(book.Asks, &commonv1.VenueLevel{
 			Price:    decimal.RequireFromString("100.1").Add(offset).Add(distance).String(),
 			Quantity: quantity,
 		})

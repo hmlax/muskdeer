@@ -18,11 +18,11 @@ import (
 // Observe correlates native facts and releases only terminal unfilled quantity.
 // Filled gross notional remains conservatively reserved; it is not silently
 // netted against an independently observed position or a later opposite fill.
-func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot) error {
+func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot) error {
 	if !validStoreContext(ctx) || snapshot.GetScope() == nil || lease.Key.AccountID != native.ScopeKey(snapshot.Scope.UserId, snapshot.Scope.FundId) {
 		return ErrInvalidSnapshot
 	}
-	byClient := make(map[string]*commonv1.HimalayaOrder, len(snapshot.Orders))
+	byClient := make(map[string]*commonv1.VenueOrder, len(snapshot.Orders))
 	for _, order := range snapshot.Orders {
 		if order == nil || order.OrderId == "" || !native.Active(order.Status) && !native.Terminal(order.Status) {
 			return ErrInvalidSnapshot
@@ -89,7 +89,7 @@ func expireUnsent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.Tradin
 	return tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", row.Id).Select("State").Updates(row).Error
 }
 
-func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent, order *commonv1.HimalayaOrder, scope *commonv1.HimalayaScope) error {
+func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent, order *commonv1.VenueOrder, scope *commonv1.VenueScope) error {
 	price, e1 := native.Value(order.Price, false, false)
 	quantity, e2 := native.Value(order.Quantity, false, false)
 	executed, e3 := native.Value(order.ExecutedQuantity, false, true)
@@ -163,7 +163,7 @@ func (s *Store) PendingIDs(ctx context.Context, account string) ([]uint64, error
 
 // SyncBudget updates observations without enabling a disabled fund. Observed
 // gross obligation never decreases automatically, preserving legacy/fill risk.
-func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, observed decimal.Decimal) error {
+func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, observed decimal.Decimal) error {
 	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch)); err != nil {
 			return err

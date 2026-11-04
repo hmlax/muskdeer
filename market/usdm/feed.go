@@ -45,7 +45,7 @@ func NewFeed(symbol string) (*Feed, error) {
 // Run returns after its socket and cancellation callback are joined. Each frame
 // is a complete top-twenty observation. Stale/reversed sequence is rejected;
 // consumers receive no cached data after a session exits.
-func (f *Feed) Run(parent context.Context, publish func(context.Context, *commonv1.HimalayaBook) error) (result error) {
+func (f *Feed) Run(parent context.Context, publish func(context.Context, *commonv1.VenueBook) error) (result error) {
 	if parent == nil || publish == nil {
 		return native.ErrInvalid
 	}

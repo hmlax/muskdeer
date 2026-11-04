@@ -21,7 +21,7 @@ const tradeWorkerPrefix = "market.usdm.trade."
 
 // GetTrade returns the latest owned aggregate observation; it never falls back
 // to depth prices or another exchange when the trade stream is unavailable.
-func (r *Runtime) GetTrade(ctx context.Context, request *marketvenuev1.TradeRequest) (*commonv1.HimalayaTrade, error) {
+func (r *Runtime) GetTrade(ctx context.Context, request *marketvenuev1.TradeRequest) (*commonv1.VenueTrade, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
@@ -56,7 +56,7 @@ func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
 	token, err := r.leases.Acquire(op, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: native.TradeKey(symbol),
-	}, r.owner, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
 	cancel()
 	if err != nil {
 		return err
@@ -65,11 +65,11 @@ func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
 	if err != nil {
 		return err
 	}
-	return feed.Run(ctx, func(work context.Context, trade *commonv1.HimalayaTrade) error {
-		if time.Until(token.ExpiresAt) < r.cfg.Himalaya.LeaseTtl.AsDuration()/2 {
+	return feed.Run(ctx, func(work context.Context, trade *commonv1.VenueTrade) error {
+		if time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {
 			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout)
 			defer cancel()
-			token, err = r.leases.Renew(bounded, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
+			token, err = r.leases.Renew(bounded, token, r.cfg.Venue.LeaseTtl.AsDuration())
 			if err != nil {
 				return err
 			}

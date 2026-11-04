@@ -14,7 +14,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-func TestHimalayaNativeSizeRefreshRetainsNinetyPercentWhileAwaitingProof(t *testing.T) {
+func TestVenueNativeSizeRefreshRetainsNinetyPercentWhileAwaitingProof(t *testing.T) {
 	testNativeWorkers(t, nativeWorkerScenario{
 		depth:  20,
 		resize: true,

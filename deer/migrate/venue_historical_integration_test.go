@@ -20,7 +20,7 @@ import (
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
-func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *testing.T) {
+func TestVenueHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *testing.T) {
 	db, store, lease, order := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
@@ -36,8 +36,8 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 	if err := store.WithSubmission(ctx, old.Admission, func(context.Context) error { return lost }); !errors.Is(err, lost) {
 		t.Fatal(err)
 	}
-	snapshot := &commonv1.HimalayaSnapshot{
-		Scope: &commonv1.HimalayaScope{
+	snapshot := &commonv1.VenueSnapshot{
+		Scope: &commonv1.VenueScope{
 			UserId: order.UserID,
 			FundId: order.FundID,
 			Symbol: order.Symbol,
@@ -98,7 +98,7 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 	}
 }
 
-func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T) {
+func TestVenueHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T) {
 	for _, changed := range []string{"active_order", "wrong_scope", "expired_view", "future_view", "missing_id", "reduced_reservation", "stale_epoch"} {
 		t.Run(changed, func(t *testing.T) {
 			db, store, lease, order := sdkAdmissionFixture(t)
@@ -112,8 +112,8 @@ func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T)
 				t.Fatal(err)
 			}
 			now := time.Now().UnixMilli()
-			snapshot := &commonv1.HimalayaSnapshot{
-				Scope: &commonv1.HimalayaScope{
+			snapshot := &commonv1.VenueSnapshot{
+				Scope: &commonv1.VenueScope{
 					UserId: order.UserID,
 					FundId: order.FundID,
 					Symbol: order.Symbol,
@@ -129,7 +129,7 @@ func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T)
 			}
 			switch changed {
 			case "active_order":
-				snapshot.Orders = []*commonv1.HimalayaOrder{{OrderId: "42"}}
+				snapshot.Orders = []*commonv1.VenueOrder{{OrderId: "42"}}
 			case "wrong_scope":
 				approval.Scope.FundId++
 			case "expired_view":
@@ -157,7 +157,7 @@ func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T)
 	}
 }
 
-func TestHimalayaUnsentFinalGuardFailureDoesNotCreatePermanentUnknown(t *testing.T) {
+func TestVenueUnsentFinalGuardFailureDoesNotCreatePermanentUnknown(t *testing.T) {
 	db, store, lease, order := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()

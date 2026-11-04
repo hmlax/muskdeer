@@ -24,10 +24,10 @@ const (
 
 type QuotePlan struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Scope         *v1.HimalayaScope      `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
-	Book          *v1.HimalayaBook       `protobuf:"bytes,2,opt,name=book,proto3" json:"book,omitempty"`
-	Strategy      *v1.HimalayaAuthority  `protobuf:"bytes,3,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Targets       []*v1.HimalayaTarget   `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
+	Scope         *v1.VenueScope         `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
+	Book          *v1.VenueBook          `protobuf:"bytes,2,opt,name=book,proto3" json:"book,omitempty"`
+	Strategy      *v1.VenueAuthority     `protobuf:"bytes,3,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	Targets       []*v1.VenueTarget      `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
 	RequestId     string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -63,28 +63,28 @@ func (*QuotePlan) Descriptor() ([]byte, []int) {
 	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *QuotePlan) GetScope() *v1.HimalayaScope {
+func (x *QuotePlan) GetScope() *v1.VenueScope {
 	if x != nil {
 		return x.Scope
 	}
 	return nil
 }
 
-func (x *QuotePlan) GetBook() *v1.HimalayaBook {
+func (x *QuotePlan) GetBook() *v1.VenueBook {
 	if x != nil {
 		return x.Book
 	}
 	return nil
 }
 
-func (x *QuotePlan) GetStrategy() *v1.HimalayaAuthority {
+func (x *QuotePlan) GetStrategy() *v1.VenueAuthority {
 	if x != nil {
 		return x.Strategy
 	}
 	return nil
 }
 
-func (x *QuotePlan) GetTargets() []*v1.HimalayaTarget {
+func (x *QuotePlan) GetTargets() []*v1.VenueTarget {
 	if x != nil {
 		return x.Targets
 	}
@@ -170,22 +170,22 @@ var File_deer_proto_execution_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/execution/venue/v1/runtime.proto\x12\x14muskdeer.himalaya.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a$deer/proto/common/v1/synthetic.proto\"\x9a\x02\n" +
-	"\tQuotePlan\x127\n" +
-	"\x05scope\x18\x01 \x01(\v2!.muskdeer.common.v1.HimalayaScopeR\x05scope\x124\n" +
-	"\x04book\x18\x02 \x01(\v2 .muskdeer.common.v1.HimalayaBookR\x04book\x12A\n" +
-	"\bstrategy\x18\x03 \x01(\v2%.muskdeer.common.v1.HimalayaAuthorityR\bstrategy\x12<\n" +
-	"\atargets\x18\x04 \x03(\v2\".muskdeer.common.v1.HimalayaTargetR\atargets\x12\x1d\n" +
+	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a$deer/proto/common/v1/synthetic.proto\"\x8e\x02\n" +
+	"\tQuotePlan\x124\n" +
+	"\x05scope\x18\x01 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x121\n" +
+	"\x04book\x18\x02 \x01(\v2\x1d.muskdeer.common.v1.VenueBookR\x04book\x12>\n" +
+	"\bstrategy\x18\x03 \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\bstrategy\x129\n" +
+	"\atargets\x18\x04 \x03(\v2\x1f.muskdeer.common.v1.VenueTargetR\atargets\x12\x1d\n" +
 	"\n" +
 	"request_id\x18\x05 \x01(\tR\trequestId\"u\n" +
 	"\vQuoteResult\x12\x16\n" +
 	"\x06placed\x18\x01 \x01(\rR\x06placed\x12\x1c\n" +
 	"\tcancelled\x18\x02 \x01(\rR\tcancelled\x12\x1a\n" +
 	"\bretained\x18\x03 \x01(\rR\bretained\x12\x14\n" +
-	"\x05state\x18\x04 \x01(\tR\x05state2\x98\x02\n" +
-	"\tExecution\x12V\n" +
-	"\vGetSnapshot\x12!.muskdeer.common.v1.HimalayaScope\x1a$.muskdeer.common.v1.HimalayaSnapshot\x12O\n" +
-	"\tReconcile\x12\x1f.muskdeer.himalaya.v1.QuotePlan\x1a!.muskdeer.himalaya.v1.QuoteResult\x12b\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state2\xa0\x02\n" +
+	"\tExecution\x12P\n" +
+	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12]\n" +
+	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12b\n" +
 	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResultB>Z<github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1b\x06proto3"
 
 var (
@@ -202,27 +202,27 @@ func file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP() []byte {
 
 var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
-	(*QuotePlan)(nil),              // 0: muskdeer.himalaya.v1.QuotePlan
-	(*QuoteResult)(nil),            // 1: muskdeer.himalaya.v1.QuoteResult
-	(*v1.HimalayaScope)(nil),       // 2: muskdeer.common.v1.HimalayaScope
-	(*v1.HimalayaBook)(nil),        // 3: muskdeer.common.v1.HimalayaBook
-	(*v1.HimalayaAuthority)(nil),   // 4: muskdeer.common.v1.HimalayaAuthority
-	(*v1.HimalayaTarget)(nil),      // 5: muskdeer.common.v1.HimalayaTarget
+	(*QuotePlan)(nil),              // 0: muskdeer.execution.venue.v1.QuotePlan
+	(*QuoteResult)(nil),            // 1: muskdeer.execution.venue.v1.QuoteResult
+	(*v1.VenueScope)(nil),          // 2: muskdeer.common.v1.VenueScope
+	(*v1.VenueBook)(nil),           // 3: muskdeer.common.v1.VenueBook
+	(*v1.VenueAuthority)(nil),      // 4: muskdeer.common.v1.VenueAuthority
+	(*v1.VenueTarget)(nil),         // 5: muskdeer.common.v1.VenueTarget
 	(*v1.SyntheticTapePlan)(nil),   // 6: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.HimalayaSnapshot)(nil),    // 7: muskdeer.common.v1.HimalayaSnapshot
+	(*v1.VenueSnapshot)(nil),       // 7: muskdeer.common.v1.VenueSnapshot
 	(*v1.SyntheticTapeResult)(nil), // 8: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_execution_venue_v1_runtime_proto_depIdxs = []int32{
-	2, // 0: muskdeer.himalaya.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.HimalayaScope
-	3, // 1: muskdeer.himalaya.v1.QuotePlan.book:type_name -> muskdeer.common.v1.HimalayaBook
-	4, // 2: muskdeer.himalaya.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.HimalayaAuthority
-	5, // 3: muskdeer.himalaya.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.HimalayaTarget
-	2, // 4: muskdeer.himalaya.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
-	0, // 5: muskdeer.himalaya.v1.Execution.Reconcile:input_type -> muskdeer.himalaya.v1.QuotePlan
-	6, // 6: muskdeer.himalaya.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	7, // 7: muskdeer.himalaya.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
-	1, // 8: muskdeer.himalaya.v1.Execution.Reconcile:output_type -> muskdeer.himalaya.v1.QuoteResult
-	8, // 9: muskdeer.himalaya.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	2, // 0: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
+	3, // 1: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	4, // 2: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	5, // 3: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
+	2, // 4: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	0, // 5: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
+	6, // 6: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	7, // 7: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	1, // 8: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	8, // 9: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
 	7, // [7:10] is the sub-list for method output_type
 	4, // [4:7] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name

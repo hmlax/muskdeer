@@ -31,7 +31,7 @@ type VenueAccountSnapshot struct {
 	UpdateAt         int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
 	DeleteAt         *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
 	AccountId        string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account"`
-	Snapshot         *v1.HimalayaSnapshot   `protobuf:"bytes,6,opt,name=snapshot,proto3" json:"snapshot,omitempty" gorm:"column:snapshot;type:jsonb;serializer:json;not null"`
+	Snapshot         *v1.VenueSnapshot      `protobuf:"bytes,6,opt,name=snapshot,proto3" json:"snapshot,omitempty" gorm:"column:snapshot;type:jsonb;serializer:json;not null"`
 	PublisherOwnerId string                 `protobuf:"bytes,7,opt,name=publisher_owner_id,json=publisherOwnerId,proto3" json:"publisher_owner_id,omitempty" gorm:"column:publisher_owner_id;type:varchar(128);not null"`
 	PublisherEpoch   int64                  `protobuf:"varint,8,opt,name=publisher_epoch,json=publisherEpoch,proto3" json:"publisher_epoch,omitempty" gorm:"column:publisher_epoch;type:bigint;not null"`
 	unknownFields    protoimpl.UnknownFields
@@ -103,7 +103,7 @@ func (x *VenueAccountSnapshot) GetAccountId() string {
 	return ""
 }
 
-func (x *VenueAccountSnapshot) GetSnapshot() *v1.HimalayaSnapshot {
+func (x *VenueAccountSnapshot) GetSnapshot() *v1.VenueSnapshot {
 	if x != nil {
 		return x.Snapshot
 	}
@@ -128,15 +128,15 @@ var File_deer_proto_portfolio_model_v1_venue_proto protoreflect.FileDescriptor
 
 const file_deer_proto_portfolio_model_v1_venue_proto_rawDesc = "" +
 	"\n" +
-	")deer/proto/portfolio/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a\x13tagger/tagger.proto\"\xe0\x06\n" +
+	")deer/proto/portfolio/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\xdc\x06\n" +
 	"\x14VenueAccountSnapshot\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
 	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12\x81\x01\n" +
 	"\n" +
-	"account_id\x18\x05 \x01(\tBb\x9a\x84\x9e\x03]gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\"R\taccountId\x12\x81\x01\n" +
-	"\bsnapshot\x18\x06 \x01(\v2$.muskdeer.common.v1.HimalayaSnapshotB?\x9a\x84\x9e\x03:gorm:\"column:snapshot;type:jsonb;serializer:json;not null\"R\bsnapshot\x12n\n" +
+	"account_id\x18\x05 \x01(\tBb\x9a\x84\x9e\x03]gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\"R\taccountId\x12~\n" +
+	"\bsnapshot\x18\x06 \x01(\v2!.muskdeer.common.v1.VenueSnapshotB?\x9a\x84\x9e\x03:gorm:\"column:snapshot;type:jsonb;serializer:json;not null\"R\bsnapshot\x12n\n" +
 	"\x12publisher_owner_id\x18\a \x01(\tB@\x9a\x84\x9e\x03;gorm:\"column:publisher_owner_id;type:varchar(128);not null\"R\x10publisherOwnerId\x12`\n" +
 	"\x0fpublisher_epoch\x18\b \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:publisher_epoch;type:bigint;not null\"R\x0epublisherEpochB\f\n" +
 	"\n" +
@@ -157,10 +157,10 @@ func file_deer_proto_portfolio_model_v1_venue_proto_rawDescGZIP() []byte {
 var file_deer_proto_portfolio_model_v1_venue_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_deer_proto_portfolio_model_v1_venue_proto_goTypes = []any{
 	(*VenueAccountSnapshot)(nil), // 0: muskdeer.model.v1.VenueAccountSnapshot
-	(*v1.HimalayaSnapshot)(nil),  // 1: muskdeer.common.v1.HimalayaSnapshot
+	(*v1.VenueSnapshot)(nil),     // 1: muskdeer.common.v1.VenueSnapshot
 }
 var file_deer_proto_portfolio_model_v1_venue_proto_depIdxs = []int32{
-	1, // 0: muskdeer.model.v1.VenueAccountSnapshot.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	1, // 0: muskdeer.model.v1.VenueAccountSnapshot.snapshot:type_name -> muskdeer.common.v1.VenueSnapshot
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

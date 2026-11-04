@@ -24,9 +24,9 @@ func TestConfigPairRejectsMixedDocumentsAndUnsafeYAML(t *testing.T) {
 		base + "nacos: {address: secret-bootstrap-override}\n",
 		base + "name: strategy\n",
 		base + "business: &reused {enabled: false}\n",
-		base + "business: {himalaya: {quantity_fraction: 0.123456789012345678}}\n",
-		base + "business: {himalaya: {quantity_fraction: .nan}}\n",
-		base + "business: {himalaya: {depth: !!int null}}\n",
+		base + "business: {venue: {quantity_fraction: 0.123456789012345678}}\n",
+		base + "business: {venue: {quantity_fraction: .nan}}\n",
+		base + "business: {venue: {depth: !!int null}}\n",
 		base + "business: !unsupported {}\n",
 		base + "---\nname: strategy\n",
 		strings.Replace(base, "version: test", "version: another", 1),
@@ -56,9 +56,9 @@ func TestConfigPairRejectsMixedDocumentsAndUnsafeYAML(t *testing.T) {
 }
 
 func TestConfigYAMLKeepsDecimalStringsAndTypedRoundtrip(t *testing.T) {
-	data := "name: strategy\nversion: test\nbusiness:\n  himalaya:\n    quantity_fraction: '0.123456789012345678'\n"
+	data := "name: strategy\nversion: test\nbusiness:\n  venue:\n    quantity_fraction: '0.123456789012345678'\n"
 	cfg, err := decodeConfigPair(t.Context(), []byte(data), []byte(yamlService(data)))
-	if err != nil || cfg.GetBusiness().GetHimalaya().GetQuantityFraction() != "0.123456789012345678" {
+	if err != nil || cfg.GetBusiness().GetVenue().GetQuantityFraction() != "0.123456789012345678" {
 		t.Fatalf("exact decimal changed: %v", err)
 	}
 	d, s, err := EncodeConfigPair(cfg)

@@ -64,9 +64,9 @@ func TestSyntheticConfigRejectsUnboundedOrNonDevelopmentRuns(t *testing.T) {
 	}
 }
 
-func syntheticFixture() (*commonv1.HimalayaPolicy, *commonv1.HimalayaBook) {
-	return &commonv1.HimalayaPolicy{
-		Profiles: []*commonv1.HimalayaProfilePolicy{{
+func syntheticFixture() (*commonv1.VenuePolicy, *commonv1.VenueBook) {
+	return &commonv1.VenuePolicy{
+		Profiles: []*commonv1.VenueProfilePolicy{{
 			Symbol:       "BTCUSDT",
 			PriceTick:    "0.1",
 			QuantityStep: "0.001",
@@ -83,16 +83,16 @@ func syntheticFixture() (*commonv1.HimalayaPolicy, *commonv1.HimalayaBook) {
 				MaximumNotional: "5",
 			}},
 		},
-	}, &commonv1.HimalayaBook{
+	}, &commonv1.VenueBook{
 		Symbol:       "BTCUSDT",
 		Source:       Source,
 		Segment:      Segment,
 		ValidUntilMs: time.Now().Add(BookAge).UnixMilli(),
-		Bids: []*commonv1.HimalayaLevel{{
+		Bids: []*commonv1.VenueLevel{{
 			Price:    "99.99",
 			Quantity: "1",
 		}},
-		Asks: []*commonv1.HimalayaLevel{{
+		Asks: []*commonv1.VenueLevel{{
 			Price:    "100.11",
 			Quantity: "1",
 		}},

@@ -1,4 +1,4 @@
-// Package native defines exact, shared values for the existing Himalaya SDK route.
+// Package native defines exact, shared values for the existing Venue SDK route.
 package native
 
 import (
@@ -14,7 +14,7 @@ import (
 
 // Native runtime identifiers are persisted and shared across all four services.
 const (
-	Venue            = "himalaya_sdk"
+	Venue            = "gateway"
 	Source           = "binance"
 	Segment          = "usdm"
 	ClientPrefix     = "deer_"
@@ -81,8 +81,8 @@ func Symbol(value string) bool {
 }
 
 // Scope returns a fresh typed wire scope from an immutable profile.
-func Scope(profile *commonv1.HimalayaProfilePolicy) *commonv1.HimalayaScope {
-	return &commonv1.HimalayaScope{
+func Scope(profile *commonv1.VenueProfilePolicy) *commonv1.VenueScope {
+	return &commonv1.VenueScope{
 		UserId: profile.UserId,
 		FundId: profile.FundId,
 		Symbol: profile.Symbol,
@@ -90,7 +90,7 @@ func Scope(profile *commonv1.HimalayaProfilePolicy) *commonv1.HimalayaScope {
 }
 
 // Profile rejects partial matches rather than implicitly using another account.
-func Profile(cfg *commonv1.HimalayaPolicy, scope *commonv1.HimalayaScope) (*commonv1.HimalayaProfilePolicy, error) {
+func Profile(cfg *commonv1.VenuePolicy, scope *commonv1.VenueScope) (*commonv1.VenueProfilePolicy, error) {
 	for _, profile := range cfg.GetProfiles() {
 		if profile.UserId == scope.GetUserId() && profile.FundId == scope.GetFundId() && profile.Symbol == scope.GetSymbol() {
 			return profile, nil

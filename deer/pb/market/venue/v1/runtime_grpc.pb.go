@@ -20,8 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Market_GetBook_FullMethodName  = "/muskdeer.himalaya.v1.Market/GetBook"
-	Market_GetTrade_FullMethodName = "/muskdeer.himalaya.v1.Market/GetTrade"
+	Market_GetBook_FullMethodName  = "/muskdeer.market.venue.v1.Market/GetBook"
+	Market_GetTrade_FullMethodName = "/muskdeer.market.venue.v1.Market/GetTrade"
 )
 
 // MarketClient is the client API for Market service.
@@ -30,8 +30,8 @@ const (
 //
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 type MarketClient interface {
-	GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.HimalayaBook, error)
-	GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.HimalayaTrade, error)
+	GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.VenueBook, error)
+	GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.VenueTrade, error)
 }
 
 type marketClient struct {
@@ -42,9 +42,9 @@ func NewMarketClient(cc grpc.ClientConnInterface) MarketClient {
 	return &marketClient{cc}
 }
 
-func (c *marketClient) GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.HimalayaBook, error) {
+func (c *marketClient) GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.VenueBook, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(v1.HimalayaBook)
+	out := new(v1.VenueBook)
 	err := c.cc.Invoke(ctx, Market_GetBook_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -52,9 +52,9 @@ func (c *marketClient) GetBook(ctx context.Context, in *BookRequest, opts ...grp
 	return out, nil
 }
 
-func (c *marketClient) GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.HimalayaTrade, error) {
+func (c *marketClient) GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.VenueTrade, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(v1.HimalayaTrade)
+	out := new(v1.VenueTrade)
 	err := c.cc.Invoke(ctx, Market_GetTrade_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -68,8 +68,8 @@ func (c *marketClient) GetTrade(ctx context.Context, in *TradeRequest, opts ...g
 //
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 type MarketServer interface {
-	GetBook(context.Context, *BookRequest) (*v1.HimalayaBook, error)
-	GetTrade(context.Context, *TradeRequest) (*v1.HimalayaTrade, error)
+	GetBook(context.Context, *BookRequest) (*v1.VenueBook, error)
+	GetTrade(context.Context, *TradeRequest) (*v1.VenueTrade, error)
 	mustEmbedUnimplementedMarketServer()
 }
 
@@ -80,10 +80,10 @@ type MarketServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMarketServer struct{}
 
-func (UnimplementedMarketServer) GetBook(context.Context, *BookRequest) (*v1.HimalayaBook, error) {
+func (UnimplementedMarketServer) GetBook(context.Context, *BookRequest) (*v1.VenueBook, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetBook not implemented")
 }
-func (UnimplementedMarketServer) GetTrade(context.Context, *TradeRequest) (*v1.HimalayaTrade, error) {
+func (UnimplementedMarketServer) GetTrade(context.Context, *TradeRequest) (*v1.VenueTrade, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrade not implemented")
 }
 func (UnimplementedMarketServer) mustEmbedUnimplementedMarketServer() {}
@@ -147,7 +147,7 @@ func _Market_GetTrade_Handler(srv interface{}, ctx context.Context, dec func(int
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Market_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "muskdeer.himalaya.v1.Market",
+	ServiceName: "muskdeer.market.venue.v1.Market",
 	HandlerType: (*MarketServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

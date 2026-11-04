@@ -21,15 +21,15 @@ import (
 )
 
 func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger, leases domain.LeaseRepository) []deer.Worker {
-	if !cfg.Himalaya.GetSyntheticTape().GetEnabled() {
+	if !cfg.Venue.GetSyntheticTape().GetEnabled() {
 		return nil
 	}
 	var workers []deer.Worker
-	for _, profile := range cfg.Himalaya.SyntheticTape.Profiles {
+	for _, profile := range cfg.Venue.SyntheticTape.Profiles {
 		workers = append(workers, deer.Worker{
 			Name: values.SyntheticWorker + profile.Symbol,
 			Run: func(ctx context.Context) error {
-				for sequence := uint32(0); sequence < cfg.Himalaya.SyntheticTape.MaximumEvents && ctx.Err() == nil; {
+				for sequence := uint32(0); sequence < cfg.Venue.SyntheticTape.MaximumEvents && ctx.Err() == nil; {
 					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
 					err := syntheticTick(op, db, leases, factory, owner, cfg, profile.Symbol, sequence)
 					cancel()
@@ -40,7 +40,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 							return err
 						}
 					}
-					if err := values.Wait(ctx, cfg.Himalaya.SyntheticTape.Interval.AsDuration()); err != nil {
+					if err := values.Wait(ctx, cfg.Venue.SyntheticTape.Interval.AsDuration()); err != nil {
 						return err
 					}
 				}
@@ -55,12 +55,12 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, symbol string, sequence uint32) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
-		AccountID: values.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, symbol),
-	}, owner, cfg.Himalaya.LeaseTtl.AsDuration())
+		AccountID: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol),
+	}, owner, cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
-	token, err = leases.Renew(ctx, token, cfg.Himalaya.LeaseTtl.AsDuration())
+	token, err = leases.Renew(ctx, token, cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
@@ -73,19 +73,19 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 		return err
 	}
 	proposal := &commonv1.SyntheticTapePlan{
-		RunId:    cfg.Himalaya.SyntheticTape.RunId,
+		RunId:    cfg.Venue.SyntheticTape.RunId,
 		Symbol:   symbol,
 		Sequence: sequence,
 		Book:     book,
 		Strategy: values.Authority(token),
 	}
-	if cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+	if cfg.Venue.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
 		proposal.SourceTrade, err = marketvenuev1.NewMarketClient(market).GetTrade(ctx, &marketvenuev1.TradeRequest{Symbol: symbol})
 		if err != nil {
 			return err
 		}
 	}
-	plan, err := values.SyntheticSourcePlan(cfg.Himalaya, proposal)
+	plan, err := values.SyntheticSourcePlan(cfg.Venue, proposal)
 	if err != nil {
 		return err
 	}

@@ -63,7 +63,7 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 	}
 	gates := make(map[string]chan struct{})
 	plans := make(map[string]*atomic.Int64)
-	for _, p := range settings.Himalaya.Profiles {
+	for _, p := range settings.Venue.Profiles {
 		gates[AccountID(p.UserId, p.FundId)] = make(chan struct{}, 1)
 		plans[AccountID(p.UserId, p.FundId)] = &atomic.Int64{}
 	}
@@ -98,8 +98,8 @@ func (r *Runtime) Workers() []deer.Worker {
 
 func (r *Runtime) run(ctx context.Context) (result error) {
 	client, err := r.gateway.Dial(ctx, Config{
-		Target:  r.cfg.Himalaya.Target,
-		Token:   os.Getenv(r.cfg.Himalaya.TokenEnv),
+		Target:  r.cfg.Venue.Target,
+		Token:   os.Getenv(r.cfg.Venue.TokenEnv),
 		Timeout: r.cfg.OperationTimeout,
 	}, r.store)
 	if err != nil {
@@ -123,7 +123,7 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 		cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 		defer cancel()
 		var cleanupErr error
-		for _, profile := range r.cfg.Himalaya.Profiles {
+		for _, profile := range r.cfg.Venue.Profiles {
 			gate := r.gates[AccountID(profile.UserId, profile.FundId)]
 			select {
 			case gate <- struct{}{}:
@@ -148,7 +148,7 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 				return logErr
 			}
 		}
-		for _, profile := range r.cfg.Himalaya.Profiles {
+		for _, profile := range r.cfg.Venue.Profiles {
 			gate := r.gates[AccountID(profile.UserId, profile.FundId)]
 			select {
 			case gate <- struct{}{}:
@@ -171,18 +171,18 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 	return ctx.Err()
 }
 
-func (r *Runtime) acquire(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) (domain.LeaseToken, error) {
+func (r *Runtime) acquire(ctx context.Context, profile *commonv1.VenueProfilePolicy) (domain.LeaseToken, error) {
 	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: AccountID(profile.UserId, profile.FundId),
-	}, r.owner, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return domain.LeaseToken{}, err
 	}
-	return r.leases.Renew(ctx, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
+	return r.leases.Renew(ctx, token, r.cfg.Venue.LeaseTtl.AsDuration())
 }
 
-func (r *Runtime) enter(scope *commonv1.HimalayaScope) (func(), error) {
+func (r *Runtime) enter(scope *commonv1.VenueScope) (func(), error) {
 	if r.closing.Load() || r.client.Load() == nil {
 		return nil, native.ErrInvalid
 	}
@@ -203,11 +203,11 @@ func (r *Runtime) enter(scope *commonv1.HimalayaScope) (func(), error) {
 }
 
 // GetSnapshot is read-only and may be served by a healthy observation instance.
-func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope) (*commonv1.HimalayaSnapshot, error) {
+func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (*commonv1.VenueSnapshot, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServicePortfolio) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
-	profile, err := native.Profile(r.cfg.Himalaya, scope)
+	profile, err := native.Profile(r.cfg.Venue, scope)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
@@ -223,7 +223,7 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope
 	return snapshot, nil
 }
 
-func (r *Runtime) read(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) (*gateway.Observation, *commonv1.HimalayaSnapshot, error) {
+func (r *Runtime) read(ctx context.Context, profile *commonv1.VenueProfilePolicy) (*gateway.Observation, *commonv1.VenueSnapshot, error) {
 	scope := Scope{
 		UserID: profile.UserId,
 		FundID: profile.FundId,
@@ -240,7 +240,7 @@ func (r *Runtime) read(ctx context.Context, profile *commonv1.HimalayaProfilePol
 	return raw, snapshot, nil
 }
 
-func (r *Runtime) book(ctx context.Context, symbol string) (*commonv1.HimalayaBook, error) {
+func (r *Runtime) book(ctx context.Context, symbol string) (*commonv1.VenueBook, error) {
 	connection, err := r.factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceMarket})
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
-	profile, err := native.Profile(r.cfg.Himalaya, plan.GetScope())
+	profile, err := native.Profile(r.cfg.Venue, plan.GetScope())
 	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > 40 || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
@@ -272,7 +272,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 	return result, nil
 }
 
-func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *executionvenuev1.QuotePlan) (*executionvenuev1.QuoteResult, error) {
+func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfilePolicy, plan *executionvenuev1.QuotePlan) (*executionvenuev1.QuoteResult, error) {
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -377,7 +377,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.HimalayaProfi
 	return result, nil
 }
 
-func (r *Runtime) refresh(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, lease domain.LeaseToken, book *commonv1.HimalayaBook) (*commonv1.HimalayaSnapshot, error) {
+func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePolicy, lease domain.LeaseToken, book *commonv1.VenueBook) (*commonv1.VenueSnapshot, error) {
 	raw, snapshot, err := r.read(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -396,7 +396,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.HimalayaProfile
 		if err != nil {
 			return nil, err
 		}
-		if err := r.store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
+		if err := r.store.Observe(ctx, lease, &commonv1.VenueSnapshot{
 			Scope:  snapshot.Scope,
 			Orders: orders,
 		}); err != nil {
@@ -433,9 +433,9 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.HimalayaProfile
 		// Commit each positive native fact before querying the next ID. A full
 		// cutover history can exceed one operation deadline; later calls must
 		// continue from the remaining IDs rather than repeat the whole prefix.
-		if err := r.store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
+		if err := r.store.Observe(ctx, lease, &commonv1.VenueSnapshot{
 			Scope:  snapshot.Scope,
-			Orders: []*commonv1.HimalayaOrder{order},
+			Orders: []*commonv1.VenueOrder{order},
 		}); err != nil {
 			return nil, err
 		}
@@ -478,7 +478,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.HimalayaProfile
 	return snapshot, recoveryErr
 }
 
-func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *commonv1.HimalayaProfilePolicy, order *commonv1.HimalayaOrder) error {
+func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *commonv1.VenueProfilePolicy, order *commonv1.VenueOrder) error {
 	id, err := strconv.ParseUint(order.OrderId, 10, 64)
 	if err != nil {
 		return err
@@ -497,7 +497,7 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 	return r.client.Load().Cancel(ctx, admission)
 }
 
-func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, retained *quoteRetention, result *executionvenuev1.QuoteResult) error {
+func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.VenueProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, retained *quoteRetention, result *executionvenuev1.QuoteResult) error {
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
 			continue

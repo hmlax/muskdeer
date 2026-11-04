@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package muskdeer.himalaya.v1;
+package muskdeer.portfolio.venue.v1;
 
-import "deer/proto/common/v1/himalaya.proto";
+import "deer/proto/common/v1/venue.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1;venuev1";
 
 service Portfolio {
-  rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);
+  rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
 }

@@ -27,8 +27,8 @@ func SyntheticStrategyKey(run, symbol string) string {
 }
 
 // ValidateSyntheticConfig requires a finite, explicitly developmental run.
-func ValidateSyntheticConfig(h *commonv1.HimalayaPolicy) error {
-	if h == nil || ValidateSyntheticSettings(&configv1.HimalayaRuntime{
+func ValidateSyntheticConfig(h *commonv1.VenuePolicy) error {
+	if h == nil || ValidateSyntheticSettings(&configv1.VenueRuntime{
 		QuantityFraction: h.QuantityFraction,
 		SyntheticTape:    h.SyntheticTape,
 	}) != nil {
@@ -57,7 +57,7 @@ func ValidateSyntheticConfig(h *commonv1.HimalayaPolicy) error {
 
 // ValidateSyntheticSettings validates Nacos controls before database access.
 // Source bindings and lot alignment are validated against the database later.
-func ValidateSyntheticSettings(h *configv1.HimalayaRuntime) error {
+func ValidateSyntheticSettings(h *configv1.VenueRuntime) error {
 	s := h.GetSyntheticTape()
 	if s == nil {
 		return nil
@@ -87,7 +87,7 @@ func ValidateSyntheticSettings(h *configv1.HimalayaRuntime) error {
 	return nil
 }
 
-func validSyntheticMode(h *configv1.HimalayaRuntime) bool {
+func validSyntheticMode(h *configv1.VenueRuntime) bool {
 	switch h.GetSyntheticTape().GetMode() {
 	case configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK:
 		return true
@@ -100,7 +100,7 @@ func validSyntheticMode(h *configv1.HimalayaRuntime) bool {
 }
 
 // SyntheticMarket returns the immutable market grid selected for the symbol.
-func SyntheticMarket(h *commonv1.HimalayaPolicy, symbol string) *commonv1.HimalayaProfilePolicy {
+func SyntheticMarket(h *commonv1.VenuePolicy, symbol string) *commonv1.VenueProfilePolicy {
 	for _, profile := range h.GetProfiles() {
 		if profile.Symbol == symbol {
 			return profile
@@ -110,7 +110,7 @@ func SyntheticMarket(h *commonv1.HimalayaPolicy, symbol string) *commonv1.Himala
 }
 
 // SyntheticProfile selects explicit per-symbol market-data limits.
-func SyntheticProfile(h *commonv1.HimalayaPolicy, symbol string) *configv1.SyntheticTapeProfile {
+func SyntheticProfile(h *commonv1.VenuePolicy, symbol string) *configv1.SyntheticTapeProfile {
 	for _, profile := range h.GetSyntheticTape().GetProfiles() {
 		if profile.Symbol == symbol {
 			return profile
@@ -120,7 +120,7 @@ func SyntheticProfile(h *commonv1.HimalayaPolicy, symbol string) *configv1.Synth
 }
 
 // SyntheticPlan validates and prices a development slot from a fresh source.
-func SyntheticPlan(h *commonv1.HimalayaPolicy, symbol string, sequence uint32, book *commonv1.HimalayaBook, strategy *commonv1.HimalayaAuthority) (*commonv1.SyntheticTapePlan, error) {
+func SyntheticPlan(h *commonv1.VenuePolicy, symbol string, sequence uint32, book *commonv1.VenueBook, strategy *commonv1.VenueAuthority) (*commonv1.SyntheticTapePlan, error) {
 	if h.GetSyntheticTape().GetMode() != configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK || ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || sequence >= h.SyntheticTape.MaximumEvents ||
 		book.GetSymbol() != symbol || book.GetSource() != Source || book.GetSegment() != Segment || book.GetValidUntilMs() <= time.Now().UnixMilli() ||
 		len(book.GetBids()) == 0 || len(book.GetAsks()) == 0 {
