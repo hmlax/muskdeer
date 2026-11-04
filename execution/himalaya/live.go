@@ -14,6 +14,8 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
+const minimumLiveSDKWindow = 500 * time.Millisecond
+
 // LiveAuthority binds one source observation and the current strategy owner.
 type LiveAuthority struct {
 	Strategy *commonv1.HimalayaAuthority
@@ -108,4 +110,19 @@ func checkPersistedLiveBudget(budget *modelv1.HimalayaBudget, row *modelv1.Himal
 		Quantity: quantity,
 		Leverage: row.Leverage,
 	}, reserved)
+}
+
+func liveSubmissionWindow(ctx context.Context, row *modelv1.HimalayaIntent, remaining time.Duration) (time.Duration, error) {
+	if row.SourceEpoch == 0 {
+		return remaining, nil
+	}
+	deadline, bounded := ctx.Deadline()
+	if !bounded {
+		return 0, domain.ErrLeaseLost
+	}
+	remaining = min(remaining, time.Until(deadline))
+	if remaining < minimumLiveSDKWindow {
+		return 0, domain.ErrLeaseLost
+	}
+	return remaining, nil
 }

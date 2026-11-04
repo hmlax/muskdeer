@@ -260,7 +260,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *himalayav1.QuotePlan) (*h
 	defer leave()
 	result, err := r.reconcile(ctx, profile, plan)
 	if err != nil {
-		if logErr := r.logger.LogAttrs(context.WithoutCancel(ctx), slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err))); logErr != nil {
+		if logErr := r.logger.LogAttrs(context.WithoutCancel(ctx), slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err)), slog.String("upstream_code", status.Code(err).String())); logErr != nil {
 			return nil, logErr
 		}
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)

@@ -207,6 +207,10 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 			return err
 		}
 		remaining = min(remaining, left)
+		remaining, err = liveSubmissionWindow(ctx, &row, remaining)
+		if err != nil {
+			return err
+		}
 		bounded, cancel := context.WithTimeout(ctx, remaining)
 		defer cancel()
 		called = true
@@ -279,7 +283,11 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if !matchesAdmission(&row, admission) {
 			return ErrInvalidSubmit
 		}
-		if _, err := checkLiveAuthority(ctx, tx, &row, now); err != nil {
+		left, err := checkLiveAuthority(ctx, tx, &row, now)
+		if err != nil {
+			return err
+		}
+		if _, err := liveSubmissionWindow(ctx, &row, left); err != nil {
 			return err
 		}
 		if err := checkPersistedLiveBudget(budget, &row); err != nil {
