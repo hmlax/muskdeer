@@ -14,6 +14,7 @@ import (
 	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
+	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
 func (r *Runtime) unresolvedCancels(ctx context.Context, account string) (bool, error) {
@@ -41,6 +42,15 @@ func safeReason(err error) string {
 	default:
 		return status.Code(err).String()
 	}
+}
+
+func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *configv1.HimalayaProfile, plan *himalayav1.QuotePlan, book *commonv1.HimalayaBook) error {
+	if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
+		plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.Publisher.OwnerId != plan.Book.GetPublisher().GetOwnerId() || book.Publisher.Epoch != plan.Book.Publisher.Epoch ||
+		plan.Strategy.AccountId != native.StrategyKey(profile.UserId, profile.FundId) || repository.CheckNativeAuthority(ctx, r.db, plan.Strategy) != nil {
+		return domain.ErrLeaseLost
+	}
+	return nil
 }
 
 func (r *Runtime) targets(profile *configv1.HimalayaProfile, plan *himalayav1.QuotePlan) (map[string]*SubmitRequest, error) {

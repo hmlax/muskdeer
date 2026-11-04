@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -278,15 +277,13 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 	if err != nil {
 		return nil, err
 	}
-	if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
-		plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.Publisher.OwnerId != plan.Book.GetPublisher().GetOwnerId() || book.Publisher.Epoch != plan.Book.Publisher.Epoch ||
-		plan.Strategy.AccountId != native.StrategyKey(profile.UserId, profile.FundId) || repository.CheckNativeAuthority(ctx, r.db, plan.Strategy) != nil {
-		return nil, domain.ErrLeaseLost
+	if err := r.validatePlanAuthority(ctx, profile, plan, book); err != nil {
+		return nil, err
 	}
 	book.ValidUntilMs = min(book.ValidUntilMs, plan.Book.ValidUntilMs)
-	snapshot, err := r.refresh(ctx, profile, lease, book)
-	if err != nil {
-		return nil, err
+	snapshot, recoveryErr := r.refresh(ctx, profile, lease, book)
+	if recoveryErr != nil && (!errors.Is(recoveryErr, domain.ErrOutcomeUnknown) || snapshot == nil) {
+		return nil, recoveryErr
 	}
 	budget, err := r.store.Budget(ctx, lease.Key.AccountID)
 	if err != nil || !budget.Enabled {
@@ -297,29 +294,39 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 	if err != nil {
 		return nil, err
 	}
-	retained, err := r.cancelObsolete(ctx, profile, lease, snapshot, wanted, budget.CutoverCompleted, result)
+	retained, err := retainQuoteOrders(profile, snapshot, wanted, budget.CutoverCompleted)
 	if err != nil {
 		return nil, err
+	}
+	// A current validated plan protects retained, non-crossing bridge quotes
+	// while cancellation proofs settle; it does not authorize new submissions.
+	r.plans[lease.Key.AccountID].Store(book.ValidUntilMs)
+	err = r.cancelObsolete(ctx, profile, lease, snapshot, retained, result)
+	if err != nil {
+		return nil, err
+	}
+	if recoveryErr != nil {
+		return result, recoveryErr
 	}
 	if result.Cancelled > 0 {
 		_, err = r.refresh(ctx, profile, lease, book)
 		if err != nil {
 			return nil, err
 		}
-		// All obsolete native IDs must have positive terminal proof, not absence.
-		if pending, err := r.unresolvedCancels(ctx, lease.Key.AccountID); err != nil || pending {
-			return result, err
-		}
+	}
+	// All obsolete native IDs must have positive terminal proof, not absence.
+	if pending, err := r.unresolvedCancels(ctx, lease.Key.AccountID); err != nil || pending {
+		return result, err
 	}
 	if !budget.CutoverCompleted {
 		if err := r.store.CompleteCutover(ctx, lease); err != nil {
 			return nil, err
 		}
 	}
-	for _, target := range plan.Targets {
+	for _, target := range quoteSubmissionOrder(plan.Targets) {
 		price, _ := native.Value(target.Price, false, false)
 		key := target.Side + "/" + price.String()
-		if retained[key] {
+		if retained.targets[key] {
 			continue
 		}
 		quantity, _ := native.Value(target.Quantity, false, false)
@@ -369,6 +376,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 	for _, order := range snapshot.Orders {
 		present[order.OrderId] = true
 	}
+	var recoveryErr error
 	for _, id := range pending {
 		if present[strconv.FormatUint(id, 10)] {
 			continue
@@ -379,6 +387,10 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 			Symbol: profile.Symbol,
 		}, id, int32(raw.Market.Market.EffectiveBasePrecision))
 		if err != nil {
+			if errors.Is(err, domain.ErrOutcomeUnknown) {
+				recoveryErr = domain.ErrOutcomeUnknown
+				continue // Keep its reservation and any healthy existing quotes.
+			}
 			return nil, err
 		}
 		// Commit each positive native fact before querying the next ID. A full
@@ -426,7 +438,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 	if err := r.store.SyncBudget(ctx, lease, snapshot, gross); err != nil {
 		return nil, err
 	}
-	return snapshot, nil
+	return snapshot, recoveryErr
 }
 
 func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *configv1.HimalayaProfile, order *commonv1.HimalayaOrder) error {
@@ -448,33 +460,19 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 	return r.client.Load().Cancel(ctx, admission)
 }
 
-func (r *Runtime) cancelObsolete(ctx context.Context, profile *configv1.HimalayaProfile, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, cutover bool, result *himalayav1.QuoteResult) (map[string]bool, error) {
-	retained := make(map[string]bool)
+func (r *Runtime) cancelObsolete(ctx context.Context, profile *configv1.HimalayaProfile, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, retained *quoteRetention, result *himalayav1.QuoteResult) error {
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
 			continue
 		}
-		legacy := strings.HasPrefix(order.ClientId, native.LegacyPrefix+profile.Symbol+"_")
-		if legacy && cutover {
-			return nil, native.ErrInvalid
-		}
-		if !legacy && !strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
-			return nil, native.ErrInvalid
-		}
-		key, quantity, err := orderKey(order)
-		if err != nil {
-			return nil, err
-		}
-		target := wanted[key]
-		if !legacy && target != nil && !retained[key] && quantity.Equal(target.Quantity) {
-			retained[key] = true
+		if retained.orders[order.OrderId] {
 			result.Retained++
 			continue
 		}
 		if err := r.cancelOne(ctx, lease, profile, order); err != nil {
-			return nil, err
+			return err
 		}
 		result.Cancelled++
 	}
-	return retained, nil
+	return nil
 }

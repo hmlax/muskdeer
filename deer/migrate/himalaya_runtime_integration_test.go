@@ -34,20 +34,28 @@ import (
 )
 
 func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
-	testNativeWorkers(t, 0)
+	testNativeWorkers(t, 0, false)
 }
 
 func TestHimalayaNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
-	testNativeWorkers(t, 40)
+	testNativeWorkers(t, 40, false)
 }
 
-func testNativeWorkers(t *testing.T, legacy int) {
+func TestHimalayaNativeRepricingKeepsBothSidesWhileCancelProofIsPending(t *testing.T) {
+	testNativeWorkers(t, 0, true)
+}
+
+func testNativeWorkers(t *testing.T, legacy int, reprice bool) {
 	t.Helper()
 	db, store, executionLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	t.Cleanup(cancel)
 	authority := liveAuthorityFixture(ctx, t, db, executionLease, request.Symbol)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
+	if reprice {
+		sdk.historyEntered = make(chan struct{}, 1)
+		sdk.historyRelease = make(chan struct{})
+	}
 	if legacy > 0 {
 		sdk.historyDelay = 40 * time.Millisecond
 		for i := range legacy {
@@ -153,6 +161,44 @@ func testNativeWorkers(t *testing.T, legacy int) {
 	})
 	if pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID); err != nil || len(pending) != 2 {
 		t.Fatalf("PendingIDs(after history recovery) = %d, %v, want two live orders", len(pending), err)
+	}
+	if reprice {
+		release := sync.OnceFunc(func() { close(sdk.historyRelease) })
+		t.Cleanup(release)
+		sdk.historyHold.Store(true)
+		market.offset.Store(1)
+		select {
+		case <-sdk.historyEntered:
+		case <-ctx.Done():
+			t.Fatal("repricing did not reach terminal-history barrier")
+		}
+		sdk.mu.Lock()
+		buys, sells := 0, 0
+		for _, order := range sdk.orders {
+			if native.Active(order.Status) {
+				if order.Side == pb.Side_SIDE_BUY {
+					buys++
+				} else {
+					sells++
+				}
+			}
+		}
+		sdk.mu.Unlock()
+		if buys == 0 || sells == 0 {
+			t.Fatalf("repricing while cancel proof pending has buys=%d sells=%d, want both sides present", buys, sells)
+		}
+		release()
+		nativeWait(ctx, t, func() bool {
+			sdk.mu.Lock()
+			defer sdk.mu.Unlock()
+			current := 0
+			for _, order := range sdk.orders {
+				if native.Active(order.Status) && (order.Price == "100" || order.Price == "100.2") {
+					current++
+				}
+			}
+			return current == 2
+		})
 	}
 	var count int64
 	if err := db.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Where("account_id = ?", native.ScopeKey(10001, 10001)).Count(&count).Error; err != nil || count != 1 {

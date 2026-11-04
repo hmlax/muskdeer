@@ -29,12 +29,14 @@ type nativeMarketFixture struct {
 	himalayav1.UnimplementedMarketServer
 	authority *commonv1.HimalayaAuthority
 	stop      atomic.Bool
+	offset    atomic.Int64
 }
 
 func (m *nativeMarketFixture) GetBook(context.Context, *himalayav1.BookRequest) (*commonv1.HimalayaBook, error) {
 	if m.stop.Load() {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
+	offset := decimal.NewFromInt(m.offset.Load()).Shift(-1)
 	return &commonv1.HimalayaBook{
 		Symbol:       "BTCUSDT",
 		Source:       native.Source,
@@ -42,18 +44,21 @@ func (m *nativeMarketFixture) GetBook(context.Context, *himalayav1.BookRequest) 
 		Sequence:     1,
 		ValidUntilMs: time.Now().Add(native.BookAge).UnixMilli(),
 		Publisher:    proto.CloneOf(m.authority),
-		Bids:         []*commonv1.HimalayaLevel{{Price: "99.9", Quantity: "1"}},
-		Asks:         []*commonv1.HimalayaLevel{{Price: "100.1", Quantity: "1"}},
+		Bids:         []*commonv1.HimalayaLevel{{Price: decimal.RequireFromString("99.9").Add(offset).String(), Quantity: "1"}},
+		Asks:         []*commonv1.HimalayaLevel{{Price: decimal.RequireFromString("100.1").Add(offset).String(), Quantity: "1"}},
 	}, nil
 }
 
 type nativeSDKFixture struct {
 	pb.UnimplementedOrderServer
-	mu           sync.Mutex
-	orders       map[uint64]*pb.OrderRow
-	next         uint64
-	historyDelay time.Duration
-	synthetic    []*pb.WashTradeRequest
+	mu             sync.Mutex
+	orders         map[uint64]*pb.OrderRow
+	next           uint64
+	historyDelay   time.Duration
+	synthetic      []*pb.WashTradeRequest
+	historyHold    atomic.Bool
+	historyEntered chan struct{}
+	historyRelease chan struct{}
 }
 
 func startNativeSDK(t *testing.T, fixture *nativeSDKFixture) string {
@@ -137,6 +142,17 @@ func (s *nativeSDKFixture) CancelOrder(_ context.Context, r *pb.CancelOrderReque
 	return &pb.CancelOrderResponse{Success: true}, nil
 }
 func (s *nativeSDKFixture) ListOrders(ctx context.Context, r *pb.ListOrdersRequest) (*pb.ListOrdersResponse, error) {
+	if r.History && s.historyHold.Load() {
+		select {
+		case s.historyEntered <- struct{}{}:
+		default:
+		}
+		select {
+		case <-s.historyRelease:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	if r.History && s.historyDelay > 0 {
 		if err := native.Wait(ctx, s.historyDelay); err != nil {
 			return nil, err
