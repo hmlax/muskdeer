@@ -130,9 +130,12 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", plan.Book.Publisher.AccountId).UpdateColumn("epoch", 2).Error; err != nil {
 		t.Fatal(err)
 	}
-	stale := proto.CloneOf(plan)
+	if replay, err := store.PublishSynthetic(ctx, lease, cfg, plan, send); err != nil || !replay.GetReplayed() || calls != 1 {
+		t.Fatalf("cached receipt acquired publication authority: calls=%d err=%v", calls, err)
+	}
+	stale := proto.CloneOf(next)
 	stale.Book.ValidUntilMs = time.Now().Add(native.BookAge).UnixMilli()
-	if _, err := store.PublishSynthetic(ctx, lease, cfg, stale, send); err == nil || calls != 1 {
+	if _, err := store.PublishSynthetic(ctx, lease, cfg, stale, send); !errors.Is(err, domain.ErrLeaseLost) || calls != 1 {
 		t.Fatalf("PublishSynthetic(stale source epoch) calls=%d err=%v", calls, err)
 	}
 }

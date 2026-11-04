@@ -1,0 +1,17 @@
+syntax = "proto3";
+package muskdeer.common.v1;
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+import "deer/proto/common/v1/himalaya.proto";
+
+// DevelopmentBaselineRequest is an explicit operator decision for old legacy
+// orders whose upstream terminal history was removed. It never asserts a fill
+// or cancel terminal state and never authorizes replay of the original orders.
+message DevelopmentBaselineRequest {
+  string baseline_id = 1;
+  string approval_reference = 2;
+  HimalayaScope scope = 3;
+  repeated HimalayaOrder original_orders = 4;
+}
+message DevelopmentBaselineBatch {
+  repeated DevelopmentBaselineRequest requests = 1;
+}

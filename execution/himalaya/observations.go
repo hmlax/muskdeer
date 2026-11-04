@@ -126,8 +126,11 @@ func (s *Store) PendingIDs(ctx context.Context, account string) ([]uint64, error
 		return nil, err
 	}
 	var cancels []*modelv1.HimalayaCancellation
-	if err := s.db.WithContext(ctx).Model(&modelv1.HimalayaCancellation{}).
-		Where("account_id = ? AND state != ?", account, CancelConfirmed).Limit(257).Find(&cancels).Error; err != nil {
+	query, err := pendingSDKCancellations(ctx, s.db, account)
+	if err != nil {
+		return nil, err
+	}
+	if err := query.Where("state != ?", CancelConfirmed).Limit(257).Find(&cancels).Error; err != nil {
 		return nil, err
 	}
 	if len(intents) > 256 || len(cancels) > 256 {
@@ -176,6 +179,18 @@ func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapsho
 		previous, err := domain.ParseLedgerDecimal(row.ObservedNotional, false, true)
 		if err != nil {
 			return err
+		}
+		baseline, err := loadDevelopmentBaseline(ctx, tx, lease.Key.AccountID)
+		if err != nil {
+			return err
+		}
+		if baseline != nil {
+			minimum, e1 := domain.ParseLedgerDecimal(baseline.MinimumObservedNotional, false, false)
+			legacy, e2 := domain.ParseLedgerDecimal(baseline.LegacyNotional, false, false)
+			if e1 != nil || e2 != nil || previous.LessThan(minimum) {
+				return ErrRiskLimit
+			}
+			observed = observed.Add(legacy)
 		}
 		row.ObservedNotional = decimal.Max(previous, observed).String()
 		row.AvailableQuote = snapshot.Available

@@ -181,6 +181,9 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 		if err := checkReservedBudget(budget); err != nil {
 			return err
 		}
+		if err := checkDevelopmentRiskHold(ctx, tx, budget); err != nil {
+			return err
+		}
 		freshness := time.Duration(budget.SnapshotExpiresAt-now)*time.Millisecond - 50*time.Millisecond
 		if freshness <= 0 {
 			return ErrRiskLimit
@@ -285,8 +288,11 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if pending > 0 {
 			return domain.ErrOutcomeUnknown
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaCancellation{}).
-			Where("account_id = ? AND state = ?", account, IntentDispatched).Count(&pending).Error; err != nil {
+		cancelQuery, err := pendingSDKCancellations(ctx, tx, account)
+		if err != nil {
+			return err
+		}
+		if err := cancelQuery.Where("state = ?", IntentDispatched).Count(&pending).Error; err != nil {
 			return err
 		}
 		if pending > 0 {

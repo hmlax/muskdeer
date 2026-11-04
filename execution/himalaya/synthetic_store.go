@@ -98,7 +98,7 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 	var result *modelv1.SyntheticTapeIntent
 	fresh := false
 	err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
-		now, _, err := lockSyntheticAuthorities(ctx, tx, execution, plan)
+		_, _, err := lockSDKLease(ctx, tx, execution.Key.AccountID, execution.OwnerID, uint64(execution.Epoch))
 		if err != nil {
 			return err
 		}
@@ -123,7 +123,14 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 			}
 		}
 		if result != nil {
+			// Returning a committed receipt has no SDK effect. Do not wait on
+			// the strategy/source rows held by the first sender or require its
+			// old publication authority to remain live merely to read a result.
 			return nil
+		}
+		now, _, err := lockSyntheticAuthorities(ctx, tx, execution, plan)
+		if err != nil {
+			return err
 		}
 		if plan.Sequence != uint32(len(rows)) {
 			return ErrInvalidSubmit

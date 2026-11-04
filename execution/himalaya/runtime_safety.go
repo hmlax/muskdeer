@@ -11,7 +11,6 @@ import (
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -19,7 +18,11 @@ import (
 
 func (r *Runtime) unresolvedCancels(ctx context.Context, account string) (bool, error) {
 	var pending int64
-	err := r.db.WithContext(ctx).Model(&modelv1.HimalayaCancellation{}).Where("account_id = ? AND state != ?", account, CancelConfirmed).Count(&pending).Error
+	query, err := pendingSDKCancellations(ctx, r.db, account)
+	if err != nil {
+		return false, err
+	}
+	err = query.Where("state != ?", CancelConfirmed).Count(&pending).Error
 	return pending != 0, err
 }
 
