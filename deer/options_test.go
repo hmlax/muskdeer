@@ -95,9 +95,9 @@ func TestInjectedLoggerSurvivesRollbackAndNormalShutdown(t *testing.T) {
 	}
 }
 
-func TestDeerApiAcceptsBorrowedDependencies(t *testing.T) {
+func TestMonitoringAcceptsBorrowedDependencies(t *testing.T) {
 	t.Parallel()
-	cfg := apiConfig("borrowed-api-logger")
+	cfg := monitoringConfig("borrowed-api-logger")
 	logger, err := logging.New(t.Context(), nil, logging.Identity{
 		Service:  cfg.Name,
 		Instance: cfg.InstanceId,
@@ -110,7 +110,7 @@ func TestDeerApiAcceptsBorrowedDependencies(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	owner, cleanup, err := NewDeerApi(t.Context(), cfg, APISpec{}, WithLogger(logger))
+	owner, cleanup, err := newMonitoringFixture(t.Context(), cfg, monitoringFixtureSpec{}, WithLogger(logger))
 	if err != nil {
 		t.Fatal(err)
 	}

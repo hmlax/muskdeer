@@ -12,6 +12,8 @@
 !execution/**
 !portfolio
 !portfolio/**
+!cron
+!cron/**
 !deer
 !deer/**
 **/*_test.go

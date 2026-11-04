@@ -67,7 +67,7 @@ func LoadConfig(ctx context.Context, path string) (*configv1.ServiceConfig, erro
 		return nil, err
 	}
 	resolveConfigPaths(cfg, filepath.Dir(absolute))
-	validated, err := validateConfig(cfg, cfg.Http != nil)
+	validated, err := validateConfig(cfg)
 	if err != nil {
 		return nil, configFailure("validation", err)
 	}

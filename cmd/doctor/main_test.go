@@ -49,3 +49,15 @@ func TestDoctorExitStatusAndSafeOutput(t *testing.T) {
 		})
 	}
 }
+
+func TestDoctorAcceptsPairedYAMLDirectories(t *testing.T) {
+	for _, name := range []string{"market", "strategy", "execution", "portfolio", "cron"} {
+		t.Run(name, func(t *testing.T) {
+			var output, diagnostic bytes.Buffer
+			path := filepath.Join("..", "..", "configs", "local", name)
+			if code := run(t.Context(), []string{"-config", path}, &output, &diagnostic); code != 0 {
+				t.Fatalf("paired YAML doctor exited %d: %s", code, &diagnostic)
+			}
+		})
+	}
+}

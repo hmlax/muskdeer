@@ -37,3 +37,13 @@ func TestWireAppRollsBackAndCanCloseBeforeRun(t *testing.T) {
 		return application, nil
 	})
 }
+
+func TestServiceProvidesGRPCHealth(t *testing.T) {
+	testapp.AssertGRPCHealth(t, "execution", func(ctx context.Context, cfg *configv1.ServiceConfig, output io.Writer, options []deer.Option) (testapp.Application, error) {
+		application, err := wireApp(ctx, cfg, output, options)
+		if err != nil {
+			return nil, err
+		}
+		return application, nil
+	})
+}

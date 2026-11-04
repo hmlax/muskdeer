@@ -1,5 +1,7 @@
 # MVP 验收矩阵
 
+2026-11-04：operator/API 运行入口、DeerApi 及旧组合夹具已删除；market、strategy、execution、portfolio、cron 各自提供 gRPC 健康接口。cron 当前只有健康/生命周期能力，默认部署四交易核心。本文旧 API/角色描述仅为历史记录；当前目录、配置与运行合同以 [目录说明](PROJECT_LAYOUT.md)、[核心服务](CORE_SERVICES.md)、[Deer](DEER.md) 和 [Nacos](NACOS_CONFIG.md) 为准。
+
 2026-11-03 当前范围：管理 HTTP/Web 与浏览器交付已取消，相关 A27/页面验收仅为历史记录。当前验证覆盖四个核心服务、gRPC、基础设施和交易正确性；公共 Hertz/DeerApi 的通用生命周期测试不代表存在管理应用。
 
 本表是待实施测试，不是已通过报告。每条记录环境、版本、命令、输出位置、结果、限制；失败或未运行如实标注。故障通过注入器和受控时钟触发，避免随机 sleep。L1 使用隔离模拟器，L2 针对真实测试环境重新验证。

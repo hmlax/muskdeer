@@ -125,5 +125,5 @@ func LoadSplitConfig(ctx context.Context, directory string) (*configv1.ServiceCo
 		return nil, err
 	}
 	resolveConfigPaths(cfg, directory)
-	return validateConfig(cfg, cfg.Http != nil)
+	return validateConfig(cfg)
 }

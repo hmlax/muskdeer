@@ -1,6 +1,6 @@
 # 独立核心服务
 
-2026-11-03 用户进一步确认：根 api/web 和管理 HTTP、前端、开户命令及 OpenAPI/浏览器工具已删除，核心 gRPC 契约迁至 deer/proto/rpc。默认构建/Compose 只包含四个核心服务；后端领域、历史数据库迁移及对应合同测试保留。定期报表/归档尚未实现，不部署无业务的 cron。
+2026-11-03 用户进一步确认：根 api/web 和管理 HTTP、前端、开户命令及 OpenAPI/浏览器工具已删除，核心 gRPC 契约迁至 deer/proto/rpc。默认构建/Compose 只包含四个核心服务；后端领域、历史数据库迁移及对应合同测试保留。定期报表/归档尚未实现；cron 已有独立健康进程，默认 Compose 不部署。
 
 | 服务 | 独立入口 | 本机 gRPC | Nacos 身份 | 实际工作 |
 |---|---|---|---|---|
@@ -15,7 +15,7 @@
 
 ## 独立装配位置
 
-四个服务按各自目录组织，cmd 统一放 main、wire.go、wire_gen.go 和 injector 测试；装配 provider 在各自 internal/app，继续共用根 go.mod，其余 cmd 命令保持原样。每个项目可单独构建，例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。生成及清理合同见 [Wire 装配](WIRING.md)。
+五个服务按各自目录组织，cmd 统一放 main、wire.go、wire_gen.go 和 injector 测试；装配 provider 在各自 internal/app，继续共用根 go.mod，operator 命令已删除，维护命令保留。每个项目可单独构建，例如 `python3 scripts/go.py build -o .cache/bin/market ./market/cmd`。生成及清理合同见 [Wire 装配](WIRING.md)。
 
 各 internal/app 分别维护配置检查、工作计划、服务定义和 Deer 生命周期，由独立 ProviderSet 注入。market/execution 只注册自身业务 RPC，strategy/portfolio 只有后台工作循环。四个 main 从 env 引导 Nacos 配置，调用本服务生成的 wireApp 和 App.Run，没有命令行配置参数或公共启动分发。
 
@@ -26,7 +26,7 @@
 | [execution](../execution/internal/app/workplan.go) | business.NewExecution → *Execution | [execution.go](../execution/business/execution.go) |
 | [portfolio](../portfolio/internal/app/workplan.go) | business.NewPortfolio → *Portfolio | [portfolio.go](../portfolio/business/portfolio.go) |
 
-公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。通用 `deer/testbusiness` 中的 `testbusiness.New/Runtime` 留给历史组合入口/管理回归，四个核心进程不再调用它；业务工作器的算法、超时、注册发现与资金合同保持。
+公共 `coreentry.Run` 已移除，coreentry 只含 readiness 和 cancellation 小工具。旧 `deer/testbusiness/testentry/testservice` 和 operator 组合入口已删除；服务专属回归夹具迁入各自项目，公共 `deer/testprocess` 只负责进程/Nacos 生命周期；业务工作器的算法、超时、注册发现与资金合同保持。
 
 ## 启动
 
@@ -59,3 +59,9 @@ make core-test
 ```
 
 本工作区保留尚未验收的 schema 38 平仓修改。当前镜像使用已验证的 schema 37 清理源码，位于忽略的 `.cache/apiweb-removal/rpc-source`，包含 Wire/Deer 注入、第三方目录归入 deer、gRPC 契约迁移和管理 HTTP/Web 删除；构建来源见 `.cache/compose/compose.env`，不把未提交功能混入运行镜像。四容器已重建并全部 healthy，实际 mTLS 双源回放行情及 execution 查询通过；最终检查观察到 market/execution 的 worker 超时及自动重启，运行稳定性仍待处理，详见 [P14 验证](validation/P14-02.md)。证据见 `.cache/apiweb-removal/{runtime-before,runtime-after,runtime-final,live-probe}.json`，最终提交见 PROGRESS 与 Git 历史。普通干净检出默认构建仓库；明确改用当前工作区时执行 `python3 scripts/compose.py prepare --source .`，应先核对迁移版本。旧管理应用的历史数据与数据库迁移保留。
+
+## 每服务 gRPC 健康
+
+market、strategy、execution、portfolio、cron 的 Deer 均自动注册标准 `grpc.health.v1.Health`：Check、List 和有界 Watch。service 参数可为空或本服务 `<name>.grpc`；未知名称 Check 返回 NotFound。健康检查复用监听的 mTLS 许可，生产调用方必须提供被许可的证书；不额外开放匿名监听。SERVING 表示生命周期和当前配置依赖/worker 检查通过，不构成交易风险或对账授权。
+
+cron 的独立入口为 `cron/cmd`，`make build` 生成 `.cache/bin/cron`，Docker target 为 `runtime-cron`。配置示例在 `configs/local/cron/{data.yaml,service.yaml}`，示例 gRPC 为 127.0.0.1:59006。将配对配置显式发布到自己的 Nacos 命名空间、提供同其他服务的 Nacos env 后，无参数启动 `.cache/bin/cron`；不从本地示例直接启动。当前 `business.enabled` 必须关闭，不部署占位的归档/报表任务。

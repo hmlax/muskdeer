@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/shopspring/decimal"
 	"go.uber.org/goleak"
@@ -53,7 +52,7 @@ func TestPostgresInfrastructure(t *testing.T) {
 	t.Run("bounded pool and cancellation", testPoolLimit)
 	t.Run("server statement timeout", testStatementTimeout)
 	t.Run("deer dependencies and readiness", testDeerDependencies)
-	t.Run("API failure closes owned pool", testAPIRollback)
+	t.Run("RPC failure closes owned pool", testRegistrationRollback)
 	t.Run("authentication failure is safe and typed", testAuthenticationFailure)
 }
 
@@ -234,19 +233,13 @@ func testDeerDependencies(t *testing.T) {
 	}
 }
 
-func testAPIRollback(t *testing.T) {
+func testRegistrationRollback(t *testing.T) {
 	cfg := serviceConfig(t, "api-pool-rollback")
-	cfg.Http = &configv1.Listener{
-		Address:        "127.0.0.1:0",
-		RequestTimeout: durationpb.New(time.Second),
-	}
-	failure := errors.New("management route assembly failed")
+	failure := errors.New("management RPC registration failed")
 	var pool *sql.DB
-	api, cleanup, err := deer.NewDeerApi(t.Context(), cfg, deer.APISpec{
-		Service: deer.ServiceSpec{
-			LogOutput: io.Discard,
-		},
-		Routes: func(_ context.Context, owner *deer.Deer, _ *server.Hertz) error {
+	api, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
+		LogOutput: io.Discard,
+		RegisterGRPC: func(_ context.Context, owner *deer.Deer, _ grpc.ServiceRegistrar) error {
 			db, err := owner.DB()
 			if err != nil {
 				return err
@@ -259,10 +252,10 @@ func testAPIRollback(t *testing.T) {
 		},
 	})
 	if api != nil || cleanup != nil || !errors.Is(err, failure) {
-		t.Fatalf("API initialization = %v, cleanup nil %v, %v", api, cleanup == nil, err)
+		t.Fatalf("RPC initialization = %v, cleanup nil %v, %v", api, cleanup == nil, err)
 	}
 	if pool == nil || pool.PingContext(t.Context()) == nil || pool.Stats().OpenConnections != 0 {
-		t.Fatal("API construction failure did not close its shared pool")
+		t.Fatal("RPC construction failure did not close its shared pool")
 	}
 }
 

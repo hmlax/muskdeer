@@ -8,14 +8,13 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"testing"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/app/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -26,7 +25,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/testcert"
 )
 
-func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
+func TestServiceUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 	const serviceName = "rpc-factory-probe"
 	ca := testcert.New(t)
 	_, stopA, resultA := secureRPCNode(t, ca, serviceName, "secure-a")
@@ -34,20 +33,16 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 	observer := namingObserver(t)
 	waitNamingCount(t, observer, serviceName+".grpc", 2)
 	cfg := serviceConfig(t, "api-rpc-probe")
-	cfg.Name = "api"
+	cfg.Name = "client-probe"
 	cfg.Postgres = nil
 	cfg.Grpc = nil
 	cfg.Nacos = namingConfig()
-	cfg.Http = &configv1.Listener{
-		Address:        "127.0.0.1:0",
-		RequestTimeout: durationpb.New(time.Second),
-	}
 	cfg.Monitoring = &configv1.Listener{
 		Address:        "127.0.0.1:0",
 		RequestTimeout: durationpb.New(time.Second),
 	}
 	cfg.GrpcClients = &configv1.GRPCClients{
-		Mtls:             ca.Issue(t, "api.grpc", false),
+		Mtls:             ca.Issue(t, "client-probe.grpc", false),
 		ConnectTimeout:   durationpb.New(500 * time.Millisecond),
 		RequestTimeout:   durationpb.New(time.Second),
 		MaxInflight:      2,
@@ -55,51 +50,15 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 		MaxResponseBytes: 4096,
 		AllowedServices:  []string{serviceName + ".grpc"},
 	}
-	api, cleanup, err := deer.NewDeerApi(t.Context(), cfg, deer.APISpec{
-		Service: deer.ServiceSpec{LogOutput: io.Discard},
-		Routes: func(_ context.Context, owner *deer.Deer, hertz *server.Hertz) error {
-			factory, err := owner.GRPCClients()
-			if err != nil {
-				return err
-			}
-			hertz.GET("/probe/multiply", func(ctx context.Context, response *app.RequestContext) {
-				connection, err := factory.Client(rpcclient.Target{
-					Service:    serviceName + ".grpc",
-					InstanceID: response.Query("instance"),
-				})
-				if err != nil {
-					response.Status(http.StatusServiceUnavailable)
-					return
-				}
-				var headers metadata.MD
-				reply, err := probev1.NewArithmeticProbeClient(connection).Multiply(ctx, &probev1.MultiplyRequest{
-					Price:    response.Query("price"),
-					Quantity: response.Query("quantity"),
-				}, grpc.Header(&headers))
-				if err != nil {
-					response.Status(http.StatusServiceUnavailable)
-					return
-				}
-				identity := headers.Get(namingInstanceHeader)
-				correlation := headers.Get(requestid.Header)
-				if len(identity) != 1 || len(correlation) != 1 || correlation[0] != requestid.FromContext(ctx).String() {
-					response.Status(http.StatusBadGateway)
-					return
-				}
-				response.Header(namingInstanceHeader, identity[0])
-				response.JSON(http.StatusOK, reply)
-			})
-			return nil
-		},
-	})
+	api, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{LogOutput: io.Discard})
 	if err != nil {
 		t.Fatal(err)
 	}
-	runNamingService(t, api.Deer, cleanup)
+	runNamingService(t, api, cleanup)
 	assertMonitoringStatus(t, api.MonitoringAddress(), "/livez", http.StatusOK, "alive")
 	assertMonitoringStatus(t, api.MonitoringAddress(), "/readyz", http.StatusOK, "ready")
 	for _, id := range []string{"secure-a", "secure-b"} {
-		callAPIProbe(t, api.HTTPAddress(), id, http.StatusOK)
+		callServiceProbe(t, api, id, http.StatusOK)
 	}
 	if err := stopA(t.Context()); err != nil {
 		t.Fatal(err)
@@ -108,8 +67,8 @@ func TestAPIUsesDiscoveredAuthenticatedRPCClients(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitNamingCount(t, observer, serviceName+".grpc", 1)
-	callAPIProbe(t, api.HTTPAddress(), "secure-a", http.StatusServiceUnavailable)
-	callAPIProbe(t, api.HTTPAddress(), "secure-b", http.StatusOK)
+	callServiceProbe(t, api, "secure-a", http.StatusServiceUnavailable)
+	callServiceProbe(t, api, "secure-b", http.StatusOK)
 	factory, err := api.GRPCClients()
 	if err != nil {
 		t.Fatal(err)
@@ -166,50 +125,47 @@ func secureRPCNode(t *testing.T, ca *testcert.Authority, serviceName, id string)
 	}
 	cfg.GrpcSecurity = &configv1.GRPCServerSecurity{
 		Mtls:                ca.Issue(t, serviceName+".grpc", false),
-		AllowedPeerServices: []string{"api.grpc"},
+		AllowedPeerServices: []string{"client-probe.grpc"},
 	}
 	return runNamingConfig(t, cfg, id)
 }
 
-func callAPIProbe(t *testing.T, address, instance string, wantStatus int) {
+func callServiceProbe(t *testing.T, owner *deer.Deer, instance string, wantStatus int) {
 	t.Helper()
-	query := url.Values{
-		"instance": []string{instance},
-		"price":    []string{"0.1"},
-		"quantity": []string{"0.2"},
+	factory, err := owner.GRPCClients()
+	if err != nil {
+		t.Fatal(err)
+	}
+	conn, err := factory.Client(rpcclient.Target{
+		Service:    "rpc-factory-probe.grpc",
+		InstanceID: instance,
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(t.Context(), 2*time.Second)
 	defer cancel()
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://"+address+"/probe/multiply?"+query.Encode(), nil)
+	id, err := requestid.New(ctx, "integration-"+instance)
 	if err != nil {
 		t.Fatal(err)
 	}
-	request.Header.Set(requestid.Header, "integration-"+instance)
-	client := &http.Client{Timeout: 2 * time.Second}
-	defer client.CloseIdleConnections()
-	response, err := client.Do(request)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := response.Body.Close(); err != nil {
-			t.Error(err)
+	ctx = requestid.Bind(ctx, id)
+	var headers metadata.MD
+	reply, err := probev1.NewArithmeticProbeClient(conn).Multiply(ctx, &probev1.MultiplyRequest{
+		Price:    "0.1",
+		Quantity: "0.2",
+	}, grpc.Header(&headers))
+	if wantStatus == http.StatusServiceUnavailable {
+		if status.Code(err) != codes.Unavailable {
+			t.Fatal("missing instance did not fail closed", err)
 		}
-	}()
-	if response.StatusCode != wantStatus {
-		t.Fatalf("API RPC status = %d, want %d", response.StatusCode, wantStatus)
-	}
-	if response.Header.Get(requestid.Header) != "integration-"+instance {
-		t.Fatal("API did not preserve the edge correlation ID")
-	}
-	if wantStatus != http.StatusOK {
 		return
 	}
-	var reply probev1.MultiplyReply
-	if err := json.NewDecoder(response.Body).Decode(&reply); err != nil {
+	if err != nil {
 		t.Fatal(err)
 	}
-	if reply.Notional != "0.02" || response.Header.Get(namingInstanceHeader) != instance {
-		t.Fatalf("API RPC reply = %v, identity=%s", &reply, response.Header.Get(namingInstanceHeader))
+	identity, correlation := headers.Get(namingInstanceHeader), headers.Get(requestid.Header)
+	if reply.Notional != "0.02" || len(identity) != 1 || identity[0] != instance || len(correlation) != 1 || correlation[0] != id.String() {
+		t.Fatal("RPC lost its exact decimal, instance or correlation identity")
 	}
 }

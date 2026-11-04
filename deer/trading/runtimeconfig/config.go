@@ -25,6 +25,10 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	if cfg == nil {
 		return ErrInvalidConfig
 	}
+	switch cfg.Name + ".grpc" {
+	case rpcsecurity.ServiceOperator, rpcsecurity.ServiceAPI, rpcsecurity.ServiceAdmin:
+		return ErrInvalidConfig
+	}
 	if !cfg.GetBusiness().GetEnabled() {
 		return nil
 	}
@@ -45,8 +49,6 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 
 func validateBusinessRole(cfg *configv1.ServiceConfig) error {
 	switch cfg.Name + ".grpc" {
-	case rpcsecurity.ServiceOperator:
-		return validateOperatorConfig(cfg)
 	case rpcsecurity.ServiceExecution:
 		if cfg.Jetstream == nil || cfg.Business.PortfolioConsumer != "" || cfg.Business.Market != nil || cfg.Business.Strategy != nil || validateRiskConfig(cfg.Business) != nil || ValidateSimulatorConfig(cfg.Business) != nil {
 			return ErrInvalidConfig

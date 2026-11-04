@@ -1,5 +1,7 @@
 # 运行与故障处理基线
 
+2026-11-04：operator/API 运行入口、DeerApi 及旧组合夹具已删除；market、strategy、execution、portfolio、cron 各自提供 gRPC 健康接口。cron 当前只有健康/生命周期能力，默认部署四交易核心。本文旧 API/角色描述仅为历史记录；当前目录、配置与运行合同以 [目录说明](PROJECT_LAYOUT.md)、[核心服务](CORE_SERVICES.md)、[Deer](DEER.md) 和 [Nacos](NACOS_CONFIG.md) 为准。
+
 2026-11-03 当前范围为四个核心服务及 deer/proto/rpc；管理 HTTP/Web、开户和浏览器命令已删除。下文涉及管理客户端的步骤仅为历史记录，当前启动与验证以 CORE_SERVICES.md、IMPLEMENTATION_PLAN.md 和 PROGRESS.md 为准。
 
 2026-11-02 后续用户要求默认仅部署 market/strategy/execution/portfolio 四个独立核心进程，管理后台不再启动。当前构建、Compose、端口和准备步骤以 [核心服务运行说明](CORE_SERVICES.md) 为准；下文旧六角色/管理入口/开发容器命令均保留作历史记录，不能用于当前共享 infra 的启停。四个核心命令无参数，env 连接 Nacos 后读取远程业务配置，健康探针为独立 `/readycheck`，见 [Nacos 配置](NACOS_CONFIG.md)。当前 dev-up 将四份基础设施探针配置发布到专属 Nacos 分组，dev-down 不停止共享容器。

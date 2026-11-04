@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate or compare the four service injectors using the pinned Wire module."""
+"""Generate or compare the service injectors using the pinned Wire module."""
 
 import argparse
 import json
@@ -11,7 +11,7 @@ from go import run
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SERVICES = ('market', 'strategy', 'execution', 'portfolio')
+SERVICES = ('market', 'strategy', 'execution', 'portfolio', 'cron')
 
 
 def generate(verify=False):

@@ -1,6 +1,6 @@
-# 四服务 Wire 装配
+# 服务 Wire 装配
 
-market、strategy、execution、portfolio 使用同一目录和装配约定，各自拥有独立 injector 和 ProviderSet：
+market、strategy、execution、portfolio、cron 使用同一目录和装配约定，各自拥有独立 injector 和 ProviderSet：
 
 ```text
 <service>/
@@ -17,9 +17,9 @@ market、strategy、execution、portfolio 使用同一目录和装配约定，�
     providers.go     # 仅 wireinject 构建时加载的 ProviderSet
 ```
 
-ProviderSet 的调用关系为 Config → WorkPlan / processlog.Lifecycle → ServiceSpec → App。injector 同时接收 `[]deer.Option`，Wire 将选项传给最终 `app.New`，再由它调用 `deer.NewDeer(ctx, cfg, spec, options...)`。Wire 检查类型并生成调用顺序，不按服务名选择进程。四个 cmd 都只调用自己的 wireApp；没有回退到旧 runService 的手工装配。
+ProviderSet 的调用关系为 Config → WorkPlan / processlog.Lifecycle → ServiceSpec → App。injector 同时接收 `[]deer.Option`，Wire 将选项传给最终 `app.New`，再由它调用 `deer.NewDeer(ctx, cfg, spec, options...)`。Wire 检查类型并生成调用顺序，不按服务名选择进程。五个 cmd 都只调用自己的 wireApp；没有回退到旧 runService 的手工装配。
 
-标准 main 的 options 为 nil，Deer 按 Nacos 配置创建并拥有依赖。已有客户端可通过 `WithDB`、`WithRedis`、`WithLogger` 等选项借给 Deer；不会创建重复连接池，调用方在 App.Close/Run 完成后关闭这些客户端。选项的类型、优先级、健康与所有权详见 [Deer 契约](DEER.md)。四个实际 injector 均测试默认装配、晚期回滚和借入 logger 的透传/清理后可用。
+标准 main 的 options 为 nil，Deer 按 Nacos 配置创建并拥有依赖。已有客户端可通过 `WithDB`、`WithRedis`、`WithLogger` 等选项借给 Deer；不会创建重复连接池，调用方在 App.Close/Run 完成后关闭这些客户端。选项的类型、优先级、健康与所有权详见 [Deer 契约](DEER.md)。五个实际 injector 均测试默认装配、晚期回滚和借入 logger 的透传/清理后可用。
 
 WorkPlan 的 provider 只描述工作，不启动 goroutine、不访问数据库，也不创建第二份公共依赖。Deer 先完成日志、PG、Redis、NATS、Nacos 和 gRPC 客户端等配置依赖，再同步调用本服务的工作计划回调、注册 RPC。该阶段调用所属项目 business 包的 NewMarket/NewStrategy/NewExecution/NewPortfolio，借用唯一 Deer 的资源；各服务的业务装配和用例在本项目，公共交易合同/事务仓储保留在 deer/trading。启动/停止、租约、资金、幂等、fencing 及后台算法保持原合同，其他 cmd 命令不变。完整归属见 [项目目录](PROJECT_LAYOUT.md)。
 
@@ -28,7 +28,7 @@ App 是最后一个可能失败的 provider。NewDeer 在构造失败时自行�
 ## 生成与检查
 
 ```sh
-make wire            # 生成四份 wire_gen.go
+make wire            # 生成五份 wire_gen.go
 make wire-check      # Wire diff，发现漂移非零退出，不写回工作文件
 make generate        # Proto 和 Wire
 make generate-check  # 生成物一致性；已被 verify/CI 调用
@@ -37,3 +37,5 @@ make generate-check  # 生成物一致性；已被 verify/CI 调用
 Wire 固定 v0.7.0，go.mod 的 require/tool 和 tools/versions.json 一致，x/tools 使用已选择的 v0.49.0，并已实测 Go 1.27.3 生成。命令通过 scripts/go.py 使用仓库工具链和缓存，带 readonly 模块约束，不依赖全局 wire 安装。正常构建使用提交的生成物，不在启动时运行 Wire，providers.go 和 wire.go 由 wireinject 标签隔离。
 
 Wire 的 [providers/injectors 与生成代码约定](https://github.com/google/wire/blob/v0.7.0/docs/guide.md) 和 [cleanup 约定](https://github.com/google/wire/blob/v0.7.0/docs/guide.md#cleanup-functions) 是上游合同。Google Wire [上游仓库已归档](https://github.com/google/wire)，本项目固定工具版本并提交生成物，不使用浮动版本或自动升级。
+
+cron 的 ProviderSet 为 Config → processlog.Lifecycle → ServiceSpec → App。当前没有业务任务，不创建空 WorkPlan 或假工作器；Deer 自动注册健康 RPC。它与四交易核心一样无参数、只从 env/Nacos 配对配置启动，并验证 gRPC 监听必需。各入口测试实际运行生成的图，调用其 `<service>.grpc` 健康接口，等待 SERVING，并验证未知服务返回 NotFound。

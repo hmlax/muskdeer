@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app/server"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -36,7 +36,7 @@ func TestNacosNamingClient(t *testing.T) {
 	t.Run("authenticated fresh lookup and namespace isolation", testFreshNamingLookup)
 	t.Run("authentication status hides password", testNamingAuthentication)
 	t.Run("deer observes closed discovery dependency", testNamingReadiness)
-	t.Run("API construction failure closes discovery", testNamingAPIRollback)
+	t.Run("RPC construction failure closes discovery", testNamingRegistrationRollback)
 }
 
 func testFreshNamingLookup(t *testing.T) {
@@ -182,21 +182,15 @@ func testNamingReadiness(t *testing.T) {
 	}
 }
 
-func testNamingAPIRollback(t *testing.T) {
+func testNamingRegistrationRollback(t *testing.T) {
 	cfg := serviceConfig(t, "api-naming-rollback")
 	cfg.Postgres = nil
 	cfg.Nacos = namingConfig()
-	cfg.Http = &configv1.Listener{
-		Address:        "127.0.0.1:0",
-		RequestTimeout: durationpb.New(time.Second),
-	}
-	failure := errors.New("naming route assembly rejected")
+	failure := errors.New("naming RPC registration rejected")
 	var discovery *nacos.Client
-	api, cleanup, err := deer.NewDeerApi(t.Context(), cfg, deer.APISpec{
-		Service: deer.ServiceSpec{
-			LogOutput: io.Discard,
-		},
-		Routes: func(_ context.Context, owner *deer.Deer, _ *server.Hertz) error {
+	api, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
+		LogOutput: io.Discard,
+		RegisterGRPC: func(_ context.Context, owner *deer.Deer, _ grpc.ServiceRegistrar) error {
 			var err error
 			discovery, err = owner.Discovery()
 			if err != nil {
@@ -206,10 +200,10 @@ func testNamingAPIRollback(t *testing.T) {
 		},
 	})
 	if api != nil || cleanup != nil || !errors.Is(err, failure) {
-		t.Fatalf("API naming assembly = %v, cleanup nil %v, %v", api, cleanup == nil, err)
+		t.Fatalf("RPC naming assembly = %v, cleanup nil %v, %v", api, cleanup == nil, err)
 	}
 	if discovery == nil || !errors.Is(discovery.Ping(t.Context()), nacos.ErrClosed) {
-		t.Fatal("API assembly failure did not close discovery client")
+		t.Fatal("RPC assembly failure did not close discovery client")
 	}
 }
 

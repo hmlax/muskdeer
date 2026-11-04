@@ -12,7 +12,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
-	"github.com/hmlax/muskdeer/execution/outbox"
+	outbox "github.com/hmlax/muskdeer/deer/trading/outboxcontract"
 )
 
 type outboxStore struct{ db *gorm.DB }

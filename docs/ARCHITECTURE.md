@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
+
 2026-11-04 最新配置边界：Nacos 每服务提供 `<service>.data.yaml` 与 `<service>.service.yaml`，分别对应 DataConfig 和 ServiceSettings；前者持有基础连接与业务运行控制，后者持有监听、身份、TLS、日志及生命周期，并以 data_sha256 绑定前者原始字节。启动同时校验版本/服务身份，拒绝半次发布。ServiceConfig 仅为兼容现有 Deer/业务接口的内存装配结果，不再作为核心配置源；此项替代下文历史单份 Proto JSON 描述，数据库业务归属保持。
 
 2026-11-03 更新：根 api/web、管理 HTTP 应用及 OpenAPI/浏览器工具已移除；gRPC 契约统一位于 deer/proto/rpc，四核心服务通信及数据库历史迁移保持。通用 Hertz 仅保留公共运行层和测试用途，不装配管理路由。
@@ -16,7 +18,7 @@
 
 保留单仓库、单 go.mod，各服务通过独立 cmd/镜像/端口/Nacos 身份运行，每个进程装配一次公共依赖。核心入口拒绝 HTTP 管理配置及管理 RPC 开启标志，不构造管理身份或加载 React。服务间保留 mTLS 身份及超时，实例/账户/行情继续用持久租约和最终 fencing 支持多节点。当前本地启动使用回放行情及禁用、未注资的模拟账户；定期报表/归档尚无实现，不部署空 cron。启动说明见 [核心服务](CORE_SERVICES.md)。
 
-各核心服务按独立项目目录组织，继续共用根 go.mod。`<service>/cmd` 统一为 main、wire injector 声明及 wire_gen.go；各自 `internal/app` 定义 Config、WorkPlan、ServiceSpec 与 App 的 ProviderSet，由 Wire 生成静态调用顺序。业务仍调用对应 `business.NewMarket/NewStrategy/NewExecution/NewPortfolio` typed 构造函数，在 Deer 开好基础设施后同步形成工作计划，不另开资源。公共 Deer 负责启动、排空和清理；每服务只有自己的 RPC/worker，没有共用 Run 的 name 分发。其他 cmd 命令原样保留，deer/testbusiness 的组合装配只供历史入口兼容。具体结构和生成门禁见 [Wire 装配](WIRING.md)。
+各核心服务按独立项目目录组织，继续共用根 go.mod。`<service>/cmd` 统一为 main、wire injector 声明及 wire_gen.go；各自 `internal/app` 定义 Config、WorkPlan、ServiceSpec 与 App 的 ProviderSet，由 Wire 生成静态调用顺序。业务仍调用对应 `business.NewMarket/NewStrategy/NewExecution/NewPortfolio` typed 构造函数，在 Deer 开好基础设施后同步形成工作计划，不另开资源。公共 Deer 负责启动、排空和清理；每服务只有自己的 RPC/worker，没有共用 Run 的 name 分发。operator/API 命令已删除，其余维护命令保留；服务回归入口已迁到所属项目，公共 testprocess 只提供生命周期支撑。具体结构和生成门禁见 [Wire 装配](WIRING.md)。
 
 核心入口无 flags 或本地 JSON：Nacos 连接从 env 引导，服务及业务运行参数从 Nacos 严格解析为 Proto 配置，启动时读取并校验；变更显式重启。持仓、订单、资金与业务版本的存储权威仍按下文执行。具体环境变量见 [Nacos 配置](NACOS_CONFIG.md)。
 

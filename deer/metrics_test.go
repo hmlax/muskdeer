@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app"
-	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/prometheus/common/expfmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -80,16 +78,16 @@ func TestGRPCMetricsIncludeHandlerErrorsAndStreamRejections(t *testing.T) {
 
 func TestDeerMetricsAreIsolatedAndScrapesDoNotObserveThemselves(t *testing.T) {
 	t.Parallel()
-	apiA := runMetricsAPI(t, "metric-a")
-	apiB := runMetricsAPI(t, "metric-b")
-	for _, path := range []string{"/ok", "/bad", "/unknown/private-id"} {
-		readMetricsHTTP(t, apiA.HTTPAddress(), path)
+	apiA := runMetricsService(t, "metric-a")
+	apiB := runMetricsService(t, "metric-b")
+	for _, path := range []string{"/livez", "/unknown", "/unknown/private-id"} {
+		readMetricsHTTP(t, apiA.MonitoringAddress(), path)
 	}
 	output := readMetricsHTTP(t, apiA.MonitoringAddress(), "/metrics")
 	for _, sample := range []string{
-		`deer_requests_total{transport="http",code="2xx"} 1`,
-		`deer_requests_total{transport="http",code="4xx"} 2`,
-		`deer_request_errors_total{transport="http"} 2`,
+		`deer_requests_total{transport="probe",code="2xx"} 1`,
+		`deer_requests_total{transport="probe",code="4xx"} 2`,
+		`deer_request_errors_total{transport="probe"} 2`,
 		`deer_live 1`,
 		`deer_lifecycle_ready 1`,
 	} {
@@ -100,8 +98,8 @@ func TestDeerMetricsAreIsolatedAndScrapesDoNotObserveThemselves(t *testing.T) {
 	if strings.Contains(output, "private-id") || output != readMetricsHTTP(t, apiA.MonitoringAddress(), "/metrics") {
 		t.Fatal("scrape created unbounded labels or counted itself")
 	}
-	if other := readMetricsHTTP(t, apiB.MonitoringAddress(), "/metrics"); !strings.Contains(other, `deer_request_duration_seconds_count{transport="http"} 0`) {
-		t.Fatal("two Deer APIs share metric state")
+	if other := readMetricsHTTP(t, apiB.MonitoringAddress(), "/metrics"); !strings.Contains(other, `deer_request_duration_seconds_count{transport="probe"} 0`) {
+		t.Fatal("two services share metric state")
 	}
 	var parser expfmt.TextParser
 	if _, err := parser.TextToMetricFamilies(strings.NewReader(output)); err != nil {
@@ -109,32 +107,19 @@ func TestDeerMetricsAreIsolatedAndScrapesDoNotObserveThemselves(t *testing.T) {
 	}
 }
 
-func runMetricsAPI(t *testing.T, id string) *DeerApi {
+func runMetricsService(t *testing.T, id string) *Deer {
 	t.Helper()
 	cfg := serviceConfig(id)
-	cfg.Grpc = nil
-	cfg.Http = &configv1.Listener{
+	cfg.Monitoring = &configv1.Listener{
 		Address:        "127.0.0.1:0",
 		RequestTimeout: durationpb.New(time.Second),
 	}
-	cfg.Monitoring = cfg.Http
-	api, _, err := NewDeerApi(t.Context(), cfg, APISpec{
-		Service: ServiceSpec{LogOutput: io.Discard},
-		Routes: func(_ context.Context, _ *Deer, hertz *server.Hertz) error {
-			hertz.GET("/ok", func(_ context.Context, response *app.RequestContext) {
-				response.String(http.StatusOK, "ok")
-			})
-			hertz.GET("/bad", func(_ context.Context, response *app.RequestContext) {
-				response.String(http.StatusBadRequest, "bad request")
-			})
-			return nil
-		},
-	})
+	service, _, err := NewDeer(t.Context(), cfg, ServiceSpec{LogOutput: io.Discard})
 	if err != nil {
 		t.Fatal(err)
 	}
-	runDeer(t, api.Deer)
-	return api
+	runDeer(t, service)
+	return service
 }
 
 func readMetricsHTTP(t *testing.T, address, path string) string {

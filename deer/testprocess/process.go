@@ -20,15 +20,15 @@ import (
 // Command never accepts a role switch. Every process has its own executable.
 func Command(ctx context.Context, name, path string) (*exec.Cmd, func() error, error) {
 	switch name {
-	case "market", "strategy", "execution", "portfolio", "operator", "cron":
+	case "market", "strategy", "execution", "portfolio", "cron":
 	default:
 		return nil, nil, errors.New("unsupported test process")
 	}
 	binary := name
-	if name != "operator" && os.Getenv("MUSKDEER_CORE_TEST_BINARIES") != "1" {
+	if name != "cron" && os.Getenv("MUSKDEER_CORE_TEST_BINARIES") != "1" {
 		binary = "module-" + name
 	}
-	if os.Getenv("MUSKDEER_CORE_TEST_BINARIES") != "1" || name == "operator" {
+	if name != "cron" && os.Getenv("MUSKDEER_CORE_TEST_BINARIES") != "1" {
 		return exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", binary), "-config", path), func() error { return nil }, nil
 	}
 	cfg, err := deer.LoadConfig(ctx, path)

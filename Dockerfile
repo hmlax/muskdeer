@@ -12,16 +12,17 @@ COPY market ./market
 COPY strategy ./strategy
 COPY execution ./execution
 COPY portfolio ./portfolio
+COPY cron ./cron
 COPY deer ./deer
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    for name in market strategy execution portfolio; do \
+    for name in market strategy execution portfolio cron; do \
       go build -mod=readonly -trimpath -o /out/$name ./$name/cmd || exit $?; \
     done && \
     for name in migrate coreinit readycheck himalayainit himalayabaseline; do \
       go build -mod=readonly -trimpath -o /out/$name ./cmd/$name || exit $?; \
     done
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cmd/migrate ./cmd/coreinit ./cmd/readycheck ./cmd/himalayabaseline > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cron/cmd ./cmd/migrate ./cmd/coreinit ./cmd/readycheck ./cmd/himalayabaseline > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp deer/third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
@@ -61,3 +62,7 @@ ENTRYPOINT ["/execution"]
 FROM runtime-base AS runtime-portfolio
 COPY --from=build /out/portfolio /portfolio
 ENTRYPOINT ["/portfolio"]
+
+FROM runtime-base AS runtime-cron
+COPY --from=build /out/cron /cron
+ENTRYPOINT ["/cron"]

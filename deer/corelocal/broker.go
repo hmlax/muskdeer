@@ -11,7 +11,7 @@ import (
 	natsjs "github.com/nats-io/nats.go/jetstream"
 
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	"github.com/hmlax/muskdeer/execution/outbox"
+	outbox "github.com/hmlax/muskdeer/deer/trading/outboxcontract"
 )
 
 // PrepareBroker creates bounded resources only in the caller's dedicated account.

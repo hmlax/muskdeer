@@ -1,6 +1,6 @@
 # Muskdeer
 
-连接既有交易所的自营做市与策略交易项目。当前交付 market、strategy、execution、portfolio 四个独立 Kratos 服务，使用 gRPC 和 Nacos 通信，继续共用一个 Go module。
+连接既有交易所的自营做市与策略交易项目。当前交付 market、strategy、execution、portfolio 四个独立交易核心服务，以及具备 gRPC 健康检查的独立 cron 基础进程，使用 gRPC 和 Nacos 通信，继续共用一个 Go module。
 
 管理 HTTP、前端、管理开户命令及 OpenAPI/浏览器工具已按当前需求移除。核心服务的 mTLS、风控、幂等、状态机、租约与最终 fencing 保持；已存在的数据库迁移和历史验收记录保留。
 
@@ -14,6 +14,9 @@
 | strategy | strategy/cmd | 127.0.0.1:59003 | 策略实例、报价计划与执行/行情客户端 |
 | execution | execution/cmd | 127.0.0.1:59004 | 意图、OMS、风险、撤单恢复与 outbox |
 | portfolio | portfolio/cmd | 127.0.0.1:59005 | 成交消费、幂等投影与恢复查询 |
+| cron | cron/cmd | 127.0.0.1:59006 | 独立生命周期与健康检查；尚无定期业务 |
+
+五个进程均提供 `grpc.health.v1.Health/Check`、`Watch`、`List`，服务名为空或 `<service>.grpc`。cron 可独立构建，默认 Compose 仍只启动四个交易核心。
 
 每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，配置从 Nacos 的 data.yaml/service.yaml 强类型 YAML 配对读取，配置更新后显式重启。
 
@@ -48,6 +51,7 @@ make generate-check
 make wire-check
 make verify
 make core-test
+python3 scripts/check-layout.py
 make integration
 ```
 

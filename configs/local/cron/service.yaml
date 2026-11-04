@@ -3,6 +3,9 @@ instance_id: cron-local
 version: local
 startup_timeout: 5s
 shutdown_timeout: 5s
+grpc:
+  address: 127.0.0.1:59006
+  request_timeout: 1s
 logging:
   level: info
   stdout: true

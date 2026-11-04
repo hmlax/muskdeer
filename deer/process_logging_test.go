@@ -13,7 +13,7 @@ import (
 
 func TestProcessLoggingRollbackKeepsLoggerUntilBridgeRestored(t *testing.T) {
 	for _, api := range []bool{false, true} {
-		t.Run(map[bool]string{false: "Deer", true: "DeerApi"}[api], func(t *testing.T) {
+		t.Run(map[bool]string{false: "Deer", true: "Monitoring"}[api], func(t *testing.T) {
 			t.Parallel()
 			failure := errors.New("dependency unavailable")
 			var observed []string
@@ -43,7 +43,7 @@ func TestProcessLoggingRollbackKeepsLoggerUntilBridgeRestored(t *testing.T) {
 			}
 			var err error
 			if api {
-				_, _, err = NewDeerApi(t.Context(), apiConfig("bridge-rollback"), APISpec{Service: spec})
+				_, _, err = newMonitoringFixture(t.Context(), monitoringConfig("bridge-rollback"), monitoringFixtureSpec{Service: spec})
 			} else {
 				_, _, err = NewDeer(t.Context(), serviceConfig("bridge-rollback"), spec)
 			}

@@ -13,7 +13,6 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
-	"github.com/hmlax/muskdeer/market/marketquality"
 )
 
 const (
@@ -92,7 +91,7 @@ func Seed(ctx context.Context, db *gorm.DB) (Resources, error) {
 }
 
 func seedFeed(ctx context.Context, tx *gorm.DB, instrumentID int64, source domain.MarketSource, external string) (int64, error) {
-	policy := marketquality.DefaultPolicy()
+	policy := domain.DefaultMarketPolicy()
 	storedPolicy := &commonv1.MarketPolicy{
 		MaximumAgeMs:     policy.MaximumAge.Milliseconds(),
 		MaximumSkewMs:    policy.MaximumSkew.Milliseconds(),

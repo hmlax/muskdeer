@@ -23,11 +23,11 @@ func TestHTTPRequestIDsReachResponseContextAndRootLog(t *testing.T) {
 	var output bytes.Buffer
 	cfg := serviceConfig("request-correlation")
 	cfg.Grpc = nil
-	cfg.Http = &configv1.Listener{
+	cfg.Monitoring = &configv1.Listener{
 		Address:        "127.0.0.1:0",
 		RequestTimeout: durationpb.New(time.Second),
 	}
-	api, cleanup, err := NewDeerApi(t.Context(), cfg, APISpec{
+	api, cleanup, err := newMonitoringFixture(t.Context(), cfg, monitoringFixtureSpec{
 		Service: ServiceSpec{LogOutput: &output},
 		Routes: func(_ context.Context, owner *Deer, hertz *server.Hertz) error {
 			hertz.GET("/request-id", func(ctx context.Context, response *app.RequestContext) {

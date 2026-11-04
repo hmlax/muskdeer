@@ -1,5 +1,7 @@
 # 给本地 Codex 的启动指令
 
+2026-11-04：operator/API 运行入口、DeerApi 及旧组合夹具已删除；market、strategy、execution、portfolio、cron 各自提供 gRPC 健康接口。cron 当前只有健康/生命周期能力，默认部署四交易核心。本文旧 API/角色描述仅为历史记录；当前目录、配置与运行合同以 [目录说明](PROJECT_LAYOUT.md)、[核心服务](CORE_SERVICES.md)、[Deer](DEER.md) 和 [Nacos](NACOS_CONFIG.md) 为准。
+
 2026-11-03 当前范围为四个核心服务及 deer/proto/rpc；管理 HTTP/Web、开户和浏览器命令已删除。下文涉及管理客户端的步骤仅为历史记录，当前启动与验证以 CORE_SERVICES.md、IMPLEMENTATION_PLAN.md 和 PROGRESS.md 为准。
 
 在 Codex 中打开 ~/go/src/gitlib/bitdatech/Muskdeer，将下面整段作为开发任务发送：

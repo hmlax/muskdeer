@@ -35,16 +35,7 @@ type Tracker struct {
 }
 
 // DefaultPolicy is conservative simulation configuration, not a production SLA.
-func DefaultPolicy() Policy {
-	return Policy{
-		MaximumAge:      2 * time.Second,
-		MaximumSkew:     500 * time.Millisecond,
-		MaximumSpreadBP: decimal.NewFromInt(100),
-		MaximumJumpBP:   decimal.NewFromInt(200),
-		RecoverySamples: 3,
-		RecoveryWindow:  200 * time.Millisecond,
-	}
-}
+func DefaultPolicy() Policy { return domain.DefaultMarketPolicy() }
 
 // New binds an eligible exact source/product/mode. Saving another instance's
 // source does not alter this tracker, its recovery samples or its baseline.

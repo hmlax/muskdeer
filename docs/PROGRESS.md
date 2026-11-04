@@ -1712,3 +1712,17 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 第 09 轮 1369 个既有发送槽逐条核验，新 YAML 装配的执行政策指纹与全部旧记录一致，来源单调唯一及审计保持；计数仍为 BTC 519 发布/1 未知、ETH 847 发布/2 未知，不重置、不补发未知、不创建新轮。执行日志的 replayed 回执不视为新增成交发布。
 - 运行观察如实保留业务阻塞：双币各一笔原仓位存在，新未批准且超过五秒的 DISPATCHED 为零，当前两币活动挂单均为零。执行处于 OUTCOME_UNKNOWN/RECOVERING，持仓探针因观察未完成而拒绝。两币各抽查最新五笔待确认撤单，SDK 按原生 ID 查询终态历史均无对应记录；缺席不构成终态证明，原预留及恢复门禁保持，未自动扩展历史批准。本步仅完成配置拆分部署，不宣称重新恢复持续做市或解除上游终态回执缺失。
 - 相关单元/race、31 项脚本测试、四项真实进程回归、71 Proto/Wire、格式、静态及构建见 P19.1；本步为配置/只读运行核验，未运行完整全包测试。文档链接与 diff 检查通过，四服务和恢复循环继续运行。
+
+## 2026-11-04：P20 服务归属、旧入口清理与 gRPC 健康
+
+- 按最新用户要求替代保留 DeerApi/组合回归入口的约定：删除 cmd/operator、operator 本地示例、deer/testbusiness/testentry/testservice 旧角色分发及 operator 客户端重定向；各交易服务的回归命令迁入自己的 testservice，策略管理回归装配迁入 strategy/testbusiness。公共 testprocess 只接收所属项目的 typed builder，不导入业务实现。四核心仍直接装配各自 business，不启用管理 RPC。
+- 新增 cron/cmd 与 cron/internal/app 的独立 Wire 图、日志和 Deer 生命周期，无参数、env/Nacos 双 YAML 启动。五个入口均要求 gRPC，并通过实际生成图调用标准 Health/Check 验证 named SERVING/未知服务 NotFound；健康 Watch/List 继续由公共 Deer 提供。cron 尚无定期业务，不创建空工作器或加入默认四核心 Compose。其真实独立命令读取隔离 Nacos 配对配置、提供健康 RPC 并正常停止的 integration/race 通过。
+- 删除 DeerApi/NewDeerApi/APISpec 和无运行调用方的 API 服务观测实现、合同及 Proto。Hertz 仅保留公共 loopback 监控，原传输排空、请求关联、依赖回滚/借用测试保留为私有监控夹具或 gRPC 注册失败测试；业务 HTTP 指标移除。历史数据库迁移、共享资金/幂等/fencing 事务仓储及用户未提交平仓功能保持。
+- 将 outbox claim/错误/subject 合同提至公共 outboxcontract，实际发布工作器仍归 execution；模拟行情默认策略归公共 domain，marketquality 复用同一来源。共享仓储/corelocal 不再反向导入服务实现。新增 check-layout 门禁纳入 lint，检查 Deer 无服务实现依赖、五进程拥有自己的装配图且不装配其他项目 business/回归夹具。doctor 同步支持 YAML 目录，五服务本地示例检查通过。
+- 以 HEAD 加本轮改动构造隔离源码，全部五十个既有待提交文件逐字节保持并排除构建。隔离源码全包非 integration 的 race 测试、相关单元/race、35 项 Python、70 Proto 生成比较、五份 Wire diff、合同/规范正反样例、格式、lint 0 issues 及五服务/维护/迁移后夹具构建通过。cron Linux 镜像构建通过，首次遗漏 Docker 上下文白名单已补齐。工作区直接全包测试仍有原未提交 eventwire/validate_test.go 的断言失败，本轮未改该文件；不将隔离源码通过宣称为这部分用户功能完成。
+- 验证中的失败保留：一次隔离目录刷新与并行检查重叠读到将删除的 api.go，固定源码后顺序复核全包 race 通过；最初核心进程组出现准入拒绝、测试库迁移失败，单独复核成交投影及 outbox 存储/ACK 用例按原 25 秒 context 通过。策略接管复核曾由 execution.risk 的原一秒 deadline 失败而停止，历史夹具成交投影亦曾因新风险门禁拒绝；没有扩大期限、降低断言或修改交易逻辑。策略控制回归按原期限通过；其他最终复核结果补充如下。
+
+- 进一步隔离验证：SDK 先确认两币活动挂单/新未决均为零，短暂停止本项目四应用后复核；用例已完成首实例接管，但新实例双边报价未在原 25 秒内收敛，故未标该回归通过。随后恢复同 ID 的原四容器并全部 healthy，六共享容器 ID/启动时间、两币原仓位及原未知/撤单计数保持。改动前 HEAD 源码逐文件核对一致，以独立目录构建其 market/execution/strategy 二进制后，在相同现有 infra 中该用例通过（19.67 秒）；该对照只证明旧版此次可通过，未据此断言候选故障根因。继续按原期限复核候选，未修改交易代码或测试断言。
+
+- 最终同轮对照在同一套隔离逻辑资源上顺序执行：原 HEAD 接管用例 12.03 秒通过，候选 9.91 秒通过，均保留原 25 秒 context、原一秒业务 deadline 和全部资金/接管/停止断言。迁移后的独立成交夹具与策略控制回归也按原期限通过；相关核心和 outbox 用例均有通过记录。初期间歇性失败未被证明已修复，不把一次通过宣称为负载稳定性保证。完整 make verify、全量 integration/e2e/soak 未运行。
+- 本轮目录、清理和健康接口验收通过。cron 镜像还以禁网运行验证无参数合同，传入配置 flags 明确退出 2；未用该负向启动冒充健康检查，真正健康由 Nacos 独立进程用例验证。四原开发容器已恢复 healthy，未部署候选交易镜像、未迁移或改动资金/订单处置政策；BTC/ETH 原未知恢复阻塞保持。最终提交与远程结果见本轮报告。

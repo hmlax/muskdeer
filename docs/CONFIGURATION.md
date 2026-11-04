@@ -1,6 +1,8 @@
 # 配置加载与本地检查
 
-当前四个核心服务从 env 引导 Nacos，启动无参数，不读取本地 JSON；环境变量和远程 Proto JSON 合同见 [Nacos 配置](NACOS_CONFIG.md)。下文文件加载接口仍供 doctor、历史测试及显式维护兼容使用。
+2026-11-04：operator/API 运行入口、DeerApi 及旧组合夹具已删除；market、strategy、execution、portfolio、cron 各自提供 gRPC 健康接口。cron 当前只有健康/生命周期能力，默认部署四交易核心。本文旧 API/角色描述仅为历史记录；当前目录、配置与运行合同以 [目录说明](PROJECT_LAYOUT.md)、[核心服务](CORE_SERVICES.md)、[Deer](DEER.md) 和 [Nacos](NACOS_CONFIG.md) 为准。
+
+当前四个核心服务从 env 引导 Nacos，启动无参数，不读取本地 JSON；环境变量和远程强类型配对 YAML 合同见 [Nacos 配置](NACOS_CONFIG.md)。下文文件加载接口仍供 doctor、历史测试及显式维护兼容使用。
 
 服务配置以 [ServiceConfig Proto](../deer/proto/config/v1/service.proto) 为唯一结构来源，文件使用 protobuf JSON。`deer.LoadConfig(ctx, path)` 返回独立的生成配置类型，并执行公共生命周期及启用组件的结构/范围校验。
 
@@ -14,7 +16,7 @@
 
 ## doctor
 
-`make doctor` 核对实际 Go 1.27.3，并校验四份核心 local 配置；其他通用示例见 [服务配置](../configs/examples/service.json)。管理 HTTP 配置会被拒绝。检查其他文件：
+`make doctor` 核对实际 Go 1.27.3，并校验五个服务的 local 配对 YAML 目录；其他通用示例见 [服务配置](../configs/examples/service.json)。管理 HTTP 配置会被拒绝。检查其他文件：
 
 ```sh
 python3 scripts/go.py run ./cmd/doctor -config /path/to/service.json

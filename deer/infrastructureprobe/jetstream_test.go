@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/nats-io/nats.go"
 	natsjs "github.com/nats-io/nats.go/jetstream"
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -34,7 +34,7 @@ func TestJetStreamInfrastructure(t *testing.T) {
 	t.Run("missing stream does not auto provision", testMissingStream)
 	t.Run("misrouted namespace fails initialization", testMisroutedStream)
 	t.Run("deer readiness observes removed stream", testJetStreamReadiness)
-	t.Run("API failure closes shared publisher", testJetStreamAPIRollback)
+	t.Run("RPC failure closes shared publisher", testJetStreamRegistrationRollback)
 	t.Run("authentication cause hides token", testJetStreamAuthentication)
 }
 
@@ -222,21 +222,15 @@ func testMisroutedStream(t *testing.T) {
 	}
 }
 
-func testJetStreamAPIRollback(t *testing.T) {
+func testJetStreamRegistrationRollback(t *testing.T) {
 	cfg := serviceConfig(t, "api-jetstream-rollback")
 	cfg.Redis = redisConfig()
 	cfg.Jetstream = jetStreamConfig()
-	cfg.Http = &configv1.Listener{
-		Address:        "127.0.0.1:0",
-		RequestTimeout: durationpb.New(time.Second),
-	}
-	failure := errors.New("route assembly rejected")
+	failure := errors.New("RPC registration rejected")
 	var publisher *jetstream.Client
-	api, cleanup, err := deer.NewDeerApi(t.Context(), cfg, deer.APISpec{
-		Service: deer.ServiceSpec{
-			LogOutput: io.Discard,
-		},
-		Routes: func(_ context.Context, owner *deer.Deer, _ *server.Hertz) error {
+	api, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
+		LogOutput: io.Discard,
+		RegisterGRPC: func(_ context.Context, owner *deer.Deer, _ grpc.ServiceRegistrar) error {
 			var err error
 			publisher, err = owner.JetStream()
 			if err != nil {
@@ -246,10 +240,10 @@ func testJetStreamAPIRollback(t *testing.T) {
 		},
 	})
 	if api != nil || cleanup != nil || !errors.Is(err, failure) {
-		t.Fatalf("API initialization = %v, cleanup nil %v, %v", api, cleanup == nil, err)
+		t.Fatalf("RPC initialization = %v, cleanup nil %v, %v", api, cleanup == nil, err)
 	}
 	if publisher == nil || !errors.Is(publisher.Ping(t.Context()), jetstream.ErrClosed) {
-		t.Fatal("API failure did not close shared publisher")
+		t.Fatal("RPC failure did not close shared publisher")
 	}
 }
 

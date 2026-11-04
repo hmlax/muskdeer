@@ -96,7 +96,7 @@ type Deer struct {
 // registration failures roll back dependencies and listeners in reverse order.
 // With options borrow initialized clients instead of opening configured replacements.
 func NewDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec, opts ...Option) (*Deer, Cleanup, error) {
-	return newDeer(ctx, cfg, spec, false, opts...)
+	return newDeer(ctx, cfg, spec, opts...)
 }
 
 // GRPCAddress returns the actual reserved address, or empty if gRPC is disabled.
@@ -231,11 +231,11 @@ func (d *Deer) Run(ctx context.Context) error {
 	return errors.Join(runErr, d.closeErr)
 }
 
-func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec, api bool, opts ...Option) (*Deer, Cleanup, error) {
+func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec, opts ...Option) (*Deer, Cleanup, error) {
 	if ctx == nil {
 		return nil, nil, errors.New("construction context is required")
 	}
-	cfg, err := validateConfig(cfg, api)
+	cfg, err := validateConfig(cfg)
 	if err != nil {
 		return nil, nil, err
 	}

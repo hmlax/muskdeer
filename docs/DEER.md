@@ -1,169 +1,33 @@
-# deer 公共模块与服务封装规范
+# Deer 公共运行层
 
-2026-11-03 更新：管理 HTTP/Web 应用与相关命令已删除，根 api 迁至 deer/proto/rpc。DeerApi/Hertz 的通用传输和生命周期能力仍供公共运行层测试使用，不再承载管理页面或管理 HTTP 路由。
+2026-11-04 用户要求服务代码归各自项目，直接移除 operator/API。DeerApi、NewDeerApi 和 APISpec 已删除，替代此前保留 API 通用封装的约定。market、strategy、execution、portfolio、cron 各有独立 cmd/internal/app/Wire，每进程仅一个 Deer。默认 Compose 运行四个交易核心；cron 当前为健康/生命周期基础进程，没有定期业务。
 
-## 命名与服务形态（已确认）
+## 构造与所有权
 
-2026-11-02 后续明确要求替代 operator + admin：当前交付 market、strategy、execution、portfolio 四个独立 Kratos 进程，各用自己的 Wire injector 和一个 Deer。管理后台与 HTTP 不在当前交付范围；下文 DeerApi 及管理记录作为历史实现保留，详见 [核心服务](CORE_SERVICES.md)。
+`deer.NewDeer(ctx, cfg, spec, options...)` 返回 `(*Deer, Cleanup, error)`。Cleanup 接收 context 并返回 error，必须在成功构造后立即安排清理；Run 同样在返回前排空和释放资源。清理幂等，错误合并返回。构造失败逆序回滚已取得的资源和监听。
 
-公共目录与 Go 包名统一 deer，公共 Proto 位于 deer/proto。所有 Kratos 业务服务分别使用统一的 deer.Deer 封装，由 deer.NewDeer 构造；market、strategy、execution、portfolio、cron 保持各自独立进程与服务身份。用户已明确“各业务服务分别使用统一 Deer 封装”。
-api 用作平台管理界面，包含可操作的管理前端页面和配套后端接口。API 服务使用 deer.DeerApi，复用 Deer 公共装配，并承载 Hertz HTTP 入口。名称按用户要求保留 DeerApi 的拼写；本规范配套采用 deer.NewDeerApi 作为构造函数。
+ServiceSpec.Resources 声明公共依赖就绪后初始化的进程资源；Workers 同步描述阻塞工作计划，RegisterGRPC 同步注册本服务协议。回调不得启动无所有者 goroutine、创建第二份连接池或保留 registrar 延迟修改。各服务通过所属 business 包装配，公共运行层不按服务名选择业务。
 
-## Deer 与 NewDeer
+Deer 默认按配置创建并拥有 PostgreSQL、Redis、JetStream、Nacos、RPC 客户端和日志。WithDB、WithRedis、WithJetStream、WithDiscovery、WithGRPCClients、WithLogger 注入的对象为借用，不重复创建或关闭；调用方在 Deer 完成后关闭。初始化、启动和运行 readiness 均检查配置/注入依赖。
 
-目标职责：Deer 统一装配 Kratos 应用生命周期、按角色启用的 gRPC Server、Nacos 注册发现、日志、健康检查及公共依赖。业务服务通过注册自身 RPC/生命周期任务接入统一封装；cron 通过同一封装托管任务生命周期，继续保持独立进程和幂等要求。
-Deer 按配置提供 DB、Redis、JetStream、Logger、Metrics、Discovery、gRPC ClientFactory、Health；配置通过 deer/proto/config 定义。serviceSpec 声明服务身份及必需/可选能力；每个进程实例拥有自己的运行状态、连接和清理责任，服务名、实例 ID、端口与 Nacos 注册信息分别配置。
-必需初始化失败按逆序释放已建立资源并返回原始错误；cleanup 可重复调用，优雅停止有超时。业务模块接收窄接口，业务持仓、策略调度和交易逻辑由各自模块实现。不得通过 getter 偷偷初始化网络连接。
+ServiceConfig 只是内存装配结果。进程从 env 引导 Nacos，严格读取 data.yaml 与 service.yaml 的强类型配对配置，校验身份、版本及内容哈希；不回退本地文件、不热切换业务。详见 [Nacos 配置](NACOS_CONFIG.md)。配置在取得资源前校验并复制；`http`、`admin_http` 已拒绝。
 
-## DeerApi 与 NewDeerApi
+## 生命周期与工作器
 
-目标职责：DeerApi 组合并复用一个 Deer，增加 Hertz Server、路由/handler 注册、认证授权、request_id、统一响应与错误映射、OpenAPI 接入；通过 Deer 提供的 gRPC 客户端访问各业务服务。
-api 服务基于该封装托管管理前端构建产物及 /api/v1 管理接口，页面与接口调用按 R08/A27 交付。DeerApi 负责公共 HTTP 生命周期，具体管理页面和业务路由由 api 服务注册；当前通用封装的启停通过不代表管理界面已实现。
-Hertz Server 适配后进入所复用 Deer 的 Kratos 生命周期，统一启动、readiness、信号处理、停止接收请求、等待在途请求及依赖清理；API 进程内公共依赖只初始化一次。DeerApi 初始化失败须清理已经成功构造的 Deer 和 HTTP 资源，避免重复关闭或资源泄漏。
-API handler 负责协议边界和调用编排，交易、风控及持仓规则在对应业务服务执行。P02 分步落实这些职责，并通过 A02/A26；实际实现范围以下节及验证记录为准。
+Run 只可调用一次，启动 Kratos 监听和有明确所有者的工作器。所有任务必须响应 context，退出后才关闭借用资源。工作器的 Run、Check 和 Shutdown 合同及有界轮询保持；构造不等于开始工作。进程桥接 Kratos/Hertz/SDK 日志后，在依赖清理完成、日志关闭前恢复原全局 logger。
 
-## 已实现的构造与运行契约
+Ready/WaitReady 表示监听开始接受连接且尚未停止；CheckReady(ctx) 同时检查当前公共依赖、注册发布和工作器。依赖失效影响 readiness，Live 只表示进程仍拥有生命周期。GRPCAddress 和 MonitoringAddress 返回实际地址，测试支持端口 0。
 
-P02.2 已实现以下 Go 接口，配置类型为 deer/proto/config/v1.ServiceConfig：
+## gRPC 与本地监控
 
-```go
-deer.NewDeer(ctx, cfg, deer.ServiceSpec, ...deer.Option) (*deer.Deer, deer.Cleanup, error)
-deer.NewDeerApi(ctx, cfg, deer.APISpec, ...deer.Option) (*deer.DeerApi, deer.Cleanup, error)
-```
+所有五个服务必须配置 gRPC。Deer 自动注册标准 `grpc.health.v1.Health/Check`、`List`、`Watch`；service 可为空或 `<name>.grpc`，Check 对未知名称返回 NotFound。Watch 有容量和调用期限限制。健康服务与业务共用认证监听，不绕过 mTLS。SERVING 是运行就绪信号，不能代替行情可靠、风险、租约或对账门禁。
 
-P13.6 增加可选的 `WithLogger(*logging.Logger)`、`WithDB(*postgres.Client)`、`WithRedis(*redis.Client)`、`WithJetStream(*jetstream.Client)`、`WithDiscovery(*nacos.Client)`、`WithGRPCClients(*rpcclient.Factory)`。`WithDB` 使用项目 PostgreSQL 客户端以保留安全错误和有界 Ping，`DB()` 仍返回同一个 `*gorm.DB`。例如：
+非 loopback gRPC 必须双向 TLS，校验受信 CA、有效证书和服务 DNS SAN 许可；只允许本地测试使用字面量 loopback 明文。gRPC 客户端通过 Nacos 每次发现指定服务/实例，不缓存过期 owner，不把 execution/market 请求改投 operator；非幂等下单不透明重试。方法级业务身份校验继续保留。
 
-```go
-owner, cleanup, err := deer.NewDeer(ctx, cfg, spec,
-    deer.WithDB(database),
-    deer.WithRedis(cache),
-    deer.WithLogger(logger),
-)
-```
+Hertz 只保留公共 loopback 监控：`/livez`、`/readyz`、`/metrics`。它与 gRPC 同属 Deer/Kratos 的启动、停止、排空与失败回滚。没有管理 HTTP 封装或公开路由装配入口。监控响应有 deadline、请求 ID 和有界 probe 指标；metrics 抓取不统计自身。测试使用私有合成路由验证公共传输排空和请求关联，不构成可运行的 API 服务。
 
-注入值必须非 nil 且已初始化，按传入顺序应用，同种依赖最后一个选项生效；配置仍完整校验，选项不会绕过配置/身份/安全检查。注入优先于配置创建，不另开池；构造时检查借入数据库、缓存、消息、发现及 RPC 工厂的健康，启动与运行 readiness 继续检查。调用方在 Deer 的 cleanup 完成后才关闭借入资源；构造失败和正常关闭只释放 Deer 自己创建的资源、监听器及本实例 publication，日志安装 hook 的恢复合同保持。没有对应选项时保留原有配置装配与逆序清理，原三参数调用兼容。
+## 存储、消息与日志
 
-`Deer` 保存 `*kratos.App`、logger、数据库、缓存和其他依赖字段；`Run` 在所有 transport（包括历史 API 的 HTTP）装配后创建并保存唯一 Kratos App，继续绑定本次运行上下文及同步停止合同。四服务 Wire 图接收 `[]deer.Option` 并传给最终 provider；标准入口传 nil，按 Nacos 配置创建资源。详见 [Wire 装配](WIRING.md)。
+PostgreSQL 使用 GORM，所有数据操作显式 WithContext/Model，Proto 是持久化结构唯一来源；启动不 AutoMigrate。Redis 是辅助缓存。JetStream 负责可靠投递，业务去重、资金预留、outbox/inbox 事务和最终 fencing 继续由共享交易合同及事务仓储保证。持久 claim 类型、错误和 subject 在 deer/trading/outboxcontract，执行工作器在 execution/outbox。
 
-ServiceSpec.Resources 声明进程拥有的依赖；RegisterGRPC(ctx, owner, registrar) 接收构造上下文、当前 *Deer 和 grpc.ServiceRegistrar，并返回注册错误。APISpec.Service 复用同一个 ServiceSpec，Routes(ctx, owner, hertz) 同步注册 Hertz 中间件与路由。两种回调在公共依赖初始化后执行，可通过 owner 获取借用的依赖；不得自行运行服务、保留 server 后续修改，或追加独立生命周期 hook。构造上下文只用于装配，正常请求 handler 使用请求自身上下文。
-
-P02.4 在开发中的 Go 装配回调新增 ctx/owner 参数，仓库内调用点同步更新；NewDeer/NewDeerApi 构造函数签名及业务 Proto/RPC 线协议不因此改变。已引用旧回调类型的调用方需按上述签名更新。
-
-ServiceConfig 显式提供 name、instance_id、version、startup_timeout、shutdown_timeout 及可选 grpc/http listener。每个 listener 提供 address 和 request_timeout；请求超时必须不超过停止预算。NewDeer 不接受 HTTP 配置，NewDeerApi 必须配置 HTTP；gRPC 可关闭。构造时复制配置，校验后才获取依赖并预留监听端口；端口占用或回调失败均回滚。
-
-gRPC unary 由 Kratos 添加服务端请求超时；stream（包括 health Watch）要求客户端原生 deadline 且不超过配置 request_timeout，否则 InvalidArgument。原生 deadline 可中断阻塞的流读写；只包装 handler 上下文不能保证中断 RecvMsg/SendMsg。
-
-调用方构造成功后应立即安排返回的 Cleanup。Run(ctx) 至多调用一次，阻塞到上下文取消、cleanup、进程信号或监听失败；返回前停止两种 transport，再逆序释放资源。上下文取消通过 errors.Is(err, context.Canceled/DeadlineExceeded) 识别；正常 cleanup 停止成功返回 nil。cleanup 可在 Run 前、运行中或返回后调用，重复/并发调用只清理一次。清理使用配置中的独立超时上下文，资源和 handler 必须遵守上下文，不能强制终止不合作的 Go 函数。
-
-Ready/WaitReady 表示本实例全部配置 listener 已开始 Accept 且尚未停止；启动就绪前再次检查已配置的 PostgreSQL/Redis/JetStream/Nacos。运行中的健康入口应调用 CheckReady(ctx)，同时检查生命周期与当前依赖连通性；Ready() 本身是生命周期状态，不能代替实时依赖检查。GRPCAddress/HTTPAddress 返回实际监听地址（测试可使用端口 0）。后续业务风险、对账、租约健康仍须单独接入。Hertz 采用显式标准网络 transport，逐响应设置 Date，避免默认日期 ticker；未启用带进程级 poller 的即时断连感知，请求取消目前依靠显式 deadline，不能据此宣称实时感知客户端断开。
-
-可选 `monitoring` 是独立 Hertz 监听，当前仅允许字面量 loopback TCP 地址，提供 `/livez` 和 `/readyz`；`MonitoringAddress()` 返回实际端口。两者返回 typed JSON status 字符串：存活为 alive，当前就绪为 ready，依赖/生命周期未就绪为 unready（503）。`Live()` 仅判断 Run 是否仍拥有进程，包含启动与 drain，不因依赖短暂失败报死；Ready/CheckReady 则在停止前撤销。健康响应不回显依赖原因或配置。
-
-标准 gRPC Health Check/List/Watch 同样调用 CheckReady，支持空 service 聚合名及 `<name>.grpc` 逻辑名；未知 Check 返回 NotFound，未知 Watch 报 SERVICE_UNKNOWN。List 对两个已知名字给出同一快照。Watch 每 250ms 检查一次，仅发送状态变化，检查本身受流 context 限制；最多四条并发 Watch，额外请求 ResourceExhausted，不排队。原有强制 native deadline 继续生效，ticker/准入随 handler 退出释放，无额外后台循环。完整证据见 [P02.8.2](validation/P02-08-02.md)。
-
-实际证据见 [P02.2](validation/P02-02.md)。P02.3–P02.7.4 已接入日志、PostgreSQL/Redis、JetStream 同步发布、Nacos 查询与注册/心跳/注销、mTLS unary gRPC 调用工厂，验证 Hertz API 发现并调用两个 Deer 节点；P02.8–P02.11 已接入配置、健康、指标、请求关联、六角色独立进程、框架日志、持久开发资源及固定 Go 镜像。公共运行层 A02/A26 和 Linux CI 已通过，P02 完成；API 鉴权/统一响应/OpenAPI 与交易业务按后续任务实现。DeerApi/NewDeerApi 拼写按用户指令保留，对这两处使用精确的 revive 命名规则例外，其余规则仍运行。
-
-## 已实现的资源所有权基础
-
-P02.1 已实现 Cleanup(ctx) error 与 Initializer{Name, Open}：资源获取前校验计划，失败时逆序释放全部已获取资源，保留原始初始化错误与释放错误；部分初始化失败也须返回 cleanup。清理同步执行，具有独立超时上下文，重复/并发调用只释放一次。资源回调须遵守上下文并负责自己创建的连接或 goroutine。
-两个服务构造函数已在 P02.2 接入该基础；所有权层的原始范围和证据见 [P02.1](validation/P02-01.md)。
-
-## 业务工作器生命周期
-
-P04.9 的 `ServiceSpec.Workers(ctx, owner)` 在公共依赖初始化后、监听器装配前同步返回工作器计划；不启动任务、不保留构造 context、不自行获取新的资源所有权。通过 Deer getter 借用数据库/消息客户端等依赖，实际 handler 注册仍由 RegisterGRPC/Routes 完成。最多32个工作器，每个有唯一的1..64字节安全名称和阻塞 `Run(ctx) error`，可选只读 `Check(ctx) error`。
-
-Run 随 Kratos 服务启动，Deer 负责取消、等待和失败传播。工作器启动且 Check 成功后才允许 readiness；CheckReady 同时检查当前工作器状态/检查函数。任何任务提前返回（包括返回 nil）视为异常，撤销 readiness、停止同进程其他任务与监听器，并注销已发布实例；不会在同一进程偷偷重启任务或以 Nacos 在线身份授权交易。
-
-正常停止及启动失败均等待已开始的工作器退出，然后才逆序关闭公共依赖。构造成功但从未 Run 时，cleanup 不调用工作器 Run；装配失败同样不启动部分计划。任务必须响应取消并等待自己产生的子工作；如果违反该约定，停止超时会记录错误，依赖仍不会在任务未退出时被提前关闭。此契约与已有 handler drain 一致。
-
-单元/race/goleak 验证停止顺序、异常兄弟取消、启动检查失败及未运行清理；真实 Nacos 验证工作器失败后服务退出并注销，见 [P04.9](validation/P04-09.md)。具体 execution/portfolio 工作器装配继续后续步骤。
-
-## PostgreSQL/GORM
-连接数、空闲数、最大生命周期、语句超时、连接超时显式配置；context 贯穿；事务由调用方拥有。支持明确事务回调，不通过全局变量切换 DB。空值和 Select 更新语义必须验证；禁止 Updates(struct) 无意忽略 0/false。
-所有数据操作显式以 db.WithContext(ctx).Model(&model.X{}) 绑定生成模型，事务内使用 tx.WithContext(ctx).Model(&model.X{})；禁止任何 DB 变量上的 .Table(...)，公共组件不得提供接收表名的绕过接口。每张表必备 Id 自增主键、createAt/updateAt NOT NULL、deleteAt 可为 NULL，字段映射及生成要求见 PROTO_AND_MODEL.md。
-
-P02.4 实现 deer/postgres.Client：Postgres Proto 显式提供 TCP host/port、database、username、password_env、池参数及四种超时；密码只在构造时从环境变量引用读取，不保存在配置 Proto，运行中不自动重载。ssl_mode 缺省 verify-full，也支持显式 require/disable；root_cert_file 可配置。schema 缺省 public，只接受最多 63 字节的小写 ASCII 标识符，通过连接 search_path 指定，业务数据访问继续使用生成 Model。
-
-max_open_conns 为 1..1024，max_idle_conns 为 0..max_open_conns；max_lifetime、max_idle_time、connect_timeout 必须为正且可精确表示为 Go duration。statement_timeout 必须为 1..2147483647 的整数毫秒；会话固定 UTC。连接池显式 PingContext，GORM 禁用无上下文自动 ping；不自动迁移。GORM 不打印 SQL/参数，查询错误交回调用边界处理。
-
-NewDeer 在日志之后、业务依赖之前创建配置中的 PostgreSQL，停止时逆序释放。DB() 返回借用的 *gorm.DB；未配置时返回 ErrPostgresNotConfigured，注册回调可据此拒绝缺少必要依赖的服务。Client.Ping/Stats 可用于活性检查与指标，Client.Close 幂等，服务拥有池生命周期。连接错误的文本不输出 DSN/密码，原始原因通过 errors.Is/As 保留。证据见 [P02.4](validation/P02-04.md)。
-
-## Redis / NATS
-Redis 键包含环境、服务、资源类型，TTL 显式。NATS subject 区分环境与事件版本；发布带 event_id；JetStream consumer durable、AckExplicit、重试上限和人工恢复规则有配置。达到 MaxDeliver 的事件要有可观测的隔离/重投流程，不假设自动存在 DLQ。
-
-P02.5 实现 deer/redis.Client 作为可重建的 standalone 字符串缓存，不能充当权威账本或执行所有权。Redis Proto 显式配置 address（TCP host:port）、非负 database、可选 username/password_env、key_prefix、pool_size 及五种正 duration。key_prefix 至少含环境和服务两段，例如 `development:market`，只含 ASCII 字母、数字、点、下划线、连字符及分隔冒号；各段非空，总长不超过 128。业务传入 `quote:BTC-USDT` 等带资源类型的相对键，实际键为 `<prefix>:<relative>`；副本共享前缀，禁止将 instance_id 加入共享缓存前缀。
-
-New 在构造时复制配置、解析密码引用并有界 PING。TLS 缺省开启，验证主机名，最低 TLS 1.2，可指定 root_cert_file；仅隔离开发环境显式 tls_enabled=false。pool_size 为 1..1024，同时设置 MaxActiveConns/MaxConcurrentDials；禁用额外 pipeline pool、命令重试、重复 dial 尝试、维护通知和身份协商。connect_timeout、command_timeout、pool_timeout、max_idle_time、max_lifetime 均须为正且能精确表示为 Go duration。
-
-Get/Set/Delete/Ping 接收 context，命令使用调用方与 command_timeout 中较早的 deadline；已取消上下文不会发命令。网络 I/O 中途取消的响应仍受已设置的 socket deadline 约束，不能承诺无 deadline 的取消即时中断。Set 的 TTL 必须为正整数毫秒；值为 string，小数不经浮点转换。Get 缺失返回 ErrNotFound；SET 超时代表结果未知，调用方不能据此认定未写入，本层不重放命令。错误文本隐藏地址/口令，原始原因保留给 errors.Is/As。
-
-Deer 在 PostgreSQL 之后、业务依赖之前初始化 Redis，停止时逆序关闭；Redis() 返回借用客户端，未配置返回 ErrRedisNotConfigured。CheckReady 和启动 readiness 包含实际 PING。Close 幂等且关闭全部池和连接；SDK 失败 dial 的辅助恢复探针可能在 Close 后等待一个连接超时及一秒定时器才退出，不重放业务命令。单连接失败用虚拟时间验证有界退出，未添加 goleak 忽略项；此范围及真实 Redis 证据见 [P02.5](validation/P02-05.md)。Cluster/Sentinel、PubSub、锁和权威数据接口未开放。
-
-P02.6 实现 deer/jetstream.Client 与借用的 Deer.JetStream()，位于 Redis 之后初始化并逆序关闭；未配置返回 ErrJetStreamNotConfigured。JetStream Proto 指定单一 TCP address、已部署的 stream、`muskdeer.<environment>.<service>` subject_prefix、可选 token_env、connect_timeout/command_timeout、max_inflight（1..1024）、max_message_bytes（1..1048576）及默认开启的 TLS/可选根证书。TLS 验证主机名且最低 1.2；不在配置中存放 token。构造复制配置，TCP/握手共用调用方与 connect_timeout 的较早期限；取消关闭初始 socket，连接完成后移除构造上下文引用。
-
-应用不创建/修改 stream。构造及健康检查读取实际流配置，要求允许 ACK、未 sealed，且 Subjects 明确包含 `<subject_prefix>.>`；共享流应列出各服务的此类前缀，只有祖先通配符的配置会被拒绝。此检查不替代 broker 账户 ACL、持久化副本和容量配置。
-
-Publish(ctx, suffix, eventID, proto.Message) 有界准入、确定性 Protobuf 编码并同步等待存储确认；suffix 如 `order.state.v1`，eventID 为最多 128 字节 ASCII 字母/数字/点/下划线/连字符/冒号，须在整个 stream 内稳定且唯一。拒绝空白和换行，支持 `intent:<id>:<revision>` 等稳定业务键。设置 Nats-Msg-Id/预期 stream，返回 Stream/Sequence/Duplicate；消息借用至调用返回，不能并发修改。业务 envelope、变体及小数校验由 [OMS outbox](OMS.md) 完成。
-
-`OpenConsumer(ctx, durable, suffix)` 仅绑定已有 pull durable；要求相同 stream、明确单 subject、DeliverAll/ReplayInstant、AckExplicit、2秒至5分钟 AckWait、1..100 MaxDeliver、1..1024 MaxAckPending、1..64 MaxWaiting，拒绝自动过期与覆盖 AckWait 的 BackOff。每次拉取前重新检查实际范围/配置；AckWait 改变须重新构造句柄。不会创建、更新或删除 broker 资源。
-
-`Consumer.ConsumeOne` 要求 native deadline，每个句柄最多1个处理中消息，处理总期限进一步限制为 AckWait 的一半。校验 metadata、唯一安全 message ID、Content-Type、大小和有界 Proto 解析后才调用借用的 typed handler；handler 成功后执行确认 ACK。取消、坏消息、handler错误或 ACK 不确定都返回错误，本次不重试、不自动丢弃、不提前 ACK。空拉取返回 false,nil。`DeliveryError` 保留 stream/durable/sequence/attempt/hash 和 cause，文本不包含原始 payload。达到 MaxDeliver 的消息不会自动进入 DLQ，人工隔离/恢复继续 P09。
-
-禁用 SDK 发布重试、重连缓存、自动重连及发现到的其他服务器；首版连接断开后安全拒绝，需重建客户端/重启进程。该恢复监督将在后续服务恢复步骤接入，当前不宣称自动恢复或 HA。命令期限覆盖准入及等待 ACK；超时可能已落盘，重试由持久化 outbox 的所有者决定。Broker 去重只作用于有限窗口，同 ID 不会验证 payload 指纹，不能替代数据库 inbox/成交唯一键；业务持久化指纹、事务及重投在 P03/P04 完成。
-
-Close 先拒绝准入，关闭连接并等待终态回调，重复关闭幂等；已确认发布已落盘，进行中的发布仍可能不确定。未开放 consumer、异步发布或无范围的 SDK 句柄，不调用异步 Drain 来暗示未知发布已获确认。真实 ACK 丢失/去重、命名空间、失败清理等证据见 [P02.6](validation/P02-06.md)；consumer AckExplicit/MaxDeliver、隔离恢复、outbox/inbox 和 broker 集群故障验收尚未完成。
-
-## gRPC / Nacos
-服务名、namespace、group、实例 ID、端口、健康与注销规则统一。gRPC 客户端设置截止时间；只对已定义幂等操作重试。启动注册必须晚于依赖就绪。健康区分进程存活与可服务；租约丢失不应继续报告“可执行交易”。
-
-`grpc_security` 为 gRPC server 配置双向 TLS：`mtls.certificate_file/private_key_file/root_cert_file` 引用独立提供的 PEM 文件，`allowed_peer_services` 明确允许的调用方服务 DNS SAN，例如 `api.grpc`。证书必须包含本服务 `<name>.grpc` 的精确 SAN，服务器证书在构造时须处于有效期。使用 TLS 1.3、受信 CA 链及客户端证书，额外匹配许可中的精确 SAN，拒绝通配许可；请求 header/metadata 不能替代证书身份。未配置时仅允许字面量 loopback 监听，非 loopback 必须启用 mTLS；此例外只供隔离本地测试。
-
-`deer/rpcsecurity.Client` 加载调用方的精确服务证书，按受信 CA 与期望被调服务的精确 DNS SAN 验证对端，身份不由 Nacos 返回的 IP 决定。加载的配置为实例独立快照，没有全局证书状态。证书轮换当前需要重建实例，未实现热加载；业务用户权限、最终执行 fencing、运行中证书到期的健康/告警仍须分别接入。过程身份许可不等同于管理用户权限。实连安全边界见 [P02.7.3](validation/P02-07-03.md)。
-
-P02.7.1 实现基于固定 Nacos 2.5.2 OpenAPI 的 deer/nacos.Client，原因见 [ADR 0003](decisions/0003-context-bound-naming.md)。配置显式指定 address（TCP host:port）、私有 namespace_id、group、cluster、username/password_env、两类正 duration 及 max_inflight 1..64；TLS 默认开启，可设根证书，禁止 URL 内嵌身份。客户端不读环境代理、不跟随重定向；认证使用 Bearer header，不将 token 放入 URL，密码只在登录表单。token 缓存至服务端有效期的 80%，之后由下次操作刷新；失效请求返回错误，下一请求再认证，不在失败操作内重放。
-
-Deer 在 JetStream 后初始化，Discovery() 返回借用客户端，缺失配置返回 ErrNacosNotConfigured；getter 不发请求。GetService(ctx, "market.grpc") 每次读实际 API，返回 typed Instance，不保留本地实例快照；过滤不健康/disabled/零权重/其他集群及协议。Nacos 既有数字权重以 json.Number 接收后直接转 decimal.Decimal，仅用于过滤，不进入业务协议或浮点中转。身份重复、无效地址、畸形/超大响应安全拒绝。并发准入和连接受配额限制，响应上限 1 MiB/1024 实例，期限涵盖等待、认证与读取。Close 撤销准入、取消并 join 请求后释放连接，API 装配失败也逆序清理。
-
-启动及实时健康会在同一 scope 查询 `deer-readiness.grpc`，账户需有该 READ 权限，不要求存在服务提供者；namespace 由部署方预建。认证/查询证据见 [P02.7.1](validation/P02-07-01.md)；测试管理员样例不作为生产 ACL/TLS 或跨版本证据。
-
-可选 `nacos.registration` 启用本服务 gRPC 地址发布，必须同时配置 gRPC listener。`advertise_ip` 为明确的单播地址；端口使用实际预留端口，不能把监听通配地址当作发布地址。`heartbeat_interval` 为 50–5000 整毫秒。未配置 registration 的出站消费者保持仅查询能力。服务名为 `<name>.grpc`，metadata 包含 Deer instance_id、version 与协议。
-
-Deer 在 listener 接受连接、公共依赖通过健康检查后注册 ephemeral 实例，成功才就绪；受实例拥有的循环发送 light heartbeat，启动 context 不保留为后台所有权。心跳失败即撤销就绪并终止 Run，保留错误，不自动重试注册或重建丢失记录。Health 检查心跳新鲜度；正常停止先撤销就绪、取消并 join 心跳、注销，再停止 transport/公共依赖。注册超时结果可能未知，启动回滚也尝试注销；未启动的实例不发注销请求。
-
-Nacos HTTP 实例身份是 namespace/group/service/IP/port/cluster，Deer ID 仅为 metadata，不提供条件删除或 fencing。并发 publisher 必须使用不同发布端点，不能把重用端口当作所有权切换协议。注册在线或心跳成功都不授权交易，最终执行仍须验证后续数据库租约/epoch。真实两节点和外部删除测试见 [P02.7.2](validation/P02-07-02.md)，该历史测试为同一进程内的独立 Deer；P02.10.1 另以实际二进制验证两个独立 market 进程的发布、mTLS Health 调用和独立注销。生产 ACL/TLS 与完整业务故障恢复矩阵仍待后续验证。
-
-可选 `grpc_clients` 装配 unary 调用工厂，必须同时配置 Nacos；包含独立 mTLS 文件、允许的目标服务、连接/总请求期限、并发及消息字节上限。`GRPCClients()` 返回借用的 Factory；`Client(Target{Service: "execution.grpc", InstanceID: ownerID})` 返回兼容生成 client 的 facade，getter 不连接网络。每个 Invoke 实时发现，只发送到指定实例；InstanceID 为空才允许按无状态服务选择节点。发现失败/目标缺失不使用旧地址或隐式换 owner。总期限包括等待准入/发现/建连/RPC，配置请求预算须在停止预算内。
-
-Factory 持有每次调用的连接，返回即关闭；关闭工厂取消并 join 在途请求，再释放 Nacos。mTLS 验证服务 DNS 身份，网络地址只来自已验证 naming 记录；连接不读取环境代理。只接受 typed Proto 消息，限制编码前请求大小和收发字节上限，调用者不能提高上限。禁用业务消息重放的 native gRPC 边界、暂不复用连接/watch 和 unary 范围见 [ADR 0004](decisions/0004-bounded-unary-rpc.md)，行为及实际 Hertz→Nacos→mTLS gRPC 链路见 [P02.7.4](validation/P02-07-04.md)。流调用目前明确返回 Unimplemented，后续按真实流合同实现所有权。
-
-远端返回 DeadlineExceeded/Canceled 可能早于本地 context 计时器发布 Err；工厂保留原始 gRPC status，并补上可供 errors.Is 识别的 context.DeadlineExceeded/context.Canceled。该 cause 表示 RPC 的截止/取消结果，不等于调用方自己的 context 已结束；需要区分时直接检查调用方 ctx.Err()。不会据此自动重试。
-
-## API 统一返回
-JSON: {code, message, data, request_id}。分页 data: {items, next_cursor}；cursor 不暴露数据库内部细节。成功 200/201；异步操作 202 带 operation_id；参数 400，未认证 401，无权限 403，不存在 404，版本冲突 409，限流 429，依赖不可用 503。禁止所有错误都 HTTP 200。
-业务错误映射 gRPC status 及 HTTP；内部日志记录根因，前端返回安全信息。request_id 通过 middleware/interceptor 传递；未知传入值校验长度。
-
-P02.9.2 已接通请求关联：HTTP 与 gRPC 共用 `x-request-id`，单个 1–64 字节安全 ASCII 值可沿用；缺失、非法、多值生成独立 128 位 hex 编号。header 回传，typed context 贯穿 handler、unary 工厂出站和 gRPC，保留 native cancellation/deadline。requestid.FromContext(ctx).String() 供业务 envelope/事件使用；request ID 仅用于关联，不能作为身份/权限、幂等键或执行凭证。
-
-Logger.LogAttrs/Slog.InfoContext 自动将 context ID 写在根 request_id，WithGroup/WithAttrs 保持根字段且不能覆盖。无 context 的 Kratos key/value Log 接口仍可提供显式编号并验证。编号不进入指标 label；实际一致性和 race 证据见 [P02.9.2](validation/P02-09-02.md)。Kratos 应用 Logger 选项会修改全局状态，本封装不在构造/运行时按实例切换它；P02.10.1 仅在独立进程入口安装一次 SDK 桥接，边界见下节。
-
-## 独立进程入口
-
-`cmd/muskdeer` 按显式 `-role` / `-config` 启动一个独立服务：api 使用 NewDeerApi，其余五种角色使用 NewDeer。配置 name 必须匹配角色，monitoring 必需；四个业务角色要求 gRPC。构建产物、六份本地配置与运行/停止命令见 [运维说明](OPERATIONS.md)。当前为公共运行层，业务 RPC、cron 任务和管理页面按后续任务接入。
-
-`ServiceSpec.SetupProcessLogging(ctx, ownedLogger)` 是仅供全新独立进程使用的同步 hook，在自有日志之后、所有 SDK 依赖之前执行，返回的 Cleanup 在 SDK 使用者全部退出后、日志关闭前执行；失败走同一逆序回滚。默认 nil，不改变通用构造器的实例隔离。进程入口只安装一次 Kratos/Hertz global adapter，不在多实例通用构造/Run 中切换全局状态。
-
-适配器输出安全 `framework.event`，保留级别、框架、静态函数/行号及参数数量；丢弃可能含秘密的第三方格式文本/参数值。应用生命周期使用单独的结构化事件记录实际 listener 地址。上下文可用时保留请求编号。恢复 Hertz 通过原 default logger 重建 system wrapper，要求此前未自定义 system logger；调用方须等 SDK goroutine 退出后恢复。证据见 [P02.10.1](validation/P02-10-01.md)。
-
-## 日志
-Kratos log 接口由结构化日志后端适配，lumberjack 实现文件大小轮转。配置 filename、max_size_mb、max_backups、max_age_days、compress、stdout；每节点独立路径。字段包含 service、instance、request_id、strategy_id、operation、error_code；敏感信息脱敏。
-
-P02.3 已实现 deer/logging，并由 NewDeer 在所有业务依赖之前创建、最后关闭；DeerApi 复用该实例。ServiceConfig.logging 缺省 stdout INFO，显式 Logging 需启用 stdout 或提供完整 LogFile。文件配置 filename 为基路径，实际文件为 `<目录>/<service>/<instance>/<文件名>`；独占锁拒绝相同文件的并发写入。ServiceSpec.LogOutput 可覆盖借用的 stdout 输出，实例清理不关闭该输出。
-
-Deer.Logger() 返回借用的日志实例；LogAttrs 返回写错误，Slog() 适配标准 API，Log 实现 Kratos Logger 接口。调用者不得自行关闭服务拥有的 logger。级别支持 debug/info/warn/error；文件大小 1..1024 MiB，max_backups 为正，max_age_days 为 1..36500。配置在构造时复制，运行中不修改。
-
-使用有来源记录的同步 lumberjack 维护版本，保持单 go.mod 和完整 race/goleak 检查；选择原因及同步 I/O 代价见 [ADR 0002](decisions/0002-owned-logging.md)，验证见 [P02.3](validation/P02-03.md)。结构化敏感 key/group 脱敏，decimal 输出 string，任意对象不直接写入日志；固定消息与错误文本仍须由调用者保证不含秘密。P02.9.2 已注入请求编号，P02.10.1 的独立进程入口接入框架日志桥接。
-
-## 可观测性
-/metrics 与健康端口走内网授权。指标包括行情年龄、报价偏离、gRPC 延迟、订单 UNKNOWN 数、撤单延迟、对冲积压、租约丢失、outbox 年龄。订单/成交 ID 只进日志，不进指标 label。存活检查不因短暂依赖故障反复杀进程；readiness 体现可服务状态。
-
-P02.9.1 已提供实例独立的 Metrics Registry 和 loopback monitoring /metrics，记录 http/grpc/probe 的计数、错误和延迟 histogram，以及 live/lifecycle_ready gauge；scrape 不计自身或查询依赖。所有标签域固定，纳秒直接转 decimal.Decimal，响应按标准 Prometheus 文本输出，不引入 Go 浮点计算。协议、PromQL 与范围见 [指标说明](METRICS.md) 和 [验证记录](validation/P02-09-01.md)。上段业务指标、远程授权抓取、trace/Grafana/告警继续分步实施。
+每个实例独立 JSON 日志及按大小轮转文件，日志/指标不含凭据、完整敏感请求或订单 ID 高基数标签。公共组件与服务归属见 [目录约定](PROJECT_LAYOUT.md)，生成与清理合同见 [Wire 装配](WIRING.md)。

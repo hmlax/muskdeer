@@ -20,6 +20,7 @@ import (
 
 // Application owns resources even when startup is canceled before Run.
 type Application interface {
+	Run(context.Context) error
 	Close(context.Context) error
 }
 

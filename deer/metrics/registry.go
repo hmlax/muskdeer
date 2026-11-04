@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	httpTransport = iota
-	grpcTransport
+	grpcTransport = iota
 	probeTransport
 	transportCount
 	latencyBucketCount = 11
@@ -37,13 +36,7 @@ type Registry struct {
 // New creates an isolated registry with a fixed label/bucket domain.
 func New() *Registry { return &Registry{} }
 
-// ObserveHTTP records an API request by status class, without raw route/ID labels.
-func (r *Registry) ObserveHTTP(status int, elapsed time.Duration) {
-	class := httpClass(status)
-	r.observe(httpTransport, class, class == 0 || class >= 4, elapsed)
-}
-
-// ObserveProbe separates local probe latency from business HTTP latency.
+// ObserveProbe records local monitoring requests by bounded HTTP status class.
 func (r *Registry) ObserveProbe(status int, elapsed time.Duration) {
 	class := httpClass(status)
 	r.observe(probeTransport, class, class == 0 || class >= 4, elapsed)
@@ -84,7 +77,7 @@ func (r *Registry) Render() []byte {
 	snapshot := r.traffic
 	r.mu.Unlock()
 	output := make([]byte, 0, 16*1024)
-	transports := [...]string{"http", "grpc", "probe"}
+	transports := [...]string{"grpc", "probe"}
 	classes := [...]string{"other", "1xx", "2xx", "3xx", "4xx", "5xx"}
 	// sum(rate(deer_requests_total[5m])) by (transport, code)
 	output = header(output, "deer_requests_total", "Total completed requests by transport and bounded status class.", "counter")

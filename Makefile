@@ -2,8 +2,8 @@
 
 doctor:
 	python3 scripts/go.py version
-	@for role in market strategy execution portfolio; do \
-		python3 scripts/go.py run ./cmd/doctor -config configs/local/$$role.json || exit $$?; \
+	@for role in market strategy execution portfolio cron; do \
+		python3 scripts/go.py run ./cmd/doctor -config configs/local/$$role || exit $$?; \
 	done
 
 test-tooling:
@@ -47,6 +47,7 @@ fmt-check:
 	python3 scripts/format.py --check
 
 lint:
+	python3 scripts/check-layout.py
 	python3 scripts/lint.py
 
 test:
@@ -62,16 +63,15 @@ build:
 	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
 	python3 scripts/go.py build -o .cache/bin/himalayainit ./cmd/himalayainit
 	python3 scripts/go.py build -o .cache/bin/himalayabaseline ./cmd/himalayabaseline
-	@for name in market strategy execution portfolio; do \
+	@for name in market strategy execution portfolio cron; do \
 		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
 	done
 
 verify: doctor contract-check generate-check hz-check sdk-check fmt-check lint policy-test test-tooling test test-race build
 
 build-fixtures: build
-	python3 scripts/go.py build -o .cache/bin/operator ./cmd/operator
-	@for role in market strategy execution portfolio cron; do \
-		python3 scripts/go.py build -o .cache/bin/module-$$role ./deer/testservice/$$role || exit $$?; \
+	@for role in market strategy execution portfolio; do \
+		python3 scripts/go.py build -o .cache/bin/module-$$role ./$$role/testservice || exit $$?; \
 	done
 
 integration: build-fixtures
@@ -90,7 +90,7 @@ dev-test: build
 	python3 scripts/dev-smoke.py
 
 image:
-	@for name in market strategy execution portfolio; do \
+	@for name in market strategy execution portfolio cron; do \
 		docker build --target runtime-$$name -t muskdeer-$$name:local . || exit $$?; \
 	done
 

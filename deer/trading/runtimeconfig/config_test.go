@@ -51,3 +51,11 @@ func TestBusinessRequiresExplicitModeAndAllOwnedDependencies(t *testing.T) {
 		}
 	}
 }
+
+func TestRemovedApplicationIdentitiesAreRejected(t *testing.T) {
+	for _, name := range []string{"operator", "api", "admin"} {
+		if err := ValidateConfig(&configv1.ServiceConfig{Name: name}); err == nil {
+			t.Fatalf("retired %s application was accepted", name)
+		}
+	}
+}

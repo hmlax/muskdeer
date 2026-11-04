@@ -79,11 +79,11 @@ func TestDeerReleasesLoggerAfterOtherDependencies(t *testing.T) {
 	}
 }
 
-func TestDeerApiOwnsConfiguredLogger(t *testing.T) {
+func TestMonitoringOwnsConfiguredLogger(t *testing.T) {
 	t.Parallel()
-	cfg := apiConfig("api-logging")
+	cfg := monitoringConfig("api-logging")
 	cfg.Logging = serviceLogConfig(t)
-	api, cleanup, err := NewDeerApi(t.Context(), cfg, APISpec{})
+	api, cleanup, err := newMonitoringFixture(t.Context(), cfg, monitoringFixtureSpec{})
 	if err != nil {
 		t.Fatal(err)
 	}

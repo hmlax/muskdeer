@@ -8,47 +8,32 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	outboxcontract "github.com/hmlax/muskdeer/deer/trading/outboxcontract"
 )
 
-// Stable operation codes and transport subject suffix.
+// Record retains shared claim identity across worker and storage.
+type Record = outboxcontract.Record
+
+// Store is the shared durable claim interface.
+type Store = outboxcontract.Store
+
+// Publisher confirms broker storage for a shared execution event.
+type Publisher = outboxcontract.Publisher
+
+// Stable publication codes and subject are shared with consumers and storage.
 const (
-	CodePublishFailed         = "PUBLISH_FAILED"
-	CodeInvalidEvent          = "INVALID_EVENT"
-	ExecutionSubject          = "execution.order.v1"
-	MessagePersistenceFailure = "outbox persistence operation failed"
-	messageOperationFailed    = "outbox publication operation failed"
-	messageClaimLost          = "outbox claim is no longer current"
-	messageInvalidRecord      = "invalid outbox record or call"
+	CodePublishFailed      = outboxcontract.CodePublishFailed
+	CodeInvalidEvent       = outboxcontract.CodeInvalidEvent
+	ExecutionSubject       = outboxcontract.ExecutionSubject
+	messageOperationFailed = "outbox publication operation failed"
 )
 
-// Errors preserve typed failure classification without database/broker text.
+// Errors preserve shared claim and validation identity.
 var (
-	ErrClaimLost     = errors.New(messageClaimLost)
-	ErrInvalidRecord = errors.New(messageInvalidRecord)
-	ErrInvalidEvent  = errors.New(CodeInvalidEvent)
+	ErrClaimLost     = outboxcontract.ErrClaimLost
+	ErrInvalidRecord = outboxcontract.ErrInvalidRecord
+	ErrInvalidEvent  = outboxcontract.ErrInvalidEvent
 )
-
-// Record carries a proposed row claim; expiry and owner are verified by Store.
-type Record struct {
-	ID        int64
-	Owner     string
-	ExpiresAt int64
-	Event     *commonv1.ExecutionEvent
-}
-
-// Store uses database time and row claims. Complete must reject stale owners.
-type Store interface {
-	Claim(ctx context.Context, owner string, ttl time.Duration) (*Record, error)
-	Complete(ctx context.Context, record *Record) error
-	Retry(ctx context.Context, record *Record, code string, delay time.Duration) error
-	Fail(ctx context.Context, record *Record, code string) error
-}
-
-// Publisher confirms storage once and never retries internally.
-type Publisher interface {
-	Publish(ctx context.Context, event *commonv1.ExecutionEvent) error
-}
 
 // Worker borrows its dependencies and starts no background task.
 type Worker struct {

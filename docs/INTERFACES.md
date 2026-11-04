@@ -1,5 +1,7 @@
 # 接口、状态与事件约定
 
+2026-11-04：operator/API 运行入口、DeerApi 及旧组合夹具已删除；market、strategy、execution、portfolio、cron 各自提供 gRPC 健康接口。cron 当前只有健康/生命周期能力，默认部署四交易核心。本文旧 API/角色描述仅为历史记录；当前目录、配置与运行合同以 [目录说明](PROJECT_LAYOUT.md)、[核心服务](CORE_SERVICES.md)、[Deer](DEER.md) 和 [Nacos](NACOS_CONFIG.md) 为准。
+
 2026-11-03 当前接口为四核心服务的 gRPC，契约位于 deer/proto/rpc。下述管理 HTTP/Web 内容作为历史设计保留，相关路由和应用已删除；核心入口不启用管理 RPC。
 
 本文包含概念管理合同与分步落实的内部合同；P03.6 已生成 [Execution typed Proto](../deer/proto/rpc/execution/v1/execution.proto) 和 Submit/Cancel 输入边界，见 [交易合同](TRADING_CONTRACT.md)。P07.3已接入[登录/会话/注销HTTP](ADMIN_HTTP.md)，P07.7接入[StrategyManagement typed Proto](../deer/proto/rpc/strategy/v1/management.proto)的授权列表/详情/版本查询，P07.8由Hertz经实际gRPC提供只读HTTP，P07.9提供实际只读页面，见[查询合同](ADMIN_STRATEGIES.md)和[HTTP/页面协议](ADMIN_HTTP.md)。P07.11显式开启独立StrategyControl的typed运行请求/结果gRPC及托管观测，见[控制合同](ADMIN_CONTROL.md)。P07.13接入同源控制/结果HTTP，P07.14提供启停确认与独立操作结果页面，P07.16接入[真实账户/交易对/feed目录typed gRPC](../deer/proto/rpc/strategy/v1/catalog.proto)及HTTP；P07.18接入[typed创建gRPC](../deer/proto/rpc/strategy/v1/creation.proto)及同源HTTP；P07.19接入创建表单；P07.21提供[发布事务](ADMIN_PUBLICATION.md)及待激活风险门禁；P07.22接入[typed发布gRPC](../deer/proto/rpc/strategy/v1/publication.proto)和同源HTTP；P07.23接入发布参数与换源表单；各能力的实际交付范围以[进度](PROGRESS.md)及对应验证为准，下面的概念接口不能视作已实现清单。

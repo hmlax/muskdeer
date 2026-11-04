@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
 
@@ -24,7 +25,7 @@ func main() {
 func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	flags := flag.NewFlagSet("doctor", flag.ContinueOnError)
 	flags.SetOutput(diagnostic)
-	path := flags.String("config", "", "local protobuf JSON configuration file")
+	path := flags.String("config", "", "local paired YAML directory or explicit regression JSON file")
 	if err := flags.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return 0
@@ -34,7 +35,7 @@ func run(ctx context.Context, args []string, output, diagnostic io.Writer) int {
 	if *path == "" || flags.NArg() != 0 {
 		return diagnosticExit(diagnostic, "doctor requires -config and no positional arguments", 2)
 	}
-	cfg, err := deer.LoadConfig(ctx, *path)
+	cfg, err := loadConfig(ctx, *path)
 	if err != nil {
 		return diagnosticExit(diagnostic, err, 1)
 	}
@@ -55,4 +56,15 @@ func diagnosticExit(output io.Writer, message any, code int) int {
 		return 1
 	}
 	return code
+}
+
+func loadConfig(ctx context.Context, path string) (*configv1.ServiceConfig, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if info.IsDir() {
+		return deer.LoadSplitConfig(ctx, path)
+	}
+	return deer.LoadConfig(ctx, path)
 }

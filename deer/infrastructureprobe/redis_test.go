@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudwego/hertz/pkg/app/server"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/redis/go-redis/v9/maintnotifications"
 	"google.golang.org/grpc"
@@ -31,7 +30,7 @@ func TestRedisInfrastructure(t *testing.T) {
 	t.Run("deadline bounds a paused server command", testCacheDeadline)
 	t.Run("exhausted pool waits within caller budget", testCachePoolLimit)
 	t.Run("deer dependencies and readiness", testCacheReadiness)
-	t.Run("API failure closes shared cache", testCacheAPIRollback)
+	t.Run("RPC failure closes shared cache", testCacheRegistrationRollback)
 	t.Run("authentication error preserves safe cause", testCacheAuthentication)
 }
 
@@ -218,20 +217,14 @@ func testCacheReadiness(t *testing.T) {
 	}
 }
 
-func testCacheAPIRollback(t *testing.T) {
+func testCacheRegistrationRollback(t *testing.T) {
 	cfg := serviceConfig(t, "api-cache-rollback")
 	cfg.Redis = redisConfig()
-	cfg.Http = &configv1.Listener{
-		Address:        "127.0.0.1:0",
-		RequestTimeout: durationpb.New(time.Second),
-	}
-	failure := errors.New("route assembly rejected")
+	failure := errors.New("RPC registration rejected")
 	var cache *redis.Client
-	api, cleanup, err := deer.NewDeerApi(t.Context(), cfg, deer.APISpec{
-		Service: deer.ServiceSpec{
-			LogOutput: io.Discard,
-		},
-		Routes: func(_ context.Context, owner *deer.Deer, _ *server.Hertz) error {
+	api, cleanup, err := deer.NewDeer(t.Context(), cfg, deer.ServiceSpec{
+		LogOutput: io.Discard,
+		RegisterGRPC: func(_ context.Context, owner *deer.Deer, _ grpc.ServiceRegistrar) error {
 			var err error
 			cache, err = owner.Redis()
 			if err != nil {
@@ -241,10 +234,10 @@ func testCacheAPIRollback(t *testing.T) {
 		},
 	})
 	if api != nil || cleanup != nil || !errors.Is(err, failure) {
-		t.Fatalf("API initialization = %v, cleanup nil %v, %v", api, cleanup == nil, err)
+		t.Fatalf("RPC initialization = %v, cleanup nil %v, %v", api, cleanup == nil, err)
 	}
 	if cache == nil || cache.Ping(t.Context()) == nil || cache.Stats().TotalConns != 0 {
-		t.Fatal("API failure did not release shared Redis")
+		t.Fatal("RPC failure did not release shared Redis")
 	}
 }
 

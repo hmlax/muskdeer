@@ -20,7 +20,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 )
 
-func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceConfig, error) {
+func validateConfig(cfg *configv1.ServiceConfig) (*configv1.ServiceConfig, error) {
 	if cfg == nil {
 		return nil, errors.New("service configuration is required")
 	}
@@ -38,8 +38,8 @@ func validateConfig(cfg *configv1.ServiceConfig, api bool) (*configv1.ServiceCon
 			return nil, err
 		}
 	}
-	if api != (cfg.Http != nil) {
-		return nil, errors.New("HTTP listener is required only for NewDeerApi")
+	if cfg.Http != nil || cfg.AdminHttp != nil {
+		return nil, errors.New("management HTTP has been removed; use gRPC and local monitoring")
 	}
 	if cfg.Nacos.GetRegistration() != nil && cfg.Grpc == nil {
 		return nil, errors.New("nacos publication requires a gRPC listener")

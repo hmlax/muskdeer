@@ -1,8 +1,10 @@
 # 运行概览
 
+2026-11-04：API 服务观测实现和专用 DTO 已移除，下文为历史验收，代码链接固定到删除前提交。当前服务各自提供标准 gRPC 健康接口，见 [核心服务](CORE_SERVICES.md)。
+
 历史存档：本页管理 HTTP/Web 的应用和交付工具已于 P14 移除；保留原设计与验收记录。后端领域、RPC 和历史迁移是否仍存在，以当前源码和 PROGRESS 为准。
 
-P07.51交付[AdminOverview只读仓储](../deer/trading/domain/admin_overview.go)，P07.52接通[typed gRPC](../deer/proto/rpc/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](../deer/trading/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](../deer/proto/rpc/admin/v1/services.proto)，P07.55提供[运行概览页面（历史）](https://github.com/hmlax/muskdeer/blob/1da88473d9a59272c26ccc2526be6f899aed0ba5/web/admin/src/overview.tsx)。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
+P07.51交付[AdminOverview只读仓储](../deer/trading/domain/admin_overview.go)，P07.52接通[typed gRPC](../deer/proto/rpc/strategy/v1/overview.proto)与管理HTTP读取；P07.53补充[实际服务观测读取器](https://github.com/hmlax/muskdeer/blob/14960f47827538e3220c9747af4eadd7f4128d82/deer/trading/serviceoverview/observer.go)，P07.54接通[typed服务HTTP消息](https://github.com/hmlax/muskdeer/blob/14960f47827538e3220c9747af4eadd7f4128d82/deer/proto/rpc/admin/v1/services.proto)，P07.55提供[运行概览页面（历史）](https://github.com/hmlax/muskdeer/blob/1da88473d9a59272c26ccc2526be6f899aed0ba5/web/admin/src/overview.tsx)。服务观测使用现有Deer实际readiness和新鲜发现查询，不以Nacos在线或存储RUNNING冒充可交易证明。
 
 ## 策略数据库观测
 

@@ -52,7 +52,7 @@ func LoadNacosConfig(ctx context.Context, expectedName string) (result *configv1
 	registration := proto.CloneOf(cfg.GetNacos().GetRegistration())
 	cfg.Nacos = proto.CloneOf(connection)
 	cfg.Nacos.Registration = registration
-	validated, err := validateConfig(cfg, cfg.Http != nil)
+	validated, err := validateConfig(cfg)
 	if err != nil {
 		return nil, configFailure("validation", err)
 	}

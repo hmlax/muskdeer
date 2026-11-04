@@ -4,8 +4,9 @@
 开发连接既有交易所的自营做市与策略交易 MVP。先阅读 README.md、docs/PRD.md、docs/ARCHITECTURE.md、docs/IMPLEMENTATION_PLAN.md、docs/PROGRESS.md。用户最新明确指令优先；既有仓库指令与本文件冲突时先记录并解决，不静默覆盖。
 
 ## 已确认工程约束
+- 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
 - Go 版本在 go.mod 声明，当前为 1.27.3；开发、代码生成、测试、CI 与构建使用对应工具链。按用户最新要求，应用、维护命令及探针不再用 runtime.Version() 做启动版本判断，不硬编码运行时版本拒绝条件。P01 工具链核验及构建版本锁定记录保留；禁止 rc/beta、latest 或浮动版本代替。
-- 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；DeerApi/NewDeerApi 仅保留通用传输与生命周期测试能力，当前没有管理 HTTP 应用，详见 docs/DEER.md。
+- 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；DeerApi/NewDeerApi 和 operator/API 运行入口按 2026-11-04 最新要求直接移除，Hertz 仅保留公共本地监控能力，详见 docs/DEER.md。
 - 外部 HTTP 使用 Hertz，服务生命周期使用 Kratos，内部通信使用 gRPC；注册发现使用 Nacos。禁止替换成 Kitex、Gin 或 Kratos HTTP。
 - 2026-11-02 后续明确指令优先：当前仅交付核心 Kratos 服务，各模块分别独立进程、独立 cmd 入口，不使用共用命令加 role 参数。已实现的 market、strategy、execution、portfolio 分别使用 Deer 提供 gRPC/业务工作循环；默认构建和 Compose 不再部署 admin、operator 或管理前端。保留单仓库、单 go.mod；每进程公共依赖只装配一次。此项替代此前两应用部署约定。
 - 四个核心服务分别使用 <service>/cmd/{main.go,wire.go,wire_gen.go} 与各自 internal/app/{config.go,workplan.go,server.go,app.go,providers.go}；Wire ProviderSet 生成配置、工作计划、日志、服务定义及 App 的依赖调用。main 从 env/Nacos 加载配置并调用生成 injector，internal/app 独立维护本服务 Deer 生命周期及 typed 业务构造/RPC/worker 注册，继续共用根 go.mod；其他 cmd 命令原样保留。禁止用共用 Run(ctx, name, ...) 或按服务名分发的工厂装配核心进程。coreentry 只保留健康/取消工具，历史组合装配仅供旧入口兼容。
@@ -17,7 +18,7 @@
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
 - gRPC 服务合同与生成代码位于 deer/proto/rpc/<service>/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
 - 2026-11-03 用户确认业务实现按项目下沉，公共领域、租约及跨服务事务仓储继续共用，不重划资金/幂等/fencing 事务边界。行情/策略/执行/持仓代码归所属项目，公共交易合同与事务仓储归 deer/trading，数据库迁移归 deer/migrate，进程与测试支撑归 deer；不再使用顶层 internal。继续单 go.mod，不复制共用交易实现，项目 internal 包遵守 Go 可见性限制。
-- 每个核心项目使用自身 business 包及对应 usecase；公共 runtimeconfig 只校验/借用资源，不装配业务。deer/testbusiness、testentry、testservice 仅供历史回归，核心生产依赖图不得包含它们或其他项目的 business。协议客户端适配和公共交易合同可复用，目录说明见 docs/PROJECT_LAYOUT.md。
+- 每个核心项目使用自身 business 包及对应 usecase；公共 runtimeconfig 只校验/借用资源，不装配业务。旧 deer/testbusiness、testentry、testservice 已删除；服务专属回归夹具位于各项目 testservice 与 strategy/testbusiness，公共 deer/testprocess 只接受 typed builder。核心生产依赖图不得包含回归夹具或其他项目的 business。协议客户端适配和公共交易合同可复用，目录说明见 docs/PROJECT_LAYOUT.md。
 - 仓库内维护的第三方源码、Proto 注解、OpenAPI schema 及许可证统一放 deer/third_party，继续共用根 go.mod；生成工具、Go 导入及镜像许可收集使用该路径。
 - 每张表及其持久化 Model 必须有 Id 自增主键、createAt NOT NULL、updateAt NOT NULL、deleteAt 可为 NULL；字段映射、生成与迁移要求见 docs/PROTO_AND_MODEL.md。
 - 所有 GORM 数据操作显式使用 db.Model(&model.X{}) 或事务中的 tx.Model(&model.X{})，禁止 db.Table("xxx")、tx.Table("xxx") 及其他变量上的 .Table(...)；适用于业务、公共组件、脚本与测试。

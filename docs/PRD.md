@@ -1,5 +1,7 @@
 # MVP 需求规格 v0.1
 
+2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
+
 2026-11-04 最新配置格式：用户要求配置拆为 data.yaml（PostgreSQL、Redis、NATS/JetStream 连接和业务运行控制）与 service.yaml（身份、gRPC/HTTP/监控监听、TLS、日志和生命周期）。继续使用 Nacos/env 引导，每服务独立两份 YAML，强类型校验、版本/内容绑定后装配，替代此前单份 Proto JSON；缺失、混用或非法内容拒绝启动，不热切换。已入库的账户业务策略不迁回 YAML。
 
 2026-11-04 最新业务配置边界：用户要求 HimalayaProfile 的账户、基金、交易对、额度、杠杆、行情源及 tick/step 保存在数据库，不再放入 Nacos。复用 HimalayaBudget 的已有资金策略字段并补充市场绑定；服务启动只读同一份数据库策略，Nacos 保留连接、循环控制和有限合成成交运行控制。此项替代此前通过 Nacos profiles 定义这些业务参数的做法，变更仍需显式停止/重启，不热切换交易状态。

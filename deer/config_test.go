@@ -89,7 +89,7 @@ func TestDeerRejectsInvalidConfigBeforeSideEffects(t *testing.T) {
 			},
 		},
 		{
-			name: "HTTP requires API wrapper",
+			name: "retired HTTP listener",
 			change: func(cfg *configv1.ServiceConfig) *configv1.ServiceConfig {
 				cfg.Http = cfg.Grpc
 				return cfg
