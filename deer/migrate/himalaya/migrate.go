@@ -26,6 +26,9 @@ var syntheticDefinition string
 //go:embed sql/0004_development_baseline.sql
 var developmentBaselineDefinition string
 
+//go:embed sql/0005_historical_intent_approval.sql
+var historicalIntentDefinition string
+
 // ErrHistory rejects missing, changed or future SDK schema history.
 var ErrHistory = errors.New("himalaya SDK schema history differs from this binary")
 
@@ -92,7 +95,7 @@ func validate(rows []*modelv1.HimalayaSchemaMigration, complete bool) error {
 }
 
 func definitions() []string {
-	return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition}
+	return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition, historicalIntentDefinition}
 }
 
 func checksum(value string) string { return fmt.Sprintf("%x", sha256.Sum256([]byte(value))) }

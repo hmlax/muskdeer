@@ -86,7 +86,7 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 		}
 		var ambiguous int64
 		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
-			Where("account_id = ? AND state = ?", lease.Key.AccountID, IntentDispatched).Count(&ambiguous).Error; err != nil {
+			Where("account_id = ? AND state = ? AND historical_approval_reference = ''", lease.Key.AccountID, IntentDispatched).Count(&ambiguous).Error; err != nil {
 			return err
 		}
 		if ambiguous != 0 {
@@ -162,6 +162,7 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 		return err
 	}
 	var callErr error
+	called := false
 	err := s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		lease, now, err := lockSDKLease(ctx, tx, account, admission.OwnerID, admission.Epoch)
 		if err != nil {
@@ -208,9 +209,13 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 		remaining = min(remaining, left)
 		bounded, cancel := context.WithTimeout(ctx, remaining)
 		defer cancel()
+		called = true
 		callErr = send(bounded)
 		return nil // Preserve the committed claim even when the SDK reply is lost.
 	})
+	if !called || errors.Is(callErr, errSDKNotDispatched) {
+		return errors.Join(err, callErr, s.abandonUnsent(ctx, admission))
+	}
 	return errors.Join(err, callErr)
 }
 
@@ -282,7 +287,7 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		}
 		var pending int64
 		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
-			Where("account_id = ? AND state = ?", account, IntentDispatched).Count(&pending).Error; err != nil {
+			Where("account_id = ? AND state = ? AND historical_approval_reference = ''", account, IntentDispatched).Count(&pending).Error; err != nil {
 			return err
 		}
 		if pending > 0 {

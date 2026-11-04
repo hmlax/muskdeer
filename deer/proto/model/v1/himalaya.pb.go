@@ -285,36 +285,38 @@ func (x *HimalayaBudget) GetCutoverCompleted() bool {
 // HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
 // dispatched again, including after process death or ownership handover.
 type HimalayaIntent struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Id                int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
-	CreateAt          int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
-	UpdateAt          int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
-	DeleteAt          *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
-	AccountId         string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;index:idx_himalaya_intent_account"`
-	UserId            int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
-	FundId            int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
-	Symbol            string                 `protobuf:"bytes,8,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);not null"`
-	ClientId          string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" gorm:"column:client_id;type:varchar(128);not null;uniqueIndex:uk_himalaya_intent_client"`
-	OwnerId           string                 `protobuf:"bytes,10,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty" gorm:"column:owner_id;type:varchar(128);not null"`
-	OwnerEpoch        int64                  `protobuf:"varint,11,opt,name=owner_epoch,json=ownerEpoch,proto3" json:"owner_epoch,omitempty" gorm:"column:owner_epoch;type:bigint;not null"`
-	RequestDigest     string                 `protobuf:"bytes,12,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty" gorm:"column:request_digest;type:varchar(64);not null"`
-	Side              string                 `protobuf:"bytes,13,opt,name=side,proto3" json:"side,omitempty" gorm:"column:side;type:varchar(8);not null"`
-	Price             string                 `protobuf:"bytes,14,opt,name=price,proto3" json:"price,omitempty" gorm:"column:price;type:numeric(76,36);not null"`
-	Quantity          string                 `protobuf:"bytes,15,opt,name=quantity,proto3" json:"quantity,omitempty" gorm:"column:quantity;type:numeric(76,36);not null"`
-	Leverage          uint32                 `protobuf:"varint,16,opt,name=leverage,proto3" json:"leverage,omitempty" gorm:"column:leverage;type:integer;not null"`
-	State             string                 `protobuf:"bytes,17,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null"`
-	OrderId           string                 `protobuf:"bytes,18,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty" gorm:"column:order_id;type:varchar(20);not null"`
-	ReservedNotional  string                 `protobuf:"bytes,19,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
-	ExpiresAt         int64                  `protobuf:"varint,20,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" gorm:"column:expires_at;type:bigint;not null"`
-	StrategyAccountId string                 `protobuf:"bytes,21,opt,name=strategy_account_id,json=strategyAccountId,proto3" json:"strategy_account_id,omitempty" gorm:"column:strategy_account_id;type:varchar(64);not null"`
-	StrategyOwnerId   string                 `protobuf:"bytes,22,opt,name=strategy_owner_id,json=strategyOwnerId,proto3" json:"strategy_owner_id,omitempty" gorm:"column:strategy_owner_id;type:varchar(128);not null"`
-	StrategyEpoch     int64                  `protobuf:"varint,23,opt,name=strategy_epoch,json=strategyEpoch,proto3" json:"strategy_epoch,omitempty" gorm:"column:strategy_epoch;type:bigint;not null"`
-	SourceAccountId   string                 `protobuf:"bytes,24,opt,name=source_account_id,json=sourceAccountId,proto3" json:"source_account_id,omitempty" gorm:"column:source_account_id;type:varchar(64);not null"`
-	SourceOwnerId     string                 `protobuf:"bytes,25,opt,name=source_owner_id,json=sourceOwnerId,proto3" json:"source_owner_id,omitempty" gorm:"column:source_owner_id;type:varchar(128);not null"`
-	SourceEpoch       int64                  `protobuf:"varint,26,opt,name=source_epoch,json=sourceEpoch,proto3" json:"source_epoch,omitempty" gorm:"column:source_epoch;type:bigint;not null"`
-	SourceUntil       int64                  `protobuf:"varint,27,opt,name=source_until,json=sourceUntil,proto3" json:"source_until,omitempty" gorm:"column:source_until;type:bigint;not null"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state                       protoimpl.MessageState `protogen:"open.v1"`
+	Id                          int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt                    int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt                    int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt                    *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	AccountId                   string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;index:idx_himalaya_intent_account"`
+	UserId                      int64                  `protobuf:"varint,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty" gorm:"column:user_id;type:bigint;not null"`
+	FundId                      int64                  `protobuf:"varint,7,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty" gorm:"column:fund_id;type:bigint;not null"`
+	Symbol                      string                 `protobuf:"bytes,8,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);not null"`
+	ClientId                    string                 `protobuf:"bytes,9,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty" gorm:"column:client_id;type:varchar(128);not null;uniqueIndex:uk_himalaya_intent_client"`
+	OwnerId                     string                 `protobuf:"bytes,10,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty" gorm:"column:owner_id;type:varchar(128);not null"`
+	OwnerEpoch                  int64                  `protobuf:"varint,11,opt,name=owner_epoch,json=ownerEpoch,proto3" json:"owner_epoch,omitempty" gorm:"column:owner_epoch;type:bigint;not null"`
+	RequestDigest               string                 `protobuf:"bytes,12,opt,name=request_digest,json=requestDigest,proto3" json:"request_digest,omitempty" gorm:"column:request_digest;type:varchar(64);not null"`
+	Side                        string                 `protobuf:"bytes,13,opt,name=side,proto3" json:"side,omitempty" gorm:"column:side;type:varchar(8);not null"`
+	Price                       string                 `protobuf:"bytes,14,opt,name=price,proto3" json:"price,omitempty" gorm:"column:price;type:numeric(76,36);not null"`
+	Quantity                    string                 `protobuf:"bytes,15,opt,name=quantity,proto3" json:"quantity,omitempty" gorm:"column:quantity;type:numeric(76,36);not null"`
+	Leverage                    uint32                 `protobuf:"varint,16,opt,name=leverage,proto3" json:"leverage,omitempty" gorm:"column:leverage;type:integer;not null"`
+	State                       string                 `protobuf:"bytes,17,opt,name=state,proto3" json:"state,omitempty" gorm:"column:state;type:varchar(16);not null"`
+	OrderId                     string                 `protobuf:"bytes,18,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty" gorm:"column:order_id;type:varchar(20);not null"`
+	ReservedNotional            string                 `protobuf:"bytes,19,opt,name=reserved_notional,json=reservedNotional,proto3" json:"reserved_notional,omitempty" gorm:"column:reserved_notional;type:numeric(76,36);not null"`
+	ExpiresAt                   int64                  `protobuf:"varint,20,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty" gorm:"column:expires_at;type:bigint;not null"`
+	StrategyAccountId           string                 `protobuf:"bytes,21,opt,name=strategy_account_id,json=strategyAccountId,proto3" json:"strategy_account_id,omitempty" gorm:"column:strategy_account_id;type:varchar(64);not null"`
+	StrategyOwnerId             string                 `protobuf:"bytes,22,opt,name=strategy_owner_id,json=strategyOwnerId,proto3" json:"strategy_owner_id,omitempty" gorm:"column:strategy_owner_id;type:varchar(128);not null"`
+	StrategyEpoch               int64                  `protobuf:"varint,23,opt,name=strategy_epoch,json=strategyEpoch,proto3" json:"strategy_epoch,omitempty" gorm:"column:strategy_epoch;type:bigint;not null"`
+	SourceAccountId             string                 `protobuf:"bytes,24,opt,name=source_account_id,json=sourceAccountId,proto3" json:"source_account_id,omitempty" gorm:"column:source_account_id;type:varchar(64);not null"`
+	SourceOwnerId               string                 `protobuf:"bytes,25,opt,name=source_owner_id,json=sourceOwnerId,proto3" json:"source_owner_id,omitempty" gorm:"column:source_owner_id;type:varchar(128);not null"`
+	SourceEpoch                 int64                  `protobuf:"varint,26,opt,name=source_epoch,json=sourceEpoch,proto3" json:"source_epoch,omitempty" gorm:"column:source_epoch;type:bigint;not null"`
+	SourceUntil                 int64                  `protobuf:"varint,27,opt,name=source_until,json=sourceUntil,proto3" json:"source_until,omitempty" gorm:"column:source_until;type:bigint;not null"`
+	HistoricalApprovalReference string                 `protobuf:"bytes,28,opt,name=historical_approval_reference,json=historicalApprovalReference,proto3" json:"historical_approval_reference,omitempty" gorm:"column:historical_approval_reference;type:varchar(256);not null;default:''"`
+	HistoricalSnapshot          *v1.HimalayaSnapshot   `protobuf:"bytes,29,opt,name=historical_snapshot,json=historicalSnapshot,proto3" json:"historical_snapshot,omitempty" gorm:"column:historical_snapshot;type:jsonb;serializer:json"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *HimalayaIntent) Reset() {
@@ -534,6 +536,20 @@ func (x *HimalayaIntent) GetSourceUntil() int64 {
 		return x.SourceUntil
 	}
 	return 0
+}
+
+func (x *HimalayaIntent) GetHistoricalApprovalReference() string {
+	if x != nil {
+		return x.HistoricalApprovalReference
+	}
+	return ""
+}
+
+func (x *HimalayaIntent) GetHistoricalSnapshot() *v1.HimalayaSnapshot {
+	if x != nil {
+		return x.HistoricalSnapshot
+	}
+	return nil
 }
 
 // HimalayaCancellation separates a cancel acknowledgement from terminal proof.
@@ -813,7 +829,7 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\x0eworst_fee_rate\x18\x10 \x01(\tBH\x9a\x84\x9e\x03Cgorm:\"column:worst_fee_rate;type:numeric(76,36);not null;default:0\"R\fworstFeeRate\x12g\n" +
 	"\x11cutover_completed\x18\x11 \x01(\bB:\x9a\x84\x9e\x035gorm:\"column:cutover_completed;type:boolean;not null\"R\x10cutoverCompletedB\f\n" +
 	"\n" +
-	"_delete_at\"\xbe\x13\n" +
+	"_delete_at\"\xf6\x15\n" +
 	"\x0eHimalayaIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -845,7 +861,9 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\x11source_account_id\x18\x18 \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:source_account_id;type:varchar(64);not null\"R\x0fsourceAccountId\x12e\n" +
 	"\x0fsource_owner_id\x18\x19 \x01(\tB=\x9a\x84\x9e\x038gorm:\"column:source_owner_id;type:varchar(128);not null\"R\rsourceOwnerId\x12W\n" +
 	"\fsource_epoch\x18\x1a \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_epoch;type:bigint;not null\"R\vsourceEpoch\x12W\n" +
-	"\fsource_until\x18\x1b \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_until;type:bigint;not null\"R\vsourceUntilB\f\n" +
+	"\fsource_until\x18\x1b \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_until;type:bigint;not null\"R\vsourceUntil\x12\x9a\x01\n" +
+	"\x1dhistorical_approval_reference\x18\x1c \x01(\tBV\x9a\x84\x9e\x03Qgorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\"R\x1bhistoricalApprovalReference\x12\x98\x01\n" +
+	"\x13historical_snapshot\x18\x1d \x01(\v2$.muskdeer.common.v1.HimalayaSnapshotBA\x9a\x84\x9e\x03<gorm:\"column:historical_snapshot;type:jsonb;serializer:json\"R\x12historicalSnapshotB\f\n" +
 	"\n" +
 	"_delete_at\"\x8a\t\n" +
 	"\x14HimalayaCancellation\x12J\n" +
@@ -902,12 +920,13 @@ var file_deer_proto_model_v1_himalaya_proto_goTypes = []any{
 	(*v1.HimalayaSnapshot)(nil),     // 5: muskdeer.common.v1.HimalayaSnapshot
 }
 var file_deer_proto_model_v1_himalaya_proto_depIdxs = []int32{
-	5, // 0: muskdeer.model.v1.HimalayaProjection.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	5, // 0: muskdeer.model.v1.HimalayaIntent.historical_snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	5, // 1: muskdeer.model.v1.HimalayaProjection.snapshot:type_name -> muskdeer.common.v1.HimalayaSnapshot
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_model_v1_himalaya_proto_init() }

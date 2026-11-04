@@ -1,4 +1,4 @@
-// Command himalayabaseline applies an explicit one-time development ledger decision.
+// Command himalayabaseline applies explicit development ledger decisions.
 package main
 
 import (
@@ -56,6 +56,7 @@ func command() int {
 	manifest := flag.String("manifest", "", "reviewed development baseline manifest")
 	report := flag.String("report", "", "private report file")
 	apply := flag.Bool("apply", false, "apply the explicit approval; default is read-only assessment")
+	historical := flag.Bool("historical-intents", false, "use an explicit historical intent approval manifest")
 	flag.Parse()
 	if *manifest == "" || flag.NArg() != 0 {
 		fmt.Fprintln(os.Stderr, messageManifestRequired)
@@ -65,7 +66,7 @@ func command() int {
 	defer stop()
 	ctx, cancel := context.WithTimeout(signals, 2*time.Minute)
 	defer cancel()
-	if err := run(ctx, *manifest, *report, *apply); err != nil {
+	if err := run(ctx, *manifest, *report, *apply, *historical); err != nil {
 		reason := reasonDependency
 		if errors.Is(err, himalaya.ErrRiskLimit) {
 			reason = reasonRiskLimit
@@ -82,7 +83,7 @@ func command() int {
 	return 0
 }
 
-func run(ctx context.Context, manifest, report string, apply bool) (result error) {
+func run(ctx context.Context, manifest, report string, apply, historical bool) (result error) {
 	bytes, err := os.ReadFile(manifest)
 	if err != nil {
 		return err
@@ -91,11 +92,21 @@ func run(ctx context.Context, manifest, report string, apply bool) (result error
 		return himalaya.ErrInvalidSubmit
 	}
 	batch := &commonv1.DevelopmentBaselineBatch{}
-	if err := protojson.Unmarshal(bytes, batch); err != nil {
-		return err
-	}
-	if len(batch.Requests) == 0 || len(batch.Requests) > 8 {
-		return himalaya.ErrInvalidSubmit
+	history := &commonv1.HistoricalIntentApprovalBatch{}
+	if historical {
+		if err := protojson.Unmarshal(bytes, history); err != nil {
+			return err
+		}
+		if len(history.Requests) == 0 || len(history.Requests) > 8 {
+			return himalaya.ErrInvalidSubmit
+		}
+	} else {
+		if err := protojson.Unmarshal(bytes, batch); err != nil {
+			return err
+		}
+		if len(batch.Requests) == 0 || len(batch.Requests) > 8 {
+			return himalaya.ErrInvalidSubmit
+		}
 	}
 	cfg, err := deer.LoadNacosConfig(ctx, "execution")
 	if err != nil || cfg.GetBusiness().GetExecutionVenue() != native.Venue || native.ValidateConfig(cfg) != nil {
@@ -142,6 +153,9 @@ func run(ctx context.Context, manifest, report string, apply bool) (result error
 		owner:  owner,
 		cfg:    cfg.Business.Himalaya,
 		apply:  apply,
+	}
+	if historical {
+		return runner.historical(ctx, history, report)
 	}
 	for _, request := range batch.Requests {
 		row, err := runner.assess(ctx, request)

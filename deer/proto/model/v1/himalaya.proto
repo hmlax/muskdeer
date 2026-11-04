@@ -69,6 +69,8 @@ message HimalayaIntent {
   string source_owner_id = 25 [(tagger.tags) = "gorm:\"column:source_owner_id;type:varchar(128);not null\""];
   int64 source_epoch = 26 [(tagger.tags) = "gorm:\"column:source_epoch;type:bigint;not null\""];
   int64 source_until = 27 [(tagger.tags) = "gorm:\"column:source_until;type:bigint;not null\""];
+  string historical_approval_reference = 28 [(tagger.tags) = "gorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\""];
+  muskdeer.common.v1.HimalayaSnapshot historical_snapshot = 29 [(tagger.tags) = "gorm:\"column:historical_snapshot;type:jsonb;serializer:json\""];
 }
 
 // HimalayaCancellation separates a cancel acknowledgement from terminal proof.

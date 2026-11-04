@@ -22,6 +22,7 @@ const (
 	messageInvalidSDKConfig = "himalaya SDK configuration is invalid"
 	messageInvalidSDKSubmit = "himalaya SDK submission is invalid"
 	messageRepeatedDispatch = "himalaya SDK submission was already dispatched"
+	messageSDKNotDispatched = "himalaya SDK callback rejected before dispatch"
 	maximumOperationTimeout = 5 * time.Second
 )
 
@@ -31,6 +32,7 @@ var (
 	// ErrInvalidSubmit rejects malformed orders before the SDK call.
 	ErrInvalidSubmit    = errors.New(messageInvalidSDKSubmit)
 	errRepeatedDispatch = errors.New(messageRepeatedDispatch)
+	errSDKNotDispatched = errors.New(messageSDKNotDispatched)
 )
 
 // Config configures one owned SDK connection, created by the execution worker.
@@ -152,18 +154,18 @@ func (c *Client) Submit(ctx context.Context, request SubmitRequest) (*pb.PlaceOr
 	var response *pb.PlaceOrderResponse
 	err = c.guard.WithSubmission(op, admission, func(send context.Context) error {
 		if send == nil {
-			return ErrInvalidSubmit
+			return errors.Join(errSDKNotDispatched, ErrInvalidSubmit)
 		}
 		if err := op.Err(); err != nil {
-			return err
+			return errors.Join(errSDKNotDispatched, err)
 		}
 		if err := send.Err(); err != nil {
-			return err
+			return errors.Join(errSDKNotDispatched, err)
 		}
 		deadline, bounded := send.Deadline()
 		operationDeadline, _ := op.Deadline()
 		if !bounded || deadline.After(operationDeadline) {
-			return ErrInvalidSubmit
+			return errors.Join(errSDKNotDispatched, ErrInvalidSubmit)
 		}
 		if !dispatched.CompareAndSwap(false, true) {
 			return errRepeatedDispatch
