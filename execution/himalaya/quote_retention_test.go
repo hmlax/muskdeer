@@ -119,3 +119,57 @@ func TestQuoteRefreshDoesNotBridgeCrossingLegacyOrOversizedOrders(t *testing.T) 
 		})
 	}
 }
+
+func TestQuoteSeedsUseTheSideThatCannotCrossRestingOrders(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		retainedID string
+		buy        string
+		sell       string
+		wantSide   domain.Side
+	}{
+		{
+			name:       "price_rise",
+			retainedID: "1",
+			buy:        "100.4",
+			sell:       "100.6",
+			wantSide:   domain.SideSell,
+		},
+		{
+			name:       "price_fall",
+			retainedID: "2",
+			buy:        "99.4",
+			sell:       "99.6",
+			wantSide:   domain.SideBuy,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			snapshot := &commonv1.HimalayaSnapshot{Orders: []*commonv1.HimalayaOrder{
+				retentionOrder("1", domain.SideBuy, "99.9"),
+				retentionOrder("2", domain.SideSell, "100.1"),
+			}}
+			targets := []*commonv1.HimalayaTarget{
+				{
+					Side:     string(domain.SideBuy),
+					Price:    test.buy,
+					Quantity: "1",
+				},
+				{
+					Side:     string(domain.SideSell),
+					Price:    test.sell,
+					Quantity: "1",
+				},
+			}
+			retained := &quoteRetention{
+				orders:  map[string]bool{test.retainedID: true},
+				targets: make(map[string]bool),
+			}
+			seeds := quoteSeedTargets(snapshot, targets, retained)
+			if len(seeds) != 1 || seeds[0].Side != string(test.wantSide) {
+				t.Fatalf("quoteSeedTargets(%s) = %v, want one %s before cancellation", test.name, seeds, test.wantSide)
+			}
+		})
+	}
+}

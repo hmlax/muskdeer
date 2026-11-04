@@ -2,7 +2,6 @@ package himalaya
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"log/slog"
 	"os"
@@ -301,9 +300,28 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 	// A current validated plan protects retained, non-crossing bridge quotes
 	// while cancellation proofs settle; it does not authorize new submissions.
 	r.plans[lease.Key.AccountID].Store(book.ValidUntilMs)
+	cycle := &quoteCycle{
+		profile: profile,
+		lease:   lease,
+		authority: LiveAuthority{
+			Strategy: plan.Strategy,
+			Book:     book,
+		},
+		targets:  plan.Targets,
+		snapshot: snapshot,
+		retained: retained,
+		result:   result,
+	}
+	var seedErr error
+	if recoveryErr == nil && budget.CutoverCompleted {
+		seedErr = r.seedQuoteSides(ctx, cycle)
+	}
 	err = r.cancelObsolete(ctx, profile, lease, snapshot, retained, result)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(err, seedErr)
+	}
+	if seedErr != nil {
+		return result, seedErr
 	}
 	if recoveryErr != nil {
 		return result, recoveryErr
@@ -329,31 +347,9 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 		if retained.targets[key] {
 			continue
 		}
-		quantity, _ := native.Value(target.Quantity, false, false)
-		prepared, err := r.store.PrepareLive(ctx, lease, SubmitRequest{
-			UserID:   profile.UserId,
-			FundID:   profile.FundId,
-			Symbol:   profile.Symbol,
-			ClientID: native.ClientPrefix + profile.Symbol + "_" + rand.Text(),
-			Side:     domain.Side(target.Side),
-			Price:    price,
-			Quantity: quantity,
-			Leverage: profile.Leverage,
-		}, LiveAuthority{
-			Strategy: plan.Strategy,
-			Book:     book,
-		})
-		if err != nil {
+		if err := r.submitQuote(ctx, cycle, target); err != nil {
 			return nil, err
 		}
-		response, err := r.client.Load().Submit(ctx, prepared.Request)
-		if err != nil {
-			return nil, err
-		}
-		if err := r.store.Acknowledge(ctx, prepared.Admission, response); err != nil {
-			return nil, err
-		}
-		result.Placed++
 	}
 	result.State = native.StateRunning
 	r.plans[lease.Key.AccountID].Store(book.ValidUntilMs)

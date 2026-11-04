@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shopspring/decimal"
 	pb "gitlab.com/himalaya/lukla-go/pb"
 
 	"google.golang.org/grpc"
@@ -34,25 +35,29 @@ import (
 )
 
 func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
-	testNativeWorkers(t, 0, false)
+	testNativeWorkers(t, 0, 0)
 }
 
 func TestHimalayaNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
-	testNativeWorkers(t, 40, false)
+	testNativeWorkers(t, 40, 0)
 }
 
 func TestHimalayaNativeRepricingKeepsBothSidesWhileCancelProofIsPending(t *testing.T) {
-	testNativeWorkers(t, 0, true)
+	testNativeWorkers(t, 0, 1)
 }
 
-func testNativeWorkers(t *testing.T, legacy int, reprice bool) {
+func TestHimalayaNativePriceJumpSeedsSafeSideBeforeCancellingOldQuote(t *testing.T) {
+	testNativeWorkers(t, 0, 5)
+}
+
+func testNativeWorkers(t *testing.T, legacy int, reprice int64) {
 	t.Helper()
 	db, store, executionLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	t.Cleanup(cancel)
 	authority := liveAuthorityFixture(ctx, t, db, executionLease, request.Symbol)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
-	if reprice {
+	if reprice > 0 {
 		sdk.historyEntered = make(chan struct{}, 1)
 		sdk.historyRelease = make(chan struct{})
 	}
@@ -162,11 +167,11 @@ func testNativeWorkers(t *testing.T, legacy int, reprice bool) {
 	if pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID); err != nil || len(pending) != 2 {
 		t.Fatalf("PendingIDs(after history recovery) = %d, %v, want two live orders", len(pending), err)
 	}
-	if reprice {
+	if reprice > 0 {
 		release := sync.OnceFunc(func() { close(sdk.historyRelease) })
 		t.Cleanup(release)
 		sdk.historyHold.Store(true)
-		market.offset.Store(1)
+		market.offset.Store(reprice)
 		select {
 		case <-sdk.historyEntered:
 		case <-ctx.Done():
@@ -192,8 +197,10 @@ func testNativeWorkers(t *testing.T, legacy int, reprice bool) {
 			sdk.mu.Lock()
 			defer sdk.mu.Unlock()
 			current := 0
+			bid := decimal.RequireFromString("99.9").Add(decimal.NewFromInt(reprice).Shift(-1)).String()
+			ask := decimal.RequireFromString("100.1").Add(decimal.NewFromInt(reprice).Shift(-1)).String()
 			for _, order := range sdk.orders {
-				if native.Active(order.Status) && (order.Price == "100" || order.Price == "100.2") {
+				if native.Active(order.Status) && (order.Price == bid || order.Price == ask) {
 					current++
 				}
 			}
