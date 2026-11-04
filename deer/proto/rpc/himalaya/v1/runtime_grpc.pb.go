@@ -20,7 +20,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Market_GetBook_FullMethodName = "/muskdeer.himalaya.v1.Market/GetBook"
+	Market_GetBook_FullMethodName  = "/muskdeer.himalaya.v1.Market/GetBook"
+	Market_GetTrade_FullMethodName = "/muskdeer.himalaya.v1.Market/GetTrade"
 )
 
 // MarketClient is the client API for Market service.
@@ -30,6 +31,7 @@ const (
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 type MarketClient interface {
 	GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.HimalayaBook, error)
+	GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.HimalayaTrade, error)
 }
 
 type marketClient struct {
@@ -50,6 +52,16 @@ func (c *marketClient) GetBook(ctx context.Context, in *BookRequest, opts ...grp
 	return out, nil
 }
 
+func (c *marketClient) GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.HimalayaTrade, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(v1.HimalayaTrade)
+	err := c.cc.Invoke(ctx, Market_GetTrade_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MarketServer is the server API for Market service.
 // All implementations must embed UnimplementedMarketServer
 // for forward compatibility.
@@ -57,6 +69,7 @@ func (c *marketClient) GetBook(ctx context.Context, in *BookRequest, opts ...grp
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 type MarketServer interface {
 	GetBook(context.Context, *BookRequest) (*v1.HimalayaBook, error)
+	GetTrade(context.Context, *TradeRequest) (*v1.HimalayaTrade, error)
 	mustEmbedUnimplementedMarketServer()
 }
 
@@ -69,6 +82,9 @@ type UnimplementedMarketServer struct{}
 
 func (UnimplementedMarketServer) GetBook(context.Context, *BookRequest) (*v1.HimalayaBook, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetBook not implemented")
+}
+func (UnimplementedMarketServer) GetTrade(context.Context, *TradeRequest) (*v1.HimalayaTrade, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetTrade not implemented")
 }
 func (UnimplementedMarketServer) mustEmbedUnimplementedMarketServer() {}
 func (UnimplementedMarketServer) testEmbeddedByValue()                {}
@@ -109,6 +125,24 @@ func _Market_GetBook_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Market_GetTrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TradeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).GetTrade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_GetTrade_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).GetTrade(ctx, req.(*TradeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Market_ServiceDesc is the grpc.ServiceDesc for Market service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -119,6 +153,10 @@ var Market_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetBook",
 			Handler:    _Market_GetBook_Handler,
+		},
+		{
+			MethodName: "GetTrade",
+			Handler:    _Market_GetTrade_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

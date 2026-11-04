@@ -49,6 +49,18 @@ func (f *Feed) Run(parent context.Context, publish func(context.Context, *common
 	if parent == nil || publish == nil {
 		return native.ErrInvalid
 	}
+	var sequence int64
+	return f.runFrames(parent, func(ctx context.Context, data []byte, received time.Time) error {
+		book, err := Decode(data, f.symbol, received)
+		if err != nil || book.Sequence <= sequence {
+			return native.ErrInvalid
+		}
+		sequence = book.Sequence
+		return publish(ctx, book)
+	})
+}
+
+func (f *Feed) runFrames(parent context.Context, publish func(context.Context, []byte, time.Time) error) (result error) {
 	ctx, cancel := context.WithTimeout(parent, 23*time.Hour)
 	defer cancel()
 	conn, response, err := f.dialer.DialContext(ctx, f.url, nil)
@@ -67,8 +79,10 @@ func (f *Feed) Run(parent context.Context, publish func(context.Context, *common
 			<-closed
 		}
 	}()
-	var sequence int64
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if err := conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
 			return err
 		}
@@ -76,15 +90,13 @@ func (f *Feed) Run(parent context.Context, publish func(context.Context, *common
 		if err != nil {
 			return errors.Join(ctx.Err(), err)
 		}
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		if kind != websocket.TextMessage {
 			return native.ErrInvalid
 		}
-		book, err := Decode(data, f.symbol, time.Now())
-		if err != nil || book.Sequence <= sequence {
-			return native.ErrInvalid
-		}
-		sequence = book.Sequence
-		if err := publish(ctx, book); err != nil {
+		if err := publish(ctx, data, time.Now()); err != nil {
 			return err
 		}
 	}

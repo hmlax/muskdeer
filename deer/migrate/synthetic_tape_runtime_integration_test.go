@@ -4,7 +4,6 @@ package migrate
 
 import (
 	"context"
-	"io"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer"
-	"github.com/hmlax/muskdeer/deer/logging"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
@@ -25,12 +23,23 @@ import (
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
+	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 )
 
 func TestSyntheticTapeWorkersUseSDKWithoutOrdersAndDoNotResetOnRestart(t *testing.T) {
+	testSyntheticTapeWorkers(t, configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK)
+}
+
+func TestSyntheticTradeWorkersFollowLatestSourceWithoutFallbackOrOrders(t *testing.T) {
+	testSyntheticTapeWorkers(t, configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE)
+}
+
+func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
+	t.Helper()
 	db, _, lease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 	t.Cleanup(cancel)
@@ -39,24 +48,41 @@ func TestSyntheticTapeWorkersUseSDKWithoutOrdersAndDoNotResetOnRestart(t *testin
 	address := startNativeSDK(t, sdk)
 	ca := testcert.New(t)
 	discovery := &nativeDiscoveryFixture{entries: make(map[string]nacos.Instance)}
-	market := &nativeMarketFixture{authority: authority.Book.Publisher}
+	sourceLeases, err := repository.NewLeases(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	market := &nativeMarketFixture{
+		authority: authority.Book.Publisher,
+		leases:    sourceLeases,
+		lease: domain.LeaseToken{
+			Key: domain.LeaseKey{
+				Kind:      domain.LeaseKindExecution,
+				AccountID: authority.Book.Publisher.AccountId,
+			},
+			OwnerID:   authority.Book.Publisher.OwnerId,
+			Epoch:     authority.Book.Publisher.Epoch,
+			ExpiresAt: time.UnixMilli(authority.Book.Publisher.ExpiresAtMs),
+		},
+	}
+	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		token, err := sourceLeases.Acquire(ctx, domain.LeaseKey{
+			Kind:      domain.LeaseKindExecution,
+			AccountID: native.TradeKey(request.Symbol),
+		}, lease.OwnerID, 10*time.Second)
+		if err != nil {
+			t.Fatal(err)
+		}
+		market.tradeAuthority = native.Authority(token)
+		market.tradeLease = token
+		market.tradeUnavailable.Store(true)
+	}
 	discovery.entries[rpcsecurity.ServiceMarket] = nacos.Instance{
 		ID:      "market-test",
 		Service: rpcsecurity.ServiceMarket,
 		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { rpc.RegisterMarketServer(server, market) }),
 	}
-	logger, err := logging.New(ctx, nil, logging.Identity{
-		Service:  "execution",
-		Instance: "synthetic-test",
-	}, io.Discard)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := logger.Close(); err != nil {
-			t.Error(err)
-		}
-	})
+	logger := nativeWorkerLogger(ctx, t, lease.OwnerID)
 	t.Setenv("SYNTHETIC_TEST_TOKEN", "test-token")
 	cfg := &configv1.BusinessRuntime{
 		Enabled:          true,
@@ -79,6 +105,7 @@ func TestSyntheticTapeWorkersUseSDKWithoutOrdersAndDoNotResetOnRestart(t *testin
 				QuantityStep:     "0.001",
 			}},
 			SyntheticTape: &configv1.SyntheticTape{
+				Mode:            mode,
 				Enabled:         true,
 				DevelopmentOnly: true,
 				RunId:           "test-tape-runtime",
@@ -124,6 +151,17 @@ func TestSyntheticTapeWorkersUseSDKWithoutOrdersAndDoNotResetOnRestart(t *testin
 		t.Fatalf("synthetic workers=%d, want 1", len(selected))
 	}
 	runNativeWorkers(ctx, t, append(execution.Workers(), selected...))
+	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		assertSyntheticTradeOutage(ctx, t, syntheticTradeOutageCheck{
+			market:  market,
+			sdk:     sdk,
+			db:      db,
+			factory: strategyFactory,
+			cfg:     cfg.Himalaya,
+			owner:   lease.OwnerID,
+		})
+		market.tradeUnavailable.Store(false)
+	}
 	nativeWait(ctx, t, func() bool {
 		var rows []*modelv1.SyntheticTapeIntent
 		if db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Find(&rows).Error != nil || len(rows) != 2 {
@@ -131,6 +169,9 @@ func TestSyntheticTapeWorkersUseSDKWithoutOrdersAndDoNotResetOnRestart(t *testin
 		}
 		return sdk.syntheticCount() == 2 && rows[0].Result.GetState() == native.SyntheticPublished && rows[1].Result.GetState() == native.SyntheticPublished
 	})
+	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		assertSyntheticTradeReceipts(ctx, t, db)
+	}
 	var before modelv1.ExecutionShardLease
 	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", native.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, request.Symbol)).First(&before).Error; err != nil {
 		t.Fatal(err)
@@ -157,7 +198,5 @@ func TestSyntheticTapeWorkersUseSDKWithoutOrdersAndDoNotResetOnRestart(t *testin
 	if len(sdk.synthetic) != 2 || len(sdk.orders) != 0 || sdk.next != 0 {
 		t.Fatalf("SDK effects synthetic=%d orders=%d next=%d, want 2/0/0", len(sdk.synthetic), len(sdk.orders), sdk.next)
 	}
-	if sdk.synthetic[0].Side != int32(pb.Side_SIDE_BUY) || sdk.synthetic[1].Side != int32(pb.Side_SIDE_SELL) {
-		t.Fatal("synthetic directions did not alternate")
-	}
+	assertSyntheticSDKDirections(t, mode, sdk.synthetic)
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
+	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
@@ -69,7 +70,20 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if err != nil {
 		return err
 	}
-	plan, err := values.SyntheticPlan(cfg.Himalaya, symbol, sequence, book, values.Authority(token))
+	proposal := &commonv1.SyntheticTapePlan{
+		RunId:    cfg.Himalaya.SyntheticTape.RunId,
+		Symbol:   symbol,
+		Sequence: sequence,
+		Book:     book,
+		Strategy: values.Authority(token),
+	}
+	if cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		proposal.SourceTrade, err = rpc.NewMarketClient(market).GetTrade(ctx, &rpc.TradeRequest{Symbol: symbol})
+		if err != nil {
+			return err
+		}
+	}
+	plan, err := values.SyntheticSourcePlan(cfg.Himalaya, proposal)
 	if err != nil {
 		return err
 	}

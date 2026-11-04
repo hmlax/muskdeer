@@ -80,9 +80,15 @@ message SyntheticTape {
   google.protobuf.Duration interval = 4;
   uint32 maximum_events = 5;
   repeated SyntheticTapeProfile profiles = 6;
+  SyntheticTapeMode mode = 7;
+}
+enum SyntheticTapeMode {
+  SYNTHETIC_TAPE_MODE_BOOK = 0;
+  SYNTHETIC_TAPE_MODE_AGG_TRADE = 1;
 }
 message SyntheticTapeProfile {
   string symbol = 1;
+  // Fixed size in BOOK mode; single-event quantity cap in AGG_TRADE mode.
   string quantity = 2;
   string maximum_notional = 3;
 }

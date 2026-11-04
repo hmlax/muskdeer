@@ -739,6 +739,139 @@ func (x *HimalayaTarget) GetQuantity() string {
 	return ""
 }
 
+// HimalayaTrade is an owned, fresh external aggregate-trade observation.
+type HimalayaTrade struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Symbol        string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	Segment       string                 `protobuf:"bytes,3,opt,name=segment,proto3" json:"segment,omitempty"`
+	EventId       string                 `protobuf:"bytes,4,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
+	Side          string                 `protobuf:"bytes,5,opt,name=side,proto3" json:"side,omitempty"`
+	Price         string                 `protobuf:"bytes,6,opt,name=price,proto3" json:"price,omitempty"`
+	Quantity      string                 `protobuf:"bytes,7,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	EventAtMs     int64                  `protobuf:"varint,8,opt,name=event_at_ms,json=eventAtMs,proto3" json:"event_at_ms,omitempty"`
+	TradeAtMs     int64                  `protobuf:"varint,9,opt,name=trade_at_ms,json=tradeAtMs,proto3" json:"trade_at_ms,omitempty"`
+	ReceivedAtMs  int64                  `protobuf:"varint,10,opt,name=received_at_ms,json=receivedAtMs,proto3" json:"received_at_ms,omitempty"`
+	ValidUntilMs  int64                  `protobuf:"varint,11,opt,name=valid_until_ms,json=validUntilMs,proto3" json:"valid_until_ms,omitempty"`
+	Publisher     *HimalayaAuthority     `protobuf:"bytes,12,opt,name=publisher,proto3" json:"publisher,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HimalayaTrade) Reset() {
+	*x = HimalayaTrade{}
+	mi := &file_deer_proto_common_v1_himalaya_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HimalayaTrade) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HimalayaTrade) ProtoMessage() {}
+
+func (x *HimalayaTrade) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_himalaya_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HimalayaTrade.ProtoReflect.Descriptor instead.
+func (*HimalayaTrade) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_himalaya_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *HimalayaTrade) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetSegment() string {
+	if x != nil {
+		return x.Segment
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetEventId() string {
+	if x != nil {
+		return x.EventId
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetSide() string {
+	if x != nil {
+		return x.Side
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *HimalayaTrade) GetEventAtMs() int64 {
+	if x != nil {
+		return x.EventAtMs
+	}
+	return 0
+}
+
+func (x *HimalayaTrade) GetTradeAtMs() int64 {
+	if x != nil {
+		return x.TradeAtMs
+	}
+	return 0
+}
+
+func (x *HimalayaTrade) GetReceivedAtMs() int64 {
+	if x != nil {
+		return x.ReceivedAtMs
+	}
+	return 0
+}
+
+func (x *HimalayaTrade) GetValidUntilMs() int64 {
+	if x != nil {
+		return x.ValidUntilMs
+	}
+	return 0
+}
+
+func (x *HimalayaTrade) GetPublisher() *HimalayaAuthority {
+	if x != nil {
+		return x.Publisher
+	}
+	return nil
+}
+
 var File_deer_proto_common_v1_himalaya_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_himalaya_proto_rawDesc = "" +
@@ -806,7 +939,21 @@ const file_deer_proto_common_v1_himalaya_proto_rawDesc = "" +
 	"\x0eHimalayaTarget\x12\x12\n" +
 	"\x04side\x18\x01 \x01(\tR\x04side\x12\x14\n" +
 	"\x05price\x18\x02 \x01(\tR\x05price\x12\x1a\n" +
-	"\bquantity\x18\x03 \x01(\tR\bquantityB9Z7github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1b\x06proto3"
+	"\bquantity\x18\x03 \x01(\tR\bquantity\"\x8b\x03\n" +
+	"\rHimalayaTrade\x12\x16\n" +
+	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12\x18\n" +
+	"\asegment\x18\x03 \x01(\tR\asegment\x12\x19\n" +
+	"\bevent_id\x18\x04 \x01(\tR\aeventId\x12\x12\n" +
+	"\x04side\x18\x05 \x01(\tR\x04side\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\a \x01(\tR\bquantity\x12\x1e\n" +
+	"\vevent_at_ms\x18\b \x01(\x03R\teventAtMs\x12\x1e\n" +
+	"\vtrade_at_ms\x18\t \x01(\x03R\ttradeAtMs\x12$\n" +
+	"\x0ereceived_at_ms\x18\n" +
+	" \x01(\x03R\freceivedAtMs\x12$\n" +
+	"\x0evalid_until_ms\x18\v \x01(\x03R\fvalidUntilMs\x12C\n" +
+	"\tpublisher\x18\f \x01(\v2%.muskdeer.common.v1.HimalayaAuthorityR\tpublisherB9Z7github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1b\x06proto3"
 
 var (
 	file_deer_proto_common_v1_himalaya_proto_rawDescOnce sync.Once
@@ -820,7 +967,7 @@ func file_deer_proto_common_v1_himalaya_proto_rawDescGZIP() []byte {
 	return file_deer_proto_common_v1_himalaya_proto_rawDescData
 }
 
-var file_deer_proto_common_v1_himalaya_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_deer_proto_common_v1_himalaya_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_deer_proto_common_v1_himalaya_proto_goTypes = []any{
 	(*HimalayaScope)(nil),     // 0: muskdeer.common.v1.HimalayaScope
 	(*HimalayaLevel)(nil),     // 1: muskdeer.common.v1.HimalayaLevel
@@ -831,6 +978,7 @@ var file_deer_proto_common_v1_himalaya_proto_goTypes = []any{
 	(*HimalayaPosition)(nil),  // 6: muskdeer.common.v1.HimalayaPosition
 	(*HimalayaSnapshot)(nil),  // 7: muskdeer.common.v1.HimalayaSnapshot
 	(*HimalayaTarget)(nil),    // 8: muskdeer.common.v1.HimalayaTarget
+	(*HimalayaTrade)(nil),     // 9: muskdeer.common.v1.HimalayaTrade
 }
 var file_deer_proto_common_v1_himalaya_proto_depIdxs = []int32{
 	1, // 0: muskdeer.common.v1.HimalayaBook.bids:type_name -> muskdeer.common.v1.HimalayaLevel
@@ -840,11 +988,12 @@ var file_deer_proto_common_v1_himalaya_proto_depIdxs = []int32{
 	4, // 4: muskdeer.common.v1.HimalayaSnapshot.market:type_name -> muskdeer.common.v1.HimalayaMarket
 	6, // 5: muskdeer.common.v1.HimalayaSnapshot.positions:type_name -> muskdeer.common.v1.HimalayaPosition
 	5, // 6: muskdeer.common.v1.HimalayaSnapshot.orders:type_name -> muskdeer.common.v1.HimalayaOrder
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	2, // 7: muskdeer.common.v1.HimalayaTrade.publisher:type_name -> muskdeer.common.v1.HimalayaAuthority
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_himalaya_proto_init() }
@@ -858,7 +1007,7 @@ func file_deer_proto_common_v1_himalaya_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_v1_himalaya_proto_rawDesc), len(file_deer_proto_common_v1_himalaya_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

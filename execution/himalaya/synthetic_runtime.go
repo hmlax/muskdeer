@@ -9,9 +9,12 @@ import (
 	pb "gitlab.com/himalaya/lukla-go/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -46,8 +49,8 @@ func (r *Runtime) PublishSynthetic(ctx context.Context, proposal *commonv1.Synth
 	if err != nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
-	plan, err := native.SyntheticPlan(r.cfg.Himalaya, proposal.Symbol, proposal.Sequence, book, proposal.Strategy)
-	if err != nil || proposal.Side != plan.GetSide() || proposal.Quantity != plan.GetQuantity() {
+	plan, err := r.syntheticPlan(op, proposal, book)
+	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
 	if err := r.client.Load().checkSyntheticMarket(op, native.SyntheticMarket(r.cfg.Himalaya, plan.Symbol), plan); err != nil {
@@ -73,6 +76,41 @@ func (r *Runtime) PublishSynthetic(ctx context.Context, proposal *commonv1.Synth
 		return nil, err
 	}
 	return result, nil
+}
+
+func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.SyntheticTapePlan, book *commonv1.HimalayaBook) (*commonv1.SyntheticTapePlan, error) {
+	if r.cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK {
+		if proposal.SourceTrade != nil {
+			return nil, ErrInvalidSubmit
+		}
+		plan, err := native.SyntheticPlan(r.cfg.Himalaya, proposal.Symbol, proposal.Sequence, book, proposal.Strategy)
+		if err != nil || proposal.Side != plan.GetSide() || proposal.Quantity != plan.GetQuantity() {
+			return nil, ErrInvalidSubmit
+		}
+		return plan, nil
+	}
+	// An aggregate-mode client must explicitly supply that source intent. The
+	// actual sample can advance before execution reads the authoritative stream.
+	expected, err := native.SyntheticSourcePlan(r.cfg.Himalaya, proposal)
+	if err != nil || !proto.Equal(expected, proposal) {
+		return nil, ErrInvalidSubmit
+	}
+	connection, err := r.factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceMarket})
+	if err != nil {
+		return nil, err
+	}
+	trade, err := rpc.NewMarketClient(connection).GetTrade(ctx, &rpc.TradeRequest{Symbol: proposal.Symbol})
+	if err != nil {
+		return nil, err
+	}
+	return native.SyntheticSourcePlan(r.cfg.Himalaya, &commonv1.SyntheticTapePlan{
+		RunId:       proposal.RunId,
+		Symbol:      proposal.Symbol,
+		Sequence:    proposal.Sequence,
+		Book:        book,
+		Strategy:    proposal.Strategy,
+		SourceTrade: trade,
+	})
 }
 
 func (c *Client) publishSynthetic(ctx context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {

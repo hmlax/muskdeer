@@ -22,6 +22,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type SyntheticTapeMode int32
+
+const (
+	SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK      SyntheticTapeMode = 0
+	SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE SyntheticTapeMode = 1
+)
+
+// Enum value maps for SyntheticTapeMode.
+var (
+	SyntheticTapeMode_name = map[int32]string{
+		0: "SYNTHETIC_TAPE_MODE_BOOK",
+		1: "SYNTHETIC_TAPE_MODE_AGG_TRADE",
+	}
+	SyntheticTapeMode_value = map[string]int32{
+		"SYNTHETIC_TAPE_MODE_BOOK":      0,
+		"SYNTHETIC_TAPE_MODE_AGG_TRADE": 1,
+	}
+)
+
+func (x SyntheticTapeMode) Enum() *SyntheticTapeMode {
+	p := new(SyntheticTapeMode)
+	*p = x
+	return p
+}
+
+func (x SyntheticTapeMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SyntheticTapeMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_deer_proto_config_v1_service_proto_enumTypes[0].Descriptor()
+}
+
+func (SyntheticTapeMode) Type() protoreflect.EnumType {
+	return &file_deer_proto_config_v1_service_proto_enumTypes[0]
+}
+
+func (x SyntheticTapeMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SyntheticTapeMode.Descriptor instead.
+func (SyntheticTapeMode) EnumDescriptor() ([]byte, []int) {
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{0}
+}
+
 // ServiceConfig identifies one independently owned service process.
 type ServiceConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
@@ -517,6 +563,7 @@ type SyntheticTape struct {
 	Interval        *durationpb.Duration    `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
 	MaximumEvents   uint32                  `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
 	Profiles        []*SyntheticTapeProfile `protobuf:"bytes,6,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	Mode            SyntheticTapeMode       `protobuf:"varint,7,opt,name=mode,proto3,enum=muskdeer.config.v1.SyntheticTapeMode" json:"mode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -593,11 +640,19 @@ func (x *SyntheticTape) GetProfiles() []*SyntheticTapeProfile {
 	return nil
 }
 
+func (x *SyntheticTape) GetMode() SyntheticTapeMode {
+	if x != nil {
+		return x.Mode
+	}
+	return SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK
+}
+
 type SyntheticTapeProfile struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Symbol          string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Quantity        string                 `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	MaximumNotional string                 `protobuf:"bytes,3,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Symbol string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	// Fixed size in BOOK mode; single-event quantity cap in AGG_TRADE mode.
+	Quantity        string `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	MaximumNotional string `protobuf:"bytes,3,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2127,14 +2182,15 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
 	"\x05depth\x18\x05 \x01(\rR\x05depth\x126\n" +
 	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12H\n" +
-	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTape\"\x8f\x02\n" +
+	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTape\"\xca\x02\n" +
 	"\rSyntheticTape\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12)\n" +
 	"\x10development_only\x18\x02 \x01(\bR\x0fdevelopmentOnly\x12\x15\n" +
 	"\x06run_id\x18\x03 \x01(\tR\x05runId\x125\n" +
 	"\binterval\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12%\n" +
 	"\x0emaximum_events\x18\x05 \x01(\rR\rmaximumEvents\x12D\n" +
-	"\bprofiles\x18\x06 \x03(\v2(.muskdeer.config.v1.SyntheticTapeProfileR\bprofiles\"u\n" +
+	"\bprofiles\x18\x06 \x03(\v2(.muskdeer.config.v1.SyntheticTapeProfileR\bprofiles\x129\n" +
+	"\x04mode\x18\a \x01(\x0e2%.muskdeer.config.v1.SyntheticTapeModeR\x04mode\"u\n" +
 	"\x14SyntheticTapeProfile\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\tR\bquantity\x12)\n" +
@@ -2272,7 +2328,10 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\bcompress\x18\x05 \x01(\bR\bcompress\"h\n" +
 	"\bListener\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12B\n" +
-	"\x0frequest_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0erequestTimeoutB9Z7github.com/hmlax/muskdeer/deer/proto/config/v1;configv1b\x06proto3"
+	"\x0frequest_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0erequestTimeout*T\n" +
+	"\x11SyntheticTapeMode\x12\x1c\n" +
+	"\x18SYNTHETIC_TAPE_MODE_BOOK\x10\x00\x12!\n" +
+	"\x1dSYNTHETIC_TAPE_MODE_AGG_TRADE\x10\x01B9Z7github.com/hmlax/muskdeer/deer/proto/config/v1;configv1b\x06proto3"
 
 var (
 	file_deer_proto_config_v1_service_proto_rawDescOnce sync.Once
@@ -2286,92 +2345,95 @@ func file_deer_proto_config_v1_service_proto_rawDescGZIP() []byte {
 	return file_deer_proto_config_v1_service_proto_rawDescData
 }
 
+var file_deer_proto_config_v1_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_deer_proto_config_v1_service_proto_goTypes = []any{
-	(*ServiceConfig)(nil),            // 0: muskdeer.config.v1.ServiceConfig
-	(*AdminHTTP)(nil),                // 1: muskdeer.config.v1.AdminHTTP
-	(*BusinessRuntime)(nil),          // 2: muskdeer.config.v1.BusinessRuntime
-	(*HimalayaRuntime)(nil),          // 3: muskdeer.config.v1.HimalayaRuntime
-	(*SyntheticTape)(nil),            // 4: muskdeer.config.v1.SyntheticTape
-	(*SyntheticTapeProfile)(nil),     // 5: muskdeer.config.v1.SyntheticTapeProfile
-	(*HimalayaProfile)(nil),          // 6: muskdeer.config.v1.HimalayaProfile
-	(*StrategyRuntime)(nil),          // 7: muskdeer.config.v1.StrategyRuntime
-	(*SimulatorScenarioRuntime)(nil), // 8: muskdeer.config.v1.SimulatorScenarioRuntime
-	(*RiskRuntime)(nil),              // 9: muskdeer.config.v1.RiskRuntime
-	(*MarketRuntime)(nil),            // 10: muskdeer.config.v1.MarketRuntime
-	(*MarketFeedRuntime)(nil),        // 11: muskdeer.config.v1.MarketFeedRuntime
-	(*GRPCClients)(nil),              // 12: muskdeer.config.v1.GRPCClients
-	(*MutualTLS)(nil),                // 13: muskdeer.config.v1.MutualTLS
-	(*GRPCServerSecurity)(nil),       // 14: muskdeer.config.v1.GRPCServerSecurity
-	(*Nacos)(nil),                    // 15: muskdeer.config.v1.Nacos
-	(*NacosRegistration)(nil),        // 16: muskdeer.config.v1.NacosRegistration
-	(*JetStream)(nil),                // 17: muskdeer.config.v1.JetStream
-	(*Redis)(nil),                    // 18: muskdeer.config.v1.Redis
-	(*Postgres)(nil),                 // 19: muskdeer.config.v1.Postgres
-	(*Logging)(nil),                  // 20: muskdeer.config.v1.Logging
-	(*LogFile)(nil),                  // 21: muskdeer.config.v1.LogFile
-	(*Listener)(nil),                 // 22: muskdeer.config.v1.Listener
-	(*durationpb.Duration)(nil),      // 23: google.protobuf.Duration
+	(SyntheticTapeMode)(0),           // 0: muskdeer.config.v1.SyntheticTapeMode
+	(*ServiceConfig)(nil),            // 1: muskdeer.config.v1.ServiceConfig
+	(*AdminHTTP)(nil),                // 2: muskdeer.config.v1.AdminHTTP
+	(*BusinessRuntime)(nil),          // 3: muskdeer.config.v1.BusinessRuntime
+	(*HimalayaRuntime)(nil),          // 4: muskdeer.config.v1.HimalayaRuntime
+	(*SyntheticTape)(nil),            // 5: muskdeer.config.v1.SyntheticTape
+	(*SyntheticTapeProfile)(nil),     // 6: muskdeer.config.v1.SyntheticTapeProfile
+	(*HimalayaProfile)(nil),          // 7: muskdeer.config.v1.HimalayaProfile
+	(*StrategyRuntime)(nil),          // 8: muskdeer.config.v1.StrategyRuntime
+	(*SimulatorScenarioRuntime)(nil), // 9: muskdeer.config.v1.SimulatorScenarioRuntime
+	(*RiskRuntime)(nil),              // 10: muskdeer.config.v1.RiskRuntime
+	(*MarketRuntime)(nil),            // 11: muskdeer.config.v1.MarketRuntime
+	(*MarketFeedRuntime)(nil),        // 12: muskdeer.config.v1.MarketFeedRuntime
+	(*GRPCClients)(nil),              // 13: muskdeer.config.v1.GRPCClients
+	(*MutualTLS)(nil),                // 14: muskdeer.config.v1.MutualTLS
+	(*GRPCServerSecurity)(nil),       // 15: muskdeer.config.v1.GRPCServerSecurity
+	(*Nacos)(nil),                    // 16: muskdeer.config.v1.Nacos
+	(*NacosRegistration)(nil),        // 17: muskdeer.config.v1.NacosRegistration
+	(*JetStream)(nil),                // 18: muskdeer.config.v1.JetStream
+	(*Redis)(nil),                    // 19: muskdeer.config.v1.Redis
+	(*Postgres)(nil),                 // 20: muskdeer.config.v1.Postgres
+	(*Logging)(nil),                  // 21: muskdeer.config.v1.Logging
+	(*LogFile)(nil),                  // 22: muskdeer.config.v1.LogFile
+	(*Listener)(nil),                 // 23: muskdeer.config.v1.Listener
+	(*durationpb.Duration)(nil),      // 24: google.protobuf.Duration
 }
 var file_deer_proto_config_v1_service_proto_depIdxs = []int32{
-	23, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	23, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
-	22, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
-	22, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
-	20, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
-	19, // 5: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
-	18, // 6: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
-	17, // 7: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
-	15, // 8: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
-	14, // 9: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
-	12, // 10: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
-	22, // 11: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
-	2,  // 12: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
-	1,  // 13: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	23, // 14: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
-	23, // 15: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
-	10, // 16: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
-	9,  // 17: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
-	23, // 18: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
-	8,  // 19: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
-	7,  // 20: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
-	3,  // 21: muskdeer.config.v1.BusinessRuntime.himalaya:type_name -> muskdeer.config.v1.HimalayaRuntime
-	6,  // 22: muskdeer.config.v1.HimalayaRuntime.profiles:type_name -> muskdeer.config.v1.HimalayaProfile
-	23, // 23: muskdeer.config.v1.HimalayaRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	4,  // 24: muskdeer.config.v1.HimalayaRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
-	23, // 25: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
-	5,  // 26: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
-	23, // 27: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	23, // 28: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
-	11, // 29: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
-	23, // 30: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	23, // 31: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
-	13, // 32: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	23, // 33: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 34: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
-	13, // 35: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	23, // 36: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 37: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
-	16, // 38: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
-	23, // 39: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
-	23, // 40: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 41: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
-	23, // 42: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 43: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
-	23, // 44: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
-	23, // 45: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
-	23, // 46: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
-	23, // 47: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
-	23, // 48: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
-	23, // 49: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 50: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
-	21, // 51: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	23, // 52: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	53, // [53:53] is the sub-list for method output_type
-	53, // [53:53] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	24, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	24, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	23, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
+	23, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
+	21, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
+	20, // 5: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
+	19, // 6: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
+	18, // 7: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
+	16, // 8: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
+	15, // 9: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
+	13, // 10: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
+	23, // 11: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
+	3,  // 12: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
+	2,  // 13: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
+	24, // 14: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
+	24, // 15: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
+	11, // 16: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
+	10, // 17: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
+	24, // 18: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
+	9,  // 19: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
+	8,  // 20: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
+	4,  // 21: muskdeer.config.v1.BusinessRuntime.himalaya:type_name -> muskdeer.config.v1.HimalayaRuntime
+	7,  // 22: muskdeer.config.v1.HimalayaRuntime.profiles:type_name -> muskdeer.config.v1.HimalayaProfile
+	24, // 23: muskdeer.config.v1.HimalayaRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	5,  // 24: muskdeer.config.v1.HimalayaRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
+	24, // 25: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
+	6,  // 26: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
+	0,  // 27: muskdeer.config.v1.SyntheticTape.mode:type_name -> muskdeer.config.v1.SyntheticTapeMode
+	24, // 28: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	24, // 29: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
+	12, // 30: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
+	24, // 31: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	24, // 32: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
+	14, // 33: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	24, // 34: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
+	24, // 35: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
+	14, // 36: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	24, // 37: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
+	24, // 38: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
+	17, // 39: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	24, // 40: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
+	24, // 41: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
+	24, // 42: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
+	24, // 43: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
+	24, // 44: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
+	24, // 45: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
+	24, // 46: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
+	24, // 47: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
+	24, // 48: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
+	24, // 49: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
+	24, // 50: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
+	24, // 51: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
+	22, // 52: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	24, // 53: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	54, // [54:54] is the sub-list for method output_type
+	54, // [54:54] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_config_v1_service_proto_init() }
@@ -2387,13 +2449,14 @@ func file_deer_proto_config_v1_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_config_v1_service_proto_rawDesc), len(file_deer_proto_config_v1_service_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_deer_proto_config_v1_service_proto_goTypes,
 		DependencyIndexes: file_deer_proto_config_v1_service_proto_depIdxs,
+		EnumInfos:         file_deer_proto_config_v1_service_proto_enumTypes,
 		MessageInfos:      file_deer_proto_config_v1_service_proto_msgTypes,
 	}.Build()
 	File_deer_proto_config_v1_service_proto = out.File

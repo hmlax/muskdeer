@@ -66,6 +66,50 @@ func (x *BookRequest) GetSymbol() string {
 	return ""
 }
 
+type TradeRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Symbol        string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TradeRequest) Reset() {
+	*x = TradeRequest{}
+	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TradeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TradeRequest) ProtoMessage() {}
+
+func (x *TradeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TradeRequest.ProtoReflect.Descriptor instead.
+func (*TradeRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *TradeRequest) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
 type QuotePlan struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Scope         *v1.HimalayaScope      `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
@@ -79,7 +123,7 @@ type QuotePlan struct {
 
 func (x *QuotePlan) Reset() {
 	*x = QuotePlan{}
-	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[1]
+	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -91,7 +135,7 @@ func (x *QuotePlan) String() string {
 func (*QuotePlan) ProtoMessage() {}
 
 func (x *QuotePlan) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[1]
+	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -104,7 +148,7 @@ func (x *QuotePlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuotePlan.ProtoReflect.Descriptor instead.
 func (*QuotePlan) Descriptor() ([]byte, []int) {
-	return file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP(), []int{1}
+	return file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *QuotePlan) GetScope() *v1.HimalayaScope {
@@ -154,7 +198,7 @@ type QuoteResult struct {
 
 func (x *QuoteResult) Reset() {
 	*x = QuoteResult{}
-	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[2]
+	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -166,7 +210,7 @@ func (x *QuoteResult) String() string {
 func (*QuoteResult) ProtoMessage() {}
 
 func (x *QuoteResult) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[2]
+	mi := &file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -179,7 +223,7 @@ func (x *QuoteResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuoteResult.ProtoReflect.Descriptor instead.
 func (*QuoteResult) Descriptor() ([]byte, []int) {
-	return file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP(), []int{2}
+	return file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *QuoteResult) GetPlaced() uint32 {
@@ -216,6 +260,8 @@ const file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDesc = "" +
 	"\n" +
 	"(deer/proto/rpc/himalaya/v1/runtime.proto\x12\x14muskdeer.himalaya.v1\x1a#deer/proto/common/v1/himalaya.proto\x1a$deer/proto/common/v1/synthetic.proto\"%\n" +
 	"\vBookRequest\x12\x16\n" +
+	"\x06symbol\x18\x01 \x01(\tR\x06symbol\"&\n" +
+	"\fTradeRequest\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\"\x9a\x02\n" +
 	"\tQuotePlan\x127\n" +
 	"\x05scope\x18\x01 \x01(\v2!.muskdeer.common.v1.HimalayaScopeR\x05scope\x124\n" +
@@ -228,9 +274,10 @@ const file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDesc = "" +
 	"\x06placed\x18\x01 \x01(\rR\x06placed\x12\x1c\n" +
 	"\tcancelled\x18\x02 \x01(\rR\tcancelled\x12\x1a\n" +
 	"\bretained\x18\x03 \x01(\rR\bretained\x12\x14\n" +
-	"\x05state\x18\x04 \x01(\tR\x05state2X\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state2\xab\x01\n" +
 	"\x06Market\x12N\n" +
-	"\aGetBook\x12!.muskdeer.himalaya.v1.BookRequest\x1a .muskdeer.common.v1.HimalayaBook2\x98\x02\n" +
+	"\aGetBook\x12!.muskdeer.himalaya.v1.BookRequest\x1a .muskdeer.common.v1.HimalayaBook\x12Q\n" +
+	"\bGetTrade\x12\".muskdeer.himalaya.v1.TradeRequest\x1a!.muskdeer.common.v1.HimalayaTrade2\x98\x02\n" +
 	"\tExecution\x12V\n" +
 	"\vGetSnapshot\x12!.muskdeer.common.v1.HimalayaScope\x1a$.muskdeer.common.v1.HimalayaSnapshot\x12O\n" +
 	"\tReconcile\x12\x1f.muskdeer.himalaya.v1.QuotePlan\x1a!.muskdeer.himalaya.v1.QuoteResult\x12b\n" +
@@ -250,39 +297,43 @@ func file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDescData
 }
 
-var file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deer_proto_rpc_himalaya_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_deer_proto_rpc_himalaya_v1_runtime_proto_goTypes = []any{
 	(*BookRequest)(nil),            // 0: muskdeer.himalaya.v1.BookRequest
-	(*QuotePlan)(nil),              // 1: muskdeer.himalaya.v1.QuotePlan
-	(*QuoteResult)(nil),            // 2: muskdeer.himalaya.v1.QuoteResult
-	(*v1.HimalayaScope)(nil),       // 3: muskdeer.common.v1.HimalayaScope
-	(*v1.HimalayaBook)(nil),        // 4: muskdeer.common.v1.HimalayaBook
-	(*v1.HimalayaAuthority)(nil),   // 5: muskdeer.common.v1.HimalayaAuthority
-	(*v1.HimalayaTarget)(nil),      // 6: muskdeer.common.v1.HimalayaTarget
-	(*v1.SyntheticTapePlan)(nil),   // 7: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.HimalayaSnapshot)(nil),    // 8: muskdeer.common.v1.HimalayaSnapshot
-	(*v1.SyntheticTapeResult)(nil), // 9: muskdeer.common.v1.SyntheticTapeResult
+	(*TradeRequest)(nil),           // 1: muskdeer.himalaya.v1.TradeRequest
+	(*QuotePlan)(nil),              // 2: muskdeer.himalaya.v1.QuotePlan
+	(*QuoteResult)(nil),            // 3: muskdeer.himalaya.v1.QuoteResult
+	(*v1.HimalayaScope)(nil),       // 4: muskdeer.common.v1.HimalayaScope
+	(*v1.HimalayaBook)(nil),        // 5: muskdeer.common.v1.HimalayaBook
+	(*v1.HimalayaAuthority)(nil),   // 6: muskdeer.common.v1.HimalayaAuthority
+	(*v1.HimalayaTarget)(nil),      // 7: muskdeer.common.v1.HimalayaTarget
+	(*v1.SyntheticTapePlan)(nil),   // 8: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.HimalayaTrade)(nil),       // 9: muskdeer.common.v1.HimalayaTrade
+	(*v1.HimalayaSnapshot)(nil),    // 10: muskdeer.common.v1.HimalayaSnapshot
+	(*v1.SyntheticTapeResult)(nil), // 11: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_rpc_himalaya_v1_runtime_proto_depIdxs = []int32{
-	3, // 0: muskdeer.himalaya.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.HimalayaScope
-	4, // 1: muskdeer.himalaya.v1.QuotePlan.book:type_name -> muskdeer.common.v1.HimalayaBook
-	5, // 2: muskdeer.himalaya.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.HimalayaAuthority
-	6, // 3: muskdeer.himalaya.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.HimalayaTarget
-	0, // 4: muskdeer.himalaya.v1.Market.GetBook:input_type -> muskdeer.himalaya.v1.BookRequest
-	3, // 5: muskdeer.himalaya.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
-	1, // 6: muskdeer.himalaya.v1.Execution.Reconcile:input_type -> muskdeer.himalaya.v1.QuotePlan
-	7, // 7: muskdeer.himalaya.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	3, // 8: muskdeer.himalaya.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
-	4, // 9: muskdeer.himalaya.v1.Market.GetBook:output_type -> muskdeer.common.v1.HimalayaBook
-	8, // 10: muskdeer.himalaya.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
-	2, // 11: muskdeer.himalaya.v1.Execution.Reconcile:output_type -> muskdeer.himalaya.v1.QuoteResult
-	9, // 12: muskdeer.himalaya.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	8, // 13: muskdeer.himalaya.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
-	9, // [9:14] is the sub-list for method output_type
-	4, // [4:9] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4,  // 0: muskdeer.himalaya.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.HimalayaScope
+	5,  // 1: muskdeer.himalaya.v1.QuotePlan.book:type_name -> muskdeer.common.v1.HimalayaBook
+	6,  // 2: muskdeer.himalaya.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.HimalayaAuthority
+	7,  // 3: muskdeer.himalaya.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.HimalayaTarget
+	0,  // 4: muskdeer.himalaya.v1.Market.GetBook:input_type -> muskdeer.himalaya.v1.BookRequest
+	1,  // 5: muskdeer.himalaya.v1.Market.GetTrade:input_type -> muskdeer.himalaya.v1.TradeRequest
+	4,  // 6: muskdeer.himalaya.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
+	2,  // 7: muskdeer.himalaya.v1.Execution.Reconcile:input_type -> muskdeer.himalaya.v1.QuotePlan
+	8,  // 8: muskdeer.himalaya.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	4,  // 9: muskdeer.himalaya.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.HimalayaScope
+	5,  // 10: muskdeer.himalaya.v1.Market.GetBook:output_type -> muskdeer.common.v1.HimalayaBook
+	9,  // 11: muskdeer.himalaya.v1.Market.GetTrade:output_type -> muskdeer.common.v1.HimalayaTrade
+	10, // 12: muskdeer.himalaya.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
+	3,  // 13: muskdeer.himalaya.v1.Execution.Reconcile:output_type -> muskdeer.himalaya.v1.QuoteResult
+	11, // 14: muskdeer.himalaya.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	10, // 15: muskdeer.himalaya.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.HimalayaSnapshot
+	10, // [10:16] is the sub-list for method output_type
+	4,  // [4:10] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_rpc_himalaya_v1_runtime_proto_init() }
@@ -296,7 +347,7 @@ func file_deer_proto_rpc_himalaya_v1_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDesc), len(file_deer_proto_rpc_himalaya_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   3,
 		},

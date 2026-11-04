@@ -3,6 +3,7 @@ package native
 import (
 	"time"
 
+	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
@@ -31,6 +32,9 @@ func ValidateSyntheticConfig(h *configv1.HimalayaRuntime) error {
 	if s == nil {
 		return nil
 	}
+	if !validSyntheticMode(h) {
+		return ErrInvalid
+	}
 	if !s.DevelopmentOnly || len(s.RunId) == 0 || len(s.RunId) > 20 || s.MaximumEvents == 0 || s.MaximumEvents > 1000 ||
 		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 || len(s.Profiles) > len(h.Profiles) {
 		return ErrInvalid
@@ -58,6 +62,18 @@ func ValidateSyntheticConfig(h *configv1.HimalayaRuntime) error {
 	return nil
 }
 
+func validSyntheticMode(h *configv1.HimalayaRuntime) bool {
+	switch h.GetSyntheticTape().GetMode() {
+	case configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK:
+		return true
+	case configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE:
+		fraction, err := Value(h.QuantityFraction, false, false)
+		return err == nil && !fraction.GreaterThan(decimal.NewFromInt(1))
+	default:
+		return false
+	}
+}
+
 // SyntheticMarket returns the immutable market grid selected for the symbol.
 func SyntheticMarket(h *configv1.HimalayaRuntime, symbol string) *configv1.HimalayaProfile {
 	for _, profile := range h.GetProfiles() {
@@ -80,7 +96,7 @@ func SyntheticProfile(h *configv1.HimalayaRuntime, symbol string) *configv1.Synt
 
 // SyntheticPlan validates and prices a development slot from a fresh source.
 func SyntheticPlan(h *configv1.HimalayaRuntime, symbol string, sequence uint32, book *commonv1.HimalayaBook, strategy *commonv1.HimalayaAuthority) (*commonv1.SyntheticTapePlan, error) {
-	if ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || sequence >= h.SyntheticTape.MaximumEvents ||
+	if h.GetSyntheticTape().GetMode() != configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK || ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || sequence >= h.SyntheticTape.MaximumEvents ||
 		book.GetSymbol() != symbol || book.GetSource() != Source || book.GetSegment() != Segment || book.GetValidUntilMs() <= time.Now().UnixMilli() ||
 		len(book.GetBids()) == 0 || len(book.GetAsks()) == 0 {
 		return nil, ErrInvalid

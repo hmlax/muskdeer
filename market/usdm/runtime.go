@@ -33,6 +33,7 @@ type Runtime struct {
 	leases domain.LeaseRepository
 	mu     sync.RWMutex
 	books  map[string]*commonv1.HimalayaBook
+	trades map[string]*commonv1.HimalayaTrade
 	logger *logging.Logger
 }
 
@@ -48,6 +49,7 @@ func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, logger
 		cfg:    proto.CloneOf(cfg),
 		leases: leases,
 		books:  make(map[string]*commonv1.HimalayaBook),
+		trades: make(map[string]*commonv1.HimalayaTrade),
 		logger: logger,
 	}, nil
 }
@@ -65,6 +67,14 @@ func (r *Runtime) Workers() []deer.Worker {
 			Name: "market.usdm." + strings.ToLower(profile.Symbol),
 			Run:  func(ctx context.Context) error { return r.run(ctx, profile.Symbol) },
 		})
+	}
+	if r.cfg.Himalaya.GetSyntheticTape().GetEnabled() && r.cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		for _, profile := range r.cfg.Himalaya.SyntheticTape.Profiles {
+			result = append(result, deer.Worker{
+				Name: tradeWorkerPrefix + strings.ToLower(profile.Symbol),
+				Run:  func(ctx context.Context) error { return r.runTrades(ctx, profile.Symbol) },
+			})
+		}
 	}
 	return result
 }

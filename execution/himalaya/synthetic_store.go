@@ -40,7 +40,8 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 		return cached, nil
 	}
 	// The claim is committed before the SDK callback; this transaction retains
-	// all three authority rows until the bounded, single attempt completes.
+	// the execution, strategy and source authority rows until the bounded,
+	// single attempt completes.
 	var response *pb.WashTradeResponse
 	err = s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, left, err := lockSyntheticAuthorities(ctx, tx, execution, row.Plan)
@@ -77,6 +78,7 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 		Price:       response.Price,
 		Quantity:    response.Quantity,
 		TimestampMs: response.TimestampMs,
+		SourceTrade: proto.CloneOf(row.Plan.SourceTrade),
 	}
 	if err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).Select("Result").Updates(row).Error; err != nil {
 		return nil, err
@@ -90,7 +92,7 @@ func validSyntheticPlan(cfg *configv1.HimalayaRuntime, execution domain.LeaseTok
 		plan.GetBook().GetPublisher().GetAccountId() != native.MarketKey(plan.Symbol) || plan.RunId != cfg.GetSyntheticTape().GetRunId() {
 		return false
 	}
-	expected, err := native.SyntheticPlan(cfg, plan.Symbol, plan.Sequence, plan.Book, plan.Strategy)
+	expected, err := native.SyntheticSourcePlan(cfg, plan)
 	return err == nil && proto.Equal(expected, plan)
 }
 
@@ -111,12 +113,22 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 		}
 		total := decimal.Zero
 		last := int64(0)
+		lastSource := int64(0)
 		for i, row := range rows {
 			amount, err := syntheticReservation(row, digest, int64(i))
 			if err != nil {
 				return err
 			}
 			total = total.Add(amount)
+			if cfg.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+				sourceID, err := validateSyntheticTradeAudit(cfg, row.Plan)
+				if err != nil || sourceID <= lastSource {
+					return ErrInvalidSubmit
+				}
+				lastSource = sourceID
+			} else if row.Plan.GetSourceTrade() != nil {
+				return ErrInvalidSubmit
+			}
 			last = max(last, row.CreateAt)
 			if row.Sequence == int64(plan.Sequence) {
 				result = row
@@ -127,6 +139,12 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 			// the strategy/source rows held by the first sender or require its
 			// old publication authority to remain live merely to read a result.
 			return nil
+		}
+		if cfg.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+			sourceID, err := native.TradeSequence(plan.SourceTrade)
+			if err != nil || sourceID <= lastSource {
+				return ErrInvalidSubmit
+			}
 		}
 		now, _, err := lockSyntheticAuthorities(ctx, tx, execution, plan)
 		if err != nil {
@@ -154,7 +172,10 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 			PolicyDigest: digest,
 			Plan:         proto.CloneOf(plan),
 			Notional:     notional.String(),
-			Result:       &commonv1.SyntheticTapeResult{State: native.SyntheticUnknown},
+			Result: &commonv1.SyntheticTapeResult{
+				State:       native.SyntheticUnknown,
+				SourceTrade: proto.CloneOf(plan.SourceTrade),
+			},
 		}
 		if err := tx.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Create(result).Error; err != nil {
 			return err
@@ -165,12 +186,24 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 	return result, fresh, err
 }
 
+// The already locked execution lease serializes source-event admission across
+// owners. The durable plans retain a monotonic cursor, including unknown slots.
+func validateSyntheticTradeAudit(cfg *configv1.HimalayaRuntime, plan *commonv1.SyntheticTapePlan) (int64, error) {
+	target, err := native.SyntheticTradeTarget(cfg, plan.GetSourceTrade())
+	if err != nil || target.Side != plan.GetSide() || target.Price != plan.GetPrice() || target.Quantity != plan.GetQuantity() ||
+		plan.SourceTrade.GetPublisher().GetAccountId() != native.TradeKey(plan.Symbol) {
+		return 0, ErrInvalidSubmit
+	}
+	return native.TradeSequence(plan.SourceTrade)
+}
+
 func syntheticReservation(row *modelv1.SyntheticTapeIntent, digest string, sequence int64) (decimal.Decimal, error) {
 	amount, e1 := domain.ParseLedgerDecimal(row.Notional, false, false)
 	price, e2 := native.Value(row.Plan.GetPrice(), false, false)
 	quantity, e3 := native.Value(row.Plan.GetQuantity(), false, false)
 	if e1 != nil || e2 != nil || e3 != nil || row.DeleteAt != nil || row.PolicyDigest != digest || row.Sequence != sequence || row.Plan.GetSequence() != uint32(sequence) ||
 		row.Plan.GetRunId() != row.RunId || row.Plan.GetSymbol() != row.Symbol || !amount.Equal(price.Mul(quantity)) ||
+		!proto.Equal(row.Plan.GetSourceTrade(), row.Result.GetSourceTrade()) ||
 		row.Result.GetState() != native.SyntheticPublished && row.Result.GetState() != native.SyntheticUnknown {
 		return decimal.Zero, ErrInvalidSubmit
 	}
@@ -187,6 +220,15 @@ func lockSyntheticAuthorities(ctx context.Context, tx *gorm.DB, execution domain
 	source.ExpiresAtMs = plan.Book.ValidUntilMs
 	for _, authority := range []*commonv1.HimalayaAuthority{plan.Strategy, source} {
 		left, err := repository.LockNativeAuthority(ctx, tx, authority)
+		if err != nil {
+			return 0, 0, err
+		}
+		remaining = min(remaining, left)
+	}
+	if plan.SourceTrade != nil {
+		tradeSource := proto.CloneOf(plan.SourceTrade.Publisher)
+		tradeSource.ExpiresAtMs = plan.SourceTrade.ValidUntilMs
+		left, err := repository.LockNativeAuthority(ctx, tx, tradeSource)
 		if err != nil {
 			return 0, 0, err
 		}

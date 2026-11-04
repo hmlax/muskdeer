@@ -28,14 +28,54 @@ import (
 
 type nativeMarketFixture struct {
 	himalayav1.UnimplementedMarketServer
-	authority *commonv1.HimalayaAuthority
-	stop      atomic.Bool
-	offset    atomic.Int64
-	depth     uint32
-	quantity  atomic.Int64
-	renewal   sync.Mutex
-	leases    domain.LeaseRepository
-	lease     domain.LeaseToken
+	authority        *commonv1.HimalayaAuthority
+	stop             atomic.Bool
+	offset           atomic.Int64
+	depth            uint32
+	quantity         atomic.Int64
+	renewal          sync.Mutex
+	leases           domain.LeaseRepository
+	lease            domain.LeaseToken
+	tradeAuthority   *commonv1.HimalayaAuthority
+	tradeLease       domain.LeaseToken
+	tradeRequests    atomic.Int64
+	tradeSequence    atomic.Int64
+	tradeUnavailable atomic.Bool
+}
+
+func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *himalayav1.TradeRequest) (*commonv1.HimalayaTrade, error) {
+	m.tradeRequests.Add(1)
+	if m.tradeUnavailable.Load() || m.tradeAuthority == nil {
+		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
+	}
+	publisher := proto.CloneOf(m.tradeAuthority)
+	if m.leases != nil {
+		m.renewal.Lock()
+		token, err := m.leases.Renew(ctx, m.tradeLease, 10*time.Second)
+		if err == nil {
+			m.tradeLease = token
+		}
+		m.renewal.Unlock()
+		if err != nil {
+			return nil, status.Error(codes.Unavailable, native.MessageInvalid)
+		}
+		publisher = native.Authority(token)
+	}
+	now := time.Now()
+	return &commonv1.HimalayaTrade{
+		Symbol:       "BTCUSDT",
+		Source:       native.Source,
+		Segment:      native.Segment,
+		EventId:      strconv.FormatInt(m.tradeSequence.Add(1), 10),
+		Side:         string(domain.SideSell),
+		Price:        "100.4",
+		Quantity:     "0.7",
+		EventAtMs:    now.UnixMilli(),
+		TradeAtMs:    now.UnixMilli(),
+		ReceivedAtMs: now.UnixMilli(),
+		ValidUntilMs: now.Add(native.TradeAge).UnixMilli(),
+		Publisher:    publisher,
+	}, nil
 }
 
 func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *himalayav1.BookRequest) (*commonv1.HimalayaBook, error) {

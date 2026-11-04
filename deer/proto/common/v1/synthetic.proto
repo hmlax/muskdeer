@@ -14,6 +14,7 @@ message SyntheticTapePlan {
   string quantity = 6;
   HimalayaAuthority strategy = 7;
   HimalayaBook book = 8;
+  HimalayaTrade source_trade = 9;
 }
 message SyntheticTapeResult {
   string state = 1;
@@ -22,4 +23,5 @@ message SyntheticTapeResult {
   string quantity = 4;
   uint64 timestamp_ms = 5;
   bool replayed = 6;
+  HimalayaTrade source_trade = 7;
 }
