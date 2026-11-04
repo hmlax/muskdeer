@@ -1,2 +1,2 @@
-// Package persistenceprobe verifies the generated persistence contract for P01.
+// Package persistenceprobe verifies generated business models and persistence.
 package persistenceprobe

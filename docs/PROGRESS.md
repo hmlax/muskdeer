@@ -1760,3 +1760,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 删除 scripts/verify-hz.py、make hz-check、verify 中的对应依赖及 tools/versions.json 的 hz 插件；生成器不再传入 Hertz Proto 或导入映射。重新生成受影响的 probe Go 文件，源码和生成目录均无 Hertz 注解引用，历史验收记录保留。
 - make generate-check（80 个 Proto Go 文件、五 Wire）、fmt-check、服务布局、lint/govet（0 issues）、44 项 Python 工具测试及全包 go build 通过；Deer、frameworkprobe、JetStream 和五服务入口的相关 race 回归通过，覆盖 gRPC、HTTP 十进制 query 绑定、监控生命周期及健康检查。
 - 原有 50 处待提交修改逐字节保持，与本次 20 个文件清理独立。完整工作区业务测试、全量 integration/e2e/soak 未运行；未重启交易服务、发布配置或改动数据库。提交与远程结果见本轮报告。
+
+
+## 2026-11-04：P25 移除无业务用途的模型样例
+
+- 按用户要求核查 46 个持久化模型的维护代码引用；仅 StorageProbe 没有业务/迁移实现引用，是 P01 技术验证实体。删除 common/model/v1/storage_probe.proto、对应生成 Go 文件及两套专属建表夹具。保留有业务、租约、身份审计或迁移账本用途的其余 45 个模型；本轮没有合并或重划已有 OMS/资金事务。
+- 生成契约、PostgreSQL 持久化与基础设施回归改用真实 Instrument 和 AccountBudget；隔离夹具复用迁移 0002/0007 的表定义及约束。保留主键、13 列模型元数据、numeric(38,18)、联合唯一键、时间自动更新、NULL/显式零删除时间、事务回滚等断言。额度模型验证 false/零预留写回和保留 revision，并验证显式整数零实际送达数据库后按业务约束返回 23514；没有放宽真实业务约束。lint 正例也改用 Instrument。
+- 相关 persistenceprobe/policy 单元 race、79 个 Proto Go 文件与五 Wire 生成比较、格式、依赖图、lint/govet（0 issues）、规范正反样例、44 项 Python 和全包构建通过。复用现有 infra-postgres 的独立临时数据库，PostgresContract 的五组及 PostgresInfrastructure 的六组 integration/race 均通过，覆盖精确小数、约束/NULL、更新/回滚、连接池、超时、readiness 和认证错误；测试逻辑资源已按原流程清理，未新增/停止共享基础容器。
+- 原有 50 处未提交修改逐字节保持，实际业务模型和所有数据库版本化迁移未修改。完整工作区业务测试、全量 integration/e2e/soak 未运行；未重启交易服务或发布运行配置。本轮清理与相关验收完成，提交和远程结果见本轮报告。

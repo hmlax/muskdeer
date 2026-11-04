@@ -42,11 +42,11 @@ import (
 )
 // Allowed binds a generated model; metadata inspection does not select a table.
 func Allowed(ctx context.Context, database *gorm.DB) error {
- row := &modelv1.StorageProbe{}
+ row := &modelv1.Instrument{}
  statement := &gorm.Statement{DB: database}
  if err := statement.Parse(row); err != nil { return err }
  _ = statement.Schema.Table
- return database.WithContext(ctx).Model(&modelv1.StorageProbe{}).First(row).Error
+ return database.WithContext(ctx).Model(&modelv1.Instrument{}).First(row).Error
 }
 '''
 

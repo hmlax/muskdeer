@@ -25,6 +25,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }
@@ -40,7 +41,7 @@ func TestPostgresInfrastructure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fixture, err := os.ReadFile("testdata/001_storage_probe.sql")
+	fixture, err := os.ReadFile("testdata/001_instruments.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,21 +75,25 @@ func testAuthenticationFailure(t *testing.T) {
 
 func testGeneratedModel(t *testing.T) {
 	client := openClient(t, postgresConfig(t), "model-roundtrip")
-	row := &commonmodelv1.StorageProbe{
-		Venue:      "binance",
-		Instrument: "p02-roundtrip",
-		Price:      "12345678901234567890.123456789012345678",
-		Enabled:    true,
-		Revision:   1,
+	row := &commonmodelv1.Instrument{
+		ExecutionVenue:  domain.ExecutionVenueSimulator,
+		Symbol:          "p02-roundtrip",
+		BaseAsset:       "BTC",
+		QuoteAsset:      "USDT",
+		QuantityStep:    "0.01",
+		MinNotional:     "1",
+		Status:          domain.InstrumentStatusTrading,
+		PriceTick:       "12345678901234567890.123456789012345678",
+		MetadataVersion: 1,
 	}
-	if err := client.GORM().WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Create(row).Error; err != nil {
+	if err := client.GORM().WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
-	var stored commonmodelv1.StorageProbe
-	if err := client.GORM().WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).First(&stored, row.Id).Error; err != nil {
+	var stored commonmodelv1.Instrument
+	if err := client.GORM().WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).First(&stored, row.Id).Error; err != nil {
 		t.Fatal(err)
 	}
-	if stored.Id <= 0 || stored.CreateAt == 0 || stored.UpdateAt == 0 || stored.DeleteAt != nil || stored.Price != row.Price {
+	if stored.Id <= 0 || stored.CreateAt == 0 || stored.UpdateAt == 0 || stored.DeleteAt != nil || stored.PriceTick != row.PriceTick {
 		t.Fatalf("generated model round trip = %v", &stored)
 	}
 	for range 2 {
@@ -133,16 +138,21 @@ func testStatementTimeout(t *testing.T) {
 	cfg.StatementTimeout = durationpb.New(250 * time.Millisecond)
 	client := openClient(t, cfg, "statement-timeout")
 	db := client.GORM()
-	row := &commonmodelv1.StorageProbe{
-		Venue:      "okx",
-		Instrument: "p02-lock-timeout",
-		Price:      "0.1",
-		Revision:   1,
+	row := &commonmodelv1.Instrument{
+		ExecutionVenue:  domain.ExecutionVenueSimulator,
+		Symbol:          "p02-lock-timeout",
+		BaseAsset:       "BTC",
+		QuoteAsset:      "USDT",
+		PriceTick:       "0.1",
+		QuantityStep:    "0.01",
+		MinNotional:     "1",
+		Status:          domain.InstrumentStatusTrading,
+		MetadataVersion: 1,
 	}
-	if err := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Create(row).Error; err != nil {
+	if err := db.WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
-	tx := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Begin()
+	tx := db.WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).Begin()
 	if tx.Error != nil {
 		t.Fatal(tx.Error)
 	}
@@ -151,20 +161,20 @@ func testStatementTimeout(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	var locked commonmodelv1.StorageProbe
-	if err := tx.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Clauses(clause.Locking{Strength: "UPDATE"}).First(&locked, row.Id).Error; err != nil {
+	var locked commonmodelv1.Instrument
+	if err := tx.WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).Clauses(clause.Locking{Strength: "UPDATE"}).First(&locked, row.Id).Error; err != nil {
 		t.Fatal(err)
 	}
-	err := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Where("id = ?", row.Id).Update("price", "0.2").Error
+	err := db.WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).Where("id = ?", row.Id).Update("price_tick", "0.2").Error
 	var serverError *pgconn.PgError
 	if !errors.As(err, &serverError) || serverError.Code != "57014" {
 		t.Fatalf("blocked statement = %v; want server statement_timeout", err)
 	}
-	var stored commonmodelv1.StorageProbe
-	if err := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).First(&stored, row.Id).Error; err != nil {
+	var stored commonmodelv1.Instrument
+	if err := db.WithContext(t.Context()).Model(&commonmodelv1.Instrument{}).First(&stored, row.Id).Error; err != nil {
 		t.Fatal(err)
 	}
-	if !decimal.RequireFromString(stored.Price).Equal(decimal.RequireFromString(row.Price)) {
+	if !decimal.RequireFromString(stored.PriceTick).Equal(decimal.RequireFromString(row.PriceTick)) {
 		t.Fatal("timed-out statement changed the row")
 	}
 }
@@ -183,7 +193,7 @@ func testDeerDependencies(t *testing.T) {
 				return err
 			}
 			var count int64
-			if err := db.WithContext(ctx).Model(&commonmodelv1.StorageProbe{}).Count(&count).Error; err != nil {
+			if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Count(&count).Error; err != nil {
 				return err
 			}
 			registered = true
