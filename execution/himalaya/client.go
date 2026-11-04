@@ -171,10 +171,17 @@ func (c *Client) Submit(ctx context.Context, request SubmitRequest) (*pb.PlaceOr
 			return errRepeatedDispatch
 		}
 		var callErr error
-		response, callErr = c.sdk.Place(send, input)
+		trace := &sdkDispatchTrace{}
+		response, callErr = c.sdk.Place(context.WithValue(send, sdkDispatchContextKey{}, trace), input)
+		if callErr != nil && trace.entered.Load() && !trace.body.Load() {
+			return errors.Join(errSDKNotDispatched, callErr)
+		}
 		return callErr
 	})
 	if err != nil {
+		if errors.Is(err, errSDKNotDispatched) {
+			return nil, err
+		}
 		if dispatched.Load() {
 			return response, &outcomeFailure{cause: err}
 		}

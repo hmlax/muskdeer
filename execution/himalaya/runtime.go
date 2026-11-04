@@ -364,6 +364,30 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 	if err != nil {
 		return nil, err
 	}
+	clients, err := r.store.pendingClientIDs(ctx, lease.Key.AccountID)
+	if err != nil {
+		return nil, err
+	}
+	var recoveryErr error
+	if len(clients) != 0 {
+		orders, err := r.client.Load().findClientOrders(ctx, Scope{
+			UserID: profile.UserId,
+			FundID: profile.FundId,
+			Symbol: profile.Symbol,
+		}, clients, int32(raw.Market.Market.EffectiveBasePrecision))
+		if err != nil {
+			return nil, err
+		}
+		if err := r.store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
+			Scope:  snapshot.Scope,
+			Orders: orders,
+		}); err != nil {
+			return nil, err
+		}
+		if len(orders) < len(clients) {
+			recoveryErr = domain.ErrOutcomeUnknown
+		}
+	}
 	pending, err := r.store.PendingIDs(ctx, lease.Key.AccountID)
 	if err != nil {
 		return nil, err
@@ -372,7 +396,6 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 	for _, order := range snapshot.Orders {
 		present[order.OrderId] = true
 	}
-	var recoveryErr error
 	for _, id := range pending {
 		if present[strconv.FormatUint(id, 10)] {
 			continue

@@ -3,12 +3,20 @@ package himalaya
 import (
 	"context"
 	"io"
+	"sync/atomic"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
+
+type sdkDispatchContextKey struct{}
+
+type sdkDispatchTrace struct {
+	entered atomic.Bool
+	body    atomic.Bool
+}
 
 const (
 	sdkAuthorizationHeader = "authorization"
@@ -20,6 +28,10 @@ const (
 // Commit the stream before SendMsg, as in deer/rpcclient, to prevent transparent
 // replay of a business request; WithDisableRetry alone does not prevent it.
 func invokeSDKOnce(ctx context.Context, method string, request, reply any, conn *grpc.ClientConn, _ grpc.UnaryInvoker, options ...grpc.CallOption) error {
+	trace, _ := ctx.Value(sdkDispatchContextKey{}).(*sdkDispatchTrace)
+	if trace != nil {
+		trace.entered.Store(true)
+	}
 	// The SDK's unary interceptor has already appended authentication. NewStream
 	// invokes its stream interceptor, which appends that same authentication;
 	// remove the first copy so the unchanged SDK supplies exactly one of each.
@@ -35,6 +47,11 @@ func invokeSDKOnce(ctx context.Context, method string, request, reply any, conn 
 		return err
 	}
 	_ = stream.Context()
+	if trace != nil {
+		// NewStream cannot send the unary request body. Once SendMsg is
+		// entered, even its error remains ambiguous; never infer no effect.
+		trace.body.Store(true)
+	}
 	if err := stream.SendMsg(request); err != nil && err != io.EOF {
 		return err
 	}

@@ -141,6 +141,7 @@ type sdkPeer struct {
 	token          string
 	wrongFund      bool
 	historyOrder   *pb.OrderRow
+	historyOrders  []*pb.OrderRow
 	historyRequest *pb.ListOrdersRequest
 	cancelCalls    int
 }
@@ -194,6 +195,13 @@ func (p *sdkPeer) ListOrders(_ context.Context, request *pb.ListOrdersRequest) (
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.historyRequest = proto.CloneOf(request)
+	if request.History && len(p.historyOrders) != 0 {
+		orders := make([]*pb.OrderRow, 0, len(p.historyOrders))
+		for _, order := range p.historyOrders {
+			orders = append(orders, proto.CloneOf(order))
+		}
+		return &pb.ListOrdersResponse{Orders: orders}, nil
+	}
 	if request.History && p.historyOrder != nil {
 		return &pb.ListOrdersResponse{Orders: []*pb.OrderRow{proto.CloneOf(p.historyOrder)}}, nil
 	}

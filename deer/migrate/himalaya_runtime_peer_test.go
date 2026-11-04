@@ -51,14 +51,15 @@ func (m *nativeMarketFixture) GetBook(context.Context, *himalayav1.BookRequest) 
 
 type nativeSDKFixture struct {
 	pb.UnimplementedOrderServer
-	mu             sync.Mutex
-	orders         map[uint64]*pb.OrderRow
-	next           uint64
-	historyDelay   time.Duration
-	synthetic      []*pb.WashTradeRequest
-	historyHold    atomic.Bool
-	historyEntered chan struct{}
-	historyRelease chan struct{}
+	mu                sync.Mutex
+	orders            map[uint64]*pb.OrderRow
+	next              uint64
+	historyDelay      time.Duration
+	synthetic         []*pb.WashTradeRequest
+	historyHold       atomic.Bool
+	historyEntered    chan struct{}
+	historyRelease    chan struct{}
+	lostTerminalReply atomic.Bool
 }
 
 func startNativeSDK(t *testing.T, fixture *nativeSDKFixture) string {
@@ -127,6 +128,10 @@ func (s *nativeSDKFixture) Place(_ context.Context, r *pb.PlaceRequest) (*pb.Pla
 		Quantity: quantity.Shift(3).BigInt().Uint64(),
 		Side:     r.Side,
 		Status:   native.StatusOpen,
+	}
+	if s.lostTerminalReply.CompareAndSwap(true, false) {
+		s.orders[s.next].Status = native.StatusCanceled
+		return nil, status.Error(codes.Unavailable, "injected lost reply after terminal native effect")
 	}
 	return &pb.PlaceOrderResponse{
 		OrderId:  s.next,

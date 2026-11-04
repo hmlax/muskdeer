@@ -172,6 +172,12 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *configv1.HimalayaP
 		if err != nil {
 			return err
 		}
+		if err := r.store.Observe(ctx, lease, &commonv1.HimalayaSnapshot{
+			Scope:  native.Scope(profile),
+			Orders: []*commonv1.HimalayaOrder{order},
+		}); err != nil {
+			return err
+		}
 		if err := r.cancelOne(ctx, lease, profile, order); err != nil {
 			return err
 		}

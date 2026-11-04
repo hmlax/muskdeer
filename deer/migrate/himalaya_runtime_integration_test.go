@@ -14,6 +14,7 @@ import (
 
 	"github.com/shopspring/decimal"
 	pb "gitlab.com/himalaya/lukla-go/pb"
+	"gorm.io/gorm"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -35,28 +36,33 @@ import (
 )
 
 func TestHimalayaNativeWorkersQuoteAndCancelWhenSourceOwnershipIsLost(t *testing.T) {
-	testNativeWorkers(t, 0, 0)
+	testNativeWorkers(t, 0, 0, false)
 }
 
 func TestHimalayaNativeWorkersRecoverHistoryAcrossBoundedCalls(t *testing.T) {
-	testNativeWorkers(t, 40, 0)
+	testNativeWorkers(t, 40, 0, false)
 }
 
 func TestHimalayaNativeRepricingKeepsBothSidesWhileCancelProofIsPending(t *testing.T) {
-	testNativeWorkers(t, 0, 1)
+	testNativeWorkers(t, 0, 1, false)
 }
 
 func TestHimalayaNativePriceJumpSeedsSafeSideBeforeCancellingOldQuote(t *testing.T) {
-	testNativeWorkers(t, 0, 5)
+	testNativeWorkers(t, 0, 5, false)
 }
 
-func testNativeWorkers(t *testing.T, legacy int, reprice int64) {
+func TestHimalayaNativeReplyLossRecoversPositiveHistoryWithoutResubmission(t *testing.T) {
+	testNativeWorkers(t, 0, 0, true)
+}
+
+func testNativeWorkers(t *testing.T, legacy int, reprice int64, lostReply bool) {
 	t.Helper()
 	db, store, executionLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	t.Cleanup(cancel)
 	authority := liveAuthorityFixture(ctx, t, db, executionLease, request.Symbol)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
+	sdk.lostTerminalReply.Store(lostReply)
 	if reprice > 0 {
 		sdk.historyEntered = make(chan struct{}, 1)
 		sdk.historyRelease = make(chan struct{})
@@ -167,6 +173,9 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64) {
 	if pending, err := store.PendingIDs(ctx, executionLease.Key.AccountID); err != nil || len(pending) != 2 {
 		t.Fatalf("PendingIDs(after history recovery) = %d, %v, want two live orders", len(pending), err)
 	}
+	if lostReply {
+		assertLostReplyRecovery(t, db, sdk)
+	}
 	if reprice > 0 {
 		release := sync.OnceFunc(func() { close(sdk.historyRelease) })
 		t.Cleanup(release)
@@ -216,6 +225,22 @@ func testNativeWorkers(t *testing.T, legacy int, reprice int64) {
 	}
 	market.stop.Store(true)
 	nativeWait(ctx, t, func() bool { return sdk.active() == 0 })
+}
+
+func assertLostReplyRecovery(t *testing.T, db *gorm.DB, sdk *nativeSDKFixture) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	var recovered []*modelv1.HimalayaIntent
+	if err := db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("state = ?", himalaya.IntentTerminal).Find(&recovered).Error; err != nil || len(recovered) != 1 || recovered[0].OrderId != "1" {
+		t.Fatalf("lost reply native fact not recovered: %v, %v", recovered, err)
+	}
+	sdk.mu.Lock()
+	calls := len(sdk.orders)
+	sdk.mu.Unlock()
+	if calls != 3 {
+		t.Fatalf("lost reply produced %d native orders, want one terminal original plus two live quotes", calls)
+	}
 }
 
 func nativeWait(ctx context.Context, t *testing.T, predicate func() bool) {
