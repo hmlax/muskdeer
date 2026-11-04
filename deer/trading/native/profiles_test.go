@@ -8,13 +8,13 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 )
 
-func profileBudgetFixture() *modelv1.HimalayaBudget {
-	return &modelv1.HimalayaBudget{
+func profileBudgetFixture() *commonmodelv1.HimalayaBudget {
+	return &commonmodelv1.HimalayaBudget{
 		AccountId:            ScopeKey(101, 201),
 		UserId:               101,
 		FundId:               201,
@@ -33,15 +33,15 @@ func TestDatabaseProfileRejectsInvalidBusinessPolicy(t *testing.T) {
 	if p, err := ProfileFromBudget(row); err != nil || p.GetPriceTick() != "0.1" || p.GetMaximumNotional() != "1000" {
 		t.Fatalf("database numeric normalization: %v, %v", p, err)
 	}
-	for _, mutate := range []func(*modelv1.HimalayaBudget){
-		func(p *modelv1.HimalayaBudget) { p.AccountId = ScopeKey(102, 201) },
-		func(p *modelv1.HimalayaBudget) { p.Leverage = 11 },
-		func(p *modelv1.HimalayaBudget) { p.PriceTick = "0" },
-		func(p *modelv1.HimalayaBudget) { p.QuantityStep = "0" },
-		func(p *modelv1.HimalayaBudget) { p.MarketDataSource = "okx" },
-		func(p *modelv1.HimalayaBudget) { p.MaximumNotional = "0" },
-		func(p *modelv1.HimalayaBudget) { p.MaximumOrderNotional = "1001" },
-		func(p *modelv1.HimalayaBudget) { p.DeleteAt = proto.Int64(1) },
+	for _, mutate := range []func(*commonmodelv1.HimalayaBudget){
+		func(p *commonmodelv1.HimalayaBudget) { p.AccountId = ScopeKey(102, 201) },
+		func(p *commonmodelv1.HimalayaBudget) { p.Leverage = 11 },
+		func(p *commonmodelv1.HimalayaBudget) { p.PriceTick = "0" },
+		func(p *commonmodelv1.HimalayaBudget) { p.QuantityStep = "0" },
+		func(p *commonmodelv1.HimalayaBudget) { p.MarketDataSource = "okx" },
+		func(p *commonmodelv1.HimalayaBudget) { p.MaximumNotional = "0" },
+		func(p *commonmodelv1.HimalayaBudget) { p.MaximumOrderNotional = "1001" },
+		func(p *commonmodelv1.HimalayaBudget) { p.DeleteAt = proto.Int64(1) },
 	} {
 		changed := proto.CloneOf(row)
 		mutate(changed)

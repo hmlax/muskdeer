@@ -14,8 +14,11 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
@@ -34,7 +37,7 @@ func TestStrategyProcessesPartialFillsProjectFeesAndStopWithRealFunds(t *testing
 	if time.Since(started) < 6*time.Second || fills < 2 {
 		t.Fatal("partial-fill scenario did not run its real duration or both sides")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	waitStrategyProcessesStopped(ctx, t, db, []int64{submit.Input.Authority.StrategyID})
@@ -64,8 +67,8 @@ func startStrategyFillProcesses(ctx context.Context, t *testing.T, db *gorm.DB, 
 	execution := businessProcessConfig(t, ca, postgres, stream, naming, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}
@@ -113,8 +116,8 @@ func fillStrategySide(ctx context.Context, t *testing.T, db *gorm.DB, core domai
 	t.Helper()
 	call, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
-	var row modelv1.SimulatorOrder
-	err := db.WithContext(call).Model(&modelv1.SimulatorOrder{}).
+	var row executionmodelv1.SimulatorOrder
+	err := db.WithContext(call).Model(&executionmodelv1.SimulatorOrder{}).
 		Where("account_id = ? AND strategy_instance_id = ? AND side = ? AND state IN ? AND cancel_state = ? AND delete_at IS NULL", submit.Input.AccountID, submit.Input.Authority.StrategyID, side, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}, domain.CancelStateNone).
 		Order("id DESC").Take(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -173,10 +176,10 @@ func waitStrategyFillProjection(ctx context.Context, t *testing.T, db *gorm.DB, 
 			t.Fatal(err)
 		}
 		var projected, pending int64
-		if err := db.WithContext(proof).Model(&modelv1.PortfolioFill{}).Where("account_id = ?", account).Count(&projected).Error; err != nil {
+		if err := db.WithContext(proof).Model(&portfoliomodelv1.PortfolioFill{}).Where("account_id = ?", account).Count(&projected).Error; err != nil {
 			t.Fatal(err)
 		}
-		if err := db.WithContext(proof).Model(&modelv1.OutboxEvent{}).Where("state <> ?", domain.OutboxStatePublished).Count(&pending).Error; err != nil {
+		if err := db.WithContext(proof).Model(&executionmodelv1.OutboxEvent{}).Where("state <> ?", domain.OutboxStatePublished).Count(&pending).Error; err != nil {
 			t.Fatal(err)
 		}
 		if snapshot.Reconciled && projected == fills && pending == 0 {
@@ -193,12 +196,12 @@ func waitStrategyFillProjection(ctx context.Context, t *testing.T, db *gorm.DB, 
 func assertStrategyFillAccounting(ctx context.Context, t *testing.T, db *gorm.DB, core domain.Simulator, portfolio domain.PortfolioRepository, submit domain.GatewaySubmit, snapshot domain.PortfolioSnapshot, fills int64) {
 	t.Helper()
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, fills)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, fills)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, fills)
-	intents := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Select("client_order_id").Where("account_id = ?", submit.Input.AccountID)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, fills)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, fills)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, fills)
+	intents := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Select("client_order_id").Where("account_id = ?", submit.Input.AccountID)
 	var unexplained int64
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id NOT IN (?)", submit.Input.AccountID, intents).Count(&unexplained).Error; err != nil || unexplained != 0 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id NOT IN (?)", submit.Input.AccountID, intents).Count(&unexplained).Error; err != nil || unexplained != 0 {
 		t.Fatal("core contains an order without its prior durable intent")
 	}
 	if !snapshot.Values.FeesQuote.IsPositive() {
@@ -206,8 +209,8 @@ func assertStrategyFillAccounting(ctx context.Context, t *testing.T, db *gorm.DB
 	}
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", snapshot.Values.Quantity.String(), "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", snapshot.Values.CashQuote.String(), "0")
-	var facts []*modelv1.PortfolioFill
-	if err := db.WithContext(ctx).Model(&modelv1.PortfolioFill{}).Order("source_sequence ASC").Find(&facts).Error; err != nil {
+	var facts []*portfoliomodelv1.PortfolioFill
+	if err := db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).Order("source_sequence ASC").Find(&facts).Error; err != nil {
 		t.Fatal(err)
 	}
 	quantity, cash, fees := decimal.NewFromInt(10), decimal.NewFromInt(1000), decimal.Zero

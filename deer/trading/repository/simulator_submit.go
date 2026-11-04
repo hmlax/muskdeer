@@ -11,7 +11,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -46,7 +47,7 @@ func (s *simulator) Submit(ctx context.Context, command domain.GatewaySubmit) (d
 		return domain.CoreOrder{}, coreFailure(ctx, err)
 	}
 	var result domain.CoreOrder
-	err = s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Transaction(func(tx *gorm.DB) error {
 		rows, err := lockGateway(ctx, tx, in.Authority, command.ExecutionAuthority, in.AccountID, in.InstrumentID)
 		if err != nil {
 			return err
@@ -104,9 +105,9 @@ func fingerprintSubmit(in domain.OrderInput) (string, error) {
 	return hex.EncodeToString(digest[:]), nil
 }
 
-func existingCommand(ctx context.Context, tx *gorm.DB, account, key string) (*modelv1.SimulatorCommand, error) {
-	var row modelv1.SimulatorCommand
-	err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("account_id = ? AND command_key = ? AND delete_at IS NULL", account, key).First(&row).Error
+func existingCommand(ctx context.Context, tx *gorm.DB, account, key string) (*executionmodelv1.SimulatorCommand, error) {
+	var row executionmodelv1.SimulatorCommand
+	err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("account_id = ? AND command_key = ? AND delete_at IS NULL", account, key).First(&row).Error
 	return &row, err
 }
 
@@ -117,7 +118,7 @@ func validateInstrument(in domain.OrderInput, rows coreRows) error {
 	return validateOrderMetadata(in, rows.instrument)
 }
 
-func validateOrderMetadata(in domain.OrderInput, instrument *modelv1.Instrument) error {
+func validateOrderMetadata(in domain.OrderInput, instrument *commonmodelv1.Instrument) error {
 	if instrument.Status != domain.InstrumentStatusTrading {
 		return domain.ErrInvalidOrder
 	}
@@ -140,8 +141,8 @@ func validateOrderMetadata(in domain.OrderInput, instrument *modelv1.Instrument)
 }
 
 func preventSelfCross(ctx context.Context, tx *gorm.DB, in domain.OrderInput, subject string) error {
-	accounts := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Select("account_id").Where("subject_id = ?", subject)
-	query := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id IN (?) AND instrument_id = ? AND state IN ? AND delete_at IS NULL", accounts, in.InstrumentID, []string{string(domain.OrderStateLive), string(domain.OrderStatePartiallyFilled)})
+	accounts := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Select("account_id").Where("subject_id = ?", subject)
+	query := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id IN (?) AND instrument_id = ? AND state IN ? AND delete_at IS NULL", accounts, in.InstrumentID, []string{string(domain.OrderStateLive), string(domain.OrderStatePartiallyFilled)})
 	if in.Side == domain.SideBuy {
 		query = query.Where("side = ? AND price <= ?", string(domain.SideSell), in.Price.String())
 	} else {
@@ -157,7 +158,7 @@ func preventSelfCross(ctx context.Context, tx *gorm.DB, in domain.OrderInput, su
 	// This simulator uses explicit external-fill events. It must not claim
 	// post-only acceptance when another resting core order would be crossed,
 	// or silently leave a marketable GTC order unmatched.
-	book := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("instrument_id = ? AND state IN ? AND delete_at IS NULL", in.InstrumentID, []string{string(domain.OrderStateLive), string(domain.OrderStatePartiallyFilled)})
+	book := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("instrument_id = ? AND state IN ? AND delete_at IS NULL", in.InstrumentID, []string{string(domain.OrderStateLive), string(domain.OrderStatePartiallyFilled)})
 	if in.Side == domain.SideBuy {
 		book = book.Where("side = ? AND price <= ?", string(domain.SideSell), in.Price.String())
 	} else {
@@ -175,7 +176,7 @@ func preventSelfCross(ctx context.Context, tx *gorm.DB, in domain.OrderInput, su
 	return nil
 }
 
-func stageCoreSubmission(ctx context.Context, tx *gorm.DB, command domain.GatewaySubmit, rows coreRows, fingerprint string) (*modelv1.SimulatorOrder, error) {
+func stageCoreSubmission(ctx context.Context, tx *gorm.DB, command domain.GatewaySubmit, rows coreRows, fingerprint string) (*executionmodelv1.SimulatorOrder, error) {
 	in := command.Input
 	feeRate, err := decimal.NewFromString(rows.account.QuoteFeeRate)
 	if err != nil {
@@ -200,10 +201,10 @@ func stageCoreSubmission(ctx context.Context, tx *gorm.DB, command domain.Gatewa
 	if command.IntentID > 0 {
 		record.IntentId = &command.IntentID
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(record).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Create(record).Error; err != nil {
 		return nil, err
 	}
-	order := &modelv1.SimulatorOrder{
+	order := &executionmodelv1.SimulatorOrder{
 		AccountId:          in.AccountID,
 		ClientOrderId:      command.ClientOrderID,
 		InitialCommandId:   record.Id,
@@ -224,14 +225,14 @@ func stageCoreSubmission(ctx context.Context, tx *gorm.DB, command domain.Gatewa
 		QuoteFeeRate:       feeRate.String(),
 		Revision:           1,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Create(order).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Create(order).Error; err != nil {
 		return nil, err
 	}
 	return order, advanceCoreAccount(ctx, tx, rows.account)
 }
 
-func gatewayCommand(authority domain.StrategyAuthority, execution domain.LeaseToken, account, client, key string, instrumentID, deadline int64, action, fingerprint string) *modelv1.SimulatorCommand {
-	return &modelv1.SimulatorCommand{
+func gatewayCommand(authority domain.StrategyAuthority, execution domain.LeaseToken, account, client, key string, instrumentID, deadline int64, action, fingerprint string) *executionmodelv1.SimulatorCommand {
+	return &executionmodelv1.SimulatorCommand{
 		AccountId:          account,
 		CommandKey:         key,
 		Action:             action,

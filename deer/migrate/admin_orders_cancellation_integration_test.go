@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -56,8 +57,8 @@ func TestAdminOrdersCancellationSnapshotsDoNotReleaseBeforeOMSConfirmation(t *te
 		t.Fatal("confirmed terminal cancellation remained an open obligation", err)
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 1)
 }
 

@@ -9,14 +9,15 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
 func riskActorFixture(ctx context.Context, t *testing.T, db *gorm.DB, name string, role domain.AdminRole, seed byte, ttl time.Duration) domain.AdminLogin {
 	t.Helper()
-	user := &modelv1.AdminUser{
+	user := &commonmodelv1.AdminUser{
 		Username:          name,
 		PasswordHash:      controlFixturePasswordHash,
 		Role:              string(role),
@@ -24,13 +25,13 @@ func riskActorFixture(ctx context.Context, t *testing.T, db *gorm.DB, name strin
 		CredentialVersion: 1,
 		Revision:          1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Create(user).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Create(user).Error; err != nil {
 		t.Fatal(err)
 	}
 	now := controlTestDatabaseTime(ctx, t, db, user.Id)
 	token, hash := controlTestSecret(seed)
 	csrf, csrfHash := controlTestSecret(seed + 1)
-	session := &modelv1.AdminSession{
+	session := &commonmodelv1.AdminSession{
 		CreateAt:          now,
 		UpdateAt:          now,
 		UserId:            user.Id,
@@ -39,7 +40,7 @@ func riskActorFixture(ctx context.Context, t *testing.T, db *gorm.DB, name strin
 		CredentialVersion: 1,
 		ExpiresAt:         now + ttl.Milliseconds(),
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Create(session).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
 	return domain.AdminLogin{
@@ -65,7 +66,7 @@ func riskBlockRequest(id int64) domain.AdminRiskRequest {
 	}
 }
 
-func riskRestoreRequest(instance *modelv1.StrategyInstance) domain.AdminRiskRequest {
+func riskRestoreRequest(instance *strategymodelv1.StrategyInstance) domain.AdminRiskRequest {
 	return domain.AdminRiskRequest{
 		Key:                   "risk-managed-strategy-unblock-0001",
 		StrategyID:            instance.Id,

@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -99,7 +99,7 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 	if err != nil {
 		return nil, err
 	}
-	trade, err := rpc.NewMarketClient(connection).GetTrade(ctx, &rpc.TradeRequest{Symbol: proposal.Symbol})
+	trade, err := markethimalayav1.NewMarketClient(connection).GetTrade(ctx, &markethimalayav1.TradeRequest{Symbol: proposal.Symbol})
 	if err != nil {
 		return nil, err
 	}

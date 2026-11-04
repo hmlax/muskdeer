@@ -12,7 +12,9 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -158,12 +160,12 @@ func saveLease(ctx context.Context, tx *gorm.DB, key domain.LeaseKey, row leaseR
 
 func leaseModel(key domain.LeaseKey) leaseRecord {
 	if key.Kind == domain.LeaseKindStrategy {
-		return &modelv1.StrategyLease{StrategyInstanceId: key.StrategyID}
+		return &strategymodelv1.StrategyLease{StrategyInstanceId: key.StrategyID}
 	}
 	if key.Kind == domain.LeaseKindMarket {
-		return &modelv1.MarketPublisherLease{MarketFeedId: key.MarketFeedID}
+		return &marketmodelv1.MarketPublisherLease{MarketFeedId: key.MarketFeedID}
 	}
-	return &modelv1.ExecutionShardLease{AccountId: key.AccountID}
+	return &commonmodelv1.ExecutionShardLease{AccountId: key.AccountID}
 }
 
 func leasePredicate(key domain.LeaseKey) clause.Expression {
@@ -187,15 +189,15 @@ func leasePredicate(key domain.LeaseKey) clause.Expression {
 
 func setLease(row leaseRecord, owner string, epoch, expiresAt int64) {
 	switch row := row.(type) {
-	case *modelv1.StrategyLease:
+	case *strategymodelv1.StrategyLease:
 		row.OwnerId = owner
 		row.Epoch = epoch
 		row.ExpiresAt = expiresAt
-	case *modelv1.ExecutionShardLease:
+	case *commonmodelv1.ExecutionShardLease:
 		row.OwnerId = owner
 		row.Epoch = epoch
 		row.ExpiresAt = expiresAt
-	case *modelv1.MarketPublisherLease:
+	case *marketmodelv1.MarketPublisherLease:
 		row.OwnerId = owner
 		row.Epoch = epoch
 		row.ExpiresAt = expiresAt

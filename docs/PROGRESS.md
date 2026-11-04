@@ -1726,3 +1726,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 
 - 最终同轮对照在同一套隔离逻辑资源上顺序执行：原 HEAD 接管用例 12.03 秒通过，候选 9.91 秒通过，均保留原 25 秒 context、原一秒业务 deadline 和全部资金/接管/停止断言。迁移后的独立成交夹具与策略控制回归也按原期限通过；相关核心和 outbox 用例均有通过记录。初期间歇性失败未被证明已修复，不把一次通过宣称为负载稳定性保证。完整 make verify、全量 integration/e2e/soak 未运行。
 - 本轮目录、清理和健康接口验收通过。cron 镜像还以禁网运行验证无参数合同，传入配置 flags 明确退出 2；未用该负向启动冒充健康检查，真正健康由 Nacos 独立进程用例验证。四原开发容器已恢复 healthy，未部署候选交易镜像、未迁移或改动资金/订单处置政策；BTC/ETH 原未知恢复阻塞保持。最终提交与远程结果见本轮报告。
+
+
+## 2026-11-04：P21 Proto 以服务名组织
+
+- 按最新用户要求移除 deer/proto 顶层 config/model/rpc/hertz 分类，第一层仅 common、market、strategy、execution、portfolio、cron。各服务 RPC、持久化模型、专属配置归其 v1、model/v1、config/v1；SDK 内部 Market/Execution/Portfolio RPC 分别归所属服务 himalaya/v1。公共信封、基础连接、跨服务资金/品种/身份/通用租约、事件及框架探针/注解归 common。cron 沿用标准健康协议，无占位业务 Proto。完整定义归属见 deer/proto/README.md。
+- 保留全部 Proto package、消息与服务全名、字段号/类型/GORM tag、RPC 方法名，HimalayaAuthority 所在源文件逐字节保持。Go 源码使用方改用新导入路径，项目调用点与五份 Wire 已更新；生成器按实际服务声明生成 gRPC，Hertz 注解/探针路径同步。目录门禁限制第一层归属和 go_package，模型四字段门禁覆盖各服务与 common/model。未新增数据库迁移，也未改变共用 repository 的事务边界。
+- 在独立的 clean/user-overlay 两套源码中迁移并重新运行 protoc/gotag/Wire，没有手改生成字段。两套迁移前后各 241 项完整消息/枚举/服务描述逐项一致，46 个生成模型的 GORM 表名/列/原始标签/主键元数据逐项一致；710 个既有 Go 文件及原有 41 个待提交 Go 文件在归一化 Proto 包别名后语法树一致，排除本轮有意更新的规范门禁。原有五十处未提交修改按新路径保留，独立于目录整理的索引版本，原 0038 迁移和未完成业务不纳入本轮提交。
+- clean 源码全包单元与 race、39 项 Python 工具、85 Proto/五 Wire 生成比较、Hertz 确定性生成及编译、合同和规范正反样例、格式、lint/govet 0 issues、五服务及维护/回归夹具构建通过；实际工作区含原业务修改的全 integration 标签代码也编译通过，生成比较与 lint 通过。生成模型 PostgreSQL 读写/NULL/精确小数、迁移账本、CoreLocal 幂等不注资、outbox claim/fencing 集成/race 通过。跨进程发布/消费/对账首轮在新风险准入处拒绝，保留证据；同用例按原 25 秒 context 单独复核通过（2.60 秒），没有扩大期限、降低断言或改变交易逻辑。cron 实际独立命令从隔离 Nacos 双 YAML 启动并提供健康 RPC 的 integration/race 通过（2.83 秒）。
+- 本轮仅代码/协议目录调整；没有重建或重启现有交易容器，没有发布 Nacos、改写资金策略或处置未知订单。原有未提交 eventwire 测试失败不计作本轮修复，完整工作区业务验收、全量 integration/e2e/soak 和候选镜像部署未运行；数据库迁移文件字节保持。目录与协议兼容验收完成，提交及远程结果见本轮报告。

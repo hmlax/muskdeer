@@ -3,11 +3,11 @@ package repository
 import (
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func portfolioSnapshot(row *modelv1.PortfolioAccount) (domain.PortfolioSnapshot, error) {
+func portfolioSnapshot(row *portfoliomodelv1.PortfolioAccount) (domain.PortfolioSnapshot, error) {
 	result := domain.PortfolioSnapshot{
 		AccountID:    row.AccountId,
 		InstrumentID: row.InstrumentId,
@@ -68,7 +68,7 @@ func portfolioSnapshot(row *modelv1.PortfolioAccount) (domain.PortfolioSnapshot,
 	return result, nil
 }
 
-func portfolioFill(row *modelv1.PortfolioFill) (domain.FillFact, error) {
+func portfolioFill(row *portfoliomodelv1.PortfolioFill) (domain.FillFact, error) {
 	result := domain.FillFact{
 		ExecutionVenue: row.ExecutionVenue,
 		TradeID:        row.TradeId,

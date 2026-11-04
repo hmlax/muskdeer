@@ -1,7 +1,7 @@
 package runtimeconfig
 
 import (
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

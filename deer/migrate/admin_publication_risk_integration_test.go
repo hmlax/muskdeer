@@ -11,7 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -49,7 +49,7 @@ func TestAdminPublicationKeepsRiskClosedUntilRequestedPairActivates(t *testing.T
 			submit.Input.Deadline = time.Now().Add(time.Second)
 			// Simulate an old writer retaining a fresh, healthy old-version grant.
 			// Admission must reject the pair mismatch independently of this flag.
-			if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).
+			if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).
 				Updates(map[string]any{
 					"allow_new_risk": true,
 					"reason_code":    domain.RiskReasonReady,

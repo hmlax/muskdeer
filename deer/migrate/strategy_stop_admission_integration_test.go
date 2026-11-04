@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/strategy/usecase"
@@ -119,7 +119,7 @@ func (s *stopBeforeStrategyAction) stop(ctx context.Context) error {
 	if s.stopped {
 		return nil
 	}
-	result := s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", s.strategyID).
+	result := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", s.strategyID).
 		UpdateColumn("desired_running", false)
 	if result.Error != nil {
 		return result.Error

@@ -11,7 +11,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -40,7 +40,7 @@ func TestCoreMutexDoesNotBlockOtherStrategyActionForeignKeys(t *testing.T) {
 		}
 	})
 	if err := db.Callback().Create().After("gorm:create").Register(hook, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
 		close(staged)

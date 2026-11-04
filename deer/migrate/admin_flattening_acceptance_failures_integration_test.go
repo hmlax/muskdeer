@@ -11,7 +11,9 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -45,7 +47,7 @@ func TestAdminFlatteningAcceptanceRequiresCurrentAdminCSRFAndExactConfirmation(t
 			t.Fatal("stale inventory or independent revision was accepted", err)
 		}
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 0)
 	assertFlatAuditCount(ctx, t, db, 0)
 	receipt, err := store.Request(ctx, admin.Token, admin.CSRF, request)
 	if err != nil {
@@ -71,7 +73,7 @@ func TestAdminFlatteningAcceptanceRequiresCurrentAdminCSRFAndExactConfirmation(t
 	if replay, err := store.Request(ctx, fresh.Token, fresh.CSRF, request); err != nil || replay.ID != receipt.ID || !replay.ConfirmedQuantity.Equal(receipt.ConfirmedQuantity) {
 		t.Fatal("current same-actor session could not replay immutable confirmation", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 1)
 	assertFlatAuditCount(ctx, t, db, 1)
 }
 
@@ -86,8 +88,8 @@ func TestAdminFlatteningAcceptanceAuditAndReceiptFailuresRollBack(t *testing.T) 
 			name := "flatten-acceptance-failure-" + stage
 			failure := errors.New("private flatten storage fault")
 			if err := db.Callback().Create().Before("gorm:create").Register(name, func(tx *gorm.DB) {
-				audit, isAudit := tx.Statement.Dest.(*modelv1.AdminAudit)
-				_, isReceipt := tx.Statement.Dest.(*modelv1.AdminAccountFlattening)
+				audit, isAudit := tx.Statement.Dest.(*commonmodelv1.AdminAudit)
+				_, isReceipt := tx.Statement.Dest.(*executionmodelv1.AdminAccountFlattening)
 				if stage == "audit" && isAudit && audit.Action == domain.AdminFlattenAction || stage == "receipt" && isReceipt {
 					tx.Error = tx.AddError(failure)
 				}
@@ -101,7 +103,7 @@ func TestAdminFlatteningAcceptanceAuditAndReceiptFailuresRollBack(t *testing.T) 
 			if err := db.Callback().Create().Remove(name); err != nil {
 				t.Fatal(err)
 			}
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 0)
 			assertFlatAuditCount(ctx, t, db, 0)
 			assertGatewayOrderCount(ctx, t, db, 0)
 			assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
@@ -130,7 +132,7 @@ func TestAdminFlatteningAcceptanceRejectsSharedUnreconciledAndUncompletedScope(t
 					t.Fatal(err)
 				}
 			case "projection":
-				if err := db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", request.AccountID).UpdateColumn("reconciled", false).Error; err != nil {
+				if err := db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", request.AccountID).UpdateColumn("reconciled", false).Error; err != nil {
 					t.Fatal(err)
 				}
 			case "unfinished-scope":
@@ -145,7 +147,7 @@ func TestAdminFlatteningAcceptanceRejectsSharedUnreconciledAndUncompletedScope(t
 			if result, err := flattenAcceptanceStore(t, db).Request(ctx, admin.Token, admin.CSRF, request); !errors.Is(err, domain.ErrAdminFlattenDenied) || result.ID != 0 {
 				t.Fatal("unsafe current account qualification returned a flatten confirmation", err)
 			}
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 0)
 			assertFlatAuditCount(ctx, t, db, 0)
 			assertGatewayOrderCount(ctx, t, db, 0)
 			assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
@@ -163,10 +165,10 @@ func TestAdminFlatteningAcceptanceCommitRevocationReturnsNoReceiptAndRollsBack(t
 	var revokedRows int64
 	var revokedFailure error
 	if err := db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, receipt := tx.Statement.Dest.(*modelv1.AdminAccountFlattening); receipt {
+		if _, receipt := tx.Statement.Dest.(*executionmodelv1.AdminAccountFlattening); receipt {
 			// Apply context first, then reset the create statement while keeping
 			// its transaction; inherited INSERT SQL must never be executed again.
-			update := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.AdminSession{}).
+			update := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.AdminSession{}).
 				Where("id = ?", admin.Principal.SessionID).UpdateColumn("revoked_at", time.Now().UnixMilli())
 			revokedRows, revokedFailure = update.RowsAffected, update.Error
 			if update.Error != nil {
@@ -186,11 +188,11 @@ func TestAdminFlatteningAcceptanceCommitRevocationReturnsNoReceiptAndRollsBack(t
 	if err := db.Callback().Create().Remove(callback); err != nil {
 		t.Fatal(err)
 	}
-	var session modelv1.AdminSession
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Where("id = ?", admin.Principal.SessionID).Take(&session).Error; err != nil || session.RevokedAt != nil {
+	var session commonmodelv1.AdminSession
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Where("id = ?", admin.Principal.SessionID).Take(&session).Error; err != nil || session.RevokedAt != nil {
 		t.Fatal("failed acceptance did not roll back the injected revocation", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 0)
 	assertFlatAuditCount(ctx, t, db, 0)
 	if _, err := store.Request(ctx, admin.Token, admin.CSRF, request); err != nil {
 		t.Fatal("original authority and key were not restored by rollback", err)

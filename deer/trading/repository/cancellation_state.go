@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -18,7 +18,7 @@ func (s *cancellationStore) Prepare(ctx context.Context, current domain.Cancella
 		return domain.CancellationSnapshot{}, err
 	}
 	var result domain.CancellationSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockAuthority(ctx, tx, in.Authority, current.ExecutionAuthority, in.AccountID, in.InstrumentID); err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (s *cancellationStore) Observe(ctx context.Context, current domain.Cancella
 		}
 	}
 	var result domain.CancellationSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
 		row, err := lockCancellation(ctx, tx, current)
 		if err != nil {
 			return err
@@ -85,12 +85,12 @@ func (s *cancellationStore) Observe(ctx context.Context, current domain.Cancella
 	return result, nil
 }
 
-func lockCancellation(ctx context.Context, tx *gorm.DB, current domain.CancellationSnapshot) (*modelv1.CancellationRequest, error) {
+func lockCancellation(ctx context.Context, tx *gorm.DB, current domain.CancellationSnapshot) (*executionmodelv1.CancellationRequest, error) {
 	if current.ID <= 0 || current.Revision <= 0 || !coreIdentifier(current.Input.AccountID, 64) {
 		return nil, domain.ErrInvalidOrder
 	}
-	var row modelv1.CancellationRequest
-	if err := tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("account_id = ? AND delete_at IS NULL", current.Input.AccountID).
+	var row executionmodelv1.CancellationRequest
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("account_id = ? AND delete_at IS NULL", current.Input.AccountID).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&row, current.ID).Error; err != nil {
 		return nil, err
 	}
@@ -100,10 +100,10 @@ func lockCancellation(ctx context.Context, tx *gorm.DB, current domain.Cancellat
 	return &row, nil
 }
 
-func saveCancellationState(ctx context.Context, tx *gorm.DB, row *modelv1.CancellationRequest, kind string) error {
+func saveCancellationState(ctx context.Context, tx *gorm.DB, row *executionmodelv1.CancellationRequest, kind string) error {
 	previous := row.Revision
 	row.Revision++
-	result := tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("State", "ErrorCode", "ConfigVersion", "OwnerId", "OwnerEpoch", "ExecutionOwnerId", "ExecutionEpoch", "DeadlineAt", "RequestId", "Revision").Updates(row)
 	if err := reservationResult(result); err != nil {
 		return err
@@ -111,7 +111,7 @@ func saveCancellationState(ctx context.Context, tx *gorm.DB, row *modelv1.Cancel
 	return appendCancellationEvent(ctx, tx, row, kind)
 }
 
-func cancellationSnapshot(row *modelv1.CancellationRequest) domain.CancellationSnapshot {
+func cancellationSnapshot(row *executionmodelv1.CancellationRequest) domain.CancellationSnapshot {
 	return domain.CancellationSnapshot{
 		ID:       row.Id,
 		IntentID: row.IntentId,

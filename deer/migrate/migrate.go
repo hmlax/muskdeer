@@ -15,7 +15,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 // ErrHistoryMismatch requires operator review; applied history is never repaired.
@@ -66,21 +66,21 @@ func Apply(ctx context.Context, db *gorm.DB) (int64, error) {
 }
 
 func applyDefinitions(ctx context.Context, db *gorm.DB, definitions []definition) error {
-	return db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Transaction(func(tx *gorm.DB) error {
+	return db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Transaction(func(tx *gorm.DB) error {
 		// Fixed advisory-lock SQL has no table selector or business DML. The
 		// lock is released by transaction end, including cancellation/rollback.
-		if err := tx.WithContext(ctx).Model(&modelv1.SchemaMigration{}).
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).
 			Exec("SELECT pg_advisory_xact_lock(?, ?)", migrationLockNamespace, migrationLockKey).Error; err != nil {
 			return err
 		}
-		hadLedger := tx.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Migrator().HasTable(&modelv1.SchemaMigration{})
+		hadLedger := tx.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Migrator().HasTable(&commonmodelv1.SchemaMigration{})
 		// The first reviewed DDL bootstraps only the ledger, before any read.
 		// IF NOT EXISTS permits subsequent validation without altering history.
-		if err := tx.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Exec(definitions[0].sql).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Exec(definitions[0].sql).Error; err != nil {
 			return err
 		}
-		var applied []*modelv1.SchemaMigration
-		if err := tx.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Order("version ASC").Find(&applied).Error; err != nil {
+		var applied []*commonmodelv1.SchemaMigration
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Order("version ASC").Find(&applied).Error; err != nil {
 			return err
 		}
 		if hadLedger && len(applied) == 0 {
@@ -92,16 +92,16 @@ func applyDefinitions(ctx context.Context, db *gorm.DB, definitions []definition
 		for index := len(applied); index < len(definitions); index++ {
 			current := definitions[index]
 			if index != 0 {
-				if err := tx.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Exec(current.sql).Error; err != nil {
+				if err := tx.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Exec(current.sql).Error; err != nil {
 					return err
 				}
 			}
-			row := &modelv1.SchemaMigration{
+			row := &commonmodelv1.SchemaMigration{
 				Version:  current.version,
 				Name:     current.name,
 				Checksum: current.checksum,
 			}
-			if err := tx.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Create(row).Error; err != nil {
+			if err := tx.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Create(row).Error; err != nil {
 				return err
 			}
 		}
@@ -136,7 +136,7 @@ func loadDefinitions() ([]definition, error) {
 	return definitions, nil
 }
 
-func validateHistory(applied []*modelv1.SchemaMigration, definitions []definition) error {
+func validateHistory(applied []*commonmodelv1.SchemaMigration, definitions []definition) error {
 	if len(applied) > len(definitions) {
 		return ErrHistoryMismatch
 	}

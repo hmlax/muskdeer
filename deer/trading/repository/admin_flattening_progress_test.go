@@ -6,13 +6,13 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 func TestAdminFlatteningProgressPreservesExactIdentityAndRejectsInventedCompletion(t *testing.T) {
 	t.Parallel()
-	row := &modelv1.AdminAccountFlatteningTask{
+	row := &executionmodelv1.AdminAccountFlatteningTask{
 		Id:                 9007199254740993,
 		CreateAt:           1000,
 		UpdateAt:           1000,
@@ -28,22 +28,22 @@ func TestAdminFlatteningProgressPreservesExactIdentityAndRejectsInventedCompleti
 		queued.State != domain.AdminFlattenQueued || queued.Revision != 1 || queued.OwnerID != "" || queued.OwnerEpoch != 0 || !queued.ClaimedAt.IsZero() {
 		t.Fatal("queued marker invented ownership or lost exact identity", err)
 	}
-	for _, mutate := range []func(*modelv1.AdminAccountFlatteningTask){
-		func(r *modelv1.AdminAccountFlatteningTask) { r.Id = 0 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.FlatteningId = 0 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.StrategyInstanceId = 0 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.AccountId = "" },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.AccountId = "invalid account" },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.InstrumentId = 0 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.CreateAt = 0 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.UpdateAt = 999 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.DeleteAt = proto.Int64(1000) },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.Revision = 0 },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.State = "SUCCEEDED" },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.OwnerId = proto.String("private-owner") },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.OwnerEpoch = proto.Int64(1) },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.ClaimedAt = proto.Int64(1000) },
-		func(r *modelv1.AdminAccountFlatteningTask) { r.State = string(domain.AdminFlattenActive) },
+	for _, mutate := range []func(*executionmodelv1.AdminAccountFlatteningTask){
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.Id = 0 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.FlatteningId = 0 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.StrategyInstanceId = 0 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.AccountId = "" },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.AccountId = "invalid account" },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.InstrumentId = 0 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.CreateAt = 0 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.UpdateAt = 999 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.DeleteAt = proto.Int64(1000) },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.Revision = 0 },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.State = "SUCCEEDED" },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.OwnerId = proto.String("private-owner") },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.OwnerEpoch = proto.Int64(1) },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.ClaimedAt = proto.Int64(1000) },
+		func(r *executionmodelv1.AdminAccountFlatteningTask) { r.State = string(domain.AdminFlattenActive) },
 	} {
 		bad := proto.CloneOf(row)
 		mutate(bad)

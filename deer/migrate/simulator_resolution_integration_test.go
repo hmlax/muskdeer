@@ -12,7 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/usecase"
@@ -69,9 +69,9 @@ func TestSimulatorMissingSubmissionResolvesOnlyAfterOriginalDeadline(t *testing.
 		ExecutionAuthority: prepared.ExecutionAuthority,
 	})
 	assertDatabaseCode(t, err, "23514")
-	err = db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ?", resolved.ID).Delete(&modelv1.OrderIntent{}).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ?", resolved.ID).Delete(&executionmodelv1.OrderIntent{}).Error
 	assertDatabaseCode(t, err, "23514")
-	err = db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ?", resolved.ID).UpdateColumn("error_code", domain.IntentErrorOutcomeUnknown).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ?", resolved.ID).UpdateColumn("error_code", domain.IntentErrorOutcomeUnknown).Error
 	assertDatabaseCode(t, err, "23514")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
 }
@@ -132,19 +132,19 @@ func TestSimulatorResolutionRejectsForgedEarlyAndSnapshotProofAndKeepsRealCore(t
 		t.Fatal("missing read erased real core evidence")
 	}
 	forge := func(tx *gorm.DB) error {
-		return tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ?", live.ID).
-			Select("State", "ErrorCode", "CoreOrderId", "CoreRevision", "ReservedQuoteNotional").Updates(&modelv1.OrderIntent{
+		return tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ?", live.ID).
+			Select("State", "ErrorCode", "CoreOrderId", "CoreRevision", "ReservedQuoteNotional").Updates(&executionmodelv1.OrderIntent{
 			State:                 string(domain.OrderStateRejected),
 			ErrorCode:             domain.IntentErrorCoreNotAccepted,
 			ReservedQuoteNotional: "0",
 		}).Error
 	}
-	err = db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(forge)
+	err = db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(forge)
 	assertDatabaseCode(t, err, "23514")
 	time.Sleep(max(time.Until(live.Input.Deadline.Add(30*time.Millisecond)), time.Millisecond))
-	err = db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(forge, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	err = db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(forge, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 	assertDatabaseCode(t, err, "23514")
-	err = db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(forge)
+	err = db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(forge)
 	assertDatabaseCode(t, err, "23514")
 	actual, err := intentServiceFixture(t, store, core).Recover(ctx, submit.Input.AccountID, live.ID)
 	if err != nil || actual.State != domain.OrderStateLive || actual.CoreOrderID != live.CoreOrderID {

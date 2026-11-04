@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "deer/proto/common/v1/himalaya.proto";
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1;modelv1";
+
+// HimalayaProjection is a rebuildable, typed observation from the native API.
+message HimalayaProjection {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\""];
+  muskdeer.common.v1.HimalayaSnapshot snapshot = 6 [(tagger.tags) = "gorm:\"column:snapshot;type:jsonb;serializer:json;not null\""];
+  string publisher_owner_id = 7 [(tagger.tags) = "gorm:\"column:publisher_owner_id;type:varchar(128);not null\""];
+  int64 publisher_epoch = 8 [(tagger.tags) = "gorm:\"column:publisher_epoch;type:bigint;not null\""];
+}

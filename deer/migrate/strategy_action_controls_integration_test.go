@@ -12,7 +12,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -90,7 +91,7 @@ func TestStrategyCancellationActionWaitsForTerminalAndRetainsRacingFill(t *testi
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "899.9", "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", "11", "0")
-	err = db.WithContext(ctx).Model(&modelv1.StrategyAction{}).Where("id = ?", observed.ID).UpdateColumn("decision_key", "replacement-key").Error
+	err = db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Where("id = ?", observed.ID).UpdateColumn("decision_key", "replacement-key").Error
 	assertDatabaseCode(t, err, "23514")
 }
 
@@ -119,7 +120,7 @@ func TestStrategyPendingActionCanBeDiscardedWithoutResurrectingItsKey(t *testing
 	if _, err := actions.Attempt(ctx, discarded, submit.Input.Authority, time.Now().Add(time.Second)); !errors.Is(err, domain.ErrOutcomeUnknown) {
 		t.Fatal("discarded identity was dispatched")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 }
 
@@ -138,10 +139,10 @@ func TestStrategyActionCommitFenceRollsBackStagedDispatch(t *testing.T) {
 	}
 	const callback = "test:expire-strategy-action-authority"
 	if err := db.Callback().Update().After("gorm:update").Register(callback, func(tx *gorm.DB) {
-		if tx.Error != nil || tx.Statement.Schema == nil || tx.Statement.Schema.ModelType != reflect.TypeFor[modelv1.StrategyAction]() {
+		if tx.Error != nil || tx.Statement.Schema == nil || tx.Statement.Schema.ModelType != reflect.TypeFor[strategymodelv1.StrategyAction]() {
 			return
 		}
-		result := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.StrategyLease{}).
+		result := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&strategymodelv1.StrategyLease{}).
 			Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).UpdateColumn("expires_at", 0)
 		if result.Error != nil {
 			tx.Error = errors.Join(tx.Error, result.Error)

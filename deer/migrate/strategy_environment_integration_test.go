@@ -10,7 +10,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -30,7 +30,7 @@ func TestStrategyEnvironmentRetainsOwnAllocationButSubtractsOtherObligations(t *
 	if _, err := intents.Accept(ctx, peer.Input, peer.ExecutionAuthority); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskBudget{}).Where("scope_kind = ?", string(domain.RiskScopeInstrument)).UpdateColumn("limit_notional", "450").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Where("scope_kind = ?", string(domain.RiskScopeInstrument)).UpdateColumn("limit_notional", "450").Error; err != nil {
 		t.Fatal(err)
 	}
 	lifecycle, err := repository.NewStrategyLifecycle(db)
@@ -70,7 +70,7 @@ func TestStrategyEnvironmentRetainsOwnAllocationButSubtractsOtherObligations(t *
 	if _, err := reader.Current(ctx, stale); !errors.Is(err, domain.ErrIdempotencyConflict) {
 		t.Fatalf("stale spec was accepted: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskBudget{}).Where("scope_kind = ?", string(domain.RiskScopePlatform)).UpdateColumn("enabled", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Where("scope_kind = ?", string(domain.RiskScopePlatform)).UpdateColumn("enabled", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := reader.Current(ctx, spec); !errors.Is(err, domain.ErrRiskDenied) {

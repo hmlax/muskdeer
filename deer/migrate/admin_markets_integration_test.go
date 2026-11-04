@@ -13,7 +13,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -62,11 +64,11 @@ func TestAdminMarketsReadExactSourceModeAndMissingSnapshotWithoutEffects(t *test
 	if _, err := store.List(ctx, actor.Token, filter); !errors.Is(err, domain.ErrAdminNotFound) {
 		t.Fatal("missing product became an empty market choice", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.MarketPublisherLease{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.MarketSnapshot{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyInstance{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &marketmodelv1.MarketPublisherLease{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &marketmodelv1.MarketSnapshot{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyInstance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 0)
 }
 
 func assertAdminMarketPages(ctx context.Context, t *testing.T, store domain.AdminMarkets, token string, feed, other domain.MarketFeedDefinition, reading domain.MarketReading) {
@@ -139,7 +141,7 @@ func TestAdminMarketsRecheckDatabaseAgeAndCurrentPublisher(t *testing.T) {
 	if err != nil || recovered.Snapshot == nil || !recovered.Snapshot.PublisherCurrent || recovered.Snapshot.PublisherEpoch != next.Epoch || recovered.Snapshot.Reading.Quality != domain.MarketQualityHealthy {
 		t.Fatal("new current publisher could not recover its own observation", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
 		t.Fatal(err)
 	}
 	assertAdminMarketUnavailable(ctx, t, store, actor.Token, feed.ID)
@@ -169,10 +171,10 @@ func adminMarketFilter() domain.AdminMarketFilter {
 	}
 }
 
-func adminMarketStoredSnapshot(ctx context.Context, t *testing.T, db *gorm.DB, feedID int64) *modelv1.MarketSnapshot {
+func adminMarketStoredSnapshot(ctx context.Context, t *testing.T, db *gorm.DB, feedID int64) *marketmodelv1.MarketSnapshot {
 	t.Helper()
-	var row modelv1.MarketSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("market_feed_id = ?", feedID).Take(&row).Error; err != nil {
+	var row marketmodelv1.MarketSnapshot
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("market_feed_id = ?", feedID).Take(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return &row

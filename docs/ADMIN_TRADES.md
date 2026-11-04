@@ -28,7 +28,7 @@ Go金额使用decimal.Decimal，后续传输必须使用十进制string。读取
 
 ## typed传输边界
 
-[成交Proto](../deer/proto/rpc/strategy/v1/trades.proto)的StrategyTradeQuery提供ListStrategyTrades和GetStrategyTrade，只有strategy.management_enabled开启才注册，继续验证API-peer mTLS、当前viewer会话、≤5秒原生截止及≤2KiB请求。API复用原有唯一strategy连接及strategy_queries_enabled开关，单次3秒并继承更早父取消；不要求控制权限，不创建新交易任务或客户端资源。
+[成交Proto](../deer/proto/strategy/v1/trades.proto)的StrategyTradeQuery提供ListStrategyTrades和GetStrategyTrade，只有strategy.management_enabled开启才注册，继续验证API-peer mTLS、当前viewer会话、≤5秒原生截止及≤2KiB请求。API复用原有唯一strategy连接及strategy_queries_enabled开关，单次3秒并继承更早父取消；不要求控制权限，不创建新交易任务或客户端资源。
 
 | GET路径 | 输入与返回 |
 |---|---|

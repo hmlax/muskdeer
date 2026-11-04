@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 // Config is the private, validated startup snapshot supplied to this service graph.

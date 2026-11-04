@@ -30,7 +30,7 @@ P07.44提供[AdminPortfolios](../deer/trading/domain/admin_portfolios.go)当前v
 
 ## typed传输边界
 
-[账户持仓Proto](../deer/proto/rpc/strategy/v1/portfolios.proto)的StrategyPortfolioQuery在管理strategy节点的management_enabled开关下提供ListPortfolios和GetPortfolio。该服务是管理读模型，不启动portfolio消费者或调用其写入式查询。继续使用API-peer mTLS、当前viewer、最多5秒原生期限、≤2KiB具体请求；控制开关不影响读取，只有查询节点不会注册策略写入。
+[账户持仓Proto](../deer/proto/strategy/v1/portfolios.proto)的StrategyPortfolioQuery在管理strategy节点的management_enabled开关下提供ListPortfolios和GetPortfolio。该服务是管理读模型，不启动portfolio消费者或调用其写入式查询。继续使用API-peer mTLS、当前viewer、最多5秒原生期限、≤2KiB具体请求；控制开关不影响读取，只有查询节点不会注册策略写入。
 
 API沿原唯一strategy连接与strategy_queries_enabled开关提供只读路径，单次3秒并继承更早取消：
 

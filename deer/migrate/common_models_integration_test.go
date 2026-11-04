@@ -7,7 +7,11 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 )
 
 func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
@@ -18,44 +22,44 @@ func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, entity := range []any{
-		&modelv1.SchemaMigration{},
-		&modelv1.AdminUser{},
-		&modelv1.AdminSession{},
-		&modelv1.AdminAudit{},
-		&modelv1.AdminStrategyOperation{},
-		&modelv1.AdminStrategyCreation{},
-		&modelv1.AdminStrategyPublication{},
-		&modelv1.AdminStrategyRiskChange{},
-		&modelv1.AdminOrderCancellation{},
-		&modelv1.AdminEmergencyCancellation{},
-		&modelv1.AdminEmergencyCancellationTask{},
-		&modelv1.AdminAccountFlattening{},
-		&modelv1.AdminAccountFlatteningTask{},
-		&modelv1.Instrument{},
-		&modelv1.StrategyInstance{},
-		&modelv1.StrategyConfigVersion{},
-		&modelv1.StrategyAction{},
-		&modelv1.StrategyLease{},
-		&modelv1.ExecutionShardLease{},
-		&modelv1.SimulatorCommand{},
-		&modelv1.SimulatorOrder{},
-		&modelv1.SimulatorAccount{},
-		&modelv1.SimulatorBalance{},
-		&modelv1.SimulatorFill{},
-		&modelv1.AccountBudget{},
-		&modelv1.StrategyBudget{},
-		&modelv1.RiskSnapshot{},
-		&modelv1.RiskSnapshotEvent{},
-		&modelv1.RiskBudget{},
-		&modelv1.OrderIntent{},
-		&modelv1.OutboxEvent{},
-		&modelv1.CancellationRequest{},
-		&modelv1.PortfolioAccount{},
-		&modelv1.PortfolioFill{},
-		&modelv1.ConsumerInbox{},
-		&modelv1.MarketFeed{},
-		&modelv1.MarketPublisherLease{},
-		&modelv1.MarketSnapshot{},
+		&commonmodelv1.SchemaMigration{},
+		&commonmodelv1.AdminUser{},
+		&commonmodelv1.AdminSession{},
+		&commonmodelv1.AdminAudit{},
+		&strategymodelv1.AdminStrategyOperation{},
+		&strategymodelv1.AdminStrategyCreation{},
+		&strategymodelv1.AdminStrategyPublication{},
+		&strategymodelv1.AdminStrategyRiskChange{},
+		&executionmodelv1.AdminOrderCancellation{},
+		&executionmodelv1.AdminEmergencyCancellation{},
+		&executionmodelv1.AdminEmergencyCancellationTask{},
+		&executionmodelv1.AdminAccountFlattening{},
+		&executionmodelv1.AdminAccountFlatteningTask{},
+		&commonmodelv1.Instrument{},
+		&strategymodelv1.StrategyInstance{},
+		&strategymodelv1.StrategyConfigVersion{},
+		&strategymodelv1.StrategyAction{},
+		&strategymodelv1.StrategyLease{},
+		&commonmodelv1.ExecutionShardLease{},
+		&executionmodelv1.SimulatorCommand{},
+		&executionmodelv1.SimulatorOrder{},
+		&executionmodelv1.SimulatorAccount{},
+		&executionmodelv1.SimulatorBalance{},
+		&executionmodelv1.SimulatorFill{},
+		&commonmodelv1.AccountBudget{},
+		&strategymodelv1.StrategyBudget{},
+		&executionmodelv1.RiskSnapshot{},
+		&executionmodelv1.RiskSnapshotEvent{},
+		&commonmodelv1.RiskBudget{},
+		&executionmodelv1.OrderIntent{},
+		&executionmodelv1.OutboxEvent{},
+		&executionmodelv1.CancellationRequest{},
+		&portfoliomodelv1.PortfolioAccount{},
+		&portfoliomodelv1.PortfolioFill{},
+		&portfoliomodelv1.ConsumerInbox{},
+		&marketmodelv1.MarketFeed{},
+		&marketmodelv1.MarketPublisherLease{},
+		&marketmodelv1.MarketSnapshot{},
 	} {
 		columns, err := db.WithContext(ctx).Model(entity).Migrator().ColumnTypes(entity)
 		if err != nil {

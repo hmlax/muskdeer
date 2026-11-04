@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
@@ -18,7 +18,7 @@ func TestSyntheticTapeModelPreservesTypedAuditAndUniqueSlot(t *testing.T) {
 	db, _, _, _ := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	row := &modelv1.SyntheticTapeIntent{
+	row := &executionmodelv1.SyntheticTapeIntent{
 		RunId:        "test-tape-1",
 		Symbol:       "BTCUSDT",
 		Sequence:     0,
@@ -32,11 +32,11 @@ func TestSyntheticTapeModelPreservesTypedAuditAndUniqueSlot(t *testing.T) {
 		Notional: "0.1001",
 		Result:   &commonv1.SyntheticTapeResult{State: native.SyntheticUnknown},
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Create(row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
-	var read modelv1.SyntheticTapeIntent
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).First(&read).Error; err != nil {
+	var read executionmodelv1.SyntheticTapeIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).First(&read).Error; err != nil {
 		t.Fatal(err)
 	}
 	if read.Id <= 0 || read.CreateAt == 0 || read.UpdateAt == 0 || read.DeleteAt != nil || !proto.Equal(read.Plan, row.Plan) || !proto.Equal(read.Result, row.Result) {
@@ -44,7 +44,7 @@ func TestSyntheticTapeModelPreservesTypedAuditAndUniqueSlot(t *testing.T) {
 	}
 	duplicate := proto.CloneOf(row)
 	duplicate.Id = 0
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Create(duplicate).Error; err == nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Create(duplicate).Error; err == nil {
 		t.Fatal("duplicate run/symbol/sequence was accepted")
 	}
 	if err := CheckCurrent(ctx, db); err != nil {

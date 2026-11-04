@@ -9,7 +9,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/simulator"
@@ -96,9 +97,9 @@ func TestAdminCancellationControllerRecoversLostResponseAcrossTakeover(t *testin
 			}
 			assertCoreBalance(ctx, t, execution.core, submit.Input.AccountID, "USDT", "899.9", "0")
 			assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-			assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 1)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 1)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, 1)
 			return
 		}
 	}

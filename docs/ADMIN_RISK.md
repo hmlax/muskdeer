@@ -14,7 +14,7 @@ P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。P07.3
 
 ## 原子性与重放
 
-持久化结构来自 [Model Proto](../deer/proto/model/v1/admin_risk.proto)，实现为 [风险事务](../deer/trading/repository/admin_risk.go)、[恢复检查](../deer/trading/repository/admin_risk_recovery.go) 和 [当前快照](../deer/trading/repository/admin_risk_state.go)。风险管理版本从不可变收据最大版本推导，尚无收据时为 1；它独立于频繁变化的资金预算 Revision。新控制在策略互斥下检查版本并递增，普通资金释放不使风险确认版本失效。
+持久化结构来自 [Model Proto](../deer/proto/strategy/model/v1/admin_risk.proto)，实现为 [风险事务](../deer/trading/repository/admin_risk.go)、[恢复检查](../deer/trading/repository/admin_risk_recovery.go) 和 [当前快照](../deer/trading/repository/admin_risk_state.go)。风险管理版本从不可变收据最大版本推导，尚无收据时为 1；它独立于频繁变化的资金预算 Revision。新控制在策略互斥下检查版本并递增，普通资金释放不使风险确认版本失效。
 
 操作者与幂等键共同唯一，规范化请求以确定性二进制编码计算摘要。同键同内容返回原历史收据，同键改内容冲突；重放仍须当前权限及 CSRF，恢复历史重放仍需当前 admin。后来的新控制不改变旧收据，也不会因旧请求重放而重新写开关。
 
@@ -28,7 +28,7 @@ P07.29提供一个策略范围的仓储事务和原生 PostgreSQL 约束。P07.3
 
 ## Typed 管理入口
 
-[风险 Proto](../deer/proto/rpc/strategy/v1/risk.proto) 明确区分 StrategyRiskQuery.GetStrategyRisk 与 StrategyRiskControl.ChangeStrategyRisk：前者随 management/query opt-in 注册，后者仅随 control opt-in 注册。查询进程不注册修改 RPC。两者都要求已验证 API mTLS 身份、当前持久会话和至多 5 秒的调用预算；≤2KiB、未知字段和嵌套会话/输入检查保留，无新连接、后台任务、资金或预算初始化。
+[风险 Proto](../deer/proto/strategy/v1/risk.proto) 明确区分 StrategyRiskQuery.GetStrategyRisk 与 StrategyRiskControl.ChangeStrategyRisk：前者随 management/query opt-in 注册，后者仅随 control opt-in 注册。查询进程不注册修改 RPC。两者都要求已验证 API mTLS 身份、当前持久会话和至多 5 秒的调用预算；≤2KiB、未知字段和嵌套会话/输入检查保留，无新连接、后台任务、资金或预算初始化。
 
 | 方法/路径 | 返回 | 证明/输入 |
 |---|---|---|

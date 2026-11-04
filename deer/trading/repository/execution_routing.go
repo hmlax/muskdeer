@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -28,8 +28,8 @@ func (r *executionRouting) ExecutionInstance(ctx context.Context, accountID stri
 	if !coreIdentifier(accountID, 64) {
 		return "", domain.ErrInvalidOrder
 	}
-	var row modelv1.ExecutionShardLease
-	err := r.db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	var row commonmodelv1.ExecutionShardLease
+	err := r.db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ? AND delete_at IS NULL AND epoch > 0", accountID).
 		Where("expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint").Take(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

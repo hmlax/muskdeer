@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 func TestStartupSchemaCheckIsReadOnlyAndRequiresExactHistory(t *testing.T) {
@@ -19,7 +19,7 @@ func TestStartupSchemaCheckIsReadOnlyAndRequiresExactHistory(t *testing.T) {
 	if err := CheckCurrent(ctx, db); err == nil {
 		t.Fatal("empty schema was accepted")
 	}
-	if db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Migrator().HasTable(&modelv1.SchemaMigration{}) {
+	if db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Migrator().HasTable(&commonmodelv1.SchemaMigration{}) {
 		t.Fatal("startup schema validation created its ledger")
 	}
 	if _, err := Apply(ctx, db); err != nil {
@@ -28,7 +28,7 @@ func TestStartupSchemaCheckIsReadOnlyAndRequiresExactHistory(t *testing.T) {
 	if err := CheckCurrent(ctx, db); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).UpdateColumn("checksum", strings.Repeat("0", 64)).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).UpdateColumn("checksum", strings.Repeat("0", 64)).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := CheckCurrent(ctx, db); !errors.Is(err, ErrHistoryMismatch) {

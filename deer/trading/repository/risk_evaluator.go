@@ -8,7 +8,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
@@ -31,11 +33,11 @@ func (r *riskEvaluator) Evaluate(ctx context.Context, strategyID int64) (domain.
 		return domain.RiskDecision{}, domain.ErrInvalidOrder
 	}
 	var result domain.RiskDecision
-	err := r.db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Transaction(func(tx *gorm.DB) error {
-		var strategy modelv1.StrategyInstance
+	err := r.db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Transaction(func(tx *gorm.DB) error {
+		var strategy strategymodelv1.StrategyInstance
 		// Serializes evaluations and configuration/state changes. Core holders
 		// take this strategy lock before the instrument, preventing reverse waits.
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", strategyID).Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", strategyID).Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy).Error; err != nil {
 			return err
 		}
 		result = domain.RiskDecision{
@@ -72,7 +74,7 @@ func (r *riskEvaluator) Evaluate(ctx context.Context, strategyID int64) (domain.
 	return result, nil
 }
 
-func evaluateRiskInputs(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance) (domain.RiskDecision, int64, error) {
+func evaluateRiskInputs(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance) (domain.RiskDecision, int64, error) {
 	result := domain.RiskDecision{
 		StrategyID: strategy.Id,
 		Reason:     domain.RiskReasonParameters,
@@ -106,8 +108,8 @@ func evaluateRiskInputs(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 		return result, age, err
 	}
 	result.Reason = domain.RiskReasonMarket
-	var feed modelv1.MarketFeed
-	err = tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", *strategy.ActiveMarketDataSource, strategy.InstrumentId, strategy.MarketMode).First(&feed).Error
+	var feed marketmodelv1.MarketFeed
+	err = tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", *strategy.ActiveMarketDataSource, strategy.InstrumentId, strategy.MarketMode).First(&feed).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return result, age, nil
 	}
@@ -126,9 +128,9 @@ func evaluateRiskInputs(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 	return result, age, nil
 }
 
-func riskParameterAge(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance) (int64, error) {
-	var row modelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ? AND delete_at IS NULL", strategy.Id, *strategy.ActiveConfigVersion).Clauses(clause.Locking{Strength: "SHARE"}).First(&row).Error; err != nil {
+func riskParameterAge(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance) (int64, error) {
+	var row strategymodelv1.StrategyConfigVersion
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ? AND delete_at IS NULL", strategy.Id, *strategy.ActiveConfigVersion).Clauses(clause.Locking{Strength: "SHARE"}).First(&row).Error; err != nil {
 		return 0, err
 	}
 	if row.ParametersSchemaVersion != domain.ParametersSchemaVersion || row.GetTemplate() != strategy.Template || row.MarketDataSource != *strategy.ActiveMarketDataSource || row.CodeVersion != strategy.CodeVersion {
@@ -160,7 +162,7 @@ func riskParameterAge(ctx context.Context, tx *gorm.DB, strategy *modelv1.Strate
 
 func riskEvaluationTime(ctx context.Context, tx *gorm.DB, strategyID int64) (time.Time, error) {
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return time.Time{}, err
 	}
 	return time.UnixMilli(clock.NowMS).UTC(), nil

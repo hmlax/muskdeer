@@ -22,7 +22,8 @@ import (
 
 	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/himalaya"
@@ -40,7 +41,7 @@ func TestHimalayaSDKDurableAdmissionReservesBudgetAndRejectsStaleEpoch(t *testin
 	if _, err := store.Prepare(ctx, lease, request); !errors.Is(err, himalaya.ErrRiskLimit) {
 		t.Fatalf("shared account was over-reserved: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ?", lease.Key.AccountID).UpdateColumn("epoch", lease.Epoch+1).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -64,8 +65,8 @@ func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.
 	err = store.WithSubmission(ctx, prepared.Admission, func(context.Context) error {
 		calls++
 		// A separate connection must see the committed claim before the effect.
-		var row modelv1.HimalayaIntent
-		if err := db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+		var row executionmodelv1.HimalayaIntent
+		if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 			return err
 		}
 		if row.State != himalaya.IntentDispatched {
@@ -79,8 +80,8 @@ func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.
 	if err := store.WithSubmission(ctx, prepared.Admission, func(context.Context) error { calls++; return nil }); !errors.Is(err, domain.ErrOutcomeUnknown) || calls != 1 {
 		t.Fatalf("ambiguous order was dispatched again: calls=%d err=%v", calls, err)
 	}
-	var row modelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
+	var row commonmodelv1.HimalayaBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(row.ReservedNotional).Equal(decimal.NewFromInt(100)) {
@@ -157,11 +158,11 @@ func TestHimalayaSDKPersistedMutationAndExpiredRiskCannotDispatch(t *testing.T) 
 			}
 			switch change {
 			case "price":
-				err = db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("price", "101").Error
+				err = db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("price", "101").Error
 			case "snapshot_expires_at":
-				err = db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("snapshot_expires_at", 0).Error
+				err = db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("snapshot_expires_at", 0).Error
 			case "maximum_notional":
-				err = db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("maximum_notional", "999").Error
+				err = db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("maximum_notional", "999").Error
 			}
 			if err != nil {
 				t.Fatal(err)
@@ -184,7 +185,7 @@ func TestHimalayaSDKExtensionHistoryDoesNotChangeCoreLedger(t *testing.T) {
 	if err := CheckCurrent(ctx, db); err != nil {
 		t.Fatalf("extension changed core migration history: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaSchemaMigration{}).Where("version = ?", 1).UpdateColumn("checksum", "changed").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaSchemaMigration{}).Where("version = ?", 1).UpdateColumn("checksum", "changed").Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := himalayamigrate.Apply(ctx, db); !errors.Is(err, himalayamigrate.ErrHistory) {
@@ -212,8 +213,8 @@ func TestHimalayaSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) 
 			t.Fatal(err)
 		}
 	}
-	var row modelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+	var row executionmodelv1.HimalayaIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.State != himalaya.IntentAcknowledged || row.OrderId != "42" {
@@ -255,8 +256,8 @@ func TestHimalayaSDKConcurrentPreparationsShareOneFundBudget(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	var row modelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
+	var row commonmodelv1.HimalayaBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if successes != 1 || rejected != 1 || !decimal.RequireFromString(row.ReservedNotional).Equal(decimal.NewFromInt(100)) {
@@ -294,7 +295,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	if err != nil {
 		t.Fatal(err)
 	}
-	budget := &modelv1.HimalayaBudget{
+	budget := &commonmodelv1.HimalayaBudget{
 		AccountId:         lease.Key.AccountID,
 		UserId:            10001,
 		FundId:            10001,
@@ -304,7 +305,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 		SnapshotExpiresAt: time.Now().Add(10 * time.Second).UnixMilli(),
 		Enabled:           true,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Create(budget).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Create(budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	return db, store, lease, himalaya.SubmitRequest{

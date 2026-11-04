@@ -7,7 +7,7 @@ import (
 	"os"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 )
@@ -15,7 +15,7 @@ import (
 const messageHistoricalResult = "%s: historical_intents=%d risk_retained=true applied=%t\n"
 
 func (r *baselineRunner) historical(ctx context.Context, batch *commonv1.HistoricalIntentApprovalBatch, report string) error {
-	rows := make([]*modelv1.HimalayaIntent, 0)
+	rows := make([]*executionmodelv1.HimalayaIntent, 0)
 	for _, request := range batch.Requests {
 		profile, err := native.Profile(r.cfg, request.GetScope())
 		if err != nil {
@@ -45,8 +45,8 @@ func (r *baselineRunner) historical(ctx context.Context, batch *commonv1.Histori
 		} else if err := r.store.AssessHistoricalIntents(ctx, lease, request, snapshot); err != nil {
 			return err
 		}
-		var current []*modelv1.HimalayaIntent
-		if err := r.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+		var current []*executionmodelv1.HimalayaIntent
+		if err := r.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
 			Where("account_id = ? AND id IN ?", lease.Key.AccountID, request.IntentIds).Order("id").Find(&current).Error; err != nil {
 			return err
 		}

@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 const maximumPEMBytes = 1024 * 1024

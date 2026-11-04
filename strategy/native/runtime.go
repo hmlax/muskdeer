@@ -10,9 +10,11 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
+	portfoliohimalayav1 "github.com/hmlax/muskdeer/deer/proto/portfolio/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -73,7 +75,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	book, err := himalayav1.NewMarketClient(market).GetBook(ctx, &himalayav1.BookRequest{Symbol: profile.Symbol})
+	book, err := markethimalayav1.NewMarketClient(market).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: profile.Symbol})
 	if err != nil {
 		return err
 	}
@@ -81,7 +83,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	snapshot, err := himalayav1.NewPortfolioClient(portfolio).GetSnapshot(ctx, values.Scope(profile))
+	snapshot, err := portfoliohimalayav1.NewPortfolioClient(portfolio).GetSnapshot(ctx, values.Scope(profile))
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	_, err = himalayav1.NewExecutionClient(execution).Reconcile(ctx, &himalayav1.QuotePlan{
+	_, err = executionhimalayav1.NewExecutionClient(execution).Reconcile(ctx, &executionhimalayav1.QuotePlan{
 		Scope:     values.Scope(profile),
 		Book:      book,
 		Strategy:  values.Authority(token),

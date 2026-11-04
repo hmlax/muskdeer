@@ -10,7 +10,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -100,8 +101,8 @@ func TestAdminCancellationWaitsForOMSAndRetainsExactOrderScope(t *testing.T) {
 		t.Fatal("same key lost the original evolving receipt", err)
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "20")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 1)
 	assertGatewayOrderCount(ctx, t, db, 2)
 }
 
@@ -183,8 +184,8 @@ func TestAdminCancellationValidatesCurrentAuthorityReplayAndOrderRevision(t *tes
 	if _, err := control.Request(ctx, actor.Token, actor.CSRF, request); !errors.Is(err, domain.ErrUnauthenticated) {
 		t.Fatal("revoked actor replayed cancellation", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 }

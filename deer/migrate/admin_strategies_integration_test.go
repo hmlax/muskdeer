@@ -12,7 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -106,8 +107,8 @@ func TestAdminStrategyQueriesRejectBoundsMissingAndInvalidAuthority(t *testing.T
 	assertAdminQueryDenied(ctx, t, reader, "invalid-session", instances[0].Id)
 	// A credential change must close the query boundary without relying on a
 	// previous API identity check or a process-local principal cache.
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", login.Principal.UserID).
-		Select("CredentialVersion", "Revision").Updates(&modelv1.AdminUser{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", login.Principal.UserID).
+		Select("CredentialVersion", "Revision").Updates(&commonmodelv1.AdminUser{
 		CredentialVersion: 2,
 		Revision:          2,
 	}).Error; err != nil {
@@ -125,7 +126,7 @@ func TestAdminStrategyVersionsUseOneSnapshotDuringConcurrentVersionChange(t *tes
 	const callback = "test:admin-query-concurrent-version"
 	changed := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		row, ok := query.Statement.Dest.(*modelv1.StrategyInstance)
+		row, ok := query.Statement.Dest.(*strategymodelv1.StrategyInstance)
 		if !ok || row.Id != instance.Id || changed {
 			return
 		}
@@ -133,15 +134,15 @@ func TestAdminStrategyVersionsUseOneSnapshotDuringConcurrentVersionChange(t *tes
 		// The independently committed write happens between the instance and
 		// version-list reads. RR must exclude the newly inserted version.
 		writer := db.Session(&gorm.Session{NewDB: true})
-		err := writer.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		err := writer.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 			version := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 			version.InstanceId, version.Version = instance.Id, 2
 			version.MarketDataSource = string(domain.MarketSourceOKX)
-			if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
+			if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 				return err
 			}
-			return tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", instance.Id).
-				Select("RequestedConfigVersion", "MarketDataSource", "ActiveConfigVersion", "ActiveMarketDataSource", "Revision").Updates(&modelv1.StrategyInstance{
+			return tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", instance.Id).
+				Select("RequestedConfigVersion", "MarketDataSource", "ActiveConfigVersion", "ActiveMarketDataSource", "Revision").Updates(&strategymodelv1.StrategyInstance{
 				RequestedConfigVersion: 2,
 				MarketDataSource:       string(domain.MarketSourceOKX),
 				ActiveConfigVersion:    proto.Int64(1),
@@ -182,22 +183,22 @@ func TestAdminStrategyVersionsUseOneSnapshotDuringConcurrentVersionChange(t *tes
 	}
 }
 
-func adminStrategiesFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.AdminStrategies, domain.AdminAuth, domain.AdminLogin, []*modelv1.StrategyInstance) {
+func adminStrategiesFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.AdminStrategies, domain.AdminAuth, domain.AdminLogin, []*strategymodelv1.StrategyInstance) {
 	t.Helper()
 	if _, err := Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
-	instances := []*modelv1.StrategyInstance{
+	instances := []*strategymodelv1.StrategyInstance{
 		identityInstance(instrument.Id, "query-maker", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance),
 		identityInstance(instrument.Id, "query-grid", domain.StrategyTemplateGrid, domain.MarketSourceOKX),
 	}
 	for _, instance := range instances {
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-			if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+			if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 				return err
 			}
 			parameters := storedParameterFixture(domain.StrategyTemplate(instance.Template))
@@ -209,7 +210,7 @@ func adminStrategiesFixture(ctx context.Context, t *testing.T, db *gorm.DB) (dom
 			} else {
 				parameters.GridParameters.LowerPrice = "0.123456789012345678"
 			}
-			return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+			return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 		}); err != nil {
 			t.Fatal(err)
 		}

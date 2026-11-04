@@ -6,7 +6,9 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -29,7 +31,7 @@ func (s *adminPortfolios) List(ctx context.Context, token string, filter domain.
 		if err := adminPortfolioFilterExists(ctx, tx, filter); err != nil {
 			return err
 		}
-		query := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).
+		query := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).
 			Where("id > ? AND delete_at IS NULL", filter.Page.AfterID)
 		if filter.AccountID != "" {
 			query = query.Where("account_id = ?", filter.AccountID)
@@ -37,7 +39,7 @@ func (s *adminPortfolios) List(ctx context.Context, token string, filter domain.
 		if filter.InstrumentID != 0 {
 			query = query.Where("instrument_id = ?", filter.InstrumentID)
 		}
-		var rows []*modelv1.PortfolioAccount
+		var rows []*portfoliomodelv1.PortfolioAccount
 		if err := query.Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -61,15 +63,15 @@ func (s *adminPortfolios) Detail(ctx context.Context, token string, id int64) (d
 	}
 	var result domain.AdminPortfolio
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.PortfolioAccount
-		if err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).
+		var row portfoliomodelv1.PortfolioAccount
+		if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).
 			Where("id = ? AND delete_at IS NULL", id).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
 			return err
 		}
-		values, err := readAdminPortfolios(ctx, tx, []*modelv1.PortfolioAccount{&row})
+		values, err := readAdminPortfolios(ctx, tx, []*portfoliomodelv1.PortfolioAccount{&row})
 		if err != nil {
 			return err
 		}
@@ -84,8 +86,8 @@ func (s *adminPortfolios) Detail(ctx context.Context, token string, id int64) (d
 
 func adminPortfolioFilterExists(ctx context.Context, tx *gorm.DB, filter domain.AdminPortfolioFilter) error {
 	if filter.AccountID != "" {
-		var row modelv1.SimulatorAccount
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).
+		var row executionmodelv1.SimulatorAccount
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).
 			Select("Id").Where("account_id = ? AND delete_at IS NULL", filter.AccountID).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
@@ -94,8 +96,8 @@ func adminPortfolioFilterExists(ctx context.Context, tx *gorm.DB, filter domain.
 		}
 	}
 	if filter.InstrumentID != 0 {
-		var row modelv1.Instrument
-		if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).
+		var row commonmodelv1.Instrument
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).
 			Select("Id").Where("id = ? AND delete_at IS NULL", filter.InstrumentID).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound

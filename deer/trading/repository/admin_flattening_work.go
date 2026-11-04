@@ -10,7 +10,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -35,13 +37,13 @@ func (s *adminFlattenWork) Claim(ctx context.Context, token domain.LeaseToken, f
 		return domain.AdminFlattenProgress{}, err
 	}
 	var result domain.AdminFlattenProgress
-	err := s.db.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Transaction(func(tx *gorm.DB) error {
 		instance, err := lockFlattenWorkOwner(ctx, tx, token)
 		if err != nil {
 			return err
 		}
-		var row modelv1.AdminAccountFlatteningTask
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Where("flattening_id = ? AND strategy_instance_id = ? AND delete_at IS NULL", flatteningID, instance.Id).
+		var row executionmodelv1.AdminAccountFlatteningTask
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Where("flattening_id = ? AND strategy_instance_id = ? AND delete_at IS NULL", flatteningID, instance.Id).
 			Clauses(clause.Locking{Strength: "UPDATE"}).Take(&row).Error; err != nil {
 			return err
 		}
@@ -59,7 +61,7 @@ func (s *adminFlattenWork) Claim(ctx context.Context, token domain.LeaseToken, f
 			return domain.ErrLeaseLost
 		}
 		var clock struct{ NowMS int64 }
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Where("id = ?", row.Id).
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Where("id = ?", row.Id).
 			Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 			return err
 		}
@@ -67,7 +69,7 @@ func (s *adminFlattenWork) Claim(ctx context.Context, token domain.LeaseToken, f
 		row.State, row.Revision = string(domain.AdminFlattenActive), previous+1
 		row.OwnerId, row.OwnerEpoch, row.ClaimedAt = proto.String(token.OwnerID), proto.Int64(token.Epoch), proto.Int64(clock.NowMS)
 		row.UpdateAt = clock.NowMS
-		updated := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Where("id = ? AND revision = ?", row.Id, previous).
+		updated := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Where("id = ? AND revision = ?", row.Id, previous).
 			Select("State", "Revision", "OwnerId", "OwnerEpoch", "ClaimedAt", "UpdateAt").UpdateColumns(&row)
 		if err := reservationResult(updated); err != nil {
 			return err
@@ -81,9 +83,9 @@ func (s *adminFlattenWork) Claim(ctx context.Context, token domain.LeaseToken, f
 	return result, nil
 }
 
-func lockFlattenWorkOwner(ctx context.Context, tx *gorm.DB, token domain.LeaseToken) (*modelv1.StrategyInstance, error) {
-	var row modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", token.Key.StrategyID).
+func lockFlattenWorkOwner(ctx context.Context, tx *gorm.DB, token domain.LeaseToken) (*strategymodelv1.StrategyInstance, error) {
+	var row strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", token.Key.StrategyID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&row).Error; err != nil {
 		return nil, err
 	}
@@ -98,9 +100,9 @@ func lockFlattenWorkOwner(ctx context.Context, tx *gorm.DB, token domain.LeaseTo
 	return &row, nil
 }
 
-func revalidateFlattenWork(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, task *modelv1.AdminAccountFlatteningTask) error {
-	var confirmation modelv1.AdminAccountFlattening
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Where("id = ? AND delete_at IS NULL", task.FlatteningId).Take(&confirmation).Error; err != nil {
+func revalidateFlattenWork(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, task *executionmodelv1.AdminAccountFlatteningTask) error {
+	var confirmation executionmodelv1.AdminAccountFlattening
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Where("id = ? AND delete_at IS NULL", task.FlatteningId).Take(&confirmation).Error; err != nil {
 		return err
 	}
 	receipt, err := adminFlattenReceipt(&confirmation)
@@ -115,8 +117,8 @@ func revalidateFlattenWork(ctx context.Context, tx *gorm.DB, instance *modelv1.S
 	if err != nil {
 		return err
 	}
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", receipt.AccountID).
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", receipt.AccountID).
 		Clauses(clause.Locking{Strength: "UPDATE"}).Take(&account).Error; err != nil {
 		return err
 	}

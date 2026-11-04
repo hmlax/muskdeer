@@ -10,7 +10,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -23,7 +24,7 @@ func TestAdminRiskSessionExpiringAfterReceiptCannotCommit(t *testing.T) {
 	control := riskControlFixture(t, db)
 	const callback = "test:expire-risk-authority-after-receipt"
 	if err := db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.AdminStrategyRiskChange); ok && tx.Error == nil {
+		if _, ok := tx.Statement.Dest.(*strategymodelv1.AdminStrategyRiskChange); ok && tx.Error == nil {
 			waitRiskDatabaseExpiry(ctx, t, db, operator.Principal.UserID, short.Principal.ExpiresAt.UnixMilli())
 		}
 	}); err != nil {
@@ -40,8 +41,8 @@ func TestAdminRiskSessionExpiringAfterReceiptCannotCommit(t *testing.T) {
 		t.Fatal("session expired after receipt insertion still committed", err)
 	}
 	assertRiskControlState(ctx, t, control, operator, id, true, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 0)
 }
 
 func TestAdminRiskRecoveryExpiringAfterReceiptCannotCommit(t *testing.T) {
@@ -57,7 +58,7 @@ func TestAdminRiskRecoveryExpiringAfterReceiptCannotCommit(t *testing.T) {
 	}
 	const callback = "test:expire-risk-observation-after-receipt"
 	if err := db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if row, ok := tx.Statement.Dest.(*modelv1.AdminStrategyRiskChange); ok && tx.Error == nil && row.Enabled {
+		if row, ok := tx.Statement.Dest.(*strategymodelv1.AdminStrategyRiskChange); ok && tx.Error == nil && row.Enabled {
 			if row.RecoveryUntil == nil {
 				t.Error("recovery receipt omitted its bounded proof")
 				return
@@ -78,8 +79,8 @@ func TestAdminRiskRecoveryExpiringAfterReceiptCannotCommit(t *testing.T) {
 		t.Fatal("expired recovery observation committed an enabled flag", err)
 	}
 	assertRiskControlState(ctx, t, control, operator, instance.Id, false, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
 }
 
 func waitRiskDatabaseExpiry(ctx context.Context, t *testing.T, db *gorm.DB, userID, deadline int64) {

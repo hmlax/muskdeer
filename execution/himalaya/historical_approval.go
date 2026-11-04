@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -38,7 +38,7 @@ func (s *Store) historicalIntents(ctx context.Context, lease domain.LeaseToken, 
 	if !validStoreContext(ctx) || lease.Key.Kind != domain.LeaseKindExecution || lease.Key.AccountID != AccountID(request.Scope.UserId, request.Scope.FundId) {
 		return ErrInvalidSubmit
 	}
-	return s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch))
 		if err != nil {
 			return err
@@ -53,8 +53,8 @@ func (s *Store) historicalIntents(ctx context.Context, lease domain.LeaseToken, 
 		if err := checkReservedBudget(budget); err != nil {
 			return err
 		}
-		var rows []*modelv1.HimalayaIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+		var rows []*executionmodelv1.HimalayaIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
 			Where("account_id = ? AND state != ? AND delete_at IS NULL", lease.Key.AccountID, IntentTerminal).
 			Clauses(clause.Locking{Strength: "UPDATE"}).Find(&rows).Error; err != nil {
 			return err
@@ -79,7 +79,7 @@ func (s *Store) historicalIntents(ctx context.Context, lease domain.LeaseToken, 
 			}
 			row.HistoricalApprovalReference = request.ApprovalReference
 			row.HistoricalSnapshot = proto.CloneOf(snapshot)
-			if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", row.Id).
+			if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", row.Id).
 				Select("HistoricalApprovalReference", "HistoricalSnapshot").Updates(row).Error; err != nil {
 				return err
 			}
@@ -119,7 +119,7 @@ func freshHistoricalSnapshot(snapshot *commonv1.HimalayaSnapshot) bool {
 		snapshot.ValidUntilMs > now && snapshot.ValidUntilMs-snapshot.StartedAtMs <= native.SnapshotAge.Milliseconds()
 }
 
-func matchesHistoricalApproval(row *modelv1.HimalayaIntent, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot) bool {
+func matchesHistoricalApproval(row *executionmodelv1.HimalayaIntent, request *commonv1.HistoricalIntentApproval, snapshot *commonv1.HimalayaSnapshot) bool {
 	return row.State == IntentDispatched && row.OrderId == "" && row.Symbol == request.Scope.Symbol &&
 		row.UserId == request.Scope.UserId && row.FundId == request.Scope.FundId && row.CreateAt < snapshot.StartedAtMs &&
 		(row.HistoricalApprovalReference == "" || row.HistoricalApprovalReference == request.ApprovalReference)

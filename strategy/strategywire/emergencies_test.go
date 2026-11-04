@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

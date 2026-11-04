@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -84,8 +84,8 @@ func TestRiskSnapshotEventAndSourceAndCoreFillRollBackTogether(t *testing.T) {
 	var provisional int64
 	const callback = "test:risk-event-after-source-write"
 	if err := db.Callback().Update().After("gorm:update").Register(callback, func(query *gorm.DB) {
-		if _, snapshot := query.Statement.Dest.(*modelv1.RiskSnapshot); snapshot && active {
-			if err := query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.RiskSnapshotEvent{}).
+		if _, snapshot := query.Statement.Dest.(*executionmodelv1.RiskSnapshot); snapshot && active {
+			if err := query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&executionmodelv1.RiskSnapshotEvent{}).
 				Where("risk_snapshot_id = ?", before.Id).Count(&provisional).Error; err != nil {
 				_ = query.AddError(err)
 			}
@@ -106,7 +106,7 @@ func TestRiskSnapshotEventAndSourceAndCoreFillRollBackTogether(t *testing.T) {
 	if !proto.Equal(before, riskEventSourceRow(ctx, t, db, before.StrategyInstanceId)) || len(riskEventRows(ctx, t, db, before.StrategyInstanceId)) != 1 {
 		t.Fatal("failed core transaction retained a risk source or history effect")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, 0)
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "799.8", "200.2")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", "10", "0")
 	active = false
@@ -125,13 +125,13 @@ func TestRiskSnapshotEventsKeepRetirementRemovalAndImmutableHistory(t *testing.T
 	if len(rows) != 1 {
 		t.Fatal("missing baseline")
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.RiskSnapshotEvent{}).Where("id = ?", rows[0].Id).UpdateColumn("reason_code", "rewritten-history").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.RiskSnapshotEvent{}).Where("id = ?", rows[0].Id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.RiskSnapshotEvent{}).Where("id = ?", rows[0].Id).Delete(&modelv1.RiskSnapshotEvent{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshotEvent{}).Where("id = ?", rows[0].Id).UpdateColumn("reason_code", "rewritten-history").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshotEvent{}).Where("id = ?", rows[0].Id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshotEvent{}).Where("id = ?", rows[0].Id).Delete(&executionmodelv1.RiskSnapshotEvent{}).Error, "23514")
 	source := riskEventSourceRow(ctx, t, db, submit.Input.Authority.StrategyID)
 	retired := time.Now().UnixMilli()
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", source.Id).
-		Select("DeleteAt", "Revision").Updates(&modelv1.RiskSnapshot{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", source.Id).
+		Select("DeleteAt", "Revision").Updates(&executionmodelv1.RiskSnapshot{
 		DeleteAt: &retired,
 		Revision: source.Revision + 1,
 	}).Error; err != nil {
@@ -141,7 +141,7 @@ func TestRiskSnapshotEventsKeepRetirementRemovalAndImmutableHistory(t *testing.T
 	if len(retirement) != 2 || retirement[1].Kind != string(domain.RiskSnapshotEventChanged) || !retirement[1].SnapshotDeleted {
 		t.Fatal("retired source did not preserve its historical state")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", source.Id).Delete(&modelv1.RiskSnapshot{}).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", source.Id).Delete(&executionmodelv1.RiskSnapshot{}).Error; err != nil {
 		t.Fatal(err)
 	}
 	removed := riskEventRows(ctx, t, db, source.StrategyInstanceId)
@@ -150,19 +150,19 @@ func TestRiskSnapshotEventsKeepRetirementRemovalAndImmutableHistory(t *testing.T
 	}
 }
 
-func riskEventRows(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) []*modelv1.RiskSnapshotEvent {
+func riskEventRows(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) []*executionmodelv1.RiskSnapshotEvent {
 	t.Helper()
-	var rows []*modelv1.RiskSnapshotEvent
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshotEvent{}).Where("strategy_instance_id = ?", strategyID).Order("id ASC").Find(&rows).Error; err != nil {
+	var rows []*executionmodelv1.RiskSnapshotEvent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshotEvent{}).Where("strategy_instance_id = ?", strategyID).Order("id ASC").Find(&rows).Error; err != nil {
 		t.Fatal(err)
 	}
 	return rows
 }
 
-func riskEventSourceRow(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) *modelv1.RiskSnapshot {
+func riskEventSourceRow(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) *executionmodelv1.RiskSnapshot {
 	t.Helper()
-	var row modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", strategyID).Take(&row).Error; err != nil {
+	var row executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", strategyID).Take(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return &row

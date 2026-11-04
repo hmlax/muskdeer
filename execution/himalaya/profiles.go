@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -46,7 +46,7 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.Himalay
 	slices.SortFunc(profiles, func(a, b *commonv1.HimalayaProfilePolicy) int {
 		return strings.Compare(native.ScopeKey(a.UserId, a.FundId), native.ScopeKey(b.UserId, b.FundId))
 	})
-	return s.db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Transaction(func(tx *gorm.DB) error {
 		for _, profile := range profiles {
 			if err := configureProfile(ctx, tx, profile, enabled); err != nil {
 				return err
@@ -56,8 +56,8 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.Himalay
 	})
 }
 
-func budgetProfile(p *commonv1.HimalayaProfilePolicy) *modelv1.HimalayaBudget {
-	return &modelv1.HimalayaBudget{
+func budgetProfile(p *commonv1.HimalayaProfilePolicy) *commonmodelv1.HimalayaBudget {
+	return &commonmodelv1.HimalayaBudget{
 		AccountId:            native.ScopeKey(p.GetUserId(), p.GetFundId()),
 		UserId:               p.GetUserId(),
 		FundId:               p.GetFundId(),
@@ -77,19 +77,19 @@ func budgetProfile(p *commonv1.HimalayaProfilePolicy) *modelv1.HimalayaBudget {
 
 func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.HimalayaProfilePolicy, enabled *bool) error {
 	input := budgetProfile(p)
-	if err := tx.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Clauses(clause.OnConflict{DoNothing: true}).Create(&modelv1.ExecutionShardLease{AccountId: input.AccountId}).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Clauses(clause.OnConflict{DoNothing: true}).Create(&commonmodelv1.ExecutionShardLease{AccountId: input.AccountId}).Error; err != nil {
 		return err
 	}
 	if err := lockProfileMaintenance(ctx, tx, input.AccountId, p); err != nil {
 		return err
 	}
-	var current modelv1.HimalayaBudget
-	err := tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", input.AccountId).Clauses(clause.Locking{Strength: "UPDATE"}).First(&current).Error
+	var current commonmodelv1.HimalayaBudget
+	err := tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", input.AccountId).Clauses(clause.Locking{Strength: "UPDATE"}).First(&current).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		if enabled != nil {
 			input.Enabled = *enabled
 		}
-		return tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Create(input).Error
+		return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Create(input).Error
 	}
 	if err != nil {
 		return err
@@ -108,18 +108,18 @@ func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.HimalayaProf
 	if enabled != nil {
 		input.Enabled = *enabled
 	}
-	return tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("id = ?", current.Id).
+	return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", current.Id).
 		Select("MaximumNotional", "MaximumOrderNotional", "Leverage", "Symbol", "MarketDataSource", "PriceTick", "QuantityStep", "Enabled").Updates(input).Error
 }
 
 func lockProfileMaintenance(ctx context.Context, tx *gorm.DB, account string, p *commonv1.HimalayaProfilePolicy) error {
 	keys := []string{account, native.StrategyKey(p.UserId, p.FundId), native.PortfolioKey(p.UserId, p.FundId), native.MarketKey(p.Symbol), native.TradeKey(p.Symbol)}
-	var owners []*modelv1.ExecutionShardLease
-	if err := tx.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id IN ?", keys).Order("account_id").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&owners).Error; err != nil {
+	var owners []*commonmodelv1.ExecutionShardLease
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id IN ?", keys).Order("account_id").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&owners).Error; err != nil {
 		return err
 	}
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", account).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", account).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return err
 	}
 	for _, owner := range owners {

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/model/v1;modelv1";
+
+// HimalayaBudget reserves additional gross notional across a whole fund.
+// Observed native obligations and unobserved local reservations are additive.
+message HimalayaBudget {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_budget_account\""];
+  int64 user_id = 6 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;not null\""];
+  int64 fund_id = 7 [(tagger.tags) = "gorm:\"column:fund_id;type:bigint;not null\""];
+  string maximum_notional = 8 [(tagger.tags) = "gorm:\"column:maximum_notional;type:numeric(76,36);not null\""];
+  string observed_notional = 9 [(tagger.tags) = "gorm:\"column:observed_notional;type:numeric(76,36);not null\""];
+  string reserved_notional = 10 [(tagger.tags) = "gorm:\"column:reserved_notional;type:numeric(76,36);not null\""];
+  int64 snapshot_expires_at = 11 [(tagger.tags) = "gorm:\"column:snapshot_expires_at;type:bigint;not null\""];
+  bool enabled = 12 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  string available_quote = 13 [(tagger.tags) = "gorm:\"column:available_quote;type:numeric(76,36);not null;default:0\""];
+  string maximum_order_notional = 14 [(tagger.tags) = "gorm:\"column:maximum_order_notional;type:numeric(76,36);not null;default:0\""];
+  uint32 leverage = 15 [(tagger.tags) = "gorm:\"column:leverage;type:integer;not null\""];
+  string worst_fee_rate = 16 [(tagger.tags) = "gorm:\"column:worst_fee_rate;type:numeric(76,36);not null;default:0\""];
+  bool cutover_completed = 17 [(tagger.tags) = "gorm:\"column:cutover_completed;type:boolean;not null\""];
+  string symbol = 18 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(32);not null;default:'';uniqueIndex:uk_himalaya_budget_symbol,where:symbol <> '' AND delete_at IS NULL\""];
+  string market_data_source = 19 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null;default:''\""];
+  string price_tick = 20 [(tagger.tags) = "gorm:\"column:price_tick;type:numeric(76,36);not null;default:0\""];
+  string quantity_step = 21 [(tagger.tags) = "gorm:\"column:quantity_step;type:numeric(76,36);not null;default:0\""];
+}

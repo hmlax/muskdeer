@@ -16,9 +16,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -115,7 +116,7 @@ func TestSyntheticTradeUnknownAndConcurrentNextSlotsCannotReuseAnEvent(t *testin
 	if err != nil || first.GetState() != native.SyntheticUnknown || first.GetSourceTrade().GetEventId() != "42" {
 		t.Fatalf("aggregate reply loss = %v, %v, want unknown event 42", first, err)
 	}
-	if err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("run_id = ?", s.base.RunId).UpdateColumn("create_at", time.Now().Add(-2*time.Second).UnixMilli()).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ?", s.base.RunId).UpdateColumn("create_at", time.Now().Add(-2*time.Second).UnixMilli()).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 1, 42), send); !errors.Is(err, himalaya.ErrInvalidSubmit) || calls.Load() != 1 {
@@ -145,8 +146,8 @@ func TestSyntheticTradeUnknownAndConcurrentNextSlotsCannotReuseAnEvent(t *testin
 	if successes != 1 || calls.Load() != 2 {
 		t.Fatalf("same aggregate event across concurrent slots: successes=%d effects=%d, want 1/2 total", successes, calls.Load())
 	}
-	var rows []*modelv1.SyntheticTapeIntent
-	if err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Order("sequence").Find(&rows).Error; err != nil || len(rows) != 2 || rows[0].Plan.GetSourceTrade().GetEventId() != "42" || rows[1].Plan.GetSourceTrade().GetEventId() != "43" {
+	var rows []*executionmodelv1.SyntheticTapeIntent
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Order("sequence").Find(&rows).Error; err != nil || len(rows) != 2 || rows[0].Plan.GetSourceTrade().GetEventId() != "42" || rows[1].Plan.GetSourceTrade().GetEventId() != "43" {
 		t.Fatalf("durable aggregate cursor = %v, %v, want two typed events", rows, err)
 	}
 	budget, err := s.store.Budget(ctx, native.ScopeKey(10001, 10001))
@@ -166,8 +167,8 @@ func TestSyntheticTradePublisherEpochAndFinalAuthorityLockRemainRequired(t *test
 	calls := 0
 	send := func(_ context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
 		calls++
-		var held modelv1.ExecutionShardLease
-		err := s.db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", s.source.Key.AccountID).Clauses(clause.Locking{
+		var held commonmodelv1.ExecutionShardLease
+		err := s.db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", s.source.Key.AccountID).Clauses(clause.Locking{
 			Strength: "UPDATE",
 			Options:  "NOWAIT",
 		}).First(&held).Error
@@ -185,7 +186,7 @@ func TestSyntheticTradePublisherEpochAndFinalAuthorityLockRemainRequired(t *test
 	if result, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 0, 42), send); err != nil || result.GetState() != native.SyntheticPublished {
 		t.Fatalf("owned aggregate publish=%v, %v", result, err)
 	}
-	if err := s.db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", s.source.Key.AccountID).UpdateColumn("epoch", 2).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", s.source.Key.AccountID).UpdateColumn("epoch", 2).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 1, 43), send); !errors.Is(err, domain.ErrLeaseLost) || calls != 1 {

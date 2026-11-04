@@ -15,6 +15,6 @@ P07.2交付持久化认证基础，P07.3装配[身份HTTP、登录页面及本�
 
 Identity和Authorize都是时点观察；Authorize额外核对独立CSRF和角色。管理业务写操作必须在自己的事务内重新调用带锁的授权读取，按用户SHARE→会话锁的顺序保持到受保护效果提交，不能在事务外调用Authorize后直接修改业务。注销一开始就取得会话NO KEY UPDATE，避免两个SHARE升级导致死锁。浏览器Cookie/Origin/CSRF请求头及业务RPC身份边界仍须在传输层接入时验证。
 
-AdminUser/AdminSession/AdminAudit唯一来源为[模型Proto](../deer/proto/model/v1/admin.proto)，由gotag生成直接使用；迁移23创建实际约束。用户创建、成功登录、失败计数、会话/注销及相应审计同事务提交。认证审计只含actor/role/action/resource/reason，模型的可选before/after版本用于后续管理配置变更；不保存密码、哈希、bearer或CSRF秘密；持久化错误使用固定消息，内部cause可供受控分类。未实施的用户管理API不能从本基础接口推断已获远程授权。
+AdminUser/AdminSession/AdminAudit唯一来源为[模型Proto](../deer/proto/common/model/v1/admin.proto)，由gotag生成直接使用；迁移23创建实际约束。用户创建、成功登录、失败计数、会话/注销及相应审计同事务提交。认证审计只含actor/role/action/resource/reason，模型的可选before/after版本用于后续管理配置变更；不保存密码、哈希、bearer或CSRF秘密；持久化错误使用固定消息，内部cause可供受控分类。未实施的用户管理API不能从本基础接口推断已获远程授权。
 
 验证及当前局限见[P07.2](validation/P07-02.md)。

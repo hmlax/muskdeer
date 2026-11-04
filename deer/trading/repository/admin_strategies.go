@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
@@ -29,8 +29,8 @@ func (s *adminStrategies) List(ctx context.Context, token string, page domain.Ad
 	}
 	result := domain.AdminStrategyPage{Items: make([]domain.AdminStrategy, 0, page.Limit)}
 	err := s.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var rows []*modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).
+		var rows []*strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).
 			Where("id > ? AND delete_at IS NULL", page.AfterID).Order("id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -89,8 +89,8 @@ func (s *adminStrategies) Versions(ctx context.Context, token string, id int64, 
 		if err != nil {
 			return err
 		}
-		var rows []*modelv1.StrategyConfigVersion
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).
+		var rows []*strategymodelv1.StrategyConfigVersion
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).
 			Where("instance_id = ? AND id > ? AND delete_at IS NULL", id, page.AfterID).
 			Order("id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
@@ -118,7 +118,7 @@ func (s *adminStrategies) snapshot(ctx context.Context, token string, read func(
 	if err := coreContext(ctx); err != nil {
 		return err
 	}
-	err := s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := readAdminAuthority(ctx, tx, token, "", domain.AdminRoleViewer, ""); err != nil {
 			return err
 		}
@@ -134,16 +134,16 @@ func validAdminPage(page domain.AdminPage) bool {
 	return page.AfterID >= 0 && page.Limit >= 1 && page.Limit <= domain.MaxAdminPageSize
 }
 
-func adminStrategyRow(ctx context.Context, tx *gorm.DB, id int64) (*modelv1.StrategyInstance, error) {
-	var row modelv1.StrategyInstance
-	err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", id).Take(&row).Error
+func adminStrategyRow(ctx context.Context, tx *gorm.DB, id int64) (*strategymodelv1.StrategyInstance, error) {
+	var row strategymodelv1.StrategyInstance
+	err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", id).Take(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, domain.ErrAdminNotFound
 	}
 	return &row, err
 }
 
-func adminStrategy(row *modelv1.StrategyInstance) domain.AdminStrategy {
+func adminStrategy(row *strategymodelv1.StrategyInstance) domain.AdminStrategy {
 	return domain.AdminStrategy{
 		Spec:      strategySpec(row),
 		CreatedAt: time.UnixMilli(row.CreateAt).UTC(),
@@ -151,16 +151,16 @@ func adminStrategy(row *modelv1.StrategyInstance) domain.AdminStrategy {
 	}
 }
 
-func adminVersion(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, version int64, source string) (domain.AdminConfigVersion, error) {
-	var row modelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).
+func adminVersion(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, version int64, source string) (domain.AdminConfigVersion, error) {
+	var row strategymodelv1.StrategyConfigVersion
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).
 		Where("instance_id = ? AND version = ? AND market_data_source = ? AND delete_at IS NULL", instance.Id, version, source).Take(&row).Error; err != nil {
 		return domain.AdminConfigVersion{}, err
 	}
 	return adminConfigVersion(&row, instance)
 }
 
-func adminConfigVersion(row *modelv1.StrategyConfigVersion, instance *modelv1.StrategyInstance) (domain.AdminConfigVersion, error) {
+func adminConfigVersion(row *strategymodelv1.StrategyConfigVersion, instance *strategymodelv1.StrategyInstance) (domain.AdminConfigVersion, error) {
 	result := domain.AdminConfigVersion{
 		ID:            row.Id,
 		StrategyID:    row.InstanceId,

@@ -11,7 +11,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -53,7 +54,7 @@ func TestSimulatorResolutionWaitsForUncommittedCoreAndItsFinalDeadlineFence(t *t
 		}
 	})
 	if err := db.Callback().Create().After("gorm:create").Register(createHook, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
 		close(staged)
@@ -67,7 +68,7 @@ func TestSimulatorResolutionWaitsForUncommittedCoreAndItsFinalDeadlineFence(t *t
 	}
 	if err := db.Callback().Query().Before("gorm:query").Register(queryHook, func(tx *gorm.DB) {
 		if !tx.DryRun && tx.Statement.Context.Value(simulatorResolutionProbeKey{}) == true {
-			if _, ok := tx.Statement.Dest.(*modelv1.StrategyInstance); ok {
+			if _, ok := tx.Statement.Dest.(*strategymodelv1.StrategyInstance); ok {
 				sendBackendPID(tx, resolverPID)
 			}
 		}
@@ -121,7 +122,7 @@ func TestSimulatorResolutionWaitsForUncommittedCoreAndItsFinalDeadlineFence(t *t
 		t.Fatalf("resolution did not wait for final core rollback: %v", err)
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorCommand{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorCommand{}, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
 }

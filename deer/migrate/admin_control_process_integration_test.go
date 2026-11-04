@@ -8,9 +8,10 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -39,7 +40,7 @@ func TestAdminControlProcessesRevalidateAuthorityAndProjectOneDurableResult(t *t
 	for _, suffix := range []string{"first", "second"} {
 		cfg := businessProcessConfig(t, ca, postgres, nil, naming, "strategy")
 		cfg.InstanceId += "." + suffix
-		cfg.Business.Strategy = &configv1.StrategyRuntime{
+		cfg.Business.Strategy = &strategyconfigv1.StrategyRuntime{
 			ManagementEnabled: true,
 			ControlEnabled:    true,
 		}
@@ -78,8 +79,8 @@ func TestAdminControlProcessesRevalidateAuthorityAndProjectOneDurableResult(t *t
 	}
 	// This unfunded metadata fixture has no runtime owner or orders. Its legacy
 	// epoch-zero state is explicit; only the actual service workers write results.
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", command.StrategyId).
-		Select("State", "Revision").Updates(&modelv1.StrategyInstance{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", command.StrategyId).
+		Select("State", "Revision").Updates(&strategymodelv1.StrategyInstance{
 		State:    string(domain.StrategyStateStopped),
 		Revision: 4,
 	}).Error; err != nil {
@@ -95,8 +96,8 @@ func TestAdminControlProcessesRevalidateAuthorityAndProjectOneDurableResult(t *t
 	if _, err := client.ControlStrategy(ctx, command); status.Code(err) != codes.Unauthenticated {
 		t.Fatal("revoked session replayed native control", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 2)
-	for _, entity := range []any{&modelv1.SimulatorAccount{}, &modelv1.StrategyLease{}, &modelv1.StrategyAction{}} {
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 2)
+	for _, entity := range []any{&executionmodelv1.SimulatorAccount{}, &strategymodelv1.StrategyLease{}, &strategymodelv1.StrategyAction{}} {
 		assertPortfolioRowCount(ctx, t, db, entity, 0)
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)

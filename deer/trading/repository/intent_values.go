@@ -5,11 +5,11 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func intentSnapshot(row *modelv1.OrderIntent) (domain.IntentSnapshot, error) {
+func intentSnapshot(row *executionmodelv1.OrderIntent) (domain.IntentSnapshot, error) {
 	price, err := decimal.NewFromString(row.Price)
 	if err != nil {
 		return domain.IntentSnapshot{}, err

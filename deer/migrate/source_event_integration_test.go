@@ -12,7 +12,8 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 	"github.com/hmlax/muskdeer/portfolio/usecase"
@@ -32,7 +33,7 @@ func TestCoreFillAndSourceOutboxCommitOrRollBackTogether(t *testing.T) {
 	active := true
 	const callbackName = "muskdeer:test:reject-source-event"
 	if err := db.Callback().Create().Before("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if event, ok := tx.Statement.Dest.(*modelv1.OutboxEvent); ok && event.EventType == domain.EventTradeFilled && active {
+		if event, ok := tx.Statement.Dest.(*executionmodelv1.OutboxEvent); ok && event.EventType == domain.EventTradeFilled && active {
 			tx.Error = failure
 		}
 	}); err != nil {
@@ -56,13 +57,13 @@ func TestCoreFillAndSourceOutboxCommitOrRollBackTogether(t *testing.T) {
 	}
 	assertCoreBalance(ctx, t, core, request.AccountID, "USDT", "799.8", "200.2")
 	assertCoreBalance(ctx, t, core, request.AccountID, "BTC", "10", "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, 0)
 	unchanged, err := core.Find(ctx, request.AccountID, request.ClientOrderID)
 	if err != nil || unchanged.State != domain.OrderStateLive || !unchanged.FilledQuantity.IsZero() {
 		t.Fatalf("failed outbox retained a partial effect: %+v, %v", unchanged, err)
 	}
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).First(&risk).Error; err != nil || !risk.Reconciled {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).First(&risk).Error; err != nil || !risk.Reconciled {
 		t.Fatalf("rolled-back source event changed risk: %v, %v", &risk, err)
 	}
 	active = false
@@ -74,8 +75,8 @@ func TestCoreFillAndSourceOutboxCommitOrRollBackTogether(t *testing.T) {
 	if err != nil || duplicate.ID != fill.ID {
 		t.Fatalf("source retry repeated trade effect: %+v, %v", duplicate, err)
 	}
-	var events []*modelv1.OutboxEvent
-	if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Where("event_type = ?", domain.EventTradeFilled).Find(&events).Error; err != nil || len(events) != 1 {
+	var events []*executionmodelv1.OutboxEvent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Where("event_type = ?", domain.EventTradeFilled).Find(&events).Error; err != nil || len(events) != 1 {
 		t.Fatalf("natural trade produced duplicate events: %d, %v", len(events), err)
 	}
 	notice, err := eventwire.Fill(ctx, events[0].Event)
@@ -104,15 +105,15 @@ func TestFillReplayFinishesOMSAfterPortfolioAlreadyCommitted(t *testing.T) {
 	if err := handler.Apply(ctx, portfolioNotice(ctx, t, buy)); !errors.Is(err, failure) {
 		t.Fatalf("consumer acknowledged an unfinished OMS effect: %v", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 1)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
 	for _, event := range []*commonv1.ExecutionEvent{buy, buy, sell} {
 		if err := handler.Apply(ctx, portfolioNotice(ctx, t, event)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 2)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	projection, err := portfolio.Get(ctx, submit.Input.AccountID)
 	if err != nil || !projection.Reconciled || !projection.Values.CashQuote.Equal(decimal.RequireFromString("1001.8")) {

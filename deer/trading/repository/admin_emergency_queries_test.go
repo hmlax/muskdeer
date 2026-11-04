@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -29,35 +29,35 @@ func TestAdminEmergencyRecordPreservesLargeIdentitiesAndStoredProof(t *testing.T
 }
 
 func TestAdminEmergencyRecordRejectsMissingAndInconsistentProof(t *testing.T) {
-	for _, change := range []func(*modelv1.AdminEmergencyCancellation, *modelv1.AdminEmergencyCancellationTask){
-		func(row *modelv1.AdminEmergencyCancellation, _ *modelv1.AdminEmergencyCancellationTask) {
+	for _, change := range []func(*executionmodelv1.AdminEmergencyCancellation, *executionmodelv1.AdminEmergencyCancellationTask){
+		func(row *executionmodelv1.AdminEmergencyCancellation, _ *executionmodelv1.AdminEmergencyCancellationTask) {
 			row.ExpectedRiskRevision = math.MaxInt64
 		},
-		func(row *modelv1.AdminEmergencyCancellation, _ *modelv1.AdminEmergencyCancellationTask) {
+		func(row *executionmodelv1.AdminEmergencyCancellation, _ *executionmodelv1.AdminEmergencyCancellationTask) {
 			row.RiskRevision++
 		},
-		func(row *modelv1.AdminEmergencyCancellation, _ *modelv1.AdminEmergencyCancellationTask) {
+		func(row *executionmodelv1.AdminEmergencyCancellation, _ *executionmodelv1.AdminEmergencyCancellationTask) {
 			row.Scope = "account"
 		},
-		func(_ *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(_ *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.StrategyInstanceId++
 		},
-		func(_ *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(_ *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.EmergencyCancellationId++
 		},
-		func(_ *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(_ *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.State = "unknown-private-state"
 		},
-		func(_ *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(_ *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.Revision = 0
 		},
-		func(_ *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(_ *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.CompletedAt = proto.Int64(1)
 		},
-		func(_ *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(_ *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.State = string(domain.AdminEmergencyCancelSucceeded)
 		},
-		func(row *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) {
+		func(row *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) {
 			task.State = string(domain.AdminEmergencyCancelSucceeded)
 			task.EnrollmentComplete = true
 			task.CompletedAt = proto.Int64(row.CreateAt - 1)
@@ -78,8 +78,8 @@ func TestAdminEmergencyRecordRejectsMissingAndInconsistentProof(t *testing.T) {
 	}
 }
 
-func emergencyQueryRows() (*modelv1.AdminEmergencyCancellation, *modelv1.AdminEmergencyCancellationTask) {
-	return &modelv1.AdminEmergencyCancellation{
+func emergencyQueryRows() (*executionmodelv1.AdminEmergencyCancellation, *executionmodelv1.AdminEmergencyCancellationTask) {
+	return &executionmodelv1.AdminEmergencyCancellation{
 		Id:                   9007199254740993,
 		CreateAt:             1793500000000,
 		ActorUserId:          9007199254740995,
@@ -87,7 +87,7 @@ func emergencyQueryRows() (*modelv1.AdminEmergencyCancellation, *modelv1.AdminEm
 		Scope:                string(domain.AdminEmergencyCancelScopeStrategy),
 		ExpectedRiskRevision: 9007199254741001,
 		RiskRevision:         9007199254741002,
-	}, &modelv1.AdminEmergencyCancellationTask{
+	}, &executionmodelv1.AdminEmergencyCancellationTask{
 		Id:                      1,
 		EmergencyCancellationId: 9007199254740993,
 		StrategyInstanceId:      9007199254740997,

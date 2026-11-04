@@ -22,7 +22,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -147,7 +147,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	if err != nil {
 		return err
 	}
-	rows := make([]*modelv1.HimalayaDevelopmentBaseline, 0, len(batch.Requests))
+	rows := make([]*executionmodelv1.HimalayaDevelopmentBaseline, 0, len(batch.Requests))
 	runner := baselineRunner{
 		db:     db.GORM(),
 		store:  store,
@@ -181,7 +181,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	return nil
 }
 
-func (r *baselineRunner) assess(ctx context.Context, request *commonv1.DevelopmentBaselineRequest) (*modelv1.HimalayaDevelopmentBaseline, error) {
+func (r *baselineRunner) assess(ctx context.Context, request *commonv1.DevelopmentBaselineRequest) (*executionmodelv1.HimalayaDevelopmentBaseline, error) {
 	profile, err := native.Profile(r.cfg, request.GetScope())
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (r *baselineRunner) assess(ctx context.Context, request *commonv1.Developme
 		if err := r.store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
 			return nil, err
 		}
-		if err := r.db.WithContext(ctx).Model(&modelv1.HimalayaDevelopmentBaseline{}).Where("account_id = ?", row.AccountId).First(row).Error; err != nil {
+		if err := r.db.WithContext(ctx).Model(&executionmodelv1.HimalayaDevelopmentBaseline{}).Where("account_id = ?", row.AccountId).First(row).Error; err != nil {
 			return nil, err
 		}
 	}

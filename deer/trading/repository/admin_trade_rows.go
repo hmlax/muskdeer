@@ -7,20 +7,23 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 type adminTradeRelations struct {
-	orders     map[int64]*modelv1.SimulatorOrder
-	commands   map[int64]*modelv1.SimulatorCommand
-	intents    map[int64]*modelv1.OrderIntent
+	orders     map[int64]*executionmodelv1.SimulatorOrder
+	commands   map[int64]*executionmodelv1.SimulatorCommand
+	intents    map[int64]*executionmodelv1.OrderIntent
 	sources    map[int64]domain.MarketSource
-	collected  map[string]*modelv1.PortfolioFill
+	collected  map[string]*portfoliomodelv1.PortfolioFill
 	quoteAsset string
 }
 
-func readAdminTrades(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, rows []*modelv1.SimulatorFill) ([]domain.AdminTrade, error) {
+func readAdminTrades(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, rows []*executionmodelv1.SimulatorFill) ([]domain.AdminTrade, error) {
 	result := make([]domain.AdminTrade, 0, len(rows))
 	if len(rows) == 0 {
 		return result, nil
@@ -39,13 +42,13 @@ func readAdminTrades(ctx context.Context, tx *gorm.DB, instance *modelv1.Strateg
 	return result, nil
 }
 
-func readAdminTradeRelations(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, rows []*modelv1.SimulatorFill) (adminTradeRelations, error) {
+func readAdminTradeRelations(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, rows []*executionmodelv1.SimulatorFill) (adminTradeRelations, error) {
 	result := adminTradeRelations{
-		orders:    make(map[int64]*modelv1.SimulatorOrder, len(rows)),
-		commands:  make(map[int64]*modelv1.SimulatorCommand, len(rows)),
-		intents:   make(map[int64]*modelv1.OrderIntent, len(rows)),
+		orders:    make(map[int64]*executionmodelv1.SimulatorOrder, len(rows)),
+		commands:  make(map[int64]*executionmodelv1.SimulatorCommand, len(rows)),
+		intents:   make(map[int64]*executionmodelv1.OrderIntent, len(rows)),
 		sources:   make(map[int64]domain.MarketSource, len(rows)),
-		collected: make(map[string]*modelv1.PortfolioFill, len(rows)),
+		collected: make(map[string]*portfoliomodelv1.PortfolioFill, len(rows)),
 	}
 	ids := make([]int64, 0, len(rows))
 	trades := make([]string, 0, len(rows))
@@ -53,8 +56,8 @@ func readAdminTradeRelations(ctx context.Context, tx *gorm.DB, instance *modelv1
 		ids = append(ids, row.CoreOrderId)
 		trades = append(trades, row.TradeId)
 	}
-	var orders []*modelv1.SimulatorOrder
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("id IN ? AND delete_at IS NULL", ids).Find(&orders).Error; err != nil {
+	var orders []*executionmodelv1.SimulatorOrder
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("id IN ? AND delete_at IS NULL", ids).Find(&orders).Error; err != nil {
 		return result, err
 	}
 	commandIDs := make([]int64, 0, len(orders))
@@ -64,8 +67,8 @@ func readAdminTradeRelations(ctx context.Context, tx *gorm.DB, instance *modelv1
 		commandIDs = append(commandIDs, row.InitialCommandId)
 		versions = append(versions, row.ConfigVersion)
 	}
-	var commands []*modelv1.SimulatorCommand
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("id IN ? AND delete_at IS NULL", commandIDs).Find(&commands).Error; err != nil {
+	var commands []*executionmodelv1.SimulatorCommand
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("id IN ? AND delete_at IS NULL", commandIDs).Find(&commands).Error; err != nil {
 		return result, err
 	}
 	intentIDs := make([]int64, 0, len(commands))
@@ -75,9 +78,9 @@ func readAdminTradeRelations(ctx context.Context, tx *gorm.DB, instance *modelv1
 			intentIDs = append(intentIDs, *row.IntentId)
 		}
 	}
-	var intents []*modelv1.OrderIntent
+	var intents []*executionmodelv1.OrderIntent
 	if len(intentIDs) > 0 {
-		if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id IN ? AND delete_at IS NULL", intentIDs).Find(&intents).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id IN ? AND delete_at IS NULL", intentIDs).Find(&intents).Error; err != nil {
 			return result, err
 		}
 	}
@@ -90,14 +93,14 @@ func readAdminTradeRelations(ctx context.Context, tx *gorm.DB, instance *modelv1
 	return result, nil
 }
 
-func readAdminTradeMetadata(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, versions []int64, trades []string, result *adminTradeRelations) error {
-	var instrument modelv1.Instrument
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", instance.InstrumentId).Take(&instrument).Error; err != nil {
+func readAdminTradeMetadata(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, versions []int64, trades []string, result *adminTradeRelations) error {
+	var instrument commonmodelv1.Instrument
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", instance.InstrumentId).Take(&instrument).Error; err != nil {
 		return err
 	}
 	result.quoteAsset = instrument.QuoteAsset
-	var configs []*modelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).
+	var configs []*strategymodelv1.StrategyConfigVersion
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).
 		Select("Id", "Version", "MarketDataSource").Where("instance_id = ? AND version IN ? AND delete_at IS NULL", instance.Id, versions).Find(&configs).Error; err != nil {
 		return err
 	}
@@ -108,8 +111,8 @@ func readAdminTradeMetadata(ctx context.Context, tx *gorm.DB, instance *modelv1.
 		}
 		result.sources[row.Version] = source
 	}
-	var collected []*modelv1.PortfolioFill
-	if err := tx.WithContext(ctx).Model(&modelv1.PortfolioFill{}).
+	var collected []*portfoliomodelv1.PortfolioFill
+	if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).
 		Where("execution_venue = ? AND trade_id IN ?", domain.ExecutionVenueSimulator, trades).Find(&collected).Error; err != nil {
 		return err
 	}
@@ -119,7 +122,7 @@ func readAdminTradeMetadata(ctx context.Context, tx *gorm.DB, instance *modelv1.
 	return nil
 }
 
-func adminTradeValue(instance *modelv1.StrategyInstance, row *modelv1.SimulatorFill, related adminTradeRelations) (domain.AdminTrade, error) {
+func adminTradeValue(instance *strategymodelv1.StrategyInstance, row *executionmodelv1.SimulatorFill, related adminTradeRelations) (domain.AdminTrade, error) {
 	order := related.orders[row.CoreOrderId]
 	if order == nil || order.StrategyInstanceId != instance.Id || order.AccountId != instance.AccountId || order.InstrumentId != instance.InstrumentId {
 		return domain.AdminTrade{}, domain.ErrAdminUnavailable
@@ -164,7 +167,7 @@ func adminTradeValue(instance *modelv1.StrategyInstance, row *modelv1.SimulatorF
 	return result, nil
 }
 
-func validAdminTradeCommand(order *modelv1.SimulatorOrder, command *modelv1.SimulatorCommand) bool {
+func validAdminTradeCommand(order *executionmodelv1.SimulatorOrder, command *executionmodelv1.SimulatorCommand) bool {
 	return command != nil && command.Action == domain.GatewayActionSubmit && command.AccountId == order.AccountId &&
 		command.StrategyInstanceId == order.StrategyInstanceId && command.ConfigVersion == order.ConfigVersion &&
 		command.InstrumentId == order.InstrumentId && command.ClientOrderId == order.ClientOrderId
@@ -186,7 +189,7 @@ func validAdminTradeAmounts(fill domain.CoreFill, order domain.CoreOrder, quote 
 	return fill.Price.Mul(fill.Quantity).Equal(fill.QuoteNotional) && fill.QuoteNotional.Mul(order.QuoteFeeRate).Truncate(36).Equal(fill.FeeAmount)
 }
 
-func linkAdminTradeOrder(value *domain.AdminTrade, order *modelv1.SimulatorOrder, related adminTradeRelations) error {
+func linkAdminTradeOrder(value *domain.AdminTrade, order *executionmodelv1.SimulatorOrder, related adminTradeRelations) error {
 	command := related.commands[order.InitialCommandId]
 	collected := related.collected[value.TradeID]
 	if command.IntentId == nil {

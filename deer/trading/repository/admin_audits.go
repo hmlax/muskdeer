@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -27,7 +27,7 @@ func (s *adminAudits) List(ctx context.Context, token string, filter domain.Admi
 	}
 	result := domain.AdminAuditPage{Items: make([]domain.AdminAuditEntry, 0, filter.Page.Limit)}
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		query := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).
+		query := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).
 			Where("id > ? AND delete_at IS NULL", filter.Page.AfterID)
 		if filter.Actor != "" {
 			query = query.Where("actor = ?", filter.Actor)
@@ -38,7 +38,7 @@ func (s *adminAudits) List(ctx context.Context, token string, filter domain.Admi
 		if filter.Resource != "" {
 			query = query.Where("resource = ?", filter.Resource)
 		}
-		var rows []*modelv1.AdminAudit
+		var rows []*commonmodelv1.AdminAudit
 		if err := query.Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -63,8 +63,8 @@ func (s *adminAudits) Detail(ctx context.Context, token string, id int64) (domai
 	}
 	var result domain.AdminAuditEntry
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.AdminAudit
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("id = ? AND delete_at IS NULL", id).Take(&row).Error; err != nil {
+		var row commonmodelv1.AdminAudit
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("id = ? AND delete_at IS NULL", id).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
@@ -79,7 +79,7 @@ func (s *adminAudits) Detail(ctx context.Context, token string, id int64) (domai
 	return result, nil
 }
 
-func adminAuditEntry(row *modelv1.AdminAudit) domain.AdminAuditEntry {
+func adminAuditEntry(row *commonmodelv1.AdminAudit) domain.AdminAuditEntry {
 	result := domain.AdminAuditEntry{
 		ID:        row.Id,
 		Actor:     row.Actor,

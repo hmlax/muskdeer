@@ -7,11 +7,11 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func appendCancellationEvent(ctx context.Context, tx *gorm.DB, row *modelv1.CancellationRequest, kind string) error {
+func appendCancellationEvent(ctx context.Context, tx *gorm.DB, row *executionmodelv1.CancellationRequest, kind string) error {
 	state, err := cancellationWireState(domain.CancellationState(row.State))
 	if err != nil {
 		return err
@@ -21,7 +21,7 @@ func appendCancellationEvent(ctx context.Context, tx *gorm.DB, row *modelv1.Canc
 		return err
 	}
 	eventID := fmt.Sprintf("cancel:%d:%d", row.Id, row.Revision)
-	return tx.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Create(&modelv1.OutboxEvent{
+	return tx.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Create(&executionmodelv1.OutboxEvent{
 		EventId:   eventID,
 		IntentId:  row.IntentId,
 		EventType: kind,

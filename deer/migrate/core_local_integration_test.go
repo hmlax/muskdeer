@@ -12,7 +12,9 @@ import (
 	natsjs "github.com/nats-io/nats.go/jetstream"
 
 	"github.com/hmlax/muskdeer/deer/corelocal"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 )
 
 func TestCoreLocalSeedIsIdempotentAndNeverFundsOrEnablesTrading(t *testing.T) {
@@ -26,7 +28,7 @@ func TestCoreLocalSeedIsIdempotentAndNeverFundsOrEnablesTrading(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", corelocal.AccountID).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", corelocal.AccountID).
 		Updates(map[string]any{"limit_notional": "7.123456789012345678", "revision": 2}).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -34,21 +36,21 @@ func TestCoreLocalSeedIsIdempotentAndNeverFundsOrEnablesTrading(t *testing.T) {
 	if err != nil || first.BinanceFeedID != second.BinanceFeedID || first.OKXFeedID != second.OKXFeedID {
 		t.Fatalf("repeat changed local resource identities: %v", err)
 	}
-	var budget modelv1.AccountBudget
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", corelocal.AccountID).First(&budget).Error; err != nil {
+	var budget commonmodelv1.AccountBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", corelocal.AccountID).First(&budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	if budget.Enabled || budget.Revision != 2 || budget.LimitNotional != "7.123456789012345678000000000000000000" {
 		t.Fatal("repeat reset an existing budget or enabled risk")
 	}
-	for _, model := range []any{&modelv1.SimulatorBalance{}, &modelv1.StrategyInstance{}, &modelv1.OrderIntent{}, &modelv1.SimulatorOrder{}} {
+	for _, model := range []any{&executionmodelv1.SimulatorBalance{}, &strategymodelv1.StrategyInstance{}, &executionmodelv1.OrderIntent{}, &executionmodelv1.SimulatorOrder{}} {
 		var count int64
 		if err := db.WithContext(ctx).Model(model).Count(&count).Error; err != nil || count != 0 {
 			t.Fatalf("local startup created money, a strategy or orders: count=%d err=%v", count, err)
 		}
 	}
-	var account modelv1.SimulatorAccount
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ?", corelocal.AccountID).First(&account).Error; err != nil || account.Enabled {
+	var account executionmodelv1.SimulatorAccount
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ?", corelocal.AccountID).First(&account).Error; err != nil || account.Enabled {
 		t.Fatal("startup enabled a simulated trading account", err)
 	}
 }

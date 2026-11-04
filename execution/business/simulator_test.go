@@ -9,7 +9,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
@@ -17,7 +18,7 @@ import (
 func TestSimulatorRuntimeRequiresExplicitAccountsDelayAndLease(t *testing.T) {
 	cfg := &configv1.BusinessRuntime{
 		ExecutionLeaseTtl: durationpb.New(3 * time.Second),
-		Simulator: &configv1.SimulatorScenarioRuntime{
+		Simulator: &executionconfigv1.SimulatorScenarioRuntime{
 			AccountIds:  []string{"sim-one"},
 			CancelDelay: durationpb.New(100 * time.Millisecond),
 		},

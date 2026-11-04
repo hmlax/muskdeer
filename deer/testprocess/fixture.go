@@ -13,7 +13,7 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
 	"github.com/hmlax/muskdeer/deer/processlog"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 // Runtime describes work supplied by the owning service fixture.

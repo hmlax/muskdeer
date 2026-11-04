@@ -7,15 +7,15 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 )
 
-func appendSimulatorFillEvent(ctx context.Context, tx *gorm.DB, order *modelv1.SimulatorOrder, fill *modelv1.SimulatorFill) error {
-	var command modelv1.SimulatorCommand
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("id = ? AND delete_at IS NULL", order.InitialCommandId).First(&command).Error; err != nil {
+func appendSimulatorFillEvent(ctx context.Context, tx *gorm.DB, order *executionmodelv1.SimulatorOrder, fill *executionmodelv1.SimulatorFill) error {
+	var command executionmodelv1.SimulatorCommand
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("id = ? AND delete_at IS NULL", order.InitialCommandId).First(&command).Error; err != nil {
 		return err
 	}
 	if command.IntentId == nil {
@@ -31,7 +31,7 @@ func appendSimulatorFillEvent(ctx context.Context, tx *gorm.DB, order *modelv1.S
 	if err != nil {
 		return err
 	}
-	return tx.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Create(&modelv1.OutboxEvent{
+	return tx.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Create(&executionmodelv1.OutboxEvent{
 		EventId:       event.EventId,
 		EventType:     event.EventType,
 		IntentId:      *command.IntentId,
@@ -41,7 +41,7 @@ func appendSimulatorFillEvent(ctx context.Context, tx *gorm.DB, order *modelv1.S
 	}).Error
 }
 
-func simulatorFillEvent(ctx context.Context, order *modelv1.SimulatorOrder, fill *modelv1.SimulatorFill, intentID, now int64) (*commonv1.ExecutionEvent, error) {
+func simulatorFillEvent(ctx context.Context, order *executionmodelv1.SimulatorOrder, fill *executionmodelv1.SimulatorFill, intentID, now int64) (*commonv1.ExecutionEvent, error) {
 	if order == nil || fill == nil || fill.CoreOrderId != order.Id || (order.Side != string(domain.SideBuy) && order.Side != string(domain.SideSell)) {
 		return nil, domain.ErrInvalidOrder
 	}

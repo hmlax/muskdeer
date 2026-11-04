@@ -8,14 +8,16 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput, execution domain.LeaseToken, strategy *modelv1.StrategyInstance, instrument *modelv1.Instrument, account *modelv1.AccountBudget, clientID, fingerprint string) (*modelv1.OrderIntent, error) {
-	var budget modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", strategy.Id, account.AccountId).
+func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput, execution domain.LeaseToken, strategy *strategymodelv1.StrategyInstance, instrument *commonmodelv1.Instrument, account *commonmodelv1.AccountBudget, clientID, fingerprint string) (*executionmodelv1.OrderIntent, error) {
+	var budget strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", strategy.Id, account.AccountId).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&budget).Error; err != nil {
 		return nil, err
 	}
@@ -56,7 +58,7 @@ func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput,
 	if err := saveStrategyReservation(ctx, tx, &budget, strategyReserved); err != nil {
 		return nil, err
 	}
-	row := &modelv1.OrderIntent{
+	row := &executionmodelv1.OrderIntent{
 		AccountId:             in.AccountID,
 		IdempotencyKey:        in.IdempotencyKey,
 		ClientOrderId:         clientID,
@@ -81,23 +83,23 @@ func stageAcceptedIntent(ctx context.Context, tx *gorm.DB, in domain.OrderInput,
 		SubmissionDeadlineAt:  in.Deadline.UnixMilli(),
 		Revision:              1,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Create(row).Error; err != nil {
 		return nil, err
 	}
 	return row, appendAcceptedEvent(ctx, tx, row, now)
 }
 
-func validateRiskSnapshot(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance) (*modelv1.RiskSnapshot, int64, error) {
+func validateRiskSnapshot(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance) (*executionmodelv1.RiskSnapshot, int64, error) {
 	if strategy.State != string(domain.StrategyStateRunning) || !strategy.DesiredRunning || !requestedConfigurationActive(strategy) {
 		return nil, 0, domain.ErrRiskDenied
 	}
-	var snapshot modelv1.RiskSnapshot
-	if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).
+	var snapshot executionmodelv1.RiskSnapshot
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).
 		Clauses(clause.Locking{Strength: "SHARE"}).First(&snapshot).Error; err != nil {
 		return nil, 0, err
 	}
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", snapshot.Id).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", snapshot.Id).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return nil, 0, err
 	}
@@ -113,9 +115,9 @@ func validateRiskSnapshot(ctx context.Context, tx *gorm.DB, strategy *modelv1.St
 	return &snapshot, now, nil
 }
 
-func lockIntentInstrument(ctx context.Context, tx *gorm.DB, instrumentID int64) (*modelv1.Instrument, error) {
-	var instrument modelv1.Instrument
-	err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "SHARE"}).First(&instrument, instrumentID).Error
+func lockIntentInstrument(ctx context.Context, tx *gorm.DB, instrumentID int64) (*commonmodelv1.Instrument, error) {
+	var instrument commonmodelv1.Instrument
+	err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "SHARE"}).First(&instrument, instrumentID).Error
 	return &instrument, err
 }
 
@@ -135,20 +137,20 @@ func reserveWithinLimit(reservedText, limitText string, amount decimal.Decimal) 
 	return next, nil
 }
 
-func saveAccountReservation(ctx context.Context, tx *gorm.DB, row *modelv1.AccountBudget, reserved decimal.Decimal) error {
+func saveAccountReservation(ctx context.Context, tx *gorm.DB, row *commonmodelv1.AccountBudget, reserved decimal.Decimal) error {
 	previous := row.Revision
 	row.Revision++
 	row.ReservedNotional = reserved.String()
-	result := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("ReservedNotional", "Revision").Updates(row)
 	return reservationResult(result)
 }
 
-func saveStrategyReservation(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyBudget, reserved decimal.Decimal) error {
+func saveStrategyReservation(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyBudget, reserved decimal.Decimal) error {
 	previous := row.Revision
 	row.Revision++
 	row.ReservedNotional = reserved.String()
-	result := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("ReservedNotional", "Revision").Updates(row)
 	return reservationResult(result)
 }
@@ -163,11 +165,11 @@ func reservationResult(result *gorm.DB) error {
 	return nil
 }
 
-func appendAcceptedEvent(ctx context.Context, tx *gorm.DB, row *modelv1.OrderIntent, now int64) error {
+func appendAcceptedEvent(ctx context.Context, tx *gorm.DB, row *executionmodelv1.OrderIntent, now int64) error {
 	return appendIntentEvent(ctx, tx, row, now, domain.EventOrderIntentAccepted)
 }
 
-func appendIntentEvent(ctx context.Context, tx *gorm.DB, row *modelv1.OrderIntent, now int64, kind string) error {
+func appendIntentEvent(ctx context.Context, tx *gorm.DB, row *executionmodelv1.OrderIntent, now int64, kind string) error {
 	eventID := fmt.Sprintf("intent:%d:%d", row.Id, row.Revision)
 	state, err := intentWireState(domain.OrderState(row.State))
 	if err != nil {
@@ -210,7 +212,7 @@ func appendIntentEvent(ctx context.Context, tx *gorm.DB, row *modelv1.OrderInten
 			ErrorCode:             row.ErrorCode,
 		},
 	}
-	return tx.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Create(&modelv1.OutboxEvent{
+	return tx.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Create(&executionmodelv1.OutboxEvent{
 		EventId:       eventID,
 		IntentId:      row.Id,
 		EventType:     kind,

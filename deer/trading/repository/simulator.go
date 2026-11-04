@@ -11,15 +11,17 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 type simulator struct{ db *gorm.DB }
 
 type coreRows struct {
-	instrument *modelv1.Instrument
-	account    *modelv1.SimulatorAccount
+	instrument *commonmodelv1.Instrument
+	account    *executionmodelv1.SimulatorAccount
 }
 
 type corePersistenceError struct {
@@ -52,8 +54,8 @@ func (s *simulator) Find(ctx context.Context, accountID, clientOrderID string) (
 	if !coreIdentifier(accountID, 64) || !coreIdentifier(clientOrderID, 64) {
 		return domain.CoreOrder{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.SimulatorOrder
-	err := s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", accountID, clientOrderID).First(&row).Error
+	var row executionmodelv1.SimulatorOrder
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", accountID, clientOrderID).First(&row).Error
 	if err != nil {
 		return domain.CoreOrder{}, coreFailure(ctx, err)
 	}
@@ -67,8 +69,8 @@ func (s *simulator) Balances(ctx context.Context, accountID string) ([]domain.Co
 	if !coreIdentifier(accountID, 64) {
 		return nil, domain.ErrInvalidOrder
 	}
-	var rows []*modelv1.SimulatorBalance
-	if err := s.db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND delete_at IS NULL", accountID).Order("asset ASC").Find(&rows).Error; err != nil {
+	var rows []*executionmodelv1.SimulatorBalance
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND delete_at IS NULL", accountID).Order("asset ASC").Find(&rows).Error; err != nil {
 		return nil, coreFailure(ctx, err)
 	}
 	if len(rows) == 0 {
@@ -139,12 +141,12 @@ func lockGateway(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuth
 	return lockCoreRows(ctx, tx, accountID, instrumentID)
 }
 
-func lockAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority, execution domain.LeaseToken, accountID string, instrumentID int64) (*modelv1.StrategyInstance, int64, error) {
-	var strategy modelv1.StrategyInstance
+func lockAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority, execution domain.LeaseToken, accountID string, instrumentID int64) (*strategymodelv1.StrategyInstance, int64, error) {
+	var strategy strategymodelv1.StrategyInstance
 	// Admission, action resolution and the final core gate use one mutex.
 	// Acquire it before either lease: upgrading SHARE after taking a lease
 	// deadlocks with another admission holding SHARE while waiting for it.
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy, authority.StrategyID).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy, authority.StrategyID).Error; err != nil {
 		return nil, 0, err
 	}
 	if strategy.AccountId != accountID || strategy.InstrumentId != instrumentID || strategy.ActiveConfigVersion == nil || *strategy.ActiveConfigVersion != authority.ConfigVersion {
@@ -172,14 +174,14 @@ func lockAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAu
 }
 
 func lockCoreRows(ctx context.Context, tx *gorm.DB, accountID string, instrumentID int64) (coreRows, error) {
-	var instrument modelv1.Instrument
+	var instrument commonmodelv1.Instrument
 	// Matching needs mutually exclusive writers, without blocking foreign-key
 	// KEY SHARE checks for another strategy's durable, unsent action metadata.
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&instrument, instrumentID).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("delete_at IS NULL").Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&instrument, instrumentID).Error; err != nil {
 		return coreRows{}, err
 	}
-	var account modelv1.SimulatorAccount
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
+	var account executionmodelv1.SimulatorAccount
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
 		return coreRows{}, err
 	}
 	return coreRows{
@@ -188,17 +190,17 @@ func lockCoreRows(ctx context.Context, tx *gorm.DB, accountID string, instrument
 	}, nil
 }
 
-func findCoreOrder(ctx context.Context, tx *gorm.DB, accountID, clientOrderID string) (*modelv1.SimulatorOrder, error) {
-	var order modelv1.SimulatorOrder
-	err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", accountID, clientOrderID).
+func findCoreOrder(ctx context.Context, tx *gorm.DB, accountID, clientOrderID string) (*executionmodelv1.SimulatorOrder, error) {
+	var order executionmodelv1.SimulatorOrder
+	err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", accountID, clientOrderID).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&order).Error
 	return &order, err
 }
 
-func saveCoreOrder(ctx context.Context, tx *gorm.DB, row *modelv1.SimulatorOrder) error {
+func saveCoreOrder(ctx context.Context, tx *gorm.DB, row *executionmodelv1.SimulatorOrder) error {
 	previous := row.Revision
 	row.Revision++
-	result := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("State", "CancelState", "FilledQuantity", "FrozenAmount", "LastCommandId", "Revision").Updates(row)
 	if result.Error != nil {
 		return result.Error

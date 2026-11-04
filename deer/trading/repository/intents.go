@@ -7,7 +7,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -54,7 +55,7 @@ func (s *intentStore) Accept(ctx context.Context, in domain.OrderInput, executio
 		return domain.IntentSnapshot{}, coreFailure(ctx, err)
 	}
 	var result domain.IntentSnapshot
-	err = s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		strategy, _, err := lockAuthority(ctx, tx, in.Authority, execution, in.AccountID, in.InstrumentID)
 		if err != nil {
 			return err
@@ -63,13 +64,13 @@ func (s *intentStore) Accept(ctx context.Context, in domain.OrderInput, executio
 		if err != nil {
 			return err
 		}
-		var account modelv1.AccountBudget
-		if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", in.AccountID).
+		var account commonmodelv1.AccountBudget
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", in.AccountID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
 			return err
 		}
-		var existing modelv1.OrderIntent
-		err = tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND idempotency_key = ?", in.AccountID, in.IdempotencyKey).First(&existing).Error
+		var existing executionmodelv1.OrderIntent
+		err = tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND idempotency_key = ?", in.AccountID, in.IdempotencyKey).First(&existing).Error
 		if err == nil {
 			if existing.Fingerprint != fingerprint || existing.DeleteAt != nil {
 				return domain.ErrIdempotencyConflict
@@ -100,8 +101,8 @@ func (s *intentStore) ByID(ctx context.Context, accountID string, intentID int64
 	if !coreIdentifier(accountID, 64) || intentID <= 0 {
 		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.OrderIntent
-	if err := s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND delete_at IS NULL", accountID).First(&row, intentID).Error; err != nil {
+	var row executionmodelv1.OrderIntent
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND delete_at IS NULL", accountID).First(&row, intentID).Error; err != nil {
 		return domain.IntentSnapshot{}, coreFailure(ctx, err)
 	}
 	return intentSnapshot(&row)
@@ -114,8 +115,8 @@ func (s *intentStore) ByClient(ctx context.Context, accountID, clientOrderID str
 	if !coreIdentifier(accountID, 64) || !coreIdentifier(clientOrderID, 64) {
 		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.OrderIntent
-	if err := s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", accountID, clientOrderID).First(&row).Error; err != nil {
+	var row executionmodelv1.OrderIntent
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", accountID, clientOrderID).First(&row).Error; err != nil {
 		return domain.IntentSnapshot{}, coreFailure(ctx, err)
 	}
 	return intentSnapshot(&row)

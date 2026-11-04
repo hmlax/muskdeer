@@ -11,7 +11,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -33,8 +35,8 @@ func (s *strategyLifecycle) Instance(ctx context.Context, strategyID int64) (dom
 	if strategyID <= 0 {
 		return domain.StrategySpec{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.StrategyInstance
-	if err := s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).
+	var row strategymodelv1.StrategyInstance
+	if err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).
 		Where("id = ? AND delete_at IS NULL", strategyID).First(&row).Error; err != nil {
 		return domain.StrategySpec{}, lifecycleFailure(ctx, err)
 	}
@@ -49,7 +51,7 @@ func (s *strategyLifecycle) Transition(ctx context.Context, current domain.Strat
 		return domain.StrategySpec{}, domain.ErrInvalidOrder
 	}
 	var result domain.StrategySpec
-	err := s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		row, err := lockLifecycle(ctx, tx, current, token)
 		if err != nil {
 			return err
@@ -67,7 +69,7 @@ func (s *strategyLifecycle) Transition(ctx context.Context, current domain.Strat
 		previous := row.Revision
 		row.State, row.RuntimeOwnerId, row.RuntimeOwnerEpoch = string(transition.State), token.OwnerID, token.Epoch
 		row.Revision++
-		updated := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND revision = ?", row.Id, previous).
+		updated := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND revision = ?", row.Id, previous).
 			Select("State", "ActiveConfigVersion", "ActiveMarketDataSource", "RuntimeOwnerId", "RuntimeOwnerEpoch", "Revision").Updates(row)
 		if err := reservationResult(updated); err != nil {
 			return err
@@ -89,9 +91,9 @@ func (s *strategyLifecycle) Transition(ctx context.Context, current domain.Strat
 	return result, nil
 }
 
-func lockLifecycle(ctx context.Context, tx *gorm.DB, current domain.StrategySpec, token domain.LeaseToken) (*modelv1.StrategyInstance, error) {
-	var row modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", current.ID).
+func lockLifecycle(ctx context.Context, tx *gorm.DB, current domain.StrategySpec, token domain.LeaseToken) (*strategymodelv1.StrategyInstance, error) {
+	var row strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", current.ID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&row).Error; err != nil {
 		return nil, err
 	}
@@ -108,7 +110,7 @@ func lockLifecycle(ctx context.Context, tx *gorm.DB, current domain.StrategySpec
 	return &row, nil
 }
 
-func prepareLifecycle(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyInstance, token domain.LeaseToken, transition domain.StrategyTransition) error {
+func prepareLifecycle(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyInstance, token domain.LeaseToken, transition domain.StrategyTransition) error {
 	if transition.State == domain.StrategyStateRunning &&
 		(row.RuntimeOwnerId != token.OwnerID || row.RuntimeOwnerEpoch != token.Epoch || row.State != string(domain.StrategyStateRecovering) && row.State != string(domain.StrategyStateStarting)) {
 		return domain.ErrOutcomeUnknown
@@ -153,11 +155,11 @@ func prepareLifecycle(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyIns
 
 func requireStrategyClear(ctx context.Context, tx *gorm.DB, strategyID int64) error {
 	queries := []*gorm.DB{
-		tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", strategyID,
+		tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", strategyID,
 			[]domain.OrderState{domain.OrderStateIntent, domain.OrderStateSubmitting, domain.OrderStateLive, domain.OrderStatePartiallyFilled, domain.OrderStateUnknown}),
-		tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", strategyID,
+		tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", strategyID,
 			[]domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}),
-		tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", strategyID, activeActionStates()),
+		tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", strategyID, activeActionStates()),
 	}
 	for _, query := range queries {
 		var count int64
@@ -171,22 +173,22 @@ func requireStrategyClear(ctx context.Context, tx *gorm.DB, strategyID int64) er
 	return nil
 }
 
-func validateLifecycleInventory(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyInstance) error {
+func validateLifecycleInventory(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyInstance) error {
 	core, err := lockCoreRows(ctx, tx, row.AccountId, row.InstrumentId)
 	if err != nil {
 		return err
 	}
-	var budget modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", row.AccountId).
+	var budget commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", row.AccountId).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&budget).Error; err != nil {
 		return err
 	}
 	return validateWorstInventory(ctx, tx, row.AccountId, core.instrument, decimal.Zero)
 }
 
-func invalidateLifecycleRisk(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyInstance) error {
-	var risk modelv1.RiskSnapshot
-	err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", row.Id).
+func invalidateLifecycleRisk(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyInstance) error {
+	var risk executionmodelv1.RiskSnapshot
+	err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", row.Id).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&risk).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil
@@ -198,7 +200,7 @@ func invalidateLifecycleRisk(ctx context.Context, tx *gorm.DB, row *modelv1.Stra
 	risk.AllowNewRisk = false
 	risk.ReasonCode = string(domain.RiskReasonNotEvaluated)
 	risk.Revision++
-	updated := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ? AND revision = ?", risk.Id, previous).
+	updated := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ? AND revision = ?", risk.Id, previous).
 		Select("AllowNewRisk", "ReasonCode", "Revision").Updates(&risk)
 	return reservationResult(updated)
 }

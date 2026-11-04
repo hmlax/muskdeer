@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package muskdeer.himalaya.v1;
+
+import "deer/proto/common/v1/himalaya.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/portfolio/himalaya/v1;himalayav1";
+
+service Portfolio {
+  rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);
+}

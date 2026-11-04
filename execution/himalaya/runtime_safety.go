@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -43,7 +43,7 @@ func safeReason(err error) string {
 	}
 }
 
-func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *himalayav1.QuotePlan, book *commonv1.HimalayaBook) error {
+func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *executionhimalayav1.QuotePlan, book *commonv1.HimalayaBook) error {
 	if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
 		plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.Publisher.OwnerId != plan.Book.GetPublisher().GetOwnerId() || book.Publisher.Epoch != plan.Book.Publisher.Epoch ||
 		plan.Strategy.AccountId != native.StrategyKey(profile.UserId, profile.FundId) || repository.CheckNativeAuthority(ctx, r.db, plan.Strategy) != nil {
@@ -52,7 +52,7 @@ func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.H
 	return nil
 }
 
-func (r *Runtime) targets(profile *commonv1.HimalayaProfilePolicy, plan *himalayav1.QuotePlan) (map[string]*SubmitRequest, error) {
+func (r *Runtime) targets(profile *commonv1.HimalayaProfilePolicy, plan *executionhimalayav1.QuotePlan) (map[string]*SubmitRequest, error) {
 	if len(plan.Book.Bids) == 0 || len(plan.Book.Asks) == 0 {
 		return nil, native.ErrInvalid
 	}

@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 type checkError struct{ cause error }
@@ -30,8 +30,8 @@ func CheckCurrent(ctx context.Context, db *gorm.DB) error {
 	if err != nil {
 		return err
 	}
-	var history []*modelv1.SchemaMigration
-	err = db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Order("version ASC").Limit(len(definitions) + 1).Find(&history).Error
+	var history []*commonmodelv1.SchemaMigration
+	err = db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Order("version ASC").Limit(len(definitions) + 1).Find(&history).Error
 	if err != nil {
 		return &checkError{cause: errors.Join(err, ctx.Err())}
 	}

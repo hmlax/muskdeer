@@ -20,10 +20,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -49,7 +49,7 @@ func TestExecutionRPCAuthenticatesThenSubmitsQueriesAndCancels(t *testing.T) {
 	if _, err := writer.SubmitIntent(ctx, input); status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("invalid decimal reached execution: %v", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 	input.Price = "99"
 	buy, err := writer.SubmitIntent(ctx, input)

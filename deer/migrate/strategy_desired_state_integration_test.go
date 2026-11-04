@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -23,23 +23,23 @@ func TestStrategyDesiredTargetPersistsIndependentlyOfRuntimeState(t *testing.T) 
 	_, submit := admissionFixture(ctx, t, db)
 	id := submit.Input.Authority.StrategyID
 	assertStrategyDesiredState(ctx, t, db, id, domain.StrategyStateRunning, true)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	assertStrategyDesiredState(ctx, t, db, id, domain.StrategyStateStopped, false)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", domain.StrategyStatePaused).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", domain.StrategyStatePaused).Error; err != nil {
 		t.Fatal(err)
 	}
 	assertStrategyDesiredState(ctx, t, db, id, domain.StrategyStatePaused, false)
 	// Legacy explicit bool-only resume/stop requests retain their safe meaning.
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_running", true).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_running", true).Error; err != nil {
 		t.Fatal(err)
 	}
 	assertStrategyDesiredState(ctx, t, db, id, domain.StrategyStateRunning, true)
 	for _, target := range []domain.StrategyState{domain.StrategyStateRecovering, domain.StrategyStatePaused, ""} {
-		assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", target).Error, "23514")
+		assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", target).Error, "23514")
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", nil).Error, "23502")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", nil).Error, "23502")
 	assertStrategyDesiredState(ctx, t, db, id, domain.StrategyStateRunning, true)
 }
 
@@ -49,7 +49,7 @@ func assertStrategyDesiredState(ctx context.Context, t *testing.T, db *gorm.DB, 
 		DesiredState   domain.StrategyState
 		DesiredRunning bool
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Select("desired_state", "desired_running").Where("id = ?", id).Take(&row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Select("desired_state", "desired_running").Where("id = ?", id).Take(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.DesiredState != target || row.DesiredRunning != running {
@@ -65,8 +65,8 @@ func TestStrategyPauseTargetSurvivesRecoveryTakeoverAndDistinctStop(t *testing.T
 	orders := waitGridControllerQuotes(ctx, t, controller, execution, market, submit)
 	cancels := execution.cancels
 	id := submit.Input.Authority.StrategyID
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).
-		Select("DesiredRunning", "DesiredState").Updates(&modelv1.StrategyInstance{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).
+		Select("DesiredRunning", "DesiredState").Updates(&strategymodelv1.StrategyInstance{
 		DesiredRunning: false,
 		DesiredState:   string(domain.StrategyStatePaused),
 	}).Error; err != nil {
@@ -80,8 +80,8 @@ func TestStrategyPauseTargetSurvivesRecoveryTakeoverAndDistinctStop(t *testing.T
 	}
 	replacement := strategyControllerWith(ctx, t, db, submit, leases, execution, market)
 	strategyControllerTick(ctx, t, replacement, market)
-	var instance modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&instance, id).Error; err != nil || instance.State != string(domain.StrategyStateRecovering) {
+	var instance strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&instance, id).Error; err != nil || instance.State != string(domain.StrategyStateRecovering) {
 		t.Fatal("replacement did not claim a recovering runtime")
 	}
 	assertStrategyDesiredState(ctx, t, db, id, domain.StrategyStatePaused, false)
@@ -92,19 +92,19 @@ func TestStrategyPauseTargetSurvivesRecoveryTakeoverAndDistinctStop(t *testing.T
 		}
 	}
 	runGridController(ctx, t, replacement, market, "100", 8)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&instance, id).Error; err != nil || instance.State != string(domain.StrategyStatePaused) || execution.cancels-cancels != len(orders) {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&instance, id).Error; err != nil || instance.State != string(domain.StrategyStatePaused) || execution.cancels-cancels != len(orders) {
 		t.Fatal("takeover lost the pause target or replayed prior cancel requests")
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", domain.StrategyStateStopped).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).UpdateColumn("desired_state", domain.StrategyStateStopped).Error; err != nil {
 		t.Fatal(err)
 	}
 	runGridController(ctx, t, replacement, market, "100", 2)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&instance, id).Error; err != nil || instance.State != string(domain.StrategyStateStopped) {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&instance, id).Error; err != nil || instance.State != string(domain.StrategyStateStopped) {
 		t.Fatal("explicit stop was confused with the former pause target")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).
-		Select("DesiredRunning", "DesiredState").Updates(&modelv1.StrategyInstance{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).
+		Select("DesiredRunning", "DesiredState").Updates(&strategymodelv1.StrategyInstance{
 		DesiredRunning: true,
 		DesiredState:   string(domain.StrategyStateRunning),
 	}).Error; err != nil {
@@ -131,8 +131,8 @@ func TestStrategyDesiredTargetRejectsWrongTerminalStateAtDatabaseCommit(t *testi
 	if _, err := lifecycle.Transition(ctx, current, token, domain.StrategyTransition{State: domain.StrategyStateRecovering}); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", current.ID).
-		Select("DesiredRunning", "DesiredState").Updates(&modelv1.StrategyInstance{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", current.ID).
+		Select("DesiredRunning", "DesiredState").Updates(&strategymodelv1.StrategyInstance{
 		DesiredRunning: false,
 		DesiredState:   string(domain.StrategyStatePaused),
 	}).Error; err != nil {
@@ -142,7 +142,7 @@ func TestStrategyDesiredTargetRejectsWrongTerminalStateAtDatabaseCommit(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", current.ID).UpdateColumn("state", domain.StrategyStateStopped).Error
+	err = db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", current.ID).UpdateColumn("state", domain.StrategyStateStopped).Error
 	var databaseError *pgconn.PgError
 	if !errors.As(err, &databaseError) || databaseError.Code != "23514" || databaseError.ConstraintName != "strategy_runtime_transition" {
 		t.Fatal("final SQL gate accepted a stop for a requested pause")

@@ -16,9 +16,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -32,8 +33,8 @@ func TestSyntheticTapeReplyLossAndConcurrentRetriesConsumeOneSlot(t *testing.T) 
 	var calls atomic.Int64
 	send := func(ctx context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
 		calls.Add(1)
-		var row modelv1.SyntheticTapeIntent
-		if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("run_id = ?", plan.RunId).First(&row).Error; err != nil {
+		var row executionmodelv1.SyntheticTapeIntent
+		if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ?", plan.RunId).First(&row).Error; err != nil {
 			return nil, err
 		}
 		if row.Result.GetState() != native.SyntheticUnknown || input.Quantity != "0.01" || input.Side != int32(pb.Side_SIDE_BUY) {
@@ -62,8 +63,8 @@ func TestSyntheticTapeReplyLossAndConcurrentRetriesConsumeOneSlot(t *testing.T) 
 	if calls.Load() != 1 {
 		t.Fatalf("PublishSynthetic(concurrent retry) = %d effects, want 1", calls.Load())
 	}
-	var budget modelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).First(&budget).Error; err != nil {
+	var budget commonmodelv1.HimalayaBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	reserved, err := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)
@@ -80,8 +81,8 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	send := func(_ context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
 		calls++
 		for _, account := range []string{lease.Key.AccountID, plan.Strategy.AccountId, plan.Book.Publisher.AccountId} {
-			var held modelv1.ExecutionShardLease
-			err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", account).
+			var held commonmodelv1.ExecutionShardLease
+			err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", account).
 				Clauses(clause.Locking{
 					Strength: "UPDATE",
 					Options:  "NOWAIT",
@@ -121,13 +122,13 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	if _, err := store.PublishSynthetic(ctx, lease, cfg, next, send); err == nil || calls != 1 {
 		t.Fatalf("PublishSynthetic(early next slot) calls=%d err=%v", calls, err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("run_id = ?", plan.RunId).UpdateColumn("create_at", time.Now().Add(-time.Minute).UnixMilli()).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ?", plan.RunId).UpdateColumn("create_at", time.Now().Add(-time.Minute).UnixMilli()).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.PublishSynthetic(ctx, lease, cfg, next, send); err == nil || calls != 1 {
 		t.Fatalf("PublishSynthetic(total notional exhausted) calls=%d err=%v", calls, err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", plan.Book.Publisher.AccountId).UpdateColumn("epoch", 2).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", plan.Book.Publisher.AccountId).UpdateColumn("epoch", 2).Error; err != nil {
 		t.Fatal(err)
 	}
 	if replay, err := store.PublishSynthetic(ctx, lease, cfg, plan, send); err != nil || !replay.GetReplayed() || calls != 1 {

@@ -6,7 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -34,8 +35,8 @@ func (s *adminTrades) List(ctx context.Context, token string, filter domain.Admi
 		if err != nil {
 			return err
 		}
-		var rows []*modelv1.SimulatorFill
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).
+		var rows []*executionmodelv1.SimulatorFill
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).
 			Where("core_order_id IN (?) AND id > ? AND delete_at IS NULL", orders, filter.Page.AfterID).
 			Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
@@ -67,15 +68,15 @@ func (s *adminTrades) Detail(ctx context.Context, token string, strategyID, trad
 		if err != nil {
 			return err
 		}
-		var row modelv1.SimulatorFill
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).
+		var row executionmodelv1.SimulatorFill
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).
 			Where("id = ? AND core_order_id IN (?) AND delete_at IS NULL", tradeID, orders).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
 			return err
 		}
-		values, err := readAdminTrades(ctx, tx, instance, []*modelv1.SimulatorFill{&row})
+		values, err := readAdminTrades(ctx, tx, instance, []*executionmodelv1.SimulatorFill{&row})
 		if err != nil {
 			return err
 		}
@@ -88,8 +89,8 @@ func (s *adminTrades) Detail(ctx context.Context, token string, strategyID, trad
 	return result, nil
 }
 
-func adminTradeOrderQuery(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, filter domain.AdminTradeFilter) (*gorm.DB, error) {
-	query := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("id").
+func adminTradeOrderQuery(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, filter domain.AdminTradeFilter) (*gorm.DB, error) {
+	query := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("id").
 		Where("strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND delete_at IS NULL", instance.Id, instance.AccountId, instance.InstrumentId)
 	if filter.Side != domain.SideUnspecified {
 		query = query.Where("side = ?", filter.Side)
@@ -97,15 +98,15 @@ func adminTradeOrderQuery(ctx context.Context, tx *gorm.DB, instance *modelv1.St
 	if filter.OrderID == 0 {
 		return query, nil
 	}
-	var intent modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+	var intent executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("id = ? AND strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND delete_at IS NULL", filter.OrderID, instance.Id, instance.AccountId, instance.InstrumentId).Take(&intent).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrAdminNotFound
 		}
 		return nil, err
 	}
-	commands := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Select("id").
+	commands := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Select("id").
 		Where("intent_id = ? AND strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND action = ? AND delete_at IS NULL", intent.Id, instance.Id, instance.AccountId, instance.InstrumentId, domain.GatewayActionSubmit)
 	return query.Where("initial_command_id IN (?)", commands), nil
 }

@@ -13,7 +13,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -155,17 +157,17 @@ func coreSibling(ctx context.Context, t *testing.T, db *gorm.DB, original domain
 	strategy.DesiredRunning = true
 	strategy.ActiveConfigVersion = proto.Int64(1)
 	strategy.ActiveMarketDataSource = proto.String(string(domain.MarketSourceBinance))
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(strategy).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(strategy).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = strategy.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Create(&modelv1.SimulatorAccount{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Create(&executionmodelv1.SimulatorAccount{
 		AccountId:    accountID,
 		SubjectId:    "fixture-subject",
 		Enabled:      true,
@@ -232,12 +234,12 @@ func TestCoreFinalFenceRollsBackAlreadyStagedFunds(t *testing.T) {
 	core, submit := coreFixture(ctx, t, db)
 	const callbackName = "muskdeer:test:expire-staged-order"
 	if err := db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
 		// The callback shares this exact SQL transaction. It schedules expiry
 		// after funds and the order have been written, before outer commit.
-		err := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.StrategyLease{}).
+		err := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&strategymodelv1.StrategyLease{}).
 			Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).UpdateColumn("expires_at", 0).Error
 		tx.Error = errors.Join(tx.Error, err)
 	}); err != nil {
@@ -262,12 +264,12 @@ func coreFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.Simulat
 	return coreFixtureWithCommand(ctx, t, db, command)
 }
 
-func coreFixtureWithCommand(ctx context.Context, t *testing.T, db *gorm.DB, command *modelv1.SimulatorCommand) (domain.Simulator, domain.GatewaySubmit) {
+func coreFixtureWithCommand(ctx context.Context, t *testing.T, db *gorm.DB, command *executionmodelv1.SimulatorCommand) (domain.Simulator, domain.GatewaySubmit) {
 	t.Helper()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ?", command.InstrumentId).UpdateColumn("min_notional", "1").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ?", command.InstrumentId).UpdateColumn("min_notional", "1").Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Create(&modelv1.SimulatorAccount{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Create(&executionmodelv1.SimulatorAccount{
 		AccountId:    command.AccountId,
 		SubjectId:    "fixture-subject",
 		Enabled:      true,
@@ -276,7 +278,7 @@ func coreFixtureWithCommand(ctx context.Context, t *testing.T, db *gorm.DB, comm
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	for _, row := range []*modelv1.SimulatorBalance{
+	for _, row := range []*executionmodelv1.SimulatorBalance{
 		{
 			AccountId: command.AccountId,
 			Asset:     "BTC",
@@ -292,7 +294,7 @@ func coreFixtureWithCommand(ctx context.Context, t *testing.T, db *gorm.DB, comm
 			Revision:  1,
 		},
 	} {
-		if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Create(row).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Create(row).Error; err != nil {
 			t.Fatal(err)
 		}
 	}

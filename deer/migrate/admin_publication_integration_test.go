@@ -12,7 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
@@ -62,12 +63,12 @@ func TestAdminPublicationPersistsBothTemplatesAndSourcesWithoutActivation(t *tes
 			}
 		}
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyPublication{}, 4)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyConfigVersion{}, 9)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyPublication{}, 4)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyConfigVersion{}, 9)
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyPublication{}).Where("id = ?", first.ID).UpdateColumn("reason", "rewrite").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyPublication{}).Where("id = ?", first.ID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyPublication{}).Where("id = ?", first.ID).Delete(&modelv1.AdminStrategyPublication{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyPublication{}).Where("id = ?", first.ID).UpdateColumn("reason", "rewrite").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyPublication{}).Where("id = ?", first.ID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyPublication{}).Where("id = ?", first.ID).Delete(&strategymodelv1.AdminStrategyPublication{}).Error, "23514")
 	auth, err := repository.NewAdminAuth(db)
 	if err != nil {
 		t.Fatal(err)
@@ -133,13 +134,13 @@ func TestAdminPublicationPreservesLiveObligationsAndSupersedesBoundControls(t *t
 			if err != nil || observed.State != domain.OrderStateLive || observed.Revision != live.Revision {
 				t.Fatal("publication mutated a live trading obligation", err)
 			}
-			var risk modelv1.RiskSnapshot
-			if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", strategyID).First(&risk).Error; err != nil || risk.AllowNewRisk || risk.ReasonCode != string(domain.RiskReasonNotEvaluated) {
+			var risk executionmodelv1.RiskSnapshot
+			if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", strategyID).First(&risk).Error; err != nil || risk.AllowNewRisk || risk.ReasonCode != string(domain.RiskReasonNotEvaluated) {
 				t.Fatal("publication retained the old risk grant", err)
 			}
 			if withControl {
-				var replaced modelv1.AdminStrategyOperation
-				if err := db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", operation.ID).First(&replaced).Error; err != nil || replaced.State != string(domain.AdminOperationSuperseded) || replaced.GetObservedRevision() != receipt.Revision {
+				var replaced strategymodelv1.AdminStrategyOperation
+				if err := db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", operation.ID).First(&replaced).Error; err != nil || replaced.State != string(domain.AdminOperationSuperseded) || replaced.GetObservedRevision() != receipt.Revision {
 					t.Fatal("publication did not synchronously supersede the old bound control", err)
 				}
 			}
@@ -170,16 +171,16 @@ func publicationRequest(creation domain.AdminCreateStrategy, strategyID, revisio
 	}
 }
 
-func publicationInstance(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) *modelv1.StrategyInstance {
+func publicationInstance(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) *strategymodelv1.StrategyInstance {
 	t.Helper()
-	var row modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).First(&row).Error; err != nil {
+	var row strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return &row
 }
 
-func assertPublicationEffect(ctx context.Context, t *testing.T, db *gorm.DB, before *modelv1.StrategyInstance, budget *modelv1.StrategyBudget, request domain.AdminPublishStrategy, receipt domain.AdminPublicationReceipt) {
+func assertPublicationEffect(ctx context.Context, t *testing.T, db *gorm.DB, before *strategymodelv1.StrategyInstance, budget *strategymodelv1.StrategyBudget, request domain.AdminPublishStrategy, receipt domain.AdminPublicationReceipt) {
 	t.Helper()
 	after := publicationInstance(ctx, t, db, before.Id)
 	expected := proto.CloneOf(before)
@@ -187,8 +188,8 @@ func assertPublicationEffect(ctx context.Context, t *testing.T, db *gorm.DB, bef
 	if !proto.Equal(expected, after) || !proto.Equal(budget, activationBudget(ctx, t, db, before.Id)) {
 		t.Fatal("publication changed identity, active runtime, target or live budget")
 	}
-	var version modelv1.StrategyConfigVersion
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", before.Id, receipt.ConfigVersion).First(&version).Error; err != nil {
+	var version strategymodelv1.StrategyConfigVersion
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", before.Id, receipt.ConfigVersion).First(&version).Error; err != nil {
 		t.Fatal(err)
 	}
 	encoded, err := strategyconfig.Encode(request.Parameters)

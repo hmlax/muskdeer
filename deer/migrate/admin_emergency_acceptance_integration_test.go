@@ -14,7 +14,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -34,8 +36,8 @@ func TestAdminEmergencyRequestAtomicallyBlocksRiskWithoutReleasingLiveUnsentOrUn
 	budget := activationBudget(ctx, t, db, before.Id)
 	sibling := publicationInstance(ctx, t, db, created.StrategyID)
 	siblingBudget := activationBudget(ctx, t, db, sibling.Id)
-	var balances []*modelv1.SimulatorBalance
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ?", submit.Input.AccountID).Order("id ASC").Find(&balances).Error; err != nil {
+	var balances []*executionmodelv1.SimulatorBalance
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ?", submit.Input.AccountID).Order("id ASC").Find(&balances).Error; err != nil {
 		t.Fatal(err)
 	}
 	store := emergencyAcceptanceStore(t, db)
@@ -72,9 +74,9 @@ func TestAdminEmergencyRequestAtomicallyBlocksRiskWithoutReleasingLiveUnsentOrUn
 			t.Fatal("acceptance resolved an uncertain order or released its reservation", err)
 		}
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellation{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminEmergencyCancellation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 2)
 }
 
@@ -137,17 +139,17 @@ func TestAdminEmergencyPendingScopeDeniesOtherwiseClearRiskRecovery(t *testing.T
 		t.Fatal("empty orders reopened risk before scoped work could be resolved", err)
 	}
 	assertRiskControlState(ctx, t, riskControlFixture(t, db), admin, instance.Id, false, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
 	assertEmergencyPendingDatabaseRecovery(ctx, t, db, admin, instance)
 }
 
-func assertEmergencyPendingDatabaseRecovery(ctx context.Context, t *testing.T, db *gorm.DB, admin domain.AdminLogin, instance *modelv1.StrategyInstance) {
+func assertEmergencyPendingDatabaseRecovery(ctx context.Context, t *testing.T, db *gorm.DB, admin domain.AdminLogin, instance *strategymodelv1.StrategyInstance) {
 	t.Helper()
 	now := controlTestDatabaseTime(ctx, t, db, admin.Principal.UserID)
 	// Explicitly bypass the repository to exercise the final COMMIT constraint.
-	err := db.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Transaction(func(tx *gorm.DB) error {
-		audit := &modelv1.AdminAudit{
+	err := db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Transaction(func(tx *gorm.DB) error {
+		audit := &commonmodelv1.AdminAudit{
 			Actor:         admin.Principal.Username,
 			ActorRole:     string(admin.Principal.Role),
 			Action:        string(domain.AdminRiskUnblock),
@@ -156,13 +158,13 @@ func assertEmergencyPendingDatabaseRecovery(ctx context.Context, t *testing.T, d
 			BeforeVersion: proto.Int64(2),
 			AfterVersion:  proto.Int64(3),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", instance.Id).UpdateColumn("enabled", true).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", instance.Id).UpdateColumn("enabled", true).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Create(&modelv1.AdminStrategyRiskChange{
+		return tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Create(&strategymodelv1.AdminStrategyRiskChange{
 			ActorUserId:           admin.Principal.UserID,
 			ActorSessionId:        admin.Principal.SessionID,
 			StrategyInstanceId:    instance.Id,
@@ -182,7 +184,7 @@ func assertEmergencyPendingDatabaseRecovery(ctx context.Context, t *testing.T, d
 	})
 	assertEmergencySchemaConstraint(t, err, "admin_risk_recovery")
 	assertRiskControlState(ctx, t, riskControlFixture(t, db), admin, instance.Id, false, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
 }
 
 func TestAdminEmergencyConcurrentSameKeyHasOneClosureAndHistoricalAcceptance(t *testing.T) {
@@ -215,9 +217,9 @@ func TestAdminEmergencyConcurrentSameKeyHasOneClosureAndHistoricalAcceptance(t *
 		first = result
 	}
 	assertRiskControlState(ctx, t, riskControlFixture(t, db), actor, request.StrategyID, false, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellation{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminEmergencyCancellation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 2)
 	if _, err := riskControlFixture(t, db).Change(ctx, actor.Token, actor.CSRF, domain.AdminRiskRequest{
 		Key:              "later-independent-risk-block-0001",
 		StrategyID:       request.StrategyID,
@@ -232,7 +234,7 @@ func TestAdminEmergencyConcurrentSameKeyHasOneClosureAndHistoricalAcceptance(t *
 		t.Fatal("later risk revision rewrote or reapplied historical acceptance", err)
 	}
 	assertRiskControlState(ctx, t, riskControlFixture(t, db), actor, request.StrategyID, false, 3)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 2)
 }
 
 func TestAdminEmergencyScopeAuditOrAcceptanceFailureRollsBackRiskAndAllHistory(t *testing.T) {
@@ -247,8 +249,8 @@ func TestAdminEmergencyScopeAuditOrAcceptanceFailureRollsBackRiskAndAllHistory(t
 			injected := errors.New("test-only emergency persistence failure")
 			const callback = "test:reject-emergency-storage"
 			if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-				audit, isAudit := tx.Statement.Dest.(*modelv1.AdminAudit)
-				_, isAcceptance := tx.Statement.Dest.(*modelv1.AdminEmergencyCancellation)
+				audit, isAudit := tx.Statement.Dest.(*commonmodelv1.AdminAudit)
+				_, isAcceptance := tx.Statement.Dest.(*executionmodelv1.AdminEmergencyCancellation)
 				if receiptFailure && isAcceptance || !receiptFailure && isAudit && audit.Action == domain.AdminEmergencyCancelAction {
 					tx.Error = injected
 				}
@@ -267,9 +269,9 @@ func TestAdminEmergencyScopeAuditOrAcceptanceFailureRollsBackRiskAndAllHistory(t
 			if !proto.Equal(before, activationBudget(ctx, t, db, before.StrategyInstanceId)) || !proto.Equal(risk, riskEventSourceRow(ctx, t, db, before.StrategyInstanceId)) {
 				t.Fatal("scope persistence failure left risk disabled or cache changed")
 			}
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellation{}, 0)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 0)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminEmergencyCancellation{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 		})
 	}
 }
@@ -293,10 +295,10 @@ func emergencyAcceptanceRequest(strategyID int64) domain.AdminEmergencyCancelReq
 	}
 }
 
-func assertEmergencyUnchangedBalances(ctx context.Context, t *testing.T, db *gorm.DB, accountID string, before []*modelv1.SimulatorBalance) {
+func assertEmergencyUnchangedBalances(ctx context.Context, t *testing.T, db *gorm.DB, accountID string, before []*executionmodelv1.SimulatorBalance) {
 	t.Helper()
-	var after []*modelv1.SimulatorBalance
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ?", accountID).Order("id ASC").Find(&after).Error; err != nil || len(after) != len(before) {
+	var after []*executionmodelv1.SimulatorBalance
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ?", accountID).Order("id ASC").Find(&after).Error; err != nil || len(after) != len(before) {
 		t.Fatal("scope acceptance changed core balance rows", err)
 	}
 	for index := range before {

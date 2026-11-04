@@ -17,9 +17,10 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -29,7 +30,7 @@ import (
 
 // Runtime owns the only SDK writer, with bounded local admission and durable fencing.
 type Runtime struct {
-	himalayav1.UnimplementedExecutionServer
+	executionhimalayav1.UnimplementedExecutionServer
 	db      *gorm.DB
 	owner   string
 	cfg     *native.RuntimeConfig
@@ -78,7 +79,7 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 
 // RegisterGRPC exposes only SDK observation and strategy intent reconciliation.
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
-	himalayav1.RegisterExecutionServer(registrar, r)
+	executionhimalayav1.RegisterExecutionServer(registrar, r)
 }
 
 // Workers owns SDK setup, safety observation and shutdown cancellation.
@@ -243,11 +244,11 @@ func (r *Runtime) book(ctx context.Context, symbol string) (*commonv1.HimalayaBo
 	if err != nil {
 		return nil, err
 	}
-	return himalayav1.NewMarketClient(connection).GetBook(ctx, &himalayav1.BookRequest{Symbol: symbol})
+	return markethimalayav1.NewMarketClient(connection).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: symbol})
 }
 
 // Reconcile accepts only the owning strategy's selected-source target intent.
-func (r *Runtime) Reconcile(ctx context.Context, plan *himalayav1.QuotePlan) (*himalayav1.QuoteResult, error) {
+func (r *Runtime) Reconcile(ctx context.Context, plan *executionhimalayav1.QuotePlan) (*executionhimalayav1.QuoteResult, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
@@ -270,7 +271,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *himalayav1.QuotePlan) (*h
 	return result, nil
 }
 
-func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *himalayav1.QuotePlan) (*himalayav1.QuoteResult, error) {
+func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *executionhimalayav1.QuotePlan) (*executionhimalayav1.QuoteResult, error) {
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -291,7 +292,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.HimalayaProfi
 	if err != nil || !budget.Enabled {
 		return nil, ErrRiskLimit
 	}
-	result := &himalayav1.QuoteResult{State: native.StateRecovering}
+	result := &executionhimalayav1.QuoteResult{State: native.StateRecovering}
 	if recoveryErr != nil {
 		return result, recoveryErr
 	}
@@ -495,7 +496,7 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 	return r.client.Load().Cancel(ctx, admission)
 }
 
-func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, retained *quoteRetention, result *himalayav1.QuoteResult) error {
+func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, retained *quoteRetention, result *executionhimalayav1.QuoteResult) error {
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
 			continue

@@ -11,7 +11,7 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/coreentry"
 	"github.com/hmlax/muskdeer/deer/processfailure"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/testprocess"
 	business "github.com/hmlax/muskdeer/market/business"
 )

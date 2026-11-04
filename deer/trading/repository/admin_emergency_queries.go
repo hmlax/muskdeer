@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -18,13 +18,13 @@ func (s *adminEmergencyCancellations) Observation(ctx context.Context, token str
 	}
 	var result domain.AdminEmergencyCancelObservation
 	err := s.emergencySnapshot(ctx, token, strategyID, func(tx *gorm.DB, now time.Time) error {
-		var accepted modelv1.AdminEmergencyCancellation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).
+		var accepted executionmodelv1.AdminEmergencyCancellation
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).
 			Where("id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&accepted).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
-		var task modelv1.AdminEmergencyCancellationTask
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).
+		var task executionmodelv1.AdminEmergencyCancellationTask
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).
 			Where("emergency_cancellation_id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&task).Error; err != nil {
 			return emergencyTaskLookupFailure(err)
 		}
@@ -58,8 +58,8 @@ func (s *adminEmergencyCancellations) History(ctx context.Context, token string,
 	}
 	var result domain.AdminEmergencyCancelPage
 	err := s.emergencySnapshot(ctx, token, strategyID, func(tx *gorm.DB, now time.Time) error {
-		var rows []*modelv1.AdminEmergencyCancellation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).
+		var rows []*executionmodelv1.AdminEmergencyCancellation
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).
 			Where("strategy_instance_id = ? AND id > ? AND delete_at IS NULL", strategyID, page.AfterID).
 			Order("id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
@@ -101,7 +101,7 @@ func (s *adminEmergencyCancellations) emergencySnapshot(ctx context.Context, tok
 	})
 }
 
-func adminEmergencyRecords(ctx context.Context, tx *gorm.DB, strategyID int64, rows []*modelv1.AdminEmergencyCancellation) ([]domain.AdminEmergencyCancelRecord, error) {
+func adminEmergencyRecords(ctx context.Context, tx *gorm.DB, strategyID int64, rows []*executionmodelv1.AdminEmergencyCancellation) ([]domain.AdminEmergencyCancelRecord, error) {
 	items := make([]domain.AdminEmergencyCancelRecord, 0, len(rows))
 	if len(rows) == 0 {
 		return items, nil
@@ -110,12 +110,12 @@ func adminEmergencyRecords(ctx context.Context, tx *gorm.DB, strategyID int64, r
 	for _, row := range rows {
 		ids = append(ids, row.Id)
 	}
-	var tasks []*modelv1.AdminEmergencyCancellationTask
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).
+	var tasks []*executionmodelv1.AdminEmergencyCancellationTask
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).
 		Where("emergency_cancellation_id IN ? AND strategy_instance_id = ? AND delete_at IS NULL", ids, strategyID).Find(&tasks).Error; err != nil {
 		return nil, err
 	}
-	byAcceptance := make(map[int64]*modelv1.AdminEmergencyCancellationTask, len(tasks))
+	byAcceptance := make(map[int64]*executionmodelv1.AdminEmergencyCancellationTask, len(tasks))
 	for _, task := range tasks {
 		byAcceptance[task.EmergencyCancellationId] = task
 	}
@@ -129,7 +129,7 @@ func adminEmergencyRecords(ctx context.Context, tx *gorm.DB, strategyID int64, r
 	return items, nil
 }
 
-func adminEmergencyRecord(row *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) (domain.AdminEmergencyCancelRecord, error) {
+func adminEmergencyRecord(row *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) (domain.AdminEmergencyCancelRecord, error) {
 	if row == nil || task == nil || row.Id <= 0 || row.ActorUserId <= 0 || row.StrategyInstanceId <= 0 || row.CreateAt <= 0 || row.DeleteAt != nil ||
 		row.Scope != string(domain.AdminEmergencyCancelScopeStrategy) || row.ExpectedRiskRevision <= 0 || row.ExpectedRiskRevision == math.MaxInt64 || row.RiskRevision != row.ExpectedRiskRevision+1 ||
 		task.Id <= 0 || task.EmergencyCancellationId != row.Id || task.StrategyInstanceId != row.StrategyInstanceId || task.Revision <= 0 || task.DeleteAt != nil {

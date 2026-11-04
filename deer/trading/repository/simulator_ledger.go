@@ -7,18 +7,18 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func lockBalances(ctx context.Context, tx *gorm.DB, rows coreRows) (*modelv1.SimulatorBalance, *modelv1.SimulatorBalance, error) {
-	var balances []*modelv1.SimulatorBalance
-	err := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset IN ? AND delete_at IS NULL", rows.account.AccountId, []string{rows.instrument.BaseAsset, rows.instrument.QuoteAsset}).
+func lockBalances(ctx context.Context, tx *gorm.DB, rows coreRows) (*executionmodelv1.SimulatorBalance, *executionmodelv1.SimulatorBalance, error) {
+	var balances []*executionmodelv1.SimulatorBalance
+	err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset IN ? AND delete_at IS NULL", rows.account.AccountId, []string{rows.instrument.BaseAsset, rows.instrument.QuoteAsset}).
 		Order("asset ASC").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&balances).Error
 	if err != nil {
 		return nil, nil, err
 	}
-	var base, quote *modelv1.SimulatorBalance
+	var base, quote *executionmodelv1.SimulatorBalance
 	for _, balance := range balances {
 		if balance.Asset == rows.instrument.BaseAsset {
 			base = balance
@@ -33,7 +33,7 @@ func lockBalances(ctx context.Context, tx *gorm.DB, rows coreRows) (*modelv1.Sim
 	return base, quote, nil
 }
 
-func adjustBalance(ctx context.Context, tx *gorm.DB, row *modelv1.SimulatorBalance, availableDelta, frozenDelta decimal.Decimal) error {
+func adjustBalance(ctx context.Context, tx *gorm.DB, row *executionmodelv1.SimulatorBalance, availableDelta, frozenDelta decimal.Decimal) error {
 	available, err := decimal.NewFromString(row.Available)
 	if err != nil {
 		return err
@@ -50,7 +50,7 @@ func adjustBalance(ctx context.Context, tx *gorm.DB, row *modelv1.SimulatorBalan
 	row.Available = available.String()
 	row.Frozen = frozen.String()
 	row.Revision++
-	result := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("Available", "Frozen", "Revision").Updates(row)
 	if result.Error != nil {
 		return result.Error
@@ -61,10 +61,10 @@ func adjustBalance(ctx context.Context, tx *gorm.DB, row *modelv1.SimulatorBalan
 	return nil
 }
 
-func advanceCoreAccount(ctx context.Context, tx *gorm.DB, row *modelv1.SimulatorAccount) error {
+func advanceCoreAccount(ctx context.Context, tx *gorm.DB, row *executionmodelv1.SimulatorAccount) error {
 	previous := row.Revision
 	row.Revision++
-	result := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("id = ? AND revision = ?", row.Id, previous).Select("Revision").Updates(row)
+	result := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("id = ? AND revision = ?", row.Id, previous).Select("Revision").Updates(row)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -74,7 +74,7 @@ func advanceCoreAccount(ctx context.Context, tx *gorm.DB, row *modelv1.Simulator
 	return nil
 }
 
-func releaseCoreOrder(ctx context.Context, tx *gorm.DB, rows coreRows, row *modelv1.SimulatorOrder) error {
+func releaseCoreOrder(ctx context.Context, tx *gorm.DB, rows coreRows, row *executionmodelv1.SimulatorOrder) error {
 	base, quote, err := lockBalances(ctx, tx, rows)
 	if err != nil {
 		return err

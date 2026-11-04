@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -99,8 +101,8 @@ func TestAdminRiskConcurrentReplayAndCompetingActorsHaveOneEffect(t *testing.T) 
 	if _, err := control.Change(ctx, actor.Token, actor.CSRF, request); !errors.Is(err, domain.ErrAdminConflict) {
 		t.Fatal("key was rebound to different content", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 2)
 	assertRiskControlState(ctx, t, control, actor, request.StrategyID, false, 3)
 }
 
@@ -117,15 +119,15 @@ func TestAdminRiskAuditAndReceiptFailuresRollBackEveryEffect(t *testing.T) {
 			actor, _, submit := adminCreationFixture(ctx, t, db)
 			instance := publicationInstance(ctx, t, db, submit.Input.Authority.StrategyID)
 			budget := activationBudget(ctx, t, db, instance.Id)
-			var risk modelv1.RiskSnapshot
-			if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", instance.Id).Take(&risk).Error; err != nil {
+			var risk executionmodelv1.RiskSnapshot
+			if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", instance.Id).Take(&risk).Error; err != nil {
 				t.Fatal(err)
 			}
 			injected := errors.New("test-only risk write failure")
 			const callback = "test:reject-risk-storage"
 			if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-				_, audit := tx.Statement.Dest.(*modelv1.AdminAudit)
-				_, receipt := tx.Statement.Dest.(*modelv1.AdminStrategyRiskChange)
+				_, audit := tx.Statement.Dest.(*commonmodelv1.AdminAudit)
+				_, receipt := tx.Statement.Dest.(*strategymodelv1.AdminStrategyRiskChange)
 				if audit && !receiptFailure || receipt && receiptFailure {
 					tx.Error = injected
 				}
@@ -142,15 +144,15 @@ func TestAdminRiskAuditAndReceiptFailuresRollBackEveryEffect(t *testing.T) {
 			if !errors.Is(err, domain.ErrAdminControlUnavailable) || !errors.Is(err, injected) || result.ID != 0 {
 				t.Fatal("failed storage lost its private cause or returned a partial receipt", err)
 			}
-			var after modelv1.RiskSnapshot
-			if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", risk.Id).Take(&after).Error; err != nil {
+			var after executionmodelv1.RiskSnapshot
+			if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", risk.Id).Take(&after).Error; err != nil {
 				t.Fatal(err)
 			}
 			if !proto.Equal(instance, publicationInstance(ctx, t, db, instance.Id)) || !proto.Equal(budget, activationBudget(ctx, t, db, instance.Id)) || !proto.Equal(&risk, &after) {
 				t.Fatal("failed audit/receipt partially changed strategy, budget or cached risk")
 			}
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 0)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 			assertGatewayOrderCount(ctx, t, db, 0)
 		})
 	}
@@ -188,5 +190,5 @@ func TestAdminRiskReplayRequiresCurrentAuthorityAndCSRF(t *testing.T) {
 		t.Fatal("revoked session read risk state", err)
 	}
 	assertRiskControlState(ctx, t, control, viewer, request.StrategyID, false, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
 }

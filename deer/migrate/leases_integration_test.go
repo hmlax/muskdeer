@@ -13,8 +13,10 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -156,11 +158,11 @@ func TestConcurrentLeaseAcquisitionHasOneWinner(t *testing.T) {
 func leaseStrategyFixture(ctx context.Context, t *testing.T, db *gorm.DB) int64 {
 	t.Helper()
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
-	var strategy *modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+	var strategy *strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		var err error
 		strategy, err = insertIdentity(ctx, tx, instrument.Id, "lease-strategy", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 		return err
@@ -175,11 +177,11 @@ func expireLeaseFixture(ctx context.Context, t *testing.T, db *gorm.DB, key doma
 	var result *gorm.DB
 	switch key.Kind {
 	case domain.LeaseKindStrategy:
-		result = db.WithContext(ctx).Model(&modelv1.StrategyLease{}).Where("strategy_instance_id = ?", key.StrategyID).UpdateColumn("expires_at", 0)
+		result = db.WithContext(ctx).Model(&strategymodelv1.StrategyLease{}).Where("strategy_instance_id = ?", key.StrategyID).UpdateColumn("expires_at", 0)
 	case domain.LeaseKindExecution:
-		result = db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", key.AccountID).UpdateColumn("expires_at", 0)
+		result = db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", key.AccountID).UpdateColumn("expires_at", 0)
 	case domain.LeaseKindMarket:
-		result = db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", key.MarketFeedID).UpdateColumn("expires_at", 0)
+		result = db.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", key.MarketFeedID).UpdateColumn("expires_at", 0)
 	default:
 		t.Fatal("unsupported fixture lease kind")
 		return

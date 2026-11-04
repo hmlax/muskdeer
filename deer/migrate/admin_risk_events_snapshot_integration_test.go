@@ -11,7 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -25,13 +26,13 @@ func TestAdminRiskEventsAuthorityAndHistoryShareRepeatableSnapshot(t *testing.T)
 	const callback = "test:risk-event-after-authority"
 	changed := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, session := query.Statement.Dest.(*modelv1.AdminSession)
+		_, session := query.Statement.Dest.(*commonmodelv1.AdminSession)
 		if !session || changed {
 			return
 		}
 		changed = true
-		if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", source.Id).
-			Select("AllowNewRisk", "ReasonCode", "Revision").Updates(&modelv1.RiskSnapshot{
+		if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", source.Id).
+			Select("AllowNewRisk", "ReasonCode", "Revision").Updates(&executionmodelv1.RiskSnapshot{
 			AllowNewRisk: false,
 			ReasonCode:   string(domain.RiskReasonBudget),
 			Revision:     source.Revision + 1,
@@ -68,7 +69,7 @@ func TestAdminRiskEventsStorageFailureCancellationAndRevocationReturnNothing(t *
 	injected := errors.New("private risk history storage failure")
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(query *gorm.DB) {
 		switch query.Statement.Dest.(type) {
-		case *[]*modelv1.RiskSnapshotEvent, *modelv1.RiskSnapshotEvent:
+		case *[]*executionmodelv1.RiskSnapshotEvent, *executionmodelv1.RiskSnapshotEvent:
 			_ = query.AddError(injected)
 		}
 	}); err != nil {
@@ -118,12 +119,12 @@ func TestAdminRiskEventsReadSnapshotCannotChangeSourceOrHistory(t *testing.T) {
 	attempted := false
 	var writeErr error
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, history := query.Statement.Dest.(*[]*modelv1.RiskSnapshotEvent)
+		_, history := query.Statement.Dest.(*[]*executionmodelv1.RiskSnapshotEvent)
 		if !history || attempted {
 			return
 		}
 		attempted = true
-		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.RiskSnapshot{}).
+		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&executionmodelv1.RiskSnapshot{}).
 			Where("id = ?", before.Id).Update("allow_new_risk", false).Error
 		_ = query.AddError(writeErr)
 	}); err != nil {
@@ -142,7 +143,7 @@ func TestAdminRiskEventsReadSnapshotCannotChangeSourceOrHistory(t *testing.T) {
 	if !proto.Equal(before, riskEventSourceRow(ctx, t, db, before.StrategyInstanceId)) {
 		t.Fatal("read changed risk source")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshotEvent{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshotEvent{}, 1)
 }
 
 func TestAdminRiskEventsMalformedReadDropsPartialPageAndCursor(t *testing.T) {
@@ -151,12 +152,12 @@ func TestAdminRiskEventsMalformedReadDropsPartialPageAndCursor(t *testing.T) {
 	defer cancel()
 	actor, _, submit := adminCreationFixture(ctx, t, db)
 	source := riskEventSourceRow(ctx, t, db, submit.Input.Authority.StrategyID)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", source.Id).Update("allow_new_risk", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", source.Id).Update("allow_new_risk", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	const callback = "test:risk-event-malformed-read"
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		if rows, history := query.Statement.Dest.(*[]*modelv1.RiskSnapshotEvent); history && len(*rows) != 0 {
+		if rows, history := query.Statement.Dest.(*[]*executionmodelv1.RiskSnapshotEvent); history && len(*rows) != 0 {
 			// Response corruption only; immutable persisted rows are not modified.
 			(*rows)[0].ReasonCode = "undefined"
 		}

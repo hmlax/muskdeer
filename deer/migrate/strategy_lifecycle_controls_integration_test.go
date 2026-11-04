@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -72,7 +72,7 @@ func TestStrategyLifecycleHoldsUnresolvedActionsAndFencesNewIncarnation(t *testi
 	if _, err := lifecycle.Transition(ctx, replaced, first, domain.StrategyTransition{State: domain.StrategyStateRecovering}); !errors.Is(err, domain.ErrLeaseLost) {
 		t.Fatal("former runtime owner changed successor state")
 	}
-	err = db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", replaced.ID).UpdateColumn("runtime_owner_epoch", 0).Error
+	err = db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", replaced.ID).UpdateColumn("runtime_owner_epoch", 0).Error
 	assertDatabaseCode(t, err, "23514")
 }
 
@@ -94,15 +94,15 @@ func TestStrategyLifecycleCommitFenceRollsBackStagedState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", recovering.ID).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", recovering.ID).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	const callback = "test:expire-strategy-lifecycle-authority"
 	if err := db.Callback().Update().After("gorm:update").Register(callback, func(tx *gorm.DB) {
-		if tx.Error != nil || tx.Statement.Schema == nil || tx.Statement.Schema.ModelType != reflect.TypeFor[modelv1.StrategyInstance]() {
+		if tx.Error != nil || tx.Statement.Schema == nil || tx.Statement.Schema.ModelType != reflect.TypeFor[strategymodelv1.StrategyInstance]() {
 			return
 		}
-		result := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.StrategyLease{}).
+		result := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&strategymodelv1.StrategyLease{}).
 			Where("strategy_instance_id = ?", recovering.ID).UpdateColumn("expires_at", 0)
 		if result.Error != nil {
 			tx.Error = errors.Join(tx.Error, result.Error)

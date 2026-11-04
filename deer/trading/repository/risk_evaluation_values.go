@@ -8,26 +8,29 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func requestedConfigurationActive(strategy *modelv1.StrategyInstance) bool {
+func requestedConfigurationActive(strategy *strategymodelv1.StrategyInstance) bool {
 	return strategy.ActiveConfigVersion != nil && strategy.ActiveMarketDataSource != nil &&
 		strategy.RequestedConfigVersion == *strategy.ActiveConfigVersion && strategy.MarketDataSource == *strategy.ActiveMarketDataSource
 }
 
-func riskBudgetsEnabled(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, quoteAsset string) (bool, error) {
-	var account modelv1.AccountBudget
-	err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&account).Error
+func riskBudgetsEnabled(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, quoteAsset string) (bool, error) {
+	var account commonmodelv1.AccountBudget
+	err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&account).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
 	if err != nil {
 		return false, err
 	}
-	var budget modelv1.StrategyBudget
-	err = tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", strategy.Id, strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&budget).Error
+	var budget strategymodelv1.StrategyBudget
+	err = tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", strategy.Id, strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&budget).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
@@ -58,9 +61,9 @@ func riskBudgetsEnabled(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 	return true, nil
 }
 
-func riskPortfolioReconciled(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, core coreRows) (bool, error) {
-	var row modelv1.PortfolioAccount
-	err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&row).Error
+func riskPortfolioReconciled(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, core coreRows) (bool, error) {
+	var row portfoliomodelv1.PortfolioAccount
+	err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).Clauses(clause.Locking{Strength: "SHARE"}).First(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
@@ -75,7 +78,7 @@ func riskPortfolioReconciled(ctx context.Context, tx *gorm.DB, strategy *modelv1
 		return false, err
 	}
 	var projected int64
-	if err := tx.WithContext(ctx).Model(&modelv1.PortfolioFill{}).Where("account_id = ? AND instrument_id = ? AND delete_at IS NULL", strategy.AccountId, strategy.InstrumentId).Count(&projected).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).Where("account_id = ? AND instrument_id = ? AND delete_at IS NULL", strategy.AccountId, strategy.InstrumentId).Count(&projected).Error; err != nil {
 		return false, err
 	}
 	if latest != row.LastSourceSequence || count != projected || count > domain.MaxPortfolioFacts {
@@ -94,12 +97,12 @@ func riskPortfolioReconciled(ctx context.Context, tx *gorm.DB, strategy *modelv1
 	return true, nil
 }
 
-func saveRiskDecision(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, decision domain.RiskDecision, maximumAgeMS int64) error {
+func saveRiskDecision(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, decision domain.RiskDecision, maximumAgeMS int64) error {
 	version, source := strategy.RequestedConfigVersion, strategy.MarketDataSource
 	if strategy.ActiveConfigVersion != nil && strategy.ActiveMarketDataSource != nil {
 		version, source = *strategy.ActiveConfigVersion, *strategy.ActiveMarketDataSource
 	}
-	row := &modelv1.RiskSnapshot{
+	row := &executionmodelv1.RiskSnapshot{
 		StrategyInstanceId: strategy.Id,
 		AccountId:          strategy.AccountId,
 		InstrumentId:       strategy.InstrumentId,
@@ -121,10 +124,10 @@ func saveRiskDecision(ctx context.Context, tx *gorm.DB, strategy *modelv1.Strate
 		row.MarketEpoch = decision.Market.OwnerEpoch
 		row.MarketSequence = decision.Market.Reading.Sequence
 	}
-	var previous modelv1.RiskSnapshot
-	err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", strategy.Id).Clauses(clause.Locking{Strength: "UPDATE"}).First(&previous).Error
+	var previous executionmodelv1.RiskSnapshot
+	err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", strategy.Id).Clauses(clause.Locking{Strength: "UPDATE"}).First(&previous).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Create(row).Error
+		return tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Create(row).Error
 	}
 	if err != nil {
 		return err
@@ -134,7 +137,7 @@ func saveRiskDecision(ctx context.Context, tx *gorm.DB, strategy *modelv1.Strate
 		return domain.ErrRiskDenied
 	}
 	row.Revision = previous.Revision + 1
-	result := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ? AND revision = ?", previous.Id, previous.Revision).
+	result := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ? AND revision = ?", previous.Id, previous.Revision).
 		Select("AccountId", "InstrumentId", "ConfigVersion", "MarketDataSource", "MarketEpoch", "MarketSequence", "ObservedAt", "ExpiresAt", "Reconciled", "AllowNewRisk", "Revision", "MarketFeedId", "MarketRevision", "MarketSourceVersion", "MarketMaximumAgeMs", "ReasonCode").Updates(row)
 	return reservationResult(result)
 }

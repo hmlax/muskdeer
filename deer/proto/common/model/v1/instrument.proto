@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/model/v1;modelv1";
+
+// Instrument describes execution metadata independently of market-data source.
+message Instrument {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string execution_venue = 5 [(tagger.tags) = "gorm:\"column:execution_venue;type:varchar(32);not null;uniqueIndex:uk_instrument_venue_symbol\""];
+  string symbol = 6 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(64);not null;uniqueIndex:uk_instrument_venue_symbol\""];
+  string base_asset = 7 [(tagger.tags) = "gorm:\"column:base_asset;type:varchar(32);not null\""];
+  string quote_asset = 8 [(tagger.tags) = "gorm:\"column:quote_asset;type:varchar(32);not null\""];
+  // Quote currency per base unit; strictly positive, at most 20+18 digits.
+  string price_tick = 9 [(tagger.tags) = "gorm:\"column:price_tick;type:numeric(38,18);not null\""];
+  // Base quantity; strictly positive, at most 20+18 digits.
+  string quantity_step = 10 [(tagger.tags) = "gorm:\"column:quantity_step;type:numeric(38,18);not null\""];
+  // Quote currency; strictly positive, at most 20+18 digits.
+  string min_notional = 11 [(tagger.tags) = "gorm:\"column:min_notional;type:numeric(38,18);not null\""];
+  string status = 12 [(tagger.tags) = "gorm:\"column:status;type:varchar(16);not null\""];
+  int64 metadata_version = 13 [(tagger.tags) = "gorm:\"column:metadata_version;type:bigint;not null\""];
+}

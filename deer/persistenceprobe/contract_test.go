@@ -11,14 +11,14 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm/schema"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 const precisePrice = "12345678901234567890.123456789012345678"
 
 func TestGeneratedModelSchema(t *testing.T) {
 	t.Parallel()
-	metadata, err := schema.Parse(&modelv1.StorageProbe{}, &sync.Map{}, schema.NamingStrategy{})
+	metadata, err := schema.Parse(&commonmodelv1.StorageProbe{}, &sync.Map{}, schema.NamingStrategy{})
 	if err != nil {
 		t.Fatalf("schema.Parse(StorageProbe) = %v, want a valid generated model", err)
 	}
@@ -57,7 +57,7 @@ func TestGeneratedModelSchema(t *testing.T) {
 func TestGeneratedProtoDecimalAndNullRoundTrip(t *testing.T) {
 	t.Parallel()
 	for _, deleted := range []*int64{nil, proto.Int64(0), proto.Int64(1792930000123)} {
-		original := &modelv1.StorageProbe{
+		original := &commonmodelv1.StorageProbe{
 			Price:    precisePrice,
 			DeleteAt: deleted,
 		}
@@ -65,7 +65,7 @@ func TestGeneratedProtoDecimalAndNullRoundTrip(t *testing.T) {
 		if err != nil {
 			t.Fatalf("proto.Marshal(StorageProbe) = %v", err)
 		}
-		var decoded modelv1.StorageProbe
+		var decoded commonmodelv1.StorageProbe
 		if err := proto.Unmarshal(encoded, &decoded); err != nil {
 			t.Fatalf("proto.Unmarshal(StorageProbe) = %v", err)
 		}
@@ -90,7 +90,7 @@ func TestGeneratedProtoDecimalAndNullRoundTrip(t *testing.T) {
 			t.Errorf("decimal parse(%q) = %v, %v", decoded.Price, value, err)
 		}
 	}
-	var invalid modelv1.StorageProbe
+	var invalid commonmodelv1.StorageProbe
 	if err := protojson.Unmarshal([]byte(`{"price":0.1}`), &invalid); err == nil {
 		t.Error("protojson.Unmarshal(number into price) succeeded, want string type rejection")
 	}

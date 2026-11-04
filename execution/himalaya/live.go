@@ -7,8 +7,9 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -32,7 +33,7 @@ func (s *Store) PrepareLive(ctx context.Context, execution domain.LeaseToken, re
 	return s.prepare(ctx, execution, request, &authority)
 }
 
-func setLiveAuthority(ctx context.Context, row *modelv1.HimalayaIntent, authority *LiveAuthority, now int64) {
+func setLiveAuthority(ctx context.Context, row *executionmodelv1.HimalayaIntent, authority *LiveAuthority, now int64) {
 	deadline, _ := ctx.Deadline()
 	row.ExpiresAt = now + min(time.Until(deadline), maximumOperationTimeout).Milliseconds()
 	row.StrategyAccountId = authority.Strategy.AccountId
@@ -44,7 +45,7 @@ func setLiveAuthority(ctx context.Context, row *modelv1.HimalayaIntent, authorit
 	row.SourceUntil = authority.Book.ValidUntilMs
 }
 
-func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *modelv1.HimalayaIntent, now int64) (time.Duration, error) {
+func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *executionmodelv1.HimalayaIntent, now int64) (time.Duration, error) {
 	if row.StrategyEpoch == 0 && row.SourceEpoch == 0 {
 		return maximumOperationTimeout, nil // The original transport-only seam.
 	}
@@ -75,7 +76,7 @@ func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *modelv1.HimalayaI
 	return remaining, nil
 }
 
-func checkLiveBudget(budget *modelv1.HimalayaBudget, request SubmitRequest, total decimal.Decimal) error {
+func checkLiveBudget(budget *commonmodelv1.HimalayaBudget, request SubmitRequest, total decimal.Decimal) error {
 	available, e1 := domain.ParseLedgerDecimal(budget.AvailableQuote, false, true)
 	limit, e2 := domain.ParseLedgerDecimal(budget.MaximumOrderNotional, false, false)
 	fee, e3 := domain.ParseLedgerDecimal(budget.WorstFeeRate, false, true)
@@ -92,7 +93,7 @@ func checkLiveBudget(budget *modelv1.HimalayaBudget, request SubmitRequest, tota
 	return nil
 }
 
-func checkPersistedLiveBudget(budget *modelv1.HimalayaBudget, row *modelv1.HimalayaIntent) error {
+func checkPersistedLiveBudget(budget *commonmodelv1.HimalayaBudget, row *executionmodelv1.HimalayaIntent) error {
 	if row.SourceEpoch == 0 {
 		return nil
 	}
@@ -112,7 +113,7 @@ func checkPersistedLiveBudget(budget *modelv1.HimalayaBudget, row *modelv1.Himal
 	}, reserved)
 }
 
-func liveSubmissionWindow(ctx context.Context, row *modelv1.HimalayaIntent, remaining time.Duration) (time.Duration, error) {
+func liveSubmissionWindow(ctx context.Context, row *executionmodelv1.HimalayaIntent, remaining time.Duration) (time.Duration, error) {
 	if row.SourceEpoch == 0 {
 		return remaining, nil
 	}

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -26,8 +26,8 @@ func TestAdminControlPauseResumeAndStopCompleteOnlyOnRealRuntimeProof(t *testing
 		t.Fatal(err)
 	}
 	orders := waitGridControllerQuotes(ctx, t, controller, execution, market, submit)
-	var current modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).Take(&current).Error; err != nil {
+	var current strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).Take(&current).Error; err != nil {
 		t.Fatal(err)
 	}
 	pause, err := controls.Control(ctx, actor.Token, actor.CSRF, domain.AdminControlRequest{
@@ -53,7 +53,7 @@ func TestAdminControlPauseResumeAndStopCompleteOnlyOnRealRuntimeProof(t *testing
 	runGridController(ctx, t, controller, market, "100", 8)
 	assertAdminOperationCompleted(ctx, t, db, controls, observer, actor.Token, pause.ID)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", current.Id).Take(&current).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", current.Id).Take(&current).Error; err != nil {
 		t.Fatal(err)
 	}
 	resume, err := controls.Control(ctx, actor.Token, actor.CSRF, domain.AdminControlRequest{
@@ -68,7 +68,7 @@ func TestAdminControlPauseResumeAndStopCompleteOnlyOnRealRuntimeProof(t *testing
 	}
 	orders = waitGridControllerQuotes(ctx, t, controller, execution, market, submit)
 	assertAdminOperationCompleted(ctx, t, db, controls, observer, actor.Token, resume.ID)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", current.Id).Take(&current).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", current.Id).Take(&current).Error; err != nil {
 		t.Fatal(err)
 	}
 	stop, err := controls.Control(ctx, actor.Token, actor.CSRF, domain.AdminControlRequest{

@@ -14,8 +14,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
@@ -52,13 +53,13 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 		return domain.AdminCreationReceipt{}, adminCreationFailure(err)
 	}
 	var result domain.AdminCreationReceipt
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminStrategyCreation{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyCreation{}).Transaction(func(tx *gorm.DB) error {
 		user, session, err := readAdminControlAuthority(ctx, tx, token, csrf)
 		if err != nil {
 			return err
 		}
-		var existing modelv1.AdminStrategyCreation
-		err = tx.WithContext(ctx).Model(&modelv1.AdminStrategyCreation{}).
+		var existing strategymodelv1.AdminStrategyCreation
+		err = tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyCreation{}).
 			Where("actor_user_id = ? AND idempotency_key = ?", user.Id, request.Key).Take(&existing).Error
 		if err == nil {
 			if existing.RequestFingerprint != fingerprint {
@@ -73,7 +74,7 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 		if err := lockCreationDependencies(ctx, tx, request); err != nil {
 			return err
 		}
-		instance := &modelv1.StrategyInstance{
+		instance := &strategymodelv1.StrategyInstance{
 			InstanceKey:            request.InstanceKey,
 			Template:               string(request.Parameters.Template),
 			AccountId:              request.AccountID,
@@ -86,10 +87,10 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 			MarketDataSource:       string(request.Source),
 			MarketMode:             string(request.Mode),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
-		version := &modelv1.StrategyConfigVersion{
+		version := &strategymodelv1.StrategyConfigVersion{
 			InstanceId:              instance.Id,
 			Version:                 1,
 			MarketDataSource:        string(request.Source),
@@ -100,11 +101,11 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 			MakerParameters:         parameters.GetMarketMaker(),
 			GridParameters:          parameters.GetGrid(),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 			return err
 		}
 		limit := strategyParameterBudget(request.Parameters)
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Create(&strategymodelv1.StrategyBudget{
 			StrategyInstanceId: instance.Id,
 			AccountId:          request.AccountID,
 			LimitNotional:      limit.String(),
@@ -114,7 +115,7 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 		}).Error; err != nil {
 			return err
 		}
-		audit := &modelv1.AdminAudit{
+		audit := &commonmodelv1.AdminAudit{
 			Actor:        user.Username,
 			ActorRole:    user.Role,
 			Action:       domain.AdminStrategyCreate,
@@ -122,10 +123,10 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 			Reason:       request.Reason,
 			AfterVersion: proto.Int64(1),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 			return err
 		}
-		receipt := &modelv1.AdminStrategyCreation{
+		receipt := &strategymodelv1.AdminStrategyCreation{
 			ActorUserId:        user.Id,
 			ActorSessionId:     session.Id,
 			StrategyInstanceId: instance.Id,
@@ -137,7 +138,7 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 			MarketDataSource:   string(request.Source),
 			Reason:             request.Reason,
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyCreation{}).Create(receipt).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyCreation{}).Create(receipt).Error; err != nil {
 			return err
 		}
 		result = adminCreationReceipt(receipt)
@@ -149,7 +150,7 @@ func (s *adminStrategyCreator) Create(ctx context.Context, token, csrf string, r
 	return result, nil
 }
 
-func adminCreationReceipt(row *modelv1.AdminStrategyCreation) domain.AdminCreationReceipt {
+func adminCreationReceipt(row *strategymodelv1.AdminStrategyCreation) domain.AdminCreationReceipt {
 	return domain.AdminCreationReceipt{
 		ID:            row.Id,
 		ActorUserID:   row.ActorUserId,

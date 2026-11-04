@@ -12,10 +12,11 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -39,14 +40,14 @@ func assertSyntheticTradeOutage(ctx context.Context, t *testing.T, check synthet
 		return check.market.tradeRequests.Load() >= 2 && err == nil
 	})
 	var count int64
-	if err := check.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Count(&count).Error; err != nil || count != 0 || check.sdk.syntheticCount() != 0 {
+	if err := check.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Count(&count).Error; err != nil || count != 0 || check.sdk.syntheticCount() != 0 {
 		t.Fatalf("trade outage slots=%d SDK calls=%d err=%v, want 0/0", count, check.sdk.syntheticCount(), err)
 	}
 	connection, err := check.factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceMarket})
 	if err != nil {
 		t.Fatal(err)
 	}
-	book, err := rpc.NewMarketClient(connection).GetBook(ctx, &rpc.BookRequest{Symbol: "BTCUSDT"})
+	book, err := markethimalayav1.NewMarketClient(connection).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: "BTCUSDT"})
 	if err != nil || len(book.GetBids()) == 0 || len(book.GetAsks()) == 0 {
 		t.Fatalf("trade outage disturbed independent depth source: %v", err)
 	}
@@ -67,15 +68,15 @@ func assertSyntheticTradeOutage(ctx context.Context, t *testing.T, check synthet
 			Epoch:     1,
 		},
 	}
-	if _, err := rpc.NewExecutionClient(connection).PublishSynthetic(ctx, legacy); status.Code(err) != codes.InvalidArgument || check.sdk.syntheticCount() != 0 {
+	if _, err := executionhimalayav1.NewExecutionClient(connection).PublishSynthetic(ctx, legacy); status.Code(err) != codes.InvalidArgument || check.sdk.syntheticCount() != 0 {
 		t.Fatalf("legacy wire in aggregate mode: err=%v effects=%d, want InvalidArgument/0", err, check.sdk.syntheticCount())
 	}
 }
 
 func assertSyntheticTradeReceipts(ctx context.Context, t *testing.T, db *gorm.DB) {
 	t.Helper()
-	var rows []*modelv1.SyntheticTapeIntent
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Order("sequence").Find(&rows).Error; err != nil || len(rows) != 2 {
+	var rows []*executionmodelv1.SyntheticTapeIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Order("sequence").Find(&rows).Error; err != nil || len(rows) != 2 {
 		t.Fatalf("aggregate runtime audit rows=%d err=%v, want 2", len(rows), err)
 	}
 	var previous int64

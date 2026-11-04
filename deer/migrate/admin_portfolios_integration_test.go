@@ -11,7 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -101,8 +102,8 @@ func TestAdminPortfoliosMissingRowsDoNotCreateZeroBalancesOrPositions(t *testing
 	if _, err := store.List(ctx, actor.Token, filter); !errors.Is(err, domain.ErrAdminNotFound) {
 		t.Fatal("unknown instrument became an empty existing choice", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioAccount{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioAccount{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 0)
 }
 
 func adminPortfoliosStore(t *testing.T, db *gorm.DB) domain.AdminPortfolios {

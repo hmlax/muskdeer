@@ -11,7 +11,9 @@ import (
 	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -71,8 +73,8 @@ func TestAdminRiskCancelConfirmationIsRequiredBeforeFreshAdminRecovery(t *testin
 	if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) {
 		t.Fatal("risk control implicitly changed runtime/configuration/ownership")
 	}
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).Take(&risk).Error; err != nil || risk.AllowNewRisk {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).Take(&risk).Error; err != nil || risk.AllowNewRisk {
 		t.Fatal("recovery issued a cached trading grant", err)
 	}
 	replay, err := control.Change(ctx, operator.Token, operator.CSRF, block)
@@ -80,8 +82,8 @@ func TestAdminRiskCancelConfirmationIsRequiredBeforeFreshAdminRecovery(t *testin
 		t.Fatal("historical block replay changed the later risk setting", err)
 	}
 	assertRiskControlState(ctx, t, control, operator, before.Id, true, 3)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 2)
 	assertGatewayOrderCount(ctx, t, db, 1)
 }
 

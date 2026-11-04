@@ -12,7 +12,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -84,8 +85,8 @@ func TestStrategyActionAbsenceRequiresExpiredDeadlineAndNeverRevivesOriginalKey(
 	}); !errors.Is(err, domain.ErrInvalidOrder) {
 		t.Fatalf("renewed direct L1 command bypassed original-key resolution: %v", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorCommand{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorCommand{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
@@ -110,16 +111,16 @@ func TestStrategyResolutionDatabaseRejectsEarlyOrStaleSnapshotProof(t *testing.T
 		t.Fatal(err)
 	}
 	forge := func(tx *gorm.DB) error {
-		return tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Where("id = ?", attempted.ID).
-			Select("State", "Revision").Updates(&modelv1.StrategyAction{
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Where("id = ?", attempted.ID).
+			Select("State", "Revision").Updates(&strategymodelv1.StrategyAction{
 			State:    string(domain.StrategyActionNotAccepted),
 			Revision: attempted.Revision + 1,
 		}).Error
 	}
-	err = db.WithContext(ctx).Model(&modelv1.StrategyAction{}).Transaction(forge)
+	err = db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Transaction(forge)
 	assertDatabaseCode(t, err, "23514")
 	time.Sleep(1100 * time.Millisecond)
-	err = db.WithContext(ctx).Model(&modelv1.StrategyAction{}).Transaction(forge, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	err = db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Transaction(forge, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 	assertDatabaseCode(t, err, "23514")
 	current, err := actions.ByKey(ctx, attempted.StrategyID, attempted.Plan.Key)
 	if err != nil || current.State != domain.StrategyActionDispatching || current.Revision != attempted.Revision {
@@ -217,9 +218,9 @@ func TestUnacceptedCancellationKeepsFundsAndSealsOldCoreCommand(t *testing.T) {
 	if _, err := actions.Observe(ctx, fresh, submit.Input.Authority); err != nil {
 		t.Fatal(err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("id = ?", confirmed.Request.ID).Delete(&modelv1.CancellationRequest{}).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("id = ?", confirmed.Request.ID).Delete(&executionmodelv1.CancellationRequest{}).Error
 	assertDatabaseCode(t, err, "23514")
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("id = ?", confirmed.Request.ID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("id = ?", confirmed.Request.ID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error
 	assertDatabaseCode(t, err, "23514")
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")

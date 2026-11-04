@@ -10,12 +10,13 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 func (s *strategyActions) Attempt(ctx context.Context, current domain.StrategyAction, authority domain.StrategyAuthority, deadline time.Time) (domain.StrategyAction, error) {
-	return s.changeAction(ctx, current, authority, func(_ *gorm.DB, row *modelv1.StrategyAction, strategy *modelv1.StrategyInstance, now int64) (bool, error) {
+	return s.changeAction(ctx, current, authority, func(_ *gorm.DB, row *strategymodelv1.StrategyAction, strategy *strategymodelv1.StrategyInstance, now int64) (bool, error) {
 		if row.State != string(domain.StrategyActionPending) {
 			return false, domain.ErrOutcomeUnknown
 		}
@@ -32,7 +33,7 @@ func (s *strategyActions) Attempt(ctx context.Context, current domain.StrategyAc
 }
 
 func (s *strategyActions) Discard(ctx context.Context, current domain.StrategyAction, authority domain.StrategyAuthority) (domain.StrategyAction, error) {
-	return s.changeAction(ctx, current, authority, func(_ *gorm.DB, row *modelv1.StrategyAction, _ *modelv1.StrategyInstance, _ int64) (bool, error) {
+	return s.changeAction(ctx, current, authority, func(_ *gorm.DB, row *strategymodelv1.StrategyAction, _ *strategymodelv1.StrategyInstance, _ int64) (bool, error) {
 		if row.State == string(domain.StrategyActionDiscarded) {
 			return false, nil
 		}
@@ -45,7 +46,7 @@ func (s *strategyActions) Discard(ctx context.Context, current domain.StrategyAc
 }
 
 func (s *strategyActions) Observe(ctx context.Context, current domain.StrategyAction, authority domain.StrategyAuthority) (domain.StrategyAction, error) {
-	return s.changeAction(ctx, current, authority, func(tx *gorm.DB, row *modelv1.StrategyAction, _ *modelv1.StrategyInstance, now int64) (bool, error) {
+	return s.changeAction(ctx, current, authority, func(tx *gorm.DB, row *strategymodelv1.StrategyAction, _ *strategymodelv1.StrategyInstance, now int64) (bool, error) {
 		if row.State == string(domain.StrategyActionObserved) || row.State == string(domain.StrategyActionNotAccepted) {
 			return false, nil
 		}
@@ -75,7 +76,7 @@ func (s *strategyActions) Observe(ctx context.Context, current domain.StrategyAc
 	})
 }
 
-func (s *strategyActions) changeAction(ctx context.Context, current domain.StrategyAction, authority domain.StrategyAuthority, change func(*gorm.DB, *modelv1.StrategyAction, *modelv1.StrategyInstance, int64) (bool, error)) (domain.StrategyAction, error) {
+func (s *strategyActions) changeAction(ctx context.Context, current domain.StrategyAction, authority domain.StrategyAuthority, change func(*gorm.DB, *strategymodelv1.StrategyAction, *strategymodelv1.StrategyInstance, int64) (bool, error)) (domain.StrategyAction, error) {
 	if err := coreContext(ctx); err != nil {
 		return domain.StrategyAction{}, err
 	}
@@ -86,13 +87,13 @@ func (s *strategyActions) changeAction(ctx context.Context, current domain.Strat
 		return domain.StrategyAction{}, err
 	}
 	var result domain.StrategyAction
-	err := s.db.WithContext(ctx).Model(&modelv1.StrategyAction{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Transaction(func(tx *gorm.DB) error {
 		strategy, now, err := lockActionAuthority(ctx, tx, authority)
 		if err != nil {
 			return err
 		}
-		var row modelv1.StrategyAction
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).
+		var row strategymodelv1.StrategyAction
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).
 			Where("id = ? AND strategy_instance_id = ? AND delete_at IS NULL", current.ID, authority.StrategyID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
@@ -118,18 +119,18 @@ func (s *strategyActions) changeAction(ctx context.Context, current domain.Strat
 	return result, nil
 }
 
-func saveActionState(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyAction, authority domain.StrategyAuthority) error {
+func saveActionState(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyAction, authority domain.StrategyAuthority) error {
 	previous := row.Revision
 	row.Revision++
 	row.OwnerId, row.OwnerEpoch = authority.OwnerID, authority.OwnerEpoch
-	result := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("State", "DeadlineAt", "IntentId", "CancellationId", "ObservedOrderState", "ObservedCancellationState", "OwnerId", "OwnerEpoch", "Revision").Updates(row)
 	return reservationResult(result)
 }
 
-func observeActionSubmit(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyAction) error {
-	var intent modelv1.OrderIntent
-	err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+func observeActionSubmit(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyAction) error {
+	var intent executionmodelv1.OrderIntent
+	err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("account_id = ? AND idempotency_key = ? AND delete_at IS NULL", row.AccountId, row.IdempotencyKey).
 		Clauses(clause.Locking{Strength: "SHARE"}).First(&intent).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -166,9 +167,9 @@ func observeActionSubmit(ctx context.Context, tx *gorm.DB, row *modelv1.Strategy
 	return nil
 }
 
-func observeActionCancel(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyAction) error {
-	var request modelv1.CancellationRequest
-	err := tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).
+func observeActionCancel(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyAction) error {
+	var request executionmodelv1.CancellationRequest
+	err := tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).
 		Where("account_id = ? AND idempotency_key = ? AND delete_at IS NULL", row.AccountId, row.IdempotencyKey).
 		Clauses(clause.Locking{Strength: "SHARE"}).First(&request).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -180,8 +181,8 @@ func observeActionCancel(ctx context.Context, tx *gorm.DB, row *modelv1.Strategy
 	if request.IntentId != row.GetIntentId() || request.ClientOrderId != row.ClientOrderId || request.StrategyInstanceId != row.StrategyInstanceId || request.InstrumentId != row.InstrumentId {
 		return domain.ErrInvalidOrder
 	}
-	var parent modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ? AND delete_at IS NULL", request.IntentId).
+	var parent executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ? AND delete_at IS NULL", request.IntentId).
 		Clauses(clause.Locking{Strength: "SHARE"}).First(&parent).Error; err != nil {
 		return err
 	}

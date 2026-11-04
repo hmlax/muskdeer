@@ -15,8 +15,9 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -37,10 +38,10 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := db.WithContext(ctx).Model(&modelv1.HimalayaSchemaMigration{}).Exec(string(data)).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaSchemaMigration{}).Exec(string(data)).Error; err != nil {
 			t.Fatal(err)
 		}
-		if err := db.WithContext(ctx).Model(&modelv1.HimalayaSchemaMigration{}).Create(&modelv1.HimalayaSchemaMigration{
+		if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaSchemaMigration{}).Create(&commonmodelv1.HimalayaSchemaMigration{
 			Version:  int64(i + 1),
 			Checksum: fmt.Sprintf("%x", sha256.Sum256(data)),
 		}).Error; err != nil {
@@ -48,11 +49,11 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		}
 	}
 	account := native.ScopeKey(101, 201)
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Create(&modelv1.ExecutionShardLease{AccountId: account}).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Create(&commonmodelv1.ExecutionShardLease{AccountId: account}).Error; err != nil {
 		t.Fatal(err)
 	}
 	// A version-five model must not select newly added columns during insertion.
-	budget := &modelv1.HimalayaBudget{
+	budget := &commonmodelv1.HimalayaBudget{
 		AccountId:            account,
 		UserId:               101,
 		FundId:               201,
@@ -65,10 +66,10 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		Enabled:              true,
 		CutoverCompleted:     true,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Omit("Symbol", "MarketDataSource", "PriceTick", "QuantityStep").Create(budget).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Omit("Symbol", "MarketDataSource", "PriceTick", "QuantityStep").Create(budget).Error; err != nil {
 		t.Fatal(err)
 	}
-	audit := &modelv1.SyntheticTapeIntent{
+	audit := &executionmodelv1.SyntheticTapeIntent{
 		RunId:        "schema-five",
 		Symbol:       "BTCUSDT",
 		PolicyDigest: fmt.Sprintf("%x", sha256.Sum256([]byte("retained policy"))),
@@ -82,11 +83,11 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 		},
 		Result: &commonv1.SyntheticTapeResult{State: native.SyntheticUnknown},
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Create(audit).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Create(audit).Error; err != nil {
 		t.Fatal(err)
 	}
-	var before modelv1.SyntheticTapeIntent
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).First(&before).Error; err != nil {
+	var before executionmodelv1.SyntheticTapeIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	if err := himalayamigrate.Check(ctx, db); !errors.Is(err, himalayamigrate.ErrHistory) {
@@ -100,12 +101,12 @@ func TestHimalayaDatabaseProfileUpgradePreservesVersionFiveRiskAndTape(t *testin
 	if err := himalayamigrate.Check(ctx, db); err != nil {
 		t.Fatal(err)
 	}
-	var after modelv1.SyntheticTapeIntent
-	if err := db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
+	var after executionmodelv1.SyntheticTapeIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).First(&after).Error; err != nil || !proto.Equal(&before, &after) {
 		t.Fatalf("database profile upgrade rewrote tape audit: %v", err)
 	}
-	var retained modelv1.HimalayaBudget
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).First(&retained).Error; err != nil {
+	var retained commonmodelv1.HimalayaBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).First(&retained).Error; err != nil {
 		t.Fatal(err)
 	}
 	for _, value := range []struct{ raw, want string }{

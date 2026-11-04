@@ -9,7 +9,10 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
@@ -32,9 +35,9 @@ func (s *strategyEnvironment) Current(ctx context.Context, spec domain.StrategyS
 		return domain.StrategyEnvironmentView{}, domain.ErrInvalidOrder
 	}
 	var result domain.StrategyEnvironmentView
-	err := s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		var row modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", spec.ID).First(&row).Error; err != nil {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		var row strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", spec.ID).First(&row).Error; err != nil {
 			return err
 		}
 		if strategySpec(&row) != spec {
@@ -56,21 +59,21 @@ func (s *strategyEnvironment) Current(ctx context.Context, spec domain.StrategyS
 	return result, nil
 }
 
-func readStrategyEnvironment(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance) (domain.StrategyEnvironmentView, error) {
+func readStrategyEnvironment(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance) (domain.StrategyEnvironmentView, error) {
 	var result domain.StrategyEnvironmentView
-	var instrument modelv1.Instrument
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", strategy.InstrumentId).First(&instrument).Error; err != nil {
+	var instrument commonmodelv1.Instrument
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", strategy.InstrumentId).First(&instrument).Error; err != nil {
 		return result, err
 	}
-	var account modelv1.SimulatorAccount
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).First(&account).Error; err != nil {
+	var account executionmodelv1.SimulatorAccount
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).First(&account).Error; err != nil {
 		return result, err
 	}
 	if !account.Enabled || instrument.ExecutionVenue != domain.ExecutionVenueSimulator || instrument.Status != domain.InstrumentStatusTrading {
 		return result, domain.ErrRiskDenied
 	}
-	var feed modelv1.MarketFeed
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).
+	var feed marketmodelv1.MarketFeed
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).
 		Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", strategy.GetActiveMarketDataSource(), strategy.InstrumentId, strategy.MarketMode).First(&feed).Error; err != nil {
 		return result, err
 	}
@@ -111,8 +114,8 @@ func readStrategyEnvironment(ctx context.Context, tx *gorm.DB, strategy *modelv1
 	if err != nil {
 		return result, err
 	}
-	var actions []*modelv1.StrategyAction
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Select("CreateAt").
+	var actions []*strategymodelv1.StrategyAction
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Select("CreateAt").
 		Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).Order("id DESC").Limit(1).Find(&actions).Error; err != nil {
 		return result, err
 	}
@@ -123,9 +126,9 @@ func readStrategyEnvironment(ctx context.Context, tx *gorm.DB, strategy *modelv1
 	return result, err
 }
 
-func readStrategyParameters(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance) (domain.StrategyParameters, error) {
-	var row modelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).
+func readStrategyParameters(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance) (domain.StrategyParameters, error) {
+	var row strategymodelv1.StrategyConfigVersion
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).
 		Where("instance_id = ? AND version = ? AND delete_at IS NULL", strategy.Id, strategy.GetActiveConfigVersion()).First(&row).Error; err != nil {
 		return domain.StrategyParameters{}, err
 	}
@@ -154,7 +157,7 @@ func readStrategyParameters(ctx context.Context, tx *gorm.DB, strategy *modelv1.
 	}
 }
 
-func strategyInstrumentValue(row *modelv1.Instrument) (domain.StrategyInstrument, error) {
+func strategyInstrumentValue(row *commonmodelv1.Instrument) (domain.StrategyInstrument, error) {
 	result := domain.StrategyInstrument{
 		ID:              row.Id,
 		MetadataVersion: row.MetadataVersion,
@@ -190,8 +193,8 @@ func strategyInstrumentValue(row *modelv1.Instrument) (domain.StrategyInstrument
 }
 
 func strategyLocalPrice(ctx context.Context, tx *gorm.DB, instrumentID int64, side domain.Side, ordering string) (decimal.Decimal, error) {
-	var rows []*modelv1.SimulatorOrder
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("Price").
+	var rows []*executionmodelv1.SimulatorOrder
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("Price").
 		Where("instrument_id = ? AND side = ? AND state IN ? AND delete_at IS NULL", instrumentID, side, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}).
 		Order(ordering).Limit(1).Find(&rows).Error; err != nil {
 		return decimal.Zero, err
@@ -205,12 +208,12 @@ func strategyLocalPrice(ctx context.Context, tx *gorm.DB, instrumentID int64, si
 	})
 }
 
-func strategyPlanningRisk(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, now time.Time) (bool, domain.RiskReason, error) {
+func strategyPlanningRisk(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, now time.Time) (bool, domain.RiskReason, error) {
 	if !requestedConfigurationActive(strategy) {
 		return false, domain.RiskReasonConfigurationPending, nil
 	}
-	var row modelv1.RiskSnapshot
-	err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).First(&row).Error
+	var row executionmodelv1.RiskSnapshot
+	err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).First(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, domain.RiskReasonNotEvaluated, nil
 	}

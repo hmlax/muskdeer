@@ -10,7 +10,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -39,7 +39,7 @@ func TestAdminRiskEventsRetainRawProducerHistoryAfterSourceRemoval(t *testing.T)
 		t.Fatal(err)
 	}
 	source := riskEventSourceRow(ctx, t, db, submit.Input.Authority.StrategyID)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", source.Id).Delete(&modelv1.RiskSnapshot{}).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", source.Id).Delete(&executionmodelv1.RiskSnapshot{}).Error; err != nil {
 		t.Fatal(err)
 	}
 	stored := riskEventRows(ctx, t, db, source.StrategyInstanceId)
@@ -66,14 +66,14 @@ func TestAdminRiskEventsRetainRawProducerHistoryAfterSourceRemoval(t *testing.T)
 	if page.Items[2].RecordedReconciled || !page.Items[2].RecordedAllowNewRisk || page.Items[2].Reason != domain.RiskReasonReady || !page.Items[3].SnapshotDeleted {
 		t.Fatal("raw unreconciled/old-ready history became a fabricated current permit")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshot{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshotEvent{}, 4)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshot{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshotEvent{}, 4)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, 1)
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "799.8", "100.1")
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 }
 
-func assertAdminRiskEventRecorded(t *testing.T, value domain.AdminRiskEvent, row *modelv1.RiskSnapshotEvent) {
+func assertAdminRiskEventRecorded(t *testing.T, value domain.AdminRiskEvent, row *executionmodelv1.RiskSnapshotEvent) {
 	t.Helper()
 	if value.ID != row.Id || value.SnapshotID != row.RiskSnapshotId || value.SnapshotRevision != row.RiskSnapshotRevision ||
 		value.StrategyID != row.StrategyInstanceId || value.AccountID != row.AccountId || value.InstrumentID != row.InstrumentId ||
@@ -118,10 +118,10 @@ func TestAdminRiskEventsEmptyHistoryDoesNotInitializeRiskOrAccounts(t *testing.T
 	if _, err := store.Detail(ctx, actor.Token, 1); !errors.Is(err, domain.ErrAdminNotFound) {
 		t.Fatal("absent immutable event became a fabricated baseline", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshot{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshotEvent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorAccount{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshot{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshotEvent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorAccount{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 0)
 }
 
 func adminRiskEventsStore(t *testing.T, db *gorm.DB) domain.AdminRiskEvents {

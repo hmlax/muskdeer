@@ -19,7 +19,7 @@ P07.38交付`AdminMarkets`只读仓储及领域合同，P07.39增加具体gRPC/H
 
 ## Typed管理入口
 
-[StrategyMarketQuery](../deer/proto/rpc/strategy/v1/markets.proto)提供ListMarkets/GetMarket，随`business.strategy.management_enabled`显式注册，要求已验证api.grpc mTLS身份、当前viewer会话、≤5秒原生期限、≤2KiB且无未知字段的请求。管理查询不要求账户或执行/行情所有权，不注册新写入或后台任务。
+[StrategyMarketQuery](../deer/proto/strategy/v1/markets.proto)提供ListMarkets/GetMarket，随`business.strategy.management_enabled`显式注册，要求已验证api.grpc mTLS身份、当前viewer会话、≤5秒原生期限、≤2KiB且无未知字段的请求。管理查询不要求账户或执行/行情所有权，不注册新写入或后台任务。
 
 | GET路径 | 条件与结果 |
 |---|---|

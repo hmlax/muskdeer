@@ -23,8 +23,8 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }
@@ -74,18 +74,18 @@ func testAuthenticationFailure(t *testing.T) {
 
 func testGeneratedModel(t *testing.T) {
 	client := openClient(t, postgresConfig(t), "model-roundtrip")
-	row := &modelv1.StorageProbe{
+	row := &commonmodelv1.StorageProbe{
 		Venue:      "binance",
 		Instrument: "p02-roundtrip",
 		Price:      "12345678901234567890.123456789012345678",
 		Enabled:    true,
 		Revision:   1,
 	}
-	if err := client.GORM().WithContext(t.Context()).Model(&modelv1.StorageProbe{}).Create(row).Error; err != nil {
+	if err := client.GORM().WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
-	var stored modelv1.StorageProbe
-	if err := client.GORM().WithContext(t.Context()).Model(&modelv1.StorageProbe{}).First(&stored, row.Id).Error; err != nil {
+	var stored commonmodelv1.StorageProbe
+	if err := client.GORM().WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).First(&stored, row.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if stored.Id <= 0 || stored.CreateAt == 0 || stored.UpdateAt == 0 || stored.DeleteAt != nil || stored.Price != row.Price {
@@ -133,16 +133,16 @@ func testStatementTimeout(t *testing.T) {
 	cfg.StatementTimeout = durationpb.New(250 * time.Millisecond)
 	client := openClient(t, cfg, "statement-timeout")
 	db := client.GORM()
-	row := &modelv1.StorageProbe{
+	row := &commonmodelv1.StorageProbe{
 		Venue:      "okx",
 		Instrument: "p02-lock-timeout",
 		Price:      "0.1",
 		Revision:   1,
 	}
-	if err := db.WithContext(t.Context()).Model(&modelv1.StorageProbe{}).Create(row).Error; err != nil {
+	if err := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
-	tx := db.WithContext(t.Context()).Model(&modelv1.StorageProbe{}).Begin()
+	tx := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Begin()
 	if tx.Error != nil {
 		t.Fatal(tx.Error)
 	}
@@ -151,17 +151,17 @@ func testStatementTimeout(t *testing.T) {
 			t.Error(err)
 		}
 	}()
-	var locked modelv1.StorageProbe
-	if err := tx.WithContext(t.Context()).Model(&modelv1.StorageProbe{}).Clauses(clause.Locking{Strength: "UPDATE"}).First(&locked, row.Id).Error; err != nil {
+	var locked commonmodelv1.StorageProbe
+	if err := tx.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Clauses(clause.Locking{Strength: "UPDATE"}).First(&locked, row.Id).Error; err != nil {
 		t.Fatal(err)
 	}
-	err := db.WithContext(t.Context()).Model(&modelv1.StorageProbe{}).Where("id = ?", row.Id).Update("price", "0.2").Error
+	err := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).Where("id = ?", row.Id).Update("price", "0.2").Error
 	var serverError *pgconn.PgError
 	if !errors.As(err, &serverError) || serverError.Code != "57014" {
 		t.Fatalf("blocked statement = %v; want server statement_timeout", err)
 	}
-	var stored modelv1.StorageProbe
-	if err := db.WithContext(t.Context()).Model(&modelv1.StorageProbe{}).First(&stored, row.Id).Error; err != nil {
+	var stored commonmodelv1.StorageProbe
+	if err := db.WithContext(t.Context()).Model(&commonmodelv1.StorageProbe{}).First(&stored, row.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(stored.Price).Equal(decimal.RequireFromString(row.Price)) {
@@ -183,7 +183,7 @@ func testDeerDependencies(t *testing.T) {
 				return err
 			}
 			var count int64
-			if err := db.WithContext(ctx).Model(&modelv1.StorageProbe{}).Count(&count).Error; err != nil {
+			if err := db.WithContext(ctx).Model(&commonmodelv1.StorageProbe{}).Count(&count).Error; err != nil {
 				return err
 			}
 			registered = true

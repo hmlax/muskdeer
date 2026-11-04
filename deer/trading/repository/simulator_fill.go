@@ -7,7 +7,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -23,7 +24,7 @@ func (s *simulator) Fill(ctx context.Context, request domain.CoreFillRequest) (d
 		return domain.CoreFill{}, err
 	}
 	var result domain.CoreFill
-	err = s.db.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Transaction(func(tx *gorm.DB) error {
 		rows, err := lockCoreRows(ctx, tx, request.AccountID, initial.InstrumentID)
 		if err != nil {
 			return err
@@ -32,8 +33,8 @@ func (s *simulator) Fill(ctx context.Context, request domain.CoreFillRequest) (d
 		if err != nil {
 			return err
 		}
-		var existing modelv1.SimulatorFill
-		err = tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Where("trade_id = ?", request.TradeID).First(&existing).Error
+		var existing executionmodelv1.SimulatorFill
+		err = tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Where("trade_id = ?", request.TradeID).First(&existing).Error
 		if err == nil {
 			result, err = coreFill(&existing)
 			if err != nil {
@@ -69,7 +70,7 @@ func (s *simulator) Fill(ctx context.Context, request domain.CoreFillRequest) (d
 	return result, nil
 }
 
-func validateCoreFillPrecision(request domain.CoreFillRequest, instrument *modelv1.Instrument) error {
+func validateCoreFillPrecision(request domain.CoreFillRequest, instrument *commonmodelv1.Instrument) error {
 	tick, err := decimal.NewFromString(instrument.PriceTick)
 	if err != nil {
 		return err
@@ -84,7 +85,7 @@ func validateCoreFillPrecision(request domain.CoreFillRequest, instrument *model
 	return nil
 }
 
-func stageCoreFill(ctx context.Context, tx *gorm.DB, rows coreRows, row *modelv1.SimulatorOrder, request domain.CoreFillRequest) (*modelv1.SimulatorFill, error) {
+func stageCoreFill(ctx context.Context, tx *gorm.DB, rows coreRows, row *executionmodelv1.SimulatorOrder, request domain.CoreFillRequest) (*executionmodelv1.SimulatorFill, error) {
 	order, err := coreOrder(row)
 	if err != nil {
 		return nil, err
@@ -119,7 +120,7 @@ func stageCoreFill(ctx context.Context, tx *gorm.DB, rows coreRows, row *modelv1
 	if err := saveCoreOrder(ctx, tx, row); err != nil {
 		return nil, err
 	}
-	fill := &modelv1.SimulatorFill{
+	fill := &executionmodelv1.SimulatorFill{
 		TradeId:             request.TradeID,
 		CoreOrderId:         row.Id,
 		Price:               request.Price.String(),
@@ -129,7 +130,7 @@ func stageCoreFill(ctx context.Context, tx *gorm.DB, rows coreRows, row *modelv1
 		FeeAsset:            rows.instrument.QuoteAsset,
 		CounterpartySubject: request.CounterpartySubject,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Create(fill).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Create(fill).Error; err != nil {
 		return nil, err
 	}
 	if err := appendSimulatorFillEvent(ctx, tx, row, fill); err != nil {

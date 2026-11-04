@@ -69,7 +69,7 @@ func TestProtoPolicyRejectsFloatingWireFieldsAndInvalidModelTags(t *testing.T) {
 	set := &descriptorpb.FileDescriptorSet{
 		File: []*descriptorpb.FileDescriptorProto{
 			{
-				Name:        proto.String("deer/proto/model/v1/entity.proto"),
+				Name:        proto.String("deer/proto/common/model/v1/entity.proto"),
 				MessageType: []*descriptorpb.DescriptorProto{model},
 			},
 		},
@@ -118,5 +118,23 @@ func TestProtoPolicyRejectsFloatingWireFieldsAndInvalidModelTags(t *testing.T) {
 	}
 	if issues := Descriptors(wire); len(issues) != 1 {
 		t.Fatalf("nested wire float was not rejected: %v", issues)
+	}
+}
+
+func TestPersistencePolicyAppliesToServiceAndCommonModels(t *testing.T) {
+	for _, owner := range []string{"common", "market", "strategy", "execution", "portfolio", "cron"} {
+		set := &descriptorpb.FileDescriptorSet{
+			File: []*descriptorpb.FileDescriptorProto{{
+				Name:        proto.String("deer/proto/" + owner + "/model/v1/invalid.proto"),
+				MessageType: []*descriptorpb.DescriptorProto{{Name: proto.String("MissingPersistenceFields")}},
+			}},
+		}
+		if issues := Descriptors(set); len(issues) == 0 {
+			t.Fatalf("%s models escaped required field checks", owner)
+		}
+		set.File[0].Name = proto.String("deer/proto/" + owner + "/config/v1/settings.proto")
+		if issues := Descriptors(set); len(issues) != 0 {
+			t.Fatalf("configuration incorrectly treated as an ORM model: %v", issues)
+		}
 	}
 }

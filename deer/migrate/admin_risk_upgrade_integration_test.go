@@ -10,7 +10,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -26,7 +27,7 @@ func TestAdminRiskUpgradeRetainsExistingBudgetAndIndependentInitialRevision(t *t
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	instance := identityInstance(instrument.Id, "risk-upgrade-existing", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
@@ -35,7 +36,7 @@ func TestAdminRiskUpgradeRetainsExistingBudgetAndIndependentInitialRevision(t *t
 	instance.ActiveConfigVersion = proto.Int64(1)
 	instance.ActiveMarketDataSource = proto.String(string(domain.MarketSourceBinance))
 	config := storedParameterFixture(domain.StrategyTemplateMarketMaker)
-	account := &modelv1.AccountBudget{
+	account := &commonmodelv1.AccountBudget{
 		AccountId:        instance.AccountId,
 		Asset:            "USDT",
 		LimitNotional:    "500",
@@ -43,19 +44,19 @@ func TestAdminRiskUpgradeRetainsExistingBudgetAndIndependentInitialRevision(t *t
 		Enabled:          false,
 		Revision:         19,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Create(account).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Create(account).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
 		config.InstanceId = instance.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(config).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(config).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Create(&strategymodelv1.StrategyBudget{
 		StrategyInstanceId: instance.Id,
 		AccountId:          instance.AccountId,
 		LimitNotional:      "300",
@@ -78,7 +79,7 @@ func TestAdminRiskUpgradeRetainsExistingBudgetAndIndependentInitialRevision(t *t
 	if err != nil || state.Enabled || state.Revision != 1 || state.ReservedNotional.String() != "123.000000000000000001" {
 		t.Fatal("initial risk management version was coupled to legacy financial revision", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }

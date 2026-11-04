@@ -8,8 +8,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -39,9 +40,9 @@ func (r *marketFeeds) Create(ctx context.Context, input domain.MarketFeedDefinit
 		return domain.MarketFeedDefinition{}, domain.ErrMarketIdentity
 	}
 	var result domain.MarketFeedDefinition
-	err := r.db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Transaction(func(tx *gorm.DB) error {
-		var instrument modelv1.Instrument
-		if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", input.InstrumentID).
+	err := r.db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Transaction(func(tx *gorm.DB) error {
+		var instrument commonmodelv1.Instrument
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", input.InstrumentID).
 			Clauses(clause.Locking{Strength: "SHARE"}).First(&instrument).Error; err != nil {
 			return err
 		}
@@ -52,7 +53,7 @@ func (r *marketFeeds) Create(ctx context.Context, input domain.MarketFeedDefinit
 		if input.Symbol != expectedSymbol {
 			return domain.ErrMarketIdentity
 		}
-		row := &modelv1.MarketFeed{
+		row := &marketmodelv1.MarketFeed{
 			Source:         string(input.Source),
 			InstrumentId:   input.InstrumentID,
 			ExternalSymbol: input.Symbol,
@@ -60,11 +61,11 @@ func (r *marketFeeds) Create(ctx context.Context, input domain.MarketFeedDefinit
 			SourceVersion:  input.SourceVersion,
 			Policy:         marketPolicyModel(input.Policy),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Clauses(clause.OnConflict{DoNothing: true}).Create(row).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Clauses(clause.OnConflict{DoNothing: true}).Create(row).Error; err != nil {
 			return err
 		}
-		var saved modelv1.MarketFeed
-		if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", input.Source, input.InstrumentID, input.Mode).First(&saved).Error; err != nil {
+		var saved marketmodelv1.MarketFeed
+		if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", input.Source, input.InstrumentID, input.Mode).First(&saved).Error; err != nil {
 			return err
 		}
 		var err error
@@ -90,8 +91,8 @@ func (r *marketFeeds) Get(ctx context.Context, id int64) (domain.MarketFeedDefin
 	if id <= 0 {
 		return domain.MarketFeedDefinition{}, domain.ErrMarketIdentity
 	}
-	var row modelv1.MarketFeed
-	if err := r.db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ? AND delete_at IS NULL", id).First(&row).Error; err != nil {
+	var row marketmodelv1.MarketFeed
+	if err := r.db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ? AND delete_at IS NULL", id).First(&row).Error; err != nil {
 		return domain.MarketFeedDefinition{}, marketFailure(ctx, err)
 	}
 	return marketFeedValue(&row)
@@ -104,14 +105,14 @@ func (r *marketFeeds) Find(ctx context.Context, source domain.MarketSource, inst
 	if source.ValidateSelection() != nil || instrumentID <= 0 || (mode != domain.MarketModeLive && mode != domain.MarketModeReplay) {
 		return domain.MarketFeedDefinition{}, domain.ErrMarketIdentity
 	}
-	var row modelv1.MarketFeed
-	if err := r.db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", source, instrumentID, mode).First(&row).Error; err != nil {
+	var row marketmodelv1.MarketFeed
+	if err := r.db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", source, instrumentID, mode).First(&row).Error; err != nil {
 		return domain.MarketFeedDefinition{}, marketFailure(ctx, err)
 	}
 	return marketFeedValue(&row)
 }
 
-func marketFeedValue(row *modelv1.MarketFeed) (domain.MarketFeedDefinition, error) {
+func marketFeedValue(row *marketmodelv1.MarketFeed) (domain.MarketFeedDefinition, error) {
 	policy, err := marketPolicyValue(row.Policy)
 	if err != nil {
 		return domain.MarketFeedDefinition{}, err

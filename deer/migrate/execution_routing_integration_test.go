@@ -14,8 +14,10 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/nacos"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -66,7 +68,7 @@ func TestExecutionRoutingUsesCurrentDatabaseLeaseWithoutCreatingRows(t *testing.
 	if instance, err := routing.ExecutionInstance(ctx, "missing"); !errors.Is(err, domain.ErrLeaseLost) || instance != "" {
 		t.Fatal("missing owner obtained a fallback route")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ExecutionShardLease{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.ExecutionShardLease{}, 2)
 	expireLeaseFixture(ctx, t, db, key)
 	if instance, err := routing.ExecutionInstance(ctx, key.AccountID); !errors.Is(err, domain.ErrLeaseLost) || instance != "" {
 		t.Fatal("expired owner remained routable")
@@ -78,14 +80,14 @@ func TestExecutionRoutingUsesCurrentDatabaseLeaseWithoutCreatingRows(t *testing.
 	if instance, err := routing.ExecutionInstance(ctx, key.AccountID); err != nil || instance != "execution.node.b" {
 		t.Fatal("routing reused its previous owner after takeover")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ?", key.AccountID).UpdateColumn("owner_id", "bad.no_nonce").Error; err != nil {
 		t.Fatal(err)
 	}
 	if instance, err := routing.ExecutionInstance(ctx, key.AccountID); !errors.Is(err, domain.ErrLeaseLost) || instance != "" {
 		t.Fatal("malformed incarnation obtained a route")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ?", other.AccountID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -122,15 +124,15 @@ func TestExecutionRoutingFollowsOwnerAcrossIndependentProcesses(t *testing.T) {
 	for _, cfg := range []*configv1.ServiceConfig{first, second} {
 		cfg.Business.OperationTimeout = durationpb.New(time.Second)
 		cfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-		cfg.Business.Simulator = &configv1.SimulatorScenarioRuntime{
+		cfg.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
 			AccountIds:  []string{submit.Input.AccountID},
 			CancelDelay: durationpb.New(time.Second),
 		}
 	}
 	firstPID := startBusinessProcess(ctx, t, first, observer)
 	waitExecutionRoute(ctx, t, routing, submit.Input.AccountID, first.InstanceId)
-	var prior modelv1.ExecutionShardLease
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	var prior commonmodelv1.ExecutionShardLease
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ?", submit.Input.AccountID).First(&prior).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -149,8 +151,8 @@ func TestExecutionRoutingFollowsOwnerAcrossIndependentProcesses(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitExecutionRoute(ctx, t, routing, submit.Input.AccountID, second.InstanceId)
-	var current modelv1.ExecutionShardLease
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	var current commonmodelv1.ExecutionShardLease
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ?", submit.Input.AccountID).First(&current).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -159,8 +161,8 @@ func TestExecutionRoutingFollowsOwnerAcrossIndependentProcesses(t *testing.T) {
 	}
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", "10", "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AccountBudget{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AccountBudget{}, 0)
 }
 
 func waitExecutionRoute(ctx context.Context, t *testing.T, routing domain.ExecutionRouting, account, instance string) {

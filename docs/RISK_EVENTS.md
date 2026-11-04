@@ -1,6 +1,6 @@
 # 风险快照诊断变更历史
 
-P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/model/v1/risk_event.proto)与[版本31迁移](../deer/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；P07.50交付风险历史页面，不把当前快照拼成未曾保存的过去。
+P07.47新增[RiskSnapshotEvent Proto模型](../deer/proto/execution/model/v1/risk_event.proto)与[版本31迁移](../deer/migrate/sql/0031_risk_snapshot_events.sql)，为后续管理风险事件查询提供真实持久来源。P07.48增加只读管理查询仓储；P07.49接入typed gRPC/HTTP；P07.50交付风险历史页面，不把当前快照拼成未曾保存的过去。
 
 ## 记录含义
 
@@ -38,7 +38,7 @@ P07.48的[AdminRiskEvents](../deer/trading/domain/admin_risk_events.go)复用当
 
 ## typed gRPC与HTTP
 
-P07.49提供[StrategyRiskEventQuery](../deer/proto/rpc/strategy/v1/risk_events.proto)的ListRiskEvents/GetRiskEvent及具体RiskDiagnosticEvent。仅在strategy的management_enabled时注册，要求已验证API服务身份、当前viewer会话、最大5秒调用和2KiB请求；读取节点不注册控制写RPC。API在strategy_queries_enabled下使用既有唯一strategy连接，不启动事件生产者、投影消费或其他工作器。
+P07.49提供[StrategyRiskEventQuery](../deer/proto/strategy/v1/risk_events.proto)的ListRiskEvents/GetRiskEvent及具体RiskDiagnosticEvent。仅在strategy的management_enabled时注册，要求已验证API服务身份、当前viewer会话、最大5秒调用和2KiB请求；读取节点不注册控制写RPC。API在strategy_queries_enabled下使用既有唯一strategy连接，不启动事件生产者、投影消费或其他工作器。
 
 Hertz只读入口：
 

@@ -19,7 +19,7 @@ make build
 
 迁移定义为 [内嵌 SQL](../deer/migrate/sql/0001_schema_migrations.sql)，按连续版本编号加载，记录文件名与精确字节 SHA-256；`.gitattributes` 固定 SQL 的 LF 行尾。仅运行随二进制内嵌的已审查 DDL，不接受用户文件路径或动态业务 SQL。
 
-SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/model/v1/migration.proto)，由既有 protoc/gotag 生成；记录含 Id 自增主键、create_at/update_at 非空及真实 nullable delete_at。GORM 自动填入 Unix 毫秒时间。物理表名由生成类型及统一 GORM 命名推导，数据读写始终使用 WithContext(ctx).Model(&modelv1.SchemaMigration{})。
+SchemaMigration 的唯一结构来源为 [Model Proto](../deer/proto/common/model/v1/migration.proto)，由既有 protoc/gotag 生成；记录含 Id 自增主键、create_at/update_at 非空及真实 nullable delete_at。GORM 自动填入 Unix 毫秒时间。物理表名由生成类型及统一 GORM 命名推导，数据读写始终使用 WithContext(ctx).Model(&modelv1.SchemaMigration{})。
 
 一次事务获取项目专属 PostgreSQL advisory transaction lock，创建尚不存在的 ledger，验证全部既有版本/名称/校验和后执行所有待升级 DDL，并插入对应生成模型记录。锁随提交/回滚释放，所有读写使用同一事务和调用方 context。固定 advisory-lock 控制语句及已审查迁移 DDL 是本工具的 SQL 范围，不放行业务 Raw/Exec 字符串选表。
 

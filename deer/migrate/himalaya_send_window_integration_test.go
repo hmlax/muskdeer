@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 )
@@ -29,8 +29,8 @@ func TestHimalayaLiveDispatchRequiresEnoughTimeBeforeEnteringSDK(t *testing.T) {
 	if !errors.Is(err, domain.ErrLeaseLost) || calls != 0 {
 		t.Fatalf("WithSubmission(200ms remaining) calls=%d err=%v, want rejection before SDK", calls, err)
 	}
-	var row modelv1.HimalayaIntent
-	if err := db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
+	var row executionmodelv1.HimalayaIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.State == himalaya.IntentDispatched {

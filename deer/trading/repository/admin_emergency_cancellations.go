@@ -15,7 +15,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -38,7 +40,7 @@ func (s *adminEmergencyCancellations) Request(ctx context.Context, token, csrf s
 		return domain.AdminEmergencyCancelAcceptance{}, err
 	}
 	var result domain.AdminEmergencyCancelAcceptance
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).Transaction(func(tx *gorm.DB) error {
 		var err error
 		result, err = requestAdminEmergencyCancellation(ctx, tx, token, csrf, request)
 		return err
@@ -56,8 +58,8 @@ func (s *adminEmergencyCancellations) Acceptance(ctx context.Context, token stri
 	var result domain.AdminEmergencyCancelAcceptance
 	snapshots := adminStrategies{db: s.db}
 	err := snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.AdminEmergencyCancellation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).
+		var row executionmodelv1.AdminEmergencyCancellation
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).
 			Where("id = ? AND strategy_instance_id = ?", id, strategyID).Take(&row).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
@@ -80,8 +82,8 @@ func requestAdminEmergencyCancellation(ctx context.Context, tx *gorm.DB, token, 
 	if err != nil || found {
 		return previous, err
 	}
-	var instance modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
+	var instance strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 		return domain.AdminEmergencyCancelAcceptance{}, adminRiskLookupFailure(err)
 	}
@@ -112,8 +114,8 @@ func requestAdminEmergencyCancellation(ctx context.Context, tx *gorm.DB, token, 
 }
 
 func previousAdminEmergency(ctx context.Context, tx *gorm.DB, actorID int64, key, fingerprint string) (domain.AdminEmergencyCancelAcceptance, bool, error) {
-	var row modelv1.AdminEmergencyCancellation
-	err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).Where("actor_user_id = ? AND idempotency_key = ?", actorID, key).Take(&row).Error
+	var row executionmodelv1.AdminEmergencyCancellation
+	err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).Where("actor_user_id = ? AND idempotency_key = ?", actorID, key).Take(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.AdminEmergencyCancelAcceptance{}, false, nil
 	}
@@ -126,8 +128,8 @@ func previousAdminEmergency(ctx context.Context, tx *gorm.DB, actorID int64, key
 	return adminEmergencyAcceptance(&row), true, nil
 }
 
-func recordAdminEmergency(ctx context.Context, tx *gorm.DB, user *modelv1.AdminUser, session *modelv1.AdminSession, request domain.AdminEmergencyCancelRequest, fingerprint string, risk domain.AdminRiskReceipt) (domain.AdminEmergencyCancelAcceptance, error) {
-	audit := &modelv1.AdminAudit{
+func recordAdminEmergency(ctx context.Context, tx *gorm.DB, user *commonmodelv1.AdminUser, session *commonmodelv1.AdminSession, request domain.AdminEmergencyCancelRequest, fingerprint string, risk domain.AdminRiskReceipt) (domain.AdminEmergencyCancelAcceptance, error) {
+	audit := &commonmodelv1.AdminAudit{
 		Actor:         user.Username,
 		ActorRole:     user.Role,
 		Action:        domain.AdminEmergencyCancelAction,
@@ -136,10 +138,10 @@ func recordAdminEmergency(ctx context.Context, tx *gorm.DB, user *modelv1.AdminU
 		BeforeVersion: proto.Int64(request.ExpectedRiskRevision),
 		AfterVersion:  proto.Int64(risk.Revision),
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 		return domain.AdminEmergencyCancelAcceptance{}, err
 	}
-	row := &modelv1.AdminEmergencyCancellation{
+	row := &executionmodelv1.AdminEmergencyCancellation{
 		ActorUserId:          user.Id,
 		ActorSessionId:       session.Id,
 		StrategyInstanceId:   request.StrategyID,
@@ -152,13 +154,13 @@ func recordAdminEmergency(ctx context.Context, tx *gorm.DB, user *modelv1.AdminU
 		RiskRevision:         risk.Revision,
 		Reason:               request.Reason,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).Create(row).Error; err != nil {
 		return domain.AdminEmergencyCancelAcceptance{}, err
 	}
 	return adminEmergencyAcceptance(row), nil
 }
 
-func adminEmergencyAcceptance(row *modelv1.AdminEmergencyCancellation) domain.AdminEmergencyCancelAcceptance {
+func adminEmergencyAcceptance(row *executionmodelv1.AdminEmergencyCancellation) domain.AdminEmergencyCancelAcceptance {
 	return domain.AdminEmergencyCancelAcceptance{
 		ID:                   row.Id,
 		ActorUserID:          row.ActorUserId,
@@ -206,7 +208,7 @@ func adminEmergencyFailure(err error) error {
 func requireEmergencyScopeClear(ctx context.Context, tx *gorm.DB, strategyID int64) error {
 	// Missing progress remains pending; only stored final proof can clear scope.
 	var pending int64
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).
 		Where("strategy_instance_id = ? AND delete_at IS NULL", strategyID).
 		Where("id NOT IN (?)", completedEmergencyScopes(ctx, tx, strategyID)).Count(&pending).Error; err != nil {
 		return err

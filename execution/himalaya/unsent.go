@@ -7,7 +7,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 )
 
 // abandonUnsent is legal only in the invocation that successfully committed the
@@ -16,10 +17,10 @@ import (
 func (s *Store) abandonUnsent(ctx context.Context, admission Admission) error {
 	cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
-	return s.db.WithContext(cleanup).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(cleanup).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		account := AccountID(admission.UserID, admission.FundID)
-		var lease modelv1.ExecutionShardLease
-		if err := tx.WithContext(cleanup).Model(&modelv1.ExecutionShardLease{}).
+		var lease commonmodelv1.ExecutionShardLease
+		if err := tx.WithContext(cleanup).Model(&commonmodelv1.ExecutionShardLease{}).
 			Where("account_id = ? AND delete_at IS NULL", account).Clauses(clause.Locking{Strength: "UPDATE"}).First(&lease).Error; err != nil {
 			return err
 		}
@@ -27,8 +28,8 @@ func (s *Store) abandonUnsent(ctx context.Context, admission Admission) error {
 		if err != nil {
 			return err
 		}
-		var row modelv1.HimalayaIntent
-		if err := tx.WithContext(cleanup).Model(&modelv1.HimalayaIntent{}).
+		var row executionmodelv1.HimalayaIntent
+		if err := tx.WithContext(cleanup).Model(&executionmodelv1.HimalayaIntent{}).
 			Where("id = ? AND delete_at IS NULL", admission.IntentID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
 		}
@@ -38,7 +39,7 @@ func (s *Store) abandonUnsent(ctx context.Context, admission Admission) error {
 		if err := expireUnsent(cleanup, tx, budget, &row); err != nil {
 			return err
 		}
-		return tx.WithContext(cleanup).Model(&modelv1.HimalayaBudget{}).Where("id = ?", budget.Id).
+		return tx.WithContext(cleanup).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", budget.Id).
 			Select("ReservedNotional").Updates(budget).Error
 	})
 }

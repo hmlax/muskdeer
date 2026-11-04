@@ -10,7 +10,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -68,8 +69,8 @@ func TestAdminCancellationNotAcceptedRetainsReservationAndFinalFailure(t *testin
 		}
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 	assertAdminCancellationHistoryProtected(ctx, t, db, receipt.ID)
 }
 
@@ -110,8 +111,8 @@ func TestAdminCancellationUnsentOrderCancelsWithoutCoreCommand(t *testing.T) {
 	}
 	assertAdminCancellationTerminal(t, done, order.Revision)
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorCommand{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorCommand{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
 	assertAdminCancellationHistoryProtected(ctx, t, db, receipt.ID)
 }
@@ -135,8 +136,8 @@ func TestAdminCancellationDatabaseRejectsCoreOnlyCompletion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Where("id = ?", receipt.ID).
-		Select("State", "OutcomeCode", "Revision", "CompletedAt", "ObservedOrderRevision", "ObservedOrderState").Updates(&modelv1.AdminOrderCancellation{
+	err = db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Where("id = ?", receipt.ID).
+		Select("State", "OutcomeCode", "Revision", "CompletedAt", "ObservedOrderRevision", "ObservedOrderState").Updates(&executionmodelv1.AdminOrderCancellation{
 		State:                 string(domain.AdminCancellationSucceeded),
 		OutcomeCode:           domain.AdminCancellationTerminal,
 		Revision:              2,
@@ -151,7 +152,7 @@ func TestAdminCancellationDatabaseRejectsCoreOnlyCompletion(t *testing.T) {
 
 func assertAdminCancellationHistoryProtected(ctx context.Context, t *testing.T, db *gorm.DB, id int64) {
 	t.Helper()
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Where("id = ?", id).UpdateColumn("reason", "rewritten history").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Where("id = ?", id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Where("id = ?", id).Delete(&modelv1.AdminOrderCancellation{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Where("id = ?", id).UpdateColumn("reason", "rewritten history").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Where("id = ?", id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Where("id = ?", id).Delete(&executionmodelv1.AdminOrderCancellation{}).Error, "23514")
 }

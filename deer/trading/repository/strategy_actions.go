@@ -7,7 +7,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -30,7 +31,7 @@ func (s *strategyActions) Plan(ctx context.Context, authority domain.StrategyAut
 		return domain.StrategyAction{}, err
 	}
 	var result domain.StrategyAction
-	err := s.db.WithContext(ctx).Model(&modelv1.StrategyAction{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Transaction(func(tx *gorm.DB) error {
 		strategy, _, err := lockActionAuthority(ctx, tx, authority)
 		if err != nil {
 			return err
@@ -38,8 +39,8 @@ func (s *strategyActions) Plan(ctx context.Context, authority domain.StrategyAut
 		if strategy.AccountId != plan.AccountID || strategy.InstrumentId != plan.InstrumentID {
 			return domain.ErrInvalidOrder
 		}
-		var existing modelv1.StrategyAction
-		err = tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).
+		var existing strategymodelv1.StrategyAction
+		err = tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).
 			Where("strategy_instance_id = ? AND decision_key = ?", authority.StrategyID, plan.Key).First(&existing).Error
 		if err == nil {
 			old, err := actionSnapshot(&existing)
@@ -65,7 +66,7 @@ func (s *strategyActions) Plan(ctx context.Context, authority domain.StrategyAut
 		if err := validateActionTarget(ctx, tx, row); err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Create(row).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Create(row).Error; err != nil {
 			return err
 		}
 		result, err = actionSnapshot(row)
@@ -84,8 +85,8 @@ func (s *strategyActions) ByKey(ctx context.Context, strategyID int64, key strin
 	if strategyID <= 0 || !coreIdentifier(key, 128) {
 		return domain.StrategyAction{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.StrategyAction
-	if err := s.db.WithContext(ctx).Model(&modelv1.StrategyAction{}).
+	var row strategymodelv1.StrategyAction
+	if err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).
 		Where("strategy_instance_id = ? AND decision_key = ? AND delete_at IS NULL", strategyID, key).First(&row).Error; err != nil {
 		return domain.StrategyAction{}, actionFailure(ctx, err)
 	}
@@ -99,8 +100,8 @@ func (s *strategyActions) Active(ctx context.Context, strategyID int64) ([]domai
 	if strategyID <= 0 {
 		return nil, domain.ErrInvalidOrder
 	}
-	var rows []*modelv1.StrategyAction
-	if err := s.db.WithContext(ctx).Model(&modelv1.StrategyAction{}).
+	var rows []*strategymodelv1.StrategyAction
+	if err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).
 		Where("strategy_instance_id = ? AND state IN ? AND delete_at IS NULL", strategyID, activeActionStates()).
 		Order("id ASC").Limit(domain.MaxActiveStrategyActions + 1).Find(&rows).Error; err != nil {
 		return nil, actionFailure(ctx, err)
@@ -119,9 +120,9 @@ func (s *strategyActions) Active(ctx context.Context, strategyID int64) ([]domai
 	return result, nil
 }
 
-func actionPlanCapacity(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, plan domain.StrategyActionPlan) error {
+func actionPlanCapacity(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, plan domain.StrategyActionPlan) error {
 	var active int64
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).
 		Where("strategy_instance_id = ? AND state IN ? AND delete_at IS NULL", strategy.Id, activeActionStates()).Count(&active).Error; err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func actionPlanCapacity(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 		return nil
 	}
 	var cancellations int64
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).
 		Where("strategy_instance_id = ? AND kind = ? AND intent_id = ? AND state IN ? AND delete_at IS NULL",
 			strategy.Id, domain.StrategyActionCancel, plan.TargetIntentID, activeActionStates()).Count(&cancellations).Error; err != nil {
 		return err
@@ -146,12 +147,12 @@ func actionPlanCapacity(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 	return nil
 }
 
-func validateActionTarget(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyAction) error {
+func validateActionTarget(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyAction) error {
 	if row.Kind != string(domain.StrategyActionCancel) {
 		return nil
 	}
-	var parent modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+	var parent executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("id = ? AND delete_at IS NULL", row.GetIntentId()).Clauses(clause.Locking{Strength: "SHARE"}).First(&parent).Error; err != nil {
 		return err
 	}

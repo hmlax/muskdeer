@@ -13,7 +13,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -36,14 +38,14 @@ func (s *strategyEmergencyCancellations) Prepare(ctx context.Context, strategyID
 		return domain.AdminEmergencyWork{}, domain.ErrInvalidAdminEmergencyCancel
 	}
 	var result domain.AdminEmergencyWork
-	err := s.db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Transaction(func(tx *gorm.DB) error {
-		var instance modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", strategyID).
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Transaction(func(tx *gorm.DB) error {
+		var instance strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", strategyID).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 			return err
 		}
-		var accepted modelv1.AdminEmergencyCancellation
-		err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).
+		var accepted executionmodelv1.AdminEmergencyCancellation
+		err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).
 			Where("strategy_instance_id = ? AND id > ? AND delete_at IS NULL", strategyID, afterID).
 			Where("id NOT IN (?)", completedEmergencyScopes(ctx, tx, strategyID)).Order("id ASC").Take(&accepted).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -52,8 +54,8 @@ func (s *strategyEmergencyCancellations) Prepare(ctx context.Context, strategyID
 		if err != nil {
 			return err
 		}
-		var task modelv1.AdminEmergencyCancellationTask
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.Id).
+		var task executionmodelv1.AdminEmergencyCancellationTask
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.Id).
 			Clauses(clause.Locking{Strength: "UPDATE"}).Take(&task).Error; err != nil {
 			return err
 		}
@@ -66,9 +68,9 @@ func (s *strategyEmergencyCancellations) Prepare(ctx context.Context, strategyID
 	return result, nil
 }
 
-func advanceEmergencyScope(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, accepted *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) (domain.AdminEmergencyWork, error) {
-	var budget modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND delete_at IS NULL", instance.Id).
+func advanceEmergencyScope(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, accepted *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) (domain.AdminEmergencyWork, error) {
+	var budget strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND delete_at IS NULL", instance.Id).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&budget).Error; err != nil {
 		return domain.AdminEmergencyWork{}, err
 	}
@@ -125,13 +127,13 @@ func advanceEmergencyScope(ctx context.Context, tx *gorm.DB, instance *modelv1.S
 	return result, nil
 }
 
-func enrollEmergencyTargets(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, accepted *modelv1.AdminEmergencyCancellation, task *modelv1.AdminEmergencyCancellationTask) error {
+func enrollEmergencyTargets(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, accepted *executionmodelv1.AdminEmergencyCancellation, task *executionmodelv1.AdminEmergencyCancellationTask) error {
 	if task.EnrollmentComplete {
 		return nil
 	}
 	if task.EnrollmentUpperId == nil {
 		var maximum struct{ ID int64 }
-		if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ? AND delete_at IS NULL", instance.Id).
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("strategy_instance_id = ? AND delete_at IS NULL", instance.Id).
 			Select("COALESCE(max(id), 0)::bigint AS id").Take(&maximum).Error; err != nil {
 			return err
 		}
@@ -142,7 +144,7 @@ func enrollEmergencyTargets(ctx context.Context, tx *gorm.DB, instance *modelv1.
 		return nil
 	}
 	var pending int64
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).
 		Where("strategy_instance_id = ? AND state = ?", instance.Id, domain.AdminCancellationAccepted).Count(&pending).Error; err != nil {
 		return err
 	}
@@ -150,15 +152,15 @@ func enrollEmergencyTargets(ctx context.Context, tx *gorm.DB, instance *modelv1.
 		return nil
 	}
 	limit := min(domain.MaxEmergencyTargetsPerStep, domain.MaxActiveStrategyActions-int(pending))
-	var targets []*modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+	var targets []*executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND delete_at IS NULL AND id > ? AND id <= ?", instance.Id, instance.AccountId, instance.InstrumentId, task.EnrollmentAfterId, task.GetEnrollmentUpperId()).
 		Where("state IN ? OR reserved_quote_notional <> 0", emergencyActiveOrderStates()).Order("id ASC").Limit(limit).
 		Clauses(clause.Locking{Strength: "SHARE"}).Find(&targets).Error; err != nil {
 		return err
 	}
-	var audit modelv1.AdminAudit
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("id = ?", accepted.AuditId).Take(&audit).Error; err != nil {
+	var audit commonmodelv1.AdminAudit
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("id = ?", accepted.AuditId).Take(&audit).Error; err != nil {
 		return err
 	}
 	for _, order := range targets {
@@ -174,7 +176,7 @@ func enrollEmergencyTargets(ctx context.Context, tx *gorm.DB, instance *modelv1.
 	return nil
 }
 
-func recordEmergencyTarget(ctx context.Context, tx *gorm.DB, accepted *modelv1.AdminEmergencyCancellation, originalAudit *modelv1.AdminAudit, order *modelv1.OrderIntent) error {
+func recordEmergencyTarget(ctx context.Context, tx *gorm.DB, accepted *executionmodelv1.AdminEmergencyCancellation, originalAudit *commonmodelv1.AdminAudit, order *executionmodelv1.OrderIntent) error {
 	keyData := binary.BigEndian.AppendUint64([]byte(domain.AdminEmergencyCancelAction), uint64(accepted.Id))
 	keyData = binary.BigEndian.AppendUint64(keyData, uint64(order.Id))
 	digest := sha256.Sum256(keyData)
@@ -192,7 +194,7 @@ func recordEmergencyTarget(ctx context.Context, tx *gorm.DB, accepted *modelv1.A
 	if err != nil {
 		return err
 	}
-	audit := &modelv1.AdminAudit{
+	audit := &commonmodelv1.AdminAudit{
 		CreateAt:      now,
 		UpdateAt:      now,
 		Actor:         originalAudit.Actor,
@@ -203,10 +205,10 @@ func recordEmergencyTarget(ctx context.Context, tx *gorm.DB, accepted *modelv1.A
 		BeforeVersion: proto.Int64(order.Revision),
 		AfterVersion:  proto.Int64(order.Revision),
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 		return err
 	}
-	return tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Create(&modelv1.AdminOrderCancellation{
+	return tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Create(&executionmodelv1.AdminOrderCancellation{
 		CreateAt:                now,
 		UpdateAt:                now,
 		ActorUserId:             accepted.ActorUserId,
@@ -225,22 +227,22 @@ func recordEmergencyTarget(ctx context.Context, tx *gorm.DB, accepted *modelv1.A
 	}).Error
 }
 
-func saveEmergencyTask(ctx context.Context, tx *gorm.DB, task *modelv1.AdminEmergencyCancellationTask) error {
+func saveEmergencyTask(ctx context.Context, tx *gorm.DB, task *executionmodelv1.AdminEmergencyCancellationTask) error {
 	previous := task.Revision
 	task.Revision++
-	return reservationResult(tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("id = ? AND revision = ?", task.Id, previous).
+	return reservationResult(tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("id = ? AND revision = ?", task.Id, previous).
 		Select("EnrollmentUpperId", "EnrollmentAfterId", "EnrollmentComplete", "State", "Revision", "CompletedAt").Updates(task))
 }
 
 func emergencyDatabaseTime(ctx context.Context, tx *gorm.DB, strategyID int64) (int64, error) {
 	var observed struct{ NowMS int64 }
-	err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).
+	err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&observed).Error
 	return observed.NowMS, err
 }
 
 func completedEmergencyScopes(ctx context.Context, tx *gorm.DB, strategyID int64) *gorm.DB {
-	return tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Select("emergency_cancellation_id").
+	return tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Select("emergency_cancellation_id").
 		Where("strategy_instance_id = ? AND state IN ? AND delete_at IS NULL", strategyID, []domain.AdminEmergencyCancelState{domain.AdminEmergencyCancelSucceeded, domain.AdminEmergencyCancelFailed})
 }
 

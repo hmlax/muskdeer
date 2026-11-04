@@ -16,7 +16,7 @@ import (
 	kratoslog "github.com/go-kratos/kratos/v2/log"
 	"google.golang.org/protobuf/proto"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/deer/third_party/lumberjack"
 )

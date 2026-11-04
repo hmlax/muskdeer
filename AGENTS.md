@@ -4,6 +4,7 @@
 开发连接既有交易所的自营做市与策略交易 MVP。先阅读 README.md、docs/PRD.md、docs/ARCHITECTURE.md、docs/IMPLEMENTATION_PLAN.md、docs/PROGRESS.md。用户最新明确指令优先；既有仓库指令与本文件冲突时先记录并解决，不静默覆盖。
 
 ## 已确认工程约束
+- 2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。
 - 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
 - Go 版本在 go.mod 声明，当前为 1.27.3；开发、代码生成、测试、CI 与构建使用对应工具链。按用户最新要求，应用、维护命令及探针不再用 runtime.Version() 做启动版本判断，不硬编码运行时版本拒绝条件。P01 工具链核验及构建版本锁定记录保留；禁止 rc/beta、latest 或浮动版本代替。
 - 公开 GitHub 仓库 https://github.com/hmlax/muskdeer.git；单仓库、单 go.mod，module 固定 github.com/hmlax/muskdeer。公共目录与包名 deer，构造函数 deer.NewDeer，统一 Kratos 服务封装 Deer；DeerApi/NewDeerApi 和 operator/API 运行入口按 2026-11-04 最新要求直接移除，Hertz 仅保留公共本地监控能力，详见 docs/DEER.md。
@@ -16,7 +17,7 @@
 - 2026-11-03 用户进一步确认移除根 api/web 目录：删除管理 HTTP、前端及相关应用入口，必要 gRPC 协议迁入 deer/proto/rpc，保留四核心服务通信；此项替代此前仅保留管理源码但不部署的约定。历史验收、已存在的数据库迁移及用户未提交业务修改保留；核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
-- gRPC 服务合同与生成代码位于 deer/proto/rpc/<service>/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
+- gRPC 服务合同与生成代码位于 deer/proto/<service>/v1，SDK 内部 RPC 位于各服务 himalaya/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
 - 2026-11-03 用户确认业务实现按项目下沉，公共领域、租约及跨服务事务仓储继续共用，不重划资金/幂等/fencing 事务边界。行情/策略/执行/持仓代码归所属项目，公共交易合同与事务仓储归 deer/trading，数据库迁移归 deer/migrate，进程与测试支撑归 deer；不再使用顶层 internal。继续单 go.mod，不复制共用交易实现，项目 internal 包遵守 Go 可见性限制。
 - 每个核心项目使用自身 business 包及对应 usecase；公共 runtimeconfig 只校验/借用资源，不装配业务。旧 deer/testbusiness、testentry、testservice 已删除；服务专属回归夹具位于各项目 testservice 与 strategy/testbusiness，公共 deer/testprocess 只接受 typed builder。核心生产依赖图不得包含回归夹具或其他项目的 business。协议客户端适配和公共交易合同可复用，目录说明见 docs/PROJECT_LAYOUT.md。
 - 仓库内维护的第三方源码、Proto 注解、OpenAPI schema 及许可证统一放 deer/third_party，继续共用根 go.mod；生成工具、Go 导入及镜像许可收集使用该路径。

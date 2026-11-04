@@ -10,7 +10,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -49,16 +51,16 @@ func TestAdminPortfoliosPageExactAccountsAndKeepMissingCoreBalancesAbsent(t *tes
 	if !proto.Equal(other, adminTradePortfolioRow(ctx, t, db, other.AccountId)) {
 		t.Fatal("query changed an incomplete account projection")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioAccount{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyInstance{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioAccount{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyInstance{}, 2)
 }
 
 // This explicit incomplete persisted fixture has no core funding rows. Reads
 // must expose that absence; they cannot provision zero ledger balances.
-func adminPortfolioWithoutCore(ctx context.Context, t *testing.T, db *gorm.DB, instrumentID int64) *modelv1.PortfolioAccount {
+func adminPortfolioWithoutCore(ctx context.Context, t *testing.T, db *gorm.DB, instrumentID int64) *portfoliomodelv1.PortfolioAccount {
 	t.Helper()
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Create(&modelv1.SimulatorAccount{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Create(&executionmodelv1.SimulatorAccount{
 		AccountId:    "portfolio-without-core",
 		SubjectId:    "portfolio-test-subject",
 		Enabled:      false,
@@ -67,7 +69,7 @@ func adminPortfolioWithoutCore(ctx context.Context, t *testing.T, db *gorm.DB, i
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	row := &modelv1.PortfolioAccount{
+	row := &portfoliomodelv1.PortfolioAccount{
 		AccountId:        "portfolio-without-core",
 		InstrumentId:     instrumentID,
 		BaseAsset:        "BTC",
@@ -83,7 +85,7 @@ func adminPortfolioWithoutCore(ctx context.Context, t *testing.T, db *gorm.DB, i
 		Revision:         1,
 		ErrorCode:        domain.PortfolioErrorMismatch,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Create(row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return adminTradePortfolioRow(ctx, t, db, row.AccountId)

@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -56,8 +56,8 @@ func TestAdminTradesReadCoreFactsHistoricalSourceAndExactOrderScope(t *testing.T
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1001.8", "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 0)
 }
 
 func assertAdminTradeScope(ctx context.Context, t *testing.T, reader domain.AdminTrades, token string, submit domain.GatewaySubmit, otherID int64, entry domain.AdminTrade) {
@@ -166,7 +166,7 @@ func TestAdminTradesOriginalCommandDoesNotAdoptMatchingUnlinkedIntent(t *testing
 		t.Fatal("OMS filter invented original command linkage", err)
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "100")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 0)
 }
 
 func adminTradesStore(t *testing.T, db *gorm.DB) domain.AdminTrades {
@@ -187,10 +187,10 @@ func adminTradeFilter(submit domain.GatewaySubmit) domain.AdminTradeFilter {
 	}
 }
 
-func adminTradePortfolioRow(ctx context.Context, t *testing.T, db *gorm.DB, accountID string) *modelv1.PortfolioAccount {
+func adminTradePortfolioRow(ctx context.Context, t *testing.T, db *gorm.DB, accountID string) *portfoliomodelv1.PortfolioAccount {
 	t.Helper()
-	var row modelv1.PortfolioAccount
-	if err := db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", accountID).Take(&row).Error; err != nil {
+	var row portfoliomodelv1.PortfolioAccount
+	if err := db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", accountID).Take(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return &row

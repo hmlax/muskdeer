@@ -16,7 +16,7 @@ P07.10提供真实数据库控制事务与结果观测仓储，P07.11增加显�
 
 操作身份、已完成事实和历史不可改删，delete_at字段保持可空且操作历史不得软删除。授权按用户行串行化键作用域，锁顺序为用户→会话→实例→操作；等待实例锁后再次依据数据库时钟检查会话，防止过期请求提交。异步观测可以由任一节点重复调用；尚未满足证明时继续保留ACCEPTED，不伪造成功或释放预留。
 
-生成模型与迁移25见[模型Proto](../deer/proto/model/v1/admin.proto)及[数据库迁移](MIGRATIONS.md)。验证和当前交付边界见[P07.10](validation/P07-10.md)。
+生成模型与迁移25见[模型Proto](../deer/proto/common/model/v1/admin.proto)及[数据库迁移](MIGRATIONS.md)。验证和当前交付边界见[P07.10](validation/P07-10.md)。
 
 ## 显式控制gRPC与结果工作器
 

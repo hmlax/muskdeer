@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/strategy/usecase"
 )
@@ -69,8 +69,8 @@ func gridControllerFixture(ctx context.Context, t *testing.T, db *gorm.DB) (*use
 	instance.DesiredRunning = true
 	instance.ActiveConfigVersion = proto.Int64(1)
 	instance.ActiveMarketDataSource = proto.String(string(domain.MarketSourceBinance))
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateGrid)
@@ -84,7 +84,7 @@ func gridControllerFixture(ctx context.Context, t *testing.T, db *gorm.DB) (*use
 			InventoryLimit:   "20",
 			MaxMarketAgeMs:   500,
 		}
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -203,12 +203,12 @@ func assertGridPrices(t *testing.T, orders []domain.IntentSnapshot) {
 
 func stopGridController(ctx context.Context, t *testing.T, db *gorm.DB, controller *usecase.StrategyController, execution *controllerExecution, market *controllerMarket, submit domain.GatewaySubmit, orders []domain.IntentSnapshot) {
 	t.Helper()
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	runGridController(ctx, t, controller, market, "100", 12)
-	var instance modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&instance, submit.Input.Authority.StrategyID).Error; err != nil {
+	var instance strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&instance, submit.Input.Authority.StrategyID).Error; err != nil {
 		t.Fatal(err)
 	}
 	if instance.State != string(domain.StrategyStateStopping) {
@@ -220,7 +220,7 @@ func stopGridController(ctx context.Context, t *testing.T, db *gorm.DB, controll
 		}
 	}
 	runGridController(ctx, t, controller, market, "100", 8)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&instance, instance.Id).Error; err != nil || instance.State != string(domain.StrategyStateStopped) {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&instance, instance.Id).Error; err != nil || instance.State != string(domain.StrategyStateStopped) {
 		t.Fatal("confirmed terminal grid orders did not complete stop")
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")

@@ -10,8 +10,8 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -30,7 +30,7 @@ func newSimulatorWorkers(ctx context.Context, db *gorm.DB, owner riskExecutionOw
 	}
 	accounts := slices.Clone(cfg.Simulator.AccountIds)
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).
 		Where("account_id IN ? AND delete_at IS NULL", accounts).Count(&count).Error; err != nil {
 		return nil, err
 	}

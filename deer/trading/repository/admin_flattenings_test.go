@@ -10,7 +10,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -65,7 +65,7 @@ func TestAdminFlatteningFingerprintBindsEveryConfirmedBusinessField(t *testing.T
 func TestAdminFlatteningReceiptKeepsExactValuesAndRejectsCorruptStorage(t *testing.T) {
 	t.Parallel()
 	r := flattenRepositoryRequest()
-	row := &modelv1.AdminAccountFlattening{
+	row := &executionmodelv1.AdminAccountFlattening{
 		Id:                        9007199254740993,
 		CreateAt:                  1000,
 		UpdateAt:                  1000,

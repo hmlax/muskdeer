@@ -6,13 +6,14 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func strategyPlanningFunds(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, result *domain.StrategyEnvironmentView) error {
-	var balances []*modelv1.SimulatorBalance
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).
+func strategyPlanningFunds(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, result *domain.StrategyEnvironmentView) error {
+	var balances []*executionmodelv1.SimulatorBalance
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).
 		Where("account_id = ? AND asset IN ? AND delete_at IS NULL", strategy.AccountId, []string{result.BaseAsset, result.QuoteAsset}).Find(&balances).Error; err != nil {
 		return err
 	}
@@ -35,8 +36,8 @@ func strategyPlanningFunds(ctx context.Context, tx *gorm.DB, strategy *modelv1.S
 			result.AvailableQuote, frozenQuote = available, frozen
 		}
 	}
-	var orders []*modelv1.SimulatorOrder
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("FrozenAsset", "FrozenAmount").
+	var orders []*executionmodelv1.SimulatorOrder
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("FrozenAsset", "FrozenAmount").
 		Where("account_id = ? AND strategy_instance_id = ? AND instrument_id = ? AND state IN ? AND delete_at IS NULL",
 			strategy.AccountId, strategy.Id, strategy.InstrumentId, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}).
 		Order("id ASC").Limit(domain.MaxStrategyOpenOrders + 1).Find(&orders).Error; err != nil {
@@ -68,13 +69,13 @@ func strategyPlanningFunds(ctx context.Context, tx *gorm.DB, strategy *modelv1.S
 	return strategyPlanningBuyRoom(ctx, tx, strategy, result)
 }
 
-func strategyPlanningBuyRoom(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, result *domain.StrategyEnvironmentView) error {
+func strategyPlanningBuyRoom(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, result *domain.StrategyEnvironmentView) error {
 	limit, err := strictestInventoryLimit(ctx, tx, strategy.AccountId, strategy.InstrumentId)
 	if err != nil {
 		return err
 	}
 	var other struct{ Quantity string }
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("account_id = ? AND instrument_id = ? AND strategy_instance_id <> ? AND side = ? AND state IN ? AND delete_at IS NULL",
 			strategy.AccountId, strategy.InstrumentId, strategy.Id, domain.SideBuy,
 			[]domain.OrderState{domain.OrderStateIntent, domain.OrderStateSubmitting, domain.OrderStateLive, domain.OrderStatePartiallyFilled, domain.OrderStateUnknown}).

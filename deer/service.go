@@ -22,7 +22,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/metrics"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/redis"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"

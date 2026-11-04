@@ -7,7 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
@@ -17,8 +17,8 @@ const (
 )
 
 func (s *Store) pendingClientIDs(ctx context.Context, account string) ([]string, error) {
-	var rows []*modelv1.HimalayaIntent
-	if err := s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+	var rows []*executionmodelv1.HimalayaIntent
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
 		Where("account_id = ? AND state = ? AND order_id = '' AND historical_approval_reference = '' AND delete_at IS NULL", account, IntentDispatched).
 		Select("ClientId").Limit(257).Find(&rows).Error; err != nil {
 		return nil, err

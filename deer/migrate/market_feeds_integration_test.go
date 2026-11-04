@@ -13,7 +13,8 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/market/marketquality"
@@ -68,13 +69,13 @@ func TestMarketBindingsPersistPerSourceAndRejectIdentityOrPolicyChanges(t *testi
 	if err != nil || third.ID == first.ID {
 		t.Fatalf("replay replaced live stream: %+v, %v", third, err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ?", first.ID).Update("external_symbol", "ETHUSDT").Error; err == nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ?", first.ID).Update("external_symbol", "ETHUSDT").Error; err == nil {
 		t.Fatal("database allowed immutable binding rewrite")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ?", first.ID).Delete(&modelv1.MarketFeed{}).Error; err == nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ?", first.ID).Delete(&marketmodelv1.MarketFeed{}).Error; err == nil {
 		t.Fatal("database allowed binding deletion")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ?", instrument).Update("base_asset", "ETH").Error; err == nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ?", instrument).Update("base_asset", "ETH").Error; err == nil {
 		t.Fatal("bound product silently changed underlying assets")
 	}
 	client, err := postgres.New(ctx, cfg, "market-binding-restart")
@@ -99,7 +100,7 @@ func TestMarketBindingsPersistPerSourceAndRejectIdentityOrPolicyChanges(t *testi
 func marketInstrumentFixture(ctx context.Context, t *testing.T, db *gorm.DB) int64 {
 	t.Helper()
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	return instrument.Id
@@ -177,7 +178,7 @@ func TestMarketPublisherLeaseHasOneWinnerAndRetainsFencingEpoch(t *testing.T) {
 	if _, err := leases.Renew(ctx, first, time.Second); !errors.Is(err, domain.ErrLeaseLost) {
 		t.Fatalf("old publisher revived: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
 		t.Fatal(err)
 	}
 	second.ExpiresAt = time.Now().Add(time.Hour)

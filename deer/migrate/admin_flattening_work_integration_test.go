@@ -14,7 +14,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -52,8 +54,8 @@ func TestAdminFlattenWorkClaimRevalidatesAndReplaysWithoutTradingEffects(t *test
 	core, _ := executionFixture(t, db)
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", "10", "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 }
@@ -70,16 +72,16 @@ func TestAdminFlattenWorkClaimRejectsStaleBalancesScopeAndLostAuthority(t *testi
 			var err error
 			switch fault {
 			case "balance":
-				err = db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", receipt.AccountID, "BTC").UpdateColumn("revision", receipt.ExpectedBaseRevision+1).Error
+				err = db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", receipt.AccountID, "BTC").UpdateColumn("revision", receipt.ExpectedBaseRevision+1).Error
 			case "portfolio":
-				err = db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", receipt.AccountID).UpdateColumn("revision", receipt.ExpectedPortfolioRevision+1).Error
+				err = db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", receipt.AccountID).UpdateColumn("revision", receipt.ExpectedPortfolioRevision+1).Error
 			case "risk":
 				request := riskBlockRequest(receipt.StrategyID)
 				request.Key = "flatten-work-new-risk-revision"
 				request.ExpectedRevision = receipt.ExpectedRiskRevision
 				_, err = riskControlFixture(t, db).Change(ctx, admin.Token, admin.CSRF, request)
 			case "lease":
-				err = db.WithContext(ctx).Model(&modelv1.StrategyLease{}).Where("strategy_instance_id = ?", receipt.StrategyID).UpdateColumn("expires_at", 0).Error
+				err = db.WithContext(ctx).Model(&strategymodelv1.StrategyLease{}).Where("strategy_instance_id = ?", receipt.StrategyID).UpdateColumn("expires_at", 0).Error
 			case "runtime":
 				leases, leaseErr := repository.NewLeases(db)
 				if leaseErr != nil {
@@ -162,7 +164,7 @@ func TestAdminFlattenWorkConcurrentClaimAndHigherEpochKeepOneTask(t *testing.T) 
 	if err != nil || taken.ID != id || taken.Revision != 3 || taken.OwnerID != current.OwnerID || taken.OwnerEpoch != current.Epoch {
 		t.Fatal("new current owner lost original task or exact epoch", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlatteningTask{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlatteningTask{}, 1)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
 
@@ -177,7 +179,7 @@ func TestAdminFlattenWorkStorageAndCommitLeaseFailureReturnNothingAndRollBack(t 
 			callback := "flatten-work-fault-" + fault
 			var injected int64
 			if err := db.Callback().Update().After("gorm:update").Register(callback, func(tx *gorm.DB) {
-				if _, task := tx.Statement.Dest.(*modelv1.AdminAccountFlatteningTask); !task || tx.Error != nil {
+				if _, task := tx.Statement.Dest.(*executionmodelv1.AdminAccountFlatteningTask); !task || tx.Error != nil {
 					return
 				}
 				if fault == "storage" {
@@ -185,7 +187,7 @@ func TestAdminFlattenWorkStorageAndCommitLeaseFailureReturnNothingAndRollBack(t 
 					tx.Error = tx.AddError(errors.New("private flatten work failure"))
 					return
 				}
-				updated := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.StrategyLease{}).
+				updated := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&strategymodelv1.StrategyLease{}).
 					Where("strategy_instance_id = ?", receipt.StrategyID).UpdateColumn("expires_at", 0)
 				injected = updated.RowsAffected
 				if updated.Error != nil {
@@ -220,15 +222,15 @@ func TestAdminFlattenWorkCompetingHistoricalConfirmationsReturnAccountConflict(t
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 	_, submit, receipt := flattenSchemaFixture(ctx, t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Create(receipt).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Create(receipt).Error; err != nil {
 		t.Fatal(err)
 	}
 	// Older schemas can retain multiple valid confirmations. They must never
 	// become simultaneous active work, even through this actual repository.
 	assertFlattenSchemaKeysAndIdentity(ctx, t, db, receipt)
 	setFlattenRuntimeOwner(ctx, t, db, submit.Input.Authority)
-	var tasks []*modelv1.AdminAccountFlatteningTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Order("id").Find(&tasks).Error; err != nil || len(tasks) != 2 {
+	var tasks []*executionmodelv1.AdminAccountFlatteningTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Order("id").Find(&tasks).Error; err != nil || len(tasks) != 2 {
 		t.Fatal("competing historical fixture lacks its two original tasks", err)
 	}
 	store := flattenWorkStore(t, db)

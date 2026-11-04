@@ -7,17 +7,18 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func strategyPlanningBudget(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, quoteAsset string) (decimal.Decimal, decimal.Decimal, error) {
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).First(&account).Error; err != nil {
+func strategyPlanningBudget(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, quoteAsset string) (decimal.Decimal, decimal.Decimal, error) {
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", strategy.AccountId).First(&account).Error; err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
-	var own modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", strategy.Id, strategy.AccountId).First(&own).Error; err != nil {
+	var own strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", strategy.Id, strategy.AccountId).First(&own).Error; err != nil {
 		return decimal.Zero, decimal.Zero, err
 	}
 	if !account.Enabled || !own.Enabled || account.Asset != quoteAsset {
@@ -36,8 +37,8 @@ func strategyPlanningBudget(ctx context.Context, tx *gorm.DB, strategy *modelv1.
 		return decimal.Zero, decimal.Zero, err
 	}
 	available = decimal.Min(available, accountCapacity)
-	var global []*modelv1.RiskBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.RiskBudget{}).
+	var global []*commonmodelv1.RiskBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).
 		Where("asset = ? AND delete_at IS NULL AND ((scope_kind = ? AND scope_key = ?) OR (scope_kind = ? AND scope_key = ?))",
 			quoteAsset, domain.RiskScopePlatform, quoteAsset, domain.RiskScopeInstrument, strconv.FormatInt(strategy.InstrumentId, 10)).Order("id ASC").Find(&global).Error; err != nil {
 		return decimal.Zero, decimal.Zero, err

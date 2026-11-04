@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -46,7 +46,7 @@ func (s *cancellationStore) Accept(ctx context.Context, input domain.CancelInput
 		return domain.CancellationSnapshot{}, domain.ErrInvalidOrder
 	}
 	var result domain.CancellationSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Transaction(func(tx *gorm.DB) error {
 		_, now, err := lockAuthority(ctx, tx, input.Authority, execution, input.AccountID, input.InstrumentID)
 		if err != nil {
 			return err
@@ -57,8 +57,8 @@ func (s *cancellationStore) Accept(ctx context.Context, input domain.CancelInput
 		if _, err := lockIntentInstrument(ctx, tx, input.InstrumentID); err != nil {
 			return err
 		}
-		var parent modelv1.OrderIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", input.AccountID, input.ClientOrderID).First(&parent).Error; err != nil {
+		var parent executionmodelv1.OrderIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND client_order_id = ? AND delete_at IS NULL", input.AccountID, input.ClientOrderID).First(&parent).Error; err != nil {
 			return err
 		}
 		if parent.StrategyInstanceId != input.Authority.StrategyID || parent.InstrumentId != input.InstrumentID {
@@ -72,8 +72,8 @@ func (s *cancellationStore) Accept(ctx context.Context, input domain.CancelInput
 		if err != nil {
 			return err
 		}
-		var existing modelv1.CancellationRequest
-		err = tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("account_id = ? AND idempotency_key = ?", input.AccountID, input.IdempotencyKey).
+		var existing executionmodelv1.CancellationRequest
+		err = tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("account_id = ? AND idempotency_key = ?", input.AccountID, input.IdempotencyKey).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&existing).Error
 		if err == nil {
 			if existing.IntentId != parent.Id || existing.DeleteAt != nil {
@@ -104,9 +104,9 @@ func (s *cancellationStore) Accept(ctx context.Context, input domain.CancelInput
 	return result, nil
 }
 
-func stageCancellation(ctx context.Context, tx *gorm.DB, rows intentStateRows, input domain.CancelInput, execution domain.LeaseToken) (*modelv1.CancellationRequest, error) {
+func stageCancellation(ctx context.Context, tx *gorm.DB, rows intentStateRows, input domain.CancelInput, execution domain.LeaseToken) (*executionmodelv1.CancellationRequest, error) {
 	digest := sha256.Sum256([]byte(input.AccountID + "\n" + input.IdempotencyKey))
-	row := &modelv1.CancellationRequest{
+	row := &executionmodelv1.CancellationRequest{
 		AccountId:          input.AccountID,
 		IdempotencyKey:     input.IdempotencyKey,
 		IntentId:           rows.intent.Id,
@@ -140,7 +140,7 @@ func stageCancellation(ctx context.Context, tx *gorm.DB, rows intentStateRows, i
 	if terminalIntent(rows.intent.State) {
 		row.State = string(domain.CancellationConfirmed)
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Create(row).Error; err != nil {
 		return nil, err
 	}
 	return row, appendCancellationEvent(ctx, tx, row, domain.EventOrderCancelRequested)
@@ -153,8 +153,8 @@ func (s *cancellationStore) ByID(ctx context.Context, accountID string, id int64
 	if !coreIdentifier(accountID, 64) || id <= 0 {
 		return domain.CancellationSnapshot{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.CancellationRequest
-	if err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("account_id = ? AND delete_at IS NULL", accountID).First(&row, id).Error; err != nil {
+	var row executionmodelv1.CancellationRequest
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("account_id = ? AND delete_at IS NULL", accountID).First(&row, id).Error; err != nil {
 		return domain.CancellationSnapshot{}, coreFailure(ctx, err)
 	}
 	return cancellationSnapshot(&row), nil
@@ -167,15 +167,15 @@ func (s *cancellationStore) ByKey(ctx context.Context, accountID, idempotencyKey
 	if !coreIdentifier(accountID, 64) || !coreIdentifier(idempotencyKey, 128) {
 		return domain.CancellationSnapshot{}, domain.ErrInvalidOrder
 	}
-	var row modelv1.CancellationRequest
-	if err := s.db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).
+	var row executionmodelv1.CancellationRequest
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).
 		Where("account_id = ? AND idempotency_key = ? AND delete_at IS NULL", accountID, idempotencyKey).First(&row).Error; err != nil {
 		return domain.CancellationSnapshot{}, coreFailure(ctx, err)
 	}
 	return cancellationSnapshot(&row), nil
 }
 
-func applyCancellationAuthority(row *modelv1.CancellationRequest, input domain.CancelInput, execution domain.LeaseToken) {
+func applyCancellationAuthority(row *executionmodelv1.CancellationRequest, input domain.CancelInput, execution domain.LeaseToken) {
 	row.ConfigVersion = input.Authority.ConfigVersion
 	row.OwnerId, row.OwnerEpoch = input.Authority.OwnerID, input.Authority.OwnerEpoch
 	row.ExecutionOwnerId, row.ExecutionEpoch = execution.OwnerID, execution.Epoch
@@ -183,7 +183,7 @@ func applyCancellationAuthority(row *modelv1.CancellationRequest, input domain.C
 	row.RequestId = input.RequestID
 }
 
-func cancellationAuthorityChanged(row *modelv1.CancellationRequest, input domain.CancelInput, execution domain.LeaseToken) bool {
+func cancellationAuthorityChanged(row *executionmodelv1.CancellationRequest, input domain.CancelInput, execution domain.LeaseToken) bool {
 	return row.ConfigVersion != input.Authority.ConfigVersion || row.OwnerId != input.Authority.OwnerID || row.OwnerEpoch != input.Authority.OwnerEpoch ||
 		row.ExecutionOwnerId != execution.OwnerID || row.ExecutionEpoch != execution.Epoch || row.DeadlineAt != input.Deadline.UnixMilli()
 }

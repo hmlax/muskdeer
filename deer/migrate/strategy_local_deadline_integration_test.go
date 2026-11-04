@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/strategy/usecase"
@@ -81,7 +81,7 @@ func TestStrategyLocalCommitDeadlineRetainsJournalAndStopsWithoutRemoteWrite(t *
 			}
 			assertGatewayOrderCount(ctx, t, db, 0)
 			assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-			if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", active[0].StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
+			if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", active[0].StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
 				t.Fatal(err)
 			}
 			for range 8 {

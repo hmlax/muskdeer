@@ -11,7 +11,9 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -35,26 +37,26 @@ func TestAdminRiskRecoveryDoesNotOverrideIndependentSharedGates(t *testing.T) {
 				t.Fatal("recovery bypassed an independent shared gate", err)
 			}
 			assertRiskControlState(ctx, t, control, actor, instance.Id, false, 2)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 1)
 			assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
 			assertGatewayOrderCount(ctx, t, db, 0)
 		})
 	}
 }
 
-func closeRiskIndependentGate(ctx context.Context, t *testing.T, db *gorm.DB, scope string, instance *modelv1.StrategyInstance) {
+func closeRiskIndependentGate(ctx context.Context, t *testing.T, db *gorm.DB, scope string, instance *strategymodelv1.StrategyInstance) {
 	t.Helper()
 	var result *gorm.DB
 	switch scope {
 	case "account":
-		result = db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", instance.AccountId).UpdateColumn("enabled", false)
+		result = db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", instance.AccountId).UpdateColumn("enabled", false)
 	case "instrument":
-		result = db.WithContext(ctx).Model(&modelv1.RiskBudget{}).Where("scope_kind = ? AND instrument_id = ?", string(domain.RiskScopeInstrument), instance.InstrumentId).UpdateColumn("enabled", false)
+		result = db.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Where("scope_kind = ? AND instrument_id = ?", string(domain.RiskScopeInstrument), instance.InstrumentId).UpdateColumn("enabled", false)
 	case "platform":
-		result = db.WithContext(ctx).Model(&modelv1.RiskBudget{}).Where("scope_kind = ? AND asset = ?", string(domain.RiskScopePlatform), "USDT").UpdateColumn("enabled", false)
+		result = db.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Where("scope_kind = ? AND asset = ?", string(domain.RiskScopePlatform), "USDT").UpdateColumn("enabled", false)
 	case "reconciliation":
-		result = db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", instance.AccountId).UpdateColumn("reconciled", false)
+		result = db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", instance.AccountId).UpdateColumn("reconciled", false)
 	default:
 		t.Fatal("unknown risk fixture scope")
 	}

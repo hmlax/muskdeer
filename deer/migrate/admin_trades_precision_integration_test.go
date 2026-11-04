@@ -9,7 +9,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -19,8 +20,8 @@ func TestAdminTradesPreservePartialFillFeesBeyondEighteenPlaces(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	actor, _, submit := adminCreationFixture(ctx, t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ?", submit.Input.AccountID).
-		Select("QuoteFeeRate", "Revision").Updates(&modelv1.SimulatorAccount{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ?", submit.Input.AccountID).
+		Select("QuoteFeeRate", "Revision").Updates(&executionmodelv1.SimulatorAccount{
 		QuoteFeeRate: "0.001234567890123456",
 		Revision:     2,
 	}).Error; err != nil {
@@ -70,5 +71,5 @@ func TestAdminTradesPreservePartialFillFeesBeyondEighteenPlaces(t *testing.T) {
 	}
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "799.77311111333311126912", "0")
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "199.98")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 0)
 }

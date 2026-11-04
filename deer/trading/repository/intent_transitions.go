@@ -9,14 +9,16 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 type intentStateRows struct {
-	intent   *modelv1.OrderIntent
-	account  *modelv1.AccountBudget
-	strategy *modelv1.StrategyBudget
+	intent   *executionmodelv1.OrderIntent
+	account  *commonmodelv1.AccountBudget
+	strategy *strategymodelv1.StrategyBudget
 }
 
 func (s *intentStore) Prepare(ctx context.Context, current domain.IntentSnapshot, authority domain.StrategyAuthority, execution domain.LeaseToken, deadline time.Time) (domain.IntentSnapshot, error) {
@@ -24,7 +26,7 @@ func (s *intentStore) Prepare(ctx context.Context, current domain.IntentSnapshot
 		return domain.IntentSnapshot{}, err
 	}
 	var result domain.IntentSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		strategy, _, err := lockAuthority(ctx, tx, authority, execution, current.Input.AccountID, current.Input.InstrumentID)
 		if err != nil {
 			return err
@@ -87,7 +89,7 @@ func (s *intentStore) Unknown(ctx context.Context, current domain.IntentSnapshot
 			return resolved, err
 		}
 	}
-	return s.changeIntent(ctx, current, func(row *modelv1.OrderIntent) (bool, error) {
+	return s.changeIntent(ctx, current, func(row *executionmodelv1.OrderIntent) (bool, error) {
 		if terminalIntent(row.State) || row.State == string(domain.OrderStateIntent) {
 			return false, nil
 		}
@@ -104,7 +106,7 @@ func (s *intentStore) Reject(ctx context.Context, current domain.IntentSnapshot,
 	if code != domain.IntentErrorCoreRejected && code != domain.IntentErrorRiskDenied {
 		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
 	}
-	return s.changeIntent(ctx, current, func(row *modelv1.OrderIntent) (bool, error) {
+	return s.changeIntent(ctx, current, func(row *executionmodelv1.OrderIntent) (bool, error) {
 		if (row.State != string(domain.OrderStateSubmitting) && row.State != string(domain.OrderStateIntent)) || row.CoreOrderId != nil {
 			return false, domain.ErrIdempotencyConflict
 		}
@@ -115,12 +117,12 @@ func (s *intentStore) Reject(ctx context.Context, current domain.IntentSnapshot,
 	})
 }
 
-func (s *intentStore) changeIntent(ctx context.Context, current domain.IntentSnapshot, change func(*modelv1.OrderIntent) (bool, error)) (domain.IntentSnapshot, error) {
+func (s *intentStore) changeIntent(ctx context.Context, current domain.IntentSnapshot, change func(*executionmodelv1.OrderIntent) (bool, error)) (domain.IntentSnapshot, error) {
 	if err := coreContext(ctx); err != nil {
 		return domain.IntentSnapshot{}, err
 	}
 	var result domain.IntentSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		rows, err := lockIntentState(ctx, tx, current)
 		if err != nil {
 			return err
@@ -158,21 +160,21 @@ func lockIntentState(ctx context.Context, tx *gorm.DB, current domain.IntentSnap
 	if current.ID <= 0 || current.Revision <= 0 || !coreIdentifier(current.Input.AccountID, 64) || current.Input.Authority.StrategyID <= 0 {
 		return intentStateRows{}, domain.ErrInvalidOrder
 	}
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", current.Input.AccountID).
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", current.Input.AccountID).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
 		return intentStateRows{}, err
 	}
-	var strategy modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", current.Input.Authority.StrategyID, current.Input.AccountID).
+	var strategy strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", current.Input.Authority.StrategyID, current.Input.AccountID).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&strategy).Error; err != nil {
 		return intentStateRows{}, err
 	}
-	var row modelv1.OrderIntent
+	var row executionmodelv1.OrderIntent
 	// Gateway commands hold an FK KEY SHARE lock before their final budget
 	// check. State updates do not change keys; NO KEY UPDATE lets recovery
 	// finish without a budget->intent / intent->budget lock cycle.
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND delete_at IS NULL", current.Input.AccountID).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND delete_at IS NULL", current.Input.AccountID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&row, current.ID).Error; err != nil {
 		return intentStateRows{}, err
 	}
@@ -212,8 +214,8 @@ func releaseIntentReservation(ctx context.Context, tx *gorm.DB, rows intentState
 	if err := saveStrategyReservation(ctx, tx, rows.strategy, strategy); err != nil {
 		return err
 	}
-	var instrument modelv1.Instrument
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Select("QuoteAsset").First(&instrument, rows.intent.InstrumentId).Error; err != nil {
+	var instrument commonmodelv1.Instrument
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Select("QuoteAsset").First(&instrument, rows.intent.InstrumentId).Error; err != nil {
 		return err
 	}
 	return changeGlobalRiskReservation(ctx, tx, rows.intent.InstrumentId, instrument.QuoteAsset, delta)
@@ -221,7 +223,7 @@ func releaseIntentReservation(ctx context.Context, tx *gorm.DB, rows intentState
 
 func intentClock(ctx context.Context, tx *gorm.DB, id int64) (int64, error) {
 	var clock struct{ NowMS int64 }
-	err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ?", id).
+	err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ?", id).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error
 	return clock.NowMS, err
 }
@@ -230,7 +232,7 @@ func saveIntentState(ctx context.Context, tx *gorm.DB, rows intentStateRows, now
 	row := rows.intent
 	previous := row.Revision
 	row.Revision++
-	result := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("State", "CancelState", "CoreOrderId", "CoreRevision", "FilledQuantity", "ReservedQuoteNotional", "OwnerId", "OwnerEpoch", "ExecutionOwnerId", "ExecutionEpoch", "SubmissionDeadlineAt", "ErrorCode", "Revision").Updates(row)
 	if err := reservationResult(result); err != nil {
 		return err

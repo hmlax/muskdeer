@@ -9,7 +9,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -25,7 +27,7 @@ func TestAdminFlatteningProgressUpgradeQueuesExistingConfirmationWithoutInvented
 		t.Fatal(err)
 	}
 	core, submit := coreFixtureWithCommand(ctx, t, db, gatewayCommandAfterSchema(ctx, t, db))
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Create(&modelv1.AccountBudget{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Create(&commonmodelv1.AccountBudget{
 		AccountId:        submit.Input.AccountID,
 		Asset:            "USDT",
 		LimitNotional:    "300",
@@ -40,16 +42,16 @@ func TestAdminFlatteningProgressUpgradeQueuesExistingConfirmationWithoutInvented
 	portfolioFixture(ctx, t, db, submit)
 	operator := adminControlSessionFixture(ctx, t, db)
 	_, _, confirmation := flattenSchemaCandidate(ctx, t, db, operator, submit)
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Create(confirmation).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Create(confirmation).Error; err != nil {
 		t.Fatal(err)
 	}
-	if db.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Migrator().HasTable(&modelv1.AdminAccountFlatteningTask{}) {
+	if db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Migrator().HasTable(&executionmodelv1.AdminAccountFlatteningTask{}) {
 		t.Fatal("upgrade fixture silently advanced beyond schema36")
 	}
 	// Compare persisted PostgreSQL values on both sides of the upgrade. Numeric
 	// columns retain their declared scale, unlike the original Go create input.
-	var original modelv1.AdminAccountFlattening
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Where("id = ?", confirmation.Id).Take(&original).Error; err != nil {
+	var original executionmodelv1.AdminAccountFlattening
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Where("id = ?", confirmation.Id).Take(&original).Error; err != nil {
 		t.Fatal(err)
 	}
 	before := publicationInstance(ctx, t, db, confirmation.StrategyInstanceId)
@@ -64,10 +66,10 @@ func TestAdminFlatteningProgressUpgradeQueuesExistingConfirmationWithoutInvented
 			row.AccountId != confirmation.AccountId || row.InstrumentId != confirmation.InstrumentId {
 			t.Fatal("upgrade fabricated work/ownership or lost its confirmed scope")
 		}
-		assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlatteningTask{}, 1)
+		assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlatteningTask{}, 1)
 	}
-	var after modelv1.AdminAccountFlattening
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Where("id = ?", confirmation.Id).Take(&after).Error; err != nil || !proto.Equal(&original, &after) {
+	var after executionmodelv1.AdminAccountFlattening
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Where("id = ?", confirmation.Id).Take(&after).Error; err != nil || !proto.Equal(&original, &after) {
 		t.Fatal("work migration rewrote immutable confirmation", err)
 	}
 	if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) || !proto.Equal(budget, activationBudget(ctx, t, db, before.Id)) {
@@ -76,7 +78,7 @@ func TestAdminFlatteningProgressUpgradeQueuesExistingConfirmationWithoutInvented
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", "10", "0")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }

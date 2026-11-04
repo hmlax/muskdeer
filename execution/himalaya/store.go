@@ -16,7 +16,8 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -71,8 +72,8 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 		lease.Key.AccountID != AccountID(request.UserID, request.FundID) {
 		return Prepared{}, ErrInvalidSubmit
 	}
-	var row *modelv1.HimalayaIntent
-	err = s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	var row *executionmodelv1.HimalayaIntent
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, now, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch))
 		if err != nil {
 			return err
@@ -85,7 +86,7 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 			return ErrRiskLimit
 		}
 		var ambiguous int64
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
 			Where("account_id = ? AND state = ? AND historical_approval_reference = ''", lease.Key.AccountID, IntentDispatched).Count(&ambiguous).Error; err != nil {
 			return err
 		}
@@ -100,7 +101,7 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 		if observed.Add(reserved).Add(notional).GreaterThan(maximum) {
 			return ErrRiskLimit
 		}
-		row = &modelv1.HimalayaIntent{
+		row = &executionmodelv1.HimalayaIntent{
 			AccountId:        lease.Key.AccountID,
 			UserId:           request.UserID,
 			FundId:           request.FundID,
@@ -125,10 +126,10 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 				return err
 			}
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Create(row).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Create(row).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("id = ?", budget.Id).
+		return tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("id = ?", budget.Id).
 			Update("reserved_notional", reserved.Add(notional).String()).Error
 	})
 	if err != nil {
@@ -163,7 +164,7 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 	}
 	var callErr error
 	called := false
-	err := s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		lease, now, err := lockSDKLease(ctx, tx, account, admission.OwnerID, admission.Epoch)
 		if err != nil {
 			return err
@@ -190,8 +191,8 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 			return ErrRiskLimit
 		}
 		remaining = min(remaining, freshness)
-		var row modelv1.HimalayaIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+		var row executionmodelv1.HimalayaIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
 			Where("id = ? AND state = ? AND delete_at IS NULL", admission.IntentID, IntentDispatched).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
@@ -230,13 +231,13 @@ func (s *Store) Acknowledge(ctx context.Context, admission Admission, response *
 	if s == nil || s.db == nil || !validStoreContext(ctx) || response.GetOrderId() == 0 || response.GetClientId() != admission.ClientID {
 		return ErrInvalidSubmit
 	}
-	return s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		account := AccountID(admission.UserID, admission.FundID)
 		if _, _, err := lockSDKLease(ctx, tx, account, admission.OwnerID, admission.Epoch); err != nil {
 			return err
 		}
-		var row modelv1.HimalayaIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ? AND delete_at IS NULL", admission.IntentID).
+		var row executionmodelv1.HimalayaIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ? AND delete_at IS NULL", admission.IntentID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
 		}
@@ -251,13 +252,13 @@ func (s *Store) Acknowledge(ctx context.Context, admission Admission, response *
 			return domain.ErrOutcomeUnknown
 		}
 		row.State, row.OrderId = IntentAcknowledged, orderID
-		return tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", row.Id).
+		return tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", row.Id).
 			Select("State", "OrderId").Updates(&row).Error
 	})
 }
 
 func (s *Store) claim(ctx context.Context, admission Admission, account string) error {
-	return s.db.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, now, err := lockSDKLease(ctx, tx, account, admission.OwnerID, admission.Epoch)
 		if err != nil {
 			return err
@@ -272,8 +273,8 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if err := checkReservedBudget(budget); err != nil {
 			return err
 		}
-		var row modelv1.HimalayaIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ? AND delete_at IS NULL", admission.IntentID).
+		var row executionmodelv1.HimalayaIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ? AND delete_at IS NULL", admission.IntentID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
 		}
@@ -294,7 +295,7 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 			return err
 		}
 		var pending int64
-		if err := tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).
 			Where("account_id = ? AND state = ? AND historical_approval_reference = ''", account, IntentDispatched).Count(&pending).Error; err != nil {
 			return err
 		}
@@ -311,12 +312,12 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if pending > 0 {
 			return domain.ErrOutcomeUnknown
 		}
-		return tx.WithContext(ctx).Model(&modelv1.HimalayaIntent{}).Where("id = ?", row.Id).
+		return tx.WithContext(ctx).Model(&executionmodelv1.HimalayaIntent{}).Where("id = ?", row.Id).
 			Update("state", IntentDispatched).Error
 	})
 }
 
-func matchesAdmission(row *modelv1.HimalayaIntent, admission Admission) bool {
+func matchesAdmission(row *executionmodelv1.HimalayaIntent, admission Admission) bool {
 	if row.AccountId != AccountID(admission.UserID, admission.FundID) || row.UserId != admission.UserID || row.FundId != admission.FundID ||
 		row.ClientId != admission.ClientID || row.OwnerId != admission.OwnerID || row.OwnerEpoch != int64(admission.Epoch) ||
 		row.RequestDigest != hex.EncodeToString(admission.Digest[:]) {
@@ -343,17 +344,17 @@ func matchesAdmission(row *modelv1.HimalayaIntent, admission Admission) bool {
 	return err == nil && digest == admission.Digest
 }
 
-func lockSDKLease(ctx context.Context, tx *gorm.DB, account, owner string, epoch uint64) (*modelv1.ExecutionShardLease, int64, error) {
+func lockSDKLease(ctx context.Context, tx *gorm.DB, account, owner string, epoch uint64) (*commonmodelv1.ExecutionShardLease, int64, error) {
 	if epoch == 0 || epoch > math.MaxInt64 || !ownerid.Valid(owner) {
 		return nil, 0, domain.ErrLeaseLost
 	}
-	var row modelv1.ExecutionShardLease
-	if err := tx.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ? AND delete_at IS NULL", account).
+	var row commonmodelv1.ExecutionShardLease
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ? AND delete_at IS NULL", account).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 		return nil, 0, err
 	}
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("id = ?", row.Id).
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("id = ?", row.Id).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return nil, 0, err
 	}
@@ -363,14 +364,14 @@ func lockSDKLease(ctx context.Context, tx *gorm.DB, account, owner string, epoch
 	return &row, clock.NowMS, nil
 }
 
-func lockSDKBudget(ctx context.Context, tx *gorm.DB, account string) (*modelv1.HimalayaBudget, error) {
-	var row modelv1.HimalayaBudget
-	err := tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ? AND delete_at IS NULL", account).
+func lockSDKBudget(ctx context.Context, tx *gorm.DB, account string) (*commonmodelv1.HimalayaBudget, error) {
+	var row commonmodelv1.HimalayaBudget
+	err := tx.WithContext(ctx).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ? AND delete_at IS NULL", account).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error
 	return &row, err
 }
 
-func budgetAmounts(row *modelv1.HimalayaBudget) (decimal.Decimal, decimal.Decimal, decimal.Decimal, error) {
+func budgetAmounts(row *commonmodelv1.HimalayaBudget) (decimal.Decimal, decimal.Decimal, decimal.Decimal, error) {
 	maximum, e1 := decimal.NewFromString(row.MaximumNotional)
 	observed, e2 := decimal.NewFromString(row.ObservedNotional)
 	reserved, e3 := decimal.NewFromString(row.ReservedNotional)
@@ -380,7 +381,7 @@ func budgetAmounts(row *modelv1.HimalayaBudget) (decimal.Decimal, decimal.Decima
 	return maximum, observed, reserved, nil
 }
 
-func checkReservedBudget(row *modelv1.HimalayaBudget) error {
+func checkReservedBudget(row *commonmodelv1.HimalayaBudget) error {
 	maximum, observed, reserved, err := budgetAmounts(row)
 	if err != nil {
 		return err

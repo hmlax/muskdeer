@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。
+
 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
 
 2026-11-04 最新配置边界：Nacos 每服务提供 `<service>.data.yaml` 与 `<service>.service.yaml`，分别对应 DataConfig 和 ServiceSettings；前者持有基础连接与业务运行控制，后者持有监听、身份、TLS、日志及生命周期，并以 data_sha256 绑定前者原始字节。启动同时校验版本/服务身份，拒绝半次发布。ServiceConfig 仅为兼容现有 Deer/业务接口的内存装配结果，不再作为核心配置源；此项替代下文历史单份 Proto JSON 描述，数据库业务归属保持。

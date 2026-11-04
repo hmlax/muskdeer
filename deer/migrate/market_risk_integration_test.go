@@ -12,7 +12,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/market/marketquality"
@@ -64,8 +67,8 @@ func admissionSelectedMarket(ctx context.Context, t *testing.T, db *gorm.DB, ins
 		Kind:         domain.LeaseKindMarket,
 		MarketFeedID: feed.ID,
 	}
-	var lease modelv1.MarketPublisherLease
-	err = db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).First(&lease).Error
+	var lease marketmodelv1.MarketPublisherLease
+	err = db.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).First(&lease).Error
 	token := domain.LeaseToken{
 		Key:     key,
 		OwnerID: lease.OwnerId,
@@ -120,7 +123,7 @@ func TestCurrentMarketGateRejectsGrantProvenanceAndPermitsNewerSameOwner(t *test
 			input := submit.Input
 			input.IdempotencyKey += "-after-change"
 			input.Quantity = decimal.NewFromInt(1)
-			query := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", input.Authority.StrategyID)
+			query := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", input.Authority.StrategyID)
 			switch change {
 			case "expired-owner":
 				expireLeaseFixture(ctx, t, db, token.Key)
@@ -143,7 +146,7 @@ func TestCurrentMarketGateRejectsGrantProvenanceAndPermitsNewerSameOwner(t *test
 				defer tick.Stop()
 				for {
 					var clock struct{ AgeMS int64 }
-					err = db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("market_feed_id = ?", feed.ID).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint - event_at AS age_ms").Take(&clock).Error
+					err = db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("market_feed_id = ?", feed.ID).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint - event_at AS age_ms").Take(&clock).Error
 					if err != nil || clock.AgeMS >= 1 {
 						break
 					}
@@ -211,10 +214,10 @@ func TestFinalSelectedMarketFenceRollsBackAlreadyStagedFunds(t *testing.T) {
 	feed, _, _, _ := admissionSelectedMarket(ctx, t, db, submit.Input.InstrumentID)
 	const callbackName = "muskdeer:test:expire-market-after-staging"
 	if err := db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
-		err := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).UpdateColumn("expires_at", 0).Error
+		err := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).UpdateColumn("expires_at", 0).Error
 		tx.Error = errors.Join(tx.Error, err)
 	}); err != nil {
 		t.Fatal(err)
@@ -240,7 +243,7 @@ func TestSelectedMarketModeCannotBeChangedInPlace(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	_, submit := admissionFixture(ctx, t, db)
-	err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("market_mode", string(domain.MarketModeLive)).Error
+	err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("market_mode", string(domain.MarketModeLive)).Error
 	assertDatabaseCode(t, err, "23514")
 }
 
@@ -256,22 +259,22 @@ func TestMarketProvenanceUpgradeClosesLegacyGrants(t *testing.T) {
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	strategy := identityInstance(instrument.Id, "legacy-risk-upgrade", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Omit("MarketMode", "RuntimeOwnerId", "RuntimeOwnerEpoch", "DesiredState").Create(strategy).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Omit("MarketMode", "RuntimeOwnerId", "RuntimeOwnerEpoch", "DesiredState").Create(strategy).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = strategy.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now().UnixMilli()
-	risk := &modelv1.RiskSnapshot{
+	risk := &executionmodelv1.RiskSnapshot{
 		StrategyInstanceId: strategy.Id,
 		AccountId:          strategy.AccountId,
 		InstrumentId:       instrument.Id,
@@ -285,19 +288,19 @@ func TestMarketProvenanceUpgradeClosesLegacyGrants(t *testing.T) {
 		AllowNewRisk:       true,
 		Revision:           1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Omit("MarketFeedId", "MarketRevision", "MarketSourceVersion", "MarketMaximumAgeMs", "ReasonCode").Create(risk).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Omit("MarketFeedId", "MarketRevision", "MarketSourceVersion", "MarketMaximumAgeMs", "ReasonCode").Create(risk).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
-	var stored modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).First(&stored, risk.Id).Error; err != nil {
+	var stored executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).First(&stored, risk.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if stored.AllowNewRisk || stored.MarketFeedId != nil || stored.Revision != 2 {
 		t.Fatalf("legacy grant acquired fabricated provenance: %v", &stored)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", stored.Id).UpdateColumn("allow_new_risk", true).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", stored.Id).UpdateColumn("allow_new_risk", true).Error
 	assertDatabaseCode(t, err, "23514")
 }

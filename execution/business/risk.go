@@ -11,8 +11,9 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -37,7 +38,7 @@ func newRiskWorkers(ctx context.Context, db *gorm.DB, owner riskExecutionOwner, 
 		return nil, nil
 	}
 	accounts := slices.Clone(cfg.Risk.AccountIds)
-	for _, entity := range []any{&modelv1.AccountBudget{}, &modelv1.SimulatorAccount{}} {
+	for _, entity := range []any{&commonmodelv1.AccountBudget{}, &executionmodelv1.SimulatorAccount{}} {
 		var count int64
 		if err := db.WithContext(ctx).Model(entity).Where("account_id IN ? AND delete_at IS NULL", accounts).Count(&count).Error; err != nil {
 			return nil, err

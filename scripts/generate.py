@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -10,6 +11,7 @@ import sys
 import tempfile
 
 from tools import check, protoc
+from proto_layout import validate_layout
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def generate(verify: bool) -> None:
     check()
+    validate_layout(ROOT)
     inputs = sorted((ROOT / 'deer/proto').rglob('*.proto'))
     if not inputs:
         raise ValueError('no project Proto definitions found')
@@ -32,12 +35,12 @@ def generate(verify: bool) -> None:
         compiler = protoc()
         arguments = [str(compiler), '-I.', '-Ideer/third_party', '-I' + str(compiler.parent.parent / 'include')]
         files = [path.relative_to(ROOT).as_posix() for path in inputs] + ['hertz/api.proto']
-        mapping = 'Mhertz/api.proto=github.com/hmlax/muskdeer/deer/proto/hertz;api'
+        mapping = 'Mhertz/api.proto=github.com/hmlax/muskdeer/deer/proto/common/hertz;api'
         subprocess.run([
             *arguments, '--go_out=.', '--go_opt=module=github.com/hmlax/muskdeer', '--go_opt=' + mapping,
             *files,
         ], cwd=stage, env=environment, check=True)
-        rpc_files = [path.relative_to(ROOT).as_posix() for path in inputs if path.is_relative_to(ROOT / 'deer/proto/rpc')]
+        rpc_files = [path.relative_to(ROOT).as_posix() for path in inputs if re.search(r'^service\s+\w+\s*\{', path.read_text(), re.MULTILINE)]
         if rpc_files:
             subprocess.run([
                 *arguments, '--go-grpc_out=.', '--go-grpc_opt=module=github.com/hmlax/muskdeer',

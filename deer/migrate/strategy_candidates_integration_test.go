@@ -12,7 +12,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -32,8 +33,8 @@ func TestStrategyCandidatesUseExactAccountIncludeStopsAndRejectOverflow(t *testi
 	if err != nil || !slices.Equal(ids, []int64{submit.Input.Authority.StrategyID, stoppedID}) {
 		t.Fatalf("candidate discovery crossed account or omitted a stop: %v, %v", ids, err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyLease{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyLease{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
 	for index := 0; index < domain.MaxAccountStrategyInstances-1; index++ {
 		insertCandidateMetadata(ctx, t, db, submit.Input.InstrumentID, fmt.Sprintf("candidate-overflow-%d", index), submit.Input.AccountID)
 	}
@@ -46,13 +47,13 @@ func insertCandidateMetadata(ctx context.Context, t *testing.T, db *gorm.DB, ins
 	t.Helper()
 	row := identityInstance(instrumentID, key, domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 	row.AccountId, row.State, row.DesiredRunning = account, string(domain.StrategyStateStopped), false
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(row).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = row.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}

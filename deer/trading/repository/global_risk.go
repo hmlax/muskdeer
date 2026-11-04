@@ -8,15 +8,15 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 // The account/strategy budget locks precede these cross-account rows. Every
 // operation touches one account and takes global rows in the same ID order.
-func globalRiskBudgets(ctx context.Context, tx *gorm.DB, instrumentID int64, asset, strength string) ([]*modelv1.RiskBudget, error) {
-	var rows []*modelv1.RiskBudget
-	err := tx.WithContext(ctx).Model(&modelv1.RiskBudget{}).Where("asset = ? AND delete_at IS NULL AND ((scope_kind = ? AND scope_key = ?) OR (scope_kind = ? AND scope_key = ?))", asset, string(domain.RiskScopePlatform), asset, string(domain.RiskScopeInstrument), strconv.FormatInt(instrumentID, 10)).Order("id ASC").Clauses(clause.Locking{Strength: strength}).Find(&rows).Error
+func globalRiskBudgets(ctx context.Context, tx *gorm.DB, instrumentID int64, asset, strength string) ([]*commonmodelv1.RiskBudget, error) {
+	var rows []*commonmodelv1.RiskBudget
+	err := tx.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Where("asset = ? AND delete_at IS NULL AND ((scope_kind = ? AND scope_key = ?) OR (scope_kind = ? AND scope_key = ?))", asset, string(domain.RiskScopePlatform), asset, string(domain.RiskScopeInstrument), strconv.FormatInt(instrumentID, 10)).Order("id ASC").Clauses(clause.Locking{Strength: strength}).Find(&rows).Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func changeGlobalRiskReservation(ctx context.Context, tx *gorm.DB, instrumentID 
 		previous := row.Revision
 		row.ReservedNotional = reserved.String()
 		row.Revision++
-		result := tx.WithContext(ctx).Model(&modelv1.RiskBudget{}).Where("id = ? AND revision = ?", row.Id, previous).Select("ReservedNotional", "Revision").Updates(row)
+		result := tx.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Where("id = ? AND revision = ?", row.Id, previous).Select("ReservedNotional", "Revision").Updates(row)
 		if err := reservationResult(result); err != nil {
 			return err
 		}

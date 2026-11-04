@@ -44,3 +44,5 @@ Deer 的基础设施组件、Proto 和第三方源码继续留在 deer。coreloc
 核心入口的生产依赖图必须包含自己的 business 包，且不能包含其他项目的 business 或任何 testbusiness/testservice 夹具；协议客户端适配和公共交易合同可复用。最终验证结果以 PROGRESS 为准，不能将原有未提交功能或历史全量验收合并宣称通过。
 
 2026-11-04：删除旧 deer/testbusiness、deer/testentry、deer/testservice、cmd/operator、operator 示例，以及 DeerApi/API 服务观测实现与不再使用的 admin 服务观测 Proto。保留的策略管理回归装配已下沉 strategy/testbusiness；其他夹具只装配自己所属服务。默认交易入口继续拒绝管理 RPC。共享仓储不再反向导入 execution/outbox，corelocal 不再导入 marketquality；公共合同和模拟默认策略各有单一来源。`scripts/check-layout.py` 已纳入 lint，检查 Deer 无服务实现依赖及五个入口各自拥有装配图。
+
+2026-11-04：Proto 第一层改为服务名，共享定义归 common；旧 config/model/rpc/hertz 顶层已移除。各所有者的定义与共享字段划分见 [Proto 目录](../deer/proto/README.md)。只改变声明位置和 Go 导入，不改变共用仓储的事务边界。

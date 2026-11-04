@@ -3,7 +3,7 @@ package executiongrpc
 import (
 	"context"
 
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/execution/orderwire"
 )

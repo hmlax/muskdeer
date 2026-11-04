@@ -10,7 +10,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -56,10 +57,10 @@ func TestAdminCreationConcurrentReplayAndChangedPayloadHaveOneEffect(t *testing.
 	if _, err := creator.Create(ctx, actor.Token, actor.CSRF, changed); !errors.Is(err, domain.ErrAdminConflict) {
 		t.Fatal("duplicate business instance name created a second definition", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyCreation{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyInstance{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyBudget{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyCreation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyInstance{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyBudget{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 1)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
 
@@ -71,7 +72,7 @@ func TestAdminCreationExpiryAfterAuthorityCheckRollsBackAllMetadata(t *testing.T
 	now := controlTestDatabaseTime(ctx, t, db, actor.Principal.UserID)
 	token, tokenHash := controlTestSecret(21)
 	csrf, csrfHash := controlTestSecret(22)
-	session := &modelv1.AdminSession{
+	session := &commonmodelv1.AdminSession{
 		CreateAt:          now,
 		UpdateAt:          now,
 		UserId:            actor.Principal.UserID,
@@ -80,13 +81,13 @@ func TestAdminCreationExpiryAfterAuthorityCheckRollsBackAllMetadata(t *testing.T
 		CredentialVersion: 1,
 		ExpiresAt:         now + 1000,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Create(session).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
 	const callback = "test:creation-expiry-before-receipt"
 	delayed := false
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.AdminStrategyCreation); !ok {
+		if _, ok := tx.Statement.Dest.(*strategymodelv1.AdminStrategyCreation); !ok {
 			return
 		}
 		delayed = true
@@ -112,10 +113,10 @@ func TestAdminCreationExpiryAfterAuthorityCheckRollsBackAllMetadata(t *testing.T
 	if actual := controlTestDatabaseTime(ctx, t, db, actor.Principal.UserID); actual <= session.ExpiresAt {
 		t.Fatal("expiry regression did not cross the actual database deadline")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyCreation{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyInstance{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyConfigVersion{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyBudget{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyCreation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyInstance{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyConfigVersion{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyBudget{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }

@@ -10,7 +10,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 func TestApplyRejectsUnboundedAndCanceledWorkBeforeDatabaseIO(t *testing.T) {
@@ -31,15 +31,15 @@ func TestMigrationHistoryCannotSkipRewriteOrHideAppliedVersions(t *testing.T) {
 		t.Fatalf("embedded definitions: %v", err)
 	}
 	first := definitions[0]
-	valid := &modelv1.SchemaMigration{
+	valid := &commonmodelv1.SchemaMigration{
 		Version:  first.version,
 		Name:     first.name,
 		Checksum: fmt.Sprintf("%x", sha256.Sum256([]byte(first.sql))),
 	}
-	if err := validateHistory([]*modelv1.SchemaMigration{valid}, definitions); err != nil {
+	if err := validateHistory([]*commonmodelv1.SchemaMigration{valid}, definitions); err != nil {
 		t.Fatal(err)
 	}
-	for _, row := range []*modelv1.SchemaMigration{
+	for _, row := range []*commonmodelv1.SchemaMigration{
 		{
 			Version:  first.version,
 			Name:     first.name,
@@ -56,7 +56,7 @@ func TestMigrationHistoryCannotSkipRewriteOrHideAppliedVersions(t *testing.T) {
 			Checksum: valid.Checksum,
 		},
 	} {
-		if err := validateHistory([]*modelv1.SchemaMigration{row}, definitions); !errors.Is(err, ErrHistoryMismatch) {
+		if err := validateHistory([]*commonmodelv1.SchemaMigration{row}, definitions); !errors.Is(err, ErrHistoryMismatch) {
 			t.Fatalf("changed history was accepted: %v", err)
 		}
 	}

@@ -10,7 +10,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -42,7 +42,7 @@ func (s *adminOverview) Strategies(ctx context.Context, token string, filter dom
 		return domain.AdminStrategyOverview{}, err
 	}
 	var result domain.AdminStrategyOverview
-	err := s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		user, _, err := readAdminAuthority(ctx, tx, token, "", domain.AdminRoleViewer, "")
 		if err != nil {
 			return err
@@ -67,7 +67,7 @@ func (s *adminOverview) Strategies(ctx context.Context, token string, filter dom
 }
 
 func adminOverviewScope(ctx context.Context, tx *gorm.DB, filter domain.AdminOverviewFilter) *gorm.DB {
-	query := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("delete_at IS NULL")
+	query := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("delete_at IS NULL")
 	if filter.AccountID != "" {
 		query = query.Where("account_id = ?", filter.AccountID)
 	}
@@ -88,7 +88,7 @@ func readAdminOverview(ctx context.Context, tx *gorm.DB, filter domain.AdminOver
 		return domain.AdminStrategyOverview{}, err
 	}
 	result.ObservedAt = time.UnixMilli(now).UTC()
-	var rows []*modelv1.StrategyInstance
+	var rows []*strategymodelv1.StrategyInstance
 	if err := adminOverviewScope(ctx, tx, filter).Where("id > ?", filter.Page.AfterID).
 		Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 		return domain.AdminStrategyOverview{}, err
@@ -145,13 +145,13 @@ func adminOverviewCounts(rows []adminOverviewCountRow) (domain.AdminStrategyOver
 	return result, nil
 }
 
-func readAdminOverviewLeases(ctx context.Context, tx *gorm.DB, rows []*modelv1.StrategyInstance, now int64) (map[int64]*domain.AdminLeaseObservation, error) {
+func readAdminOverviewLeases(ctx context.Context, tx *gorm.DB, rows []*strategymodelv1.StrategyInstance, now int64) (map[int64]*domain.AdminLeaseObservation, error) {
 	result := make(map[int64]*domain.AdminLeaseObservation, len(rows))
 	if len(rows) == 0 {
 		return result, nil
 	}
 	ids := make([]int64, 0, len(rows))
-	strategies := make(map[int64]*modelv1.StrategyInstance, len(rows))
+	strategies := make(map[int64]*strategymodelv1.StrategyInstance, len(rows))
 	for _, row := range rows {
 		if row == nil || row.Id <= 0 {
 			return nil, domain.ErrAdminUnavailable
@@ -159,8 +159,8 @@ func readAdminOverviewLeases(ctx context.Context, tx *gorm.DB, rows []*modelv1.S
 		ids = append(ids, row.Id)
 		strategies[row.Id] = row
 	}
-	var leases []*modelv1.StrategyLease
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyLease{}).
+	var leases []*strategymodelv1.StrategyLease
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyLease{}).
 		Where("strategy_instance_id IN ? AND delete_at IS NULL", ids).Find(&leases).Error; err != nil {
 		return nil, err
 	}
@@ -181,7 +181,7 @@ func readAdminOverviewLeases(ctx context.Context, tx *gorm.DB, rows []*modelv1.S
 	return result, nil
 }
 
-func adminOverviewLeaseValue(row *modelv1.StrategyLease, strategy *modelv1.StrategyInstance, now int64) (*domain.AdminLeaseObservation, error) {
+func adminOverviewLeaseValue(row *strategymodelv1.StrategyLease, strategy *strategymodelv1.StrategyInstance, now int64) (*domain.AdminLeaseObservation, error) {
 	if row == nil || strategy == nil || row.Id <= 0 || strategy.Id <= 0 || row.StrategyInstanceId != strategy.Id || now <= 0 ||
 		row.Epoch < 0 || row.ExpiresAt < 0 || len(row.OwnerId) > 512 || !utf8.ValidString(row.OwnerId) ||
 		utf8.RuneCountInString(row.OwnerId) > 128 || strings.ContainsRune(row.OwnerId, 0) {

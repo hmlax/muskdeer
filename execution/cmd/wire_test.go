@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"github.com/hmlax/muskdeer/deer"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
 	"github.com/hmlax/muskdeer/deer/testapp"
 )
 
@@ -21,7 +22,7 @@ func TestServiceRejectsOtherIdentitiesAndAdministrationBeforeOpeningResources(t 
 	}
 	cfg := &configv1.ServiceConfig{
 		Name:     "execution",
-		Business: &configv1.BusinessRuntime{Strategy: &configv1.StrategyRuntime{ManagementEnabled: true}},
+		Business: &configv1.BusinessRuntime{Strategy: &strategyconfigv1.StrategyRuntime{ManagementEnabled: true}},
 	}
 	if _, err := wireApp(t.Context(), cfg, io.Discard, nil); err == nil {
 		t.Fatal("execution allowed administration assembly")

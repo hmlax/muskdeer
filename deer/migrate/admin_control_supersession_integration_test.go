@@ -10,7 +10,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -65,7 +66,7 @@ func TestAdminControlReplacementCannotReviveBeforeObserverSeesIntermediateTarget
 	}
 	assertControlInstance(ctx, t, db, instances[0].Id, domain.StrategyStateCreated, domain.StrategyStateRunning, 4)
 	assertFailedControlReplacementRetainsPending(ctx, t, db, controls, actor, latest)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 3)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 3)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
 
@@ -74,7 +75,7 @@ func assertFailedControlReplacementRetainsPending(ctx context.Context, t *testin
 	const callback = "test:replacement-audit-failure"
 	failure := errors.New("controlled replacement audit failure")
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, audit := tx.Statement.Dest.(*modelv1.AdminAudit); audit {
+		if _, audit := tx.Statement.Dest.(*commonmodelv1.AdminAudit); audit {
 			tx.Error = failure
 		}
 	}); err != nil {

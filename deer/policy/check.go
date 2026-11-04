@@ -73,7 +73,7 @@ func Descriptors(set *descriptorpb.FileDescriptorSet) []Issue {
 			continue
 		}
 		for _, message := range file.GetMessageType() {
-			checkMessage(name, message.GetName(), message, strings.HasPrefix(name, "deer/proto/model/"), &issues)
+			checkMessage(name, message.GetName(), message, isPersistenceProto(name), &issues)
 		}
 	}
 	return issues
@@ -168,4 +168,13 @@ func Format(issue Issue) string {
 		return fmt.Sprintf("%s:%d: %s", issue.File, issue.Line, issue.Message)
 	}
 	return issue.File + ": " + issue.Message
+}
+
+func isPersistenceProto(name string) bool {
+	relative, owned := strings.CutPrefix(name, "deer/proto/")
+	if !owned {
+		return false
+	}
+	parts := strings.Split(relative, "/")
+	return len(parts) >= 4 && parts[1] == "model"
 }

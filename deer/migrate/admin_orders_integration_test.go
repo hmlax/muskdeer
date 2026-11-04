@@ -11,7 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/simulator"
@@ -80,9 +80,9 @@ func TestAdminOrdersReadActualOMSAndCoreWithoutReconcilingUncertainty(t *testing
 	if _, err := reader.Detail(ctx, viewer.Token, other.StrategyID, live.ID); !errors.Is(err, domain.ErrAdminNotFound) {
 		t.Fatal("order detail crossed into a sibling strategy", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 3)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 3)
 	assertGatewayOrderCount(ctx, t, db, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, 1)
 }
 
 func adminOrderFacts(ctx context.Context, t *testing.T, db *gorm.DB, core domain.Simulator, intents domain.IntentExecutionRepository, submit domain.GatewaySubmit) (domain.IntentSnapshot, domain.IntentSnapshot, domain.IntentSnapshot) {

@@ -9,7 +9,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -31,13 +32,13 @@ func (s *strategyOrderCancellations) Prepare(ctx context.Context, authority doma
 		return domain.AdminCancellationWork{}, domain.ErrInvalidOrder
 	}
 	var result domain.AdminCancellationWork
-	err := s.db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Transaction(func(tx *gorm.DB) error {
 		instance, now, err := lockActionAuthority(ctx, tx, authority)
 		if err != nil {
 			return err
 		}
-		var receipt modelv1.AdminOrderCancellation
-		err = tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).
+		var receipt executionmodelv1.AdminOrderCancellation
+		err = tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).
 			Where("strategy_instance_id = ? AND state = ? AND id > ?", authority.StrategyID, domain.AdminCancellationAccepted, afterID).
 			Order("id ASC").Clauses(clause.Locking{Strength: "UPDATE"}).Take(&receipt).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -56,9 +57,9 @@ func (s *strategyOrderCancellations) Prepare(ctx context.Context, authority doma
 	return result, nil
 }
 
-func prepareAdminCancellation(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, authority domain.StrategyAuthority, receipt *modelv1.AdminOrderCancellation, now int64) (*domain.StrategyAction, error) {
-	var order modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+func prepareAdminCancellation(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, authority domain.StrategyAuthority, receipt *executionmodelv1.AdminOrderCancellation, now int64) (*domain.StrategyAction, error) {
+	var order executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("id = ? AND strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND delete_at IS NULL", receipt.OrderIntentId, instance.Id, instance.AccountId, instance.InstrumentId).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&order).Error; err != nil {
 		return nil, err
@@ -91,9 +92,9 @@ func prepareAdminCancellation(ctx context.Context, tx *gorm.DB, instance *modelv
 	return nil, nil
 }
 
-func adminCancellationAction(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, authority domain.StrategyAuthority, receipt *modelv1.AdminOrderCancellation, order *modelv1.OrderIntent) (*modelv1.StrategyAction, error) {
-	var action modelv1.StrategyAction
-	query := tx.WithContext(ctx).Model(&modelv1.StrategyAction{})
+func adminCancellationAction(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, authority domain.StrategyAuthority, receipt *executionmodelv1.AdminOrderCancellation, order *executionmodelv1.OrderIntent) (*strategymodelv1.StrategyAction, error) {
+	var action strategymodelv1.StrategyAction
+	query := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{})
 	if receipt.ActionId != nil {
 		if err := query.Where("id = ?", *receipt.ActionId).Take(&action).Error; err != nil {
 			return nil, err
@@ -126,7 +127,7 @@ func adminCancellationAction(ctx context.Context, tx *gorm.DB, instance *modelv1
 		if err != nil {
 			return nil, err
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Create(created).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Create(created).Error; err != nil {
 			return nil, err
 		}
 		return linkAdminCancellation(ctx, tx, receipt, created)
@@ -134,7 +135,7 @@ func adminCancellationAction(ctx context.Context, tx *gorm.DB, instance *modelv1
 	return linkAdminCancellation(ctx, tx, receipt, &action)
 }
 
-func linkAdminCancellation(ctx context.Context, tx *gorm.DB, receipt *modelv1.AdminOrderCancellation, action *modelv1.StrategyAction) (*modelv1.StrategyAction, error) {
+func linkAdminCancellation(ctx context.Context, tx *gorm.DB, receipt *executionmodelv1.AdminOrderCancellation, action *strategymodelv1.StrategyAction) (*strategymodelv1.StrategyAction, error) {
 	receipt.ActionId = proto.Int64(action.Id)
 	if err := saveAdminCancellation(ctx, tx, receipt); err != nil {
 		return nil, err
@@ -142,7 +143,7 @@ func linkAdminCancellation(ctx context.Context, tx *gorm.DB, receipt *modelv1.Ad
 	return action, nil
 }
 
-func finishAdminCancellation(ctx context.Context, tx *gorm.DB, receipt *modelv1.AdminOrderCancellation, order *modelv1.OrderIntent, now int64, state domain.AdminCancellationState, outcome string) error {
+func finishAdminCancellation(ctx context.Context, tx *gorm.DB, receipt *executionmodelv1.AdminOrderCancellation, order *executionmodelv1.OrderIntent, now int64, state domain.AdminCancellationState, outcome string) error {
 	receipt.State, receipt.OutcomeCode = string(state), outcome
 	receipt.CompletedAt = proto.Int64(now)
 	receipt.ObservedOrderRevision = proto.Int64(order.Revision)
@@ -150,10 +151,10 @@ func finishAdminCancellation(ctx context.Context, tx *gorm.DB, receipt *modelv1.
 	return saveAdminCancellation(ctx, tx, receipt)
 }
 
-func saveAdminCancellation(ctx context.Context, tx *gorm.DB, row *modelv1.AdminOrderCancellation) error {
+func saveAdminCancellation(ctx context.Context, tx *gorm.DB, row *executionmodelv1.AdminOrderCancellation) error {
 	previous := row.Revision
 	row.Revision++
-	return reservationResult(tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).
+	return reservationResult(tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).
 		Where("id = ? AND revision = ?", row.Id, previous).
 		Select("ActionId", "State", "OutcomeCode", "Revision", "CompletedAt", "ObservedOrderRevision", "ObservedOrderState").Updates(row))
 }

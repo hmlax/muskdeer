@@ -7,7 +7,9 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -22,14 +24,14 @@ type adminPortfolioBalanceKey struct {
 }
 
 type adminPortfolioRelations struct {
-	accounts    map[string]*modelv1.SimulatorAccount
-	instruments map[int64]*modelv1.Instrument
-	balances    map[adminPortfolioBalanceKey]*modelv1.SimulatorBalance
+	accounts    map[string]*executionmodelv1.SimulatorAccount
+	instruments map[int64]*commonmodelv1.Instrument
+	balances    map[adminPortfolioBalanceKey]*executionmodelv1.SimulatorBalance
 	sources     map[adminPortfolioKey]domain.AdminPortfolioFacts
 	collected   map[adminPortfolioKey]domain.AdminPortfolioFacts
 }
 
-func readAdminPortfolios(ctx context.Context, tx *gorm.DB, rows []*modelv1.PortfolioAccount) ([]domain.AdminPortfolio, error) {
+func readAdminPortfolios(ctx context.Context, tx *gorm.DB, rows []*portfoliomodelv1.PortfolioAccount) ([]domain.AdminPortfolio, error) {
 	result := make([]domain.AdminPortfolio, 0, len(rows))
 	if len(rows) == 0 {
 		return result, nil
@@ -48,7 +50,7 @@ func readAdminPortfolios(ctx context.Context, tx *gorm.DB, rows []*modelv1.Portf
 	return result, nil
 }
 
-func readAdminPortfolioRelations(ctx context.Context, tx *gorm.DB, rows []*modelv1.PortfolioAccount) (adminPortfolioRelations, error) {
+func readAdminPortfolioRelations(ctx context.Context, tx *gorm.DB, rows []*portfoliomodelv1.PortfolioAccount) (adminPortfolioRelations, error) {
 	accountIDs, instrumentIDs := make([]string, 0, len(rows)), make([]int64, 0, len(rows))
 	assets := make([]string, 0, 2*len(rows))
 	for _, row := range rows {
@@ -56,17 +58,17 @@ func readAdminPortfolioRelations(ctx context.Context, tx *gorm.DB, rows []*model
 		instrumentIDs = append(instrumentIDs, row.InstrumentId)
 		assets = append(assets, row.BaseAsset, row.QuoteAsset)
 	}
-	var accounts []*modelv1.SimulatorAccount
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).
+	var accounts []*executionmodelv1.SimulatorAccount
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).
 		Select("Id", "AccountId", "Enabled", "Revision").Where("account_id IN ? AND delete_at IS NULL", accountIDs).Find(&accounts).Error; err != nil {
 		return adminPortfolioRelations{}, err
 	}
-	var instruments []*modelv1.Instrument
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id IN ? AND delete_at IS NULL", instrumentIDs).Find(&instruments).Error; err != nil {
+	var instruments []*commonmodelv1.Instrument
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id IN ? AND delete_at IS NULL", instrumentIDs).Find(&instruments).Error; err != nil {
 		return adminPortfolioRelations{}, err
 	}
-	var balances []*modelv1.SimulatorBalance
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).
+	var balances []*executionmodelv1.SimulatorBalance
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).
 		Where("account_id IN ? AND asset IN ? AND delete_at IS NULL", accountIDs, assets).Find(&balances).Error; err != nil {
 		return adminPortfolioRelations{}, err
 	}
@@ -75,9 +77,9 @@ func readAdminPortfolioRelations(ctx context.Context, tx *gorm.DB, rows []*model
 		return adminPortfolioRelations{}, err
 	}
 	result := adminPortfolioRelations{
-		accounts:    make(map[string]*modelv1.SimulatorAccount, len(accounts)),
-		instruments: make(map[int64]*modelv1.Instrument, len(instruments)),
-		balances:    make(map[adminPortfolioBalanceKey]*modelv1.SimulatorBalance, len(balances)),
+		accounts:    make(map[string]*executionmodelv1.SimulatorAccount, len(accounts)),
+		instruments: make(map[int64]*commonmodelv1.Instrument, len(instruments)),
+		balances:    make(map[adminPortfolioBalanceKey]*executionmodelv1.SimulatorBalance, len(balances)),
 		sources:     sources,
 		collected:   collected,
 	}
@@ -96,7 +98,7 @@ func readAdminPortfolioRelations(ctx context.Context, tx *gorm.DB, rows []*model
 	return result, nil
 }
 
-func adminPortfolioValue(row *modelv1.PortfolioAccount, related adminPortfolioRelations) (domain.AdminPortfolio, error) {
+func adminPortfolioValue(row *portfoliomodelv1.PortfolioAccount, related adminPortfolioRelations) (domain.AdminPortfolio, error) {
 	account, instrument := related.accounts[row.AccountId], related.instruments[row.InstrumentId]
 	if account == nil || instrument == nil || account.Revision <= 0 || row.Id <= 0 || row.CreateAt <= 0 || row.UpdateAt <= 0 ||
 		instrument.ExecutionVenue != domain.ExecutionVenueSimulator || instrument.BaseAsset != row.BaseAsset || instrument.QuoteAsset != row.QuoteAsset {
@@ -157,7 +159,7 @@ func validAdminPortfolioSnapshot(value domain.PortfolioSnapshot) bool {
 	return !value.Opening.Quantity.IsZero() || value.Opening.CostQuote.IsZero()
 }
 
-func adminPortfolioBalance(row *modelv1.SimulatorBalance) (*domain.AdminPortfolioBalance, error) {
+func adminPortfolioBalance(row *executionmodelv1.SimulatorBalance) (*domain.AdminPortfolioBalance, error) {
 	if row == nil {
 		return nil, nil
 	}

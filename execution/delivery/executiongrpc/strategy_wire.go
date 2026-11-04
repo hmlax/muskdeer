@@ -8,7 +8,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

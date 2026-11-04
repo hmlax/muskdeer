@@ -5,7 +5,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -13,7 +13,7 @@ func (s *intentStore) Confirm(ctx context.Context, current domain.IntentSnapshot
 	if order.ID <= 0 || order.Revision <= 0 || !validCoreProgress(order) {
 		return domain.IntentSnapshot{}, domain.ErrInvalidOrder
 	}
-	return s.changeIntent(ctx, current, func(row *modelv1.OrderIntent) (bool, error) {
+	return s.changeIntent(ctx, current, func(row *executionmodelv1.OrderIntent) (bool, error) {
 		stored, err := intentSnapshot(row)
 		if err != nil {
 			return false, err

@@ -7,7 +7,9 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -27,8 +29,8 @@ func (s *adminCatalog) Accounts(ctx context.Context, token string, page domain.A
 	}
 	result := domain.AdminAccountPage{Items: make([]domain.AdminAccount, 0, page.Limit)}
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var rows []*modelv1.SimulatorAccount
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).
+		var rows []*executionmodelv1.SimulatorAccount
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).
 			Where("id > ? AND delete_at IS NULL", page.AfterID).Order("id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -71,8 +73,8 @@ func (s *adminCatalog) Instruments(ctx context.Context, token string, page domai
 	}
 	result := domain.AdminInstrumentPage{Items: make([]domain.AdminInstrument, 0, page.Limit)}
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var rows []*modelv1.Instrument
-		if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).
+		var rows []*commonmodelv1.Instrument
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).
 			Where("id > ? AND delete_at IS NULL", page.AfterID).Order("id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -107,15 +109,15 @@ func (s *adminCatalog) Feeds(ctx context.Context, token string, instrumentID int
 	}
 	result := domain.AdminFeedPage{Items: make([]domain.MarketFeedDefinition, 0, page.Limit)}
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var instrument modelv1.Instrument
-		if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", instrumentID).Take(&instrument).Error; err != nil {
+		var instrument commonmodelv1.Instrument
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", instrumentID).Take(&instrument).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
 			return err
 		}
-		var rows []*modelv1.MarketFeed
-		if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).
+		var rows []*marketmodelv1.MarketFeed
+		if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).
 			Where("id > ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", page.AfterID, instrumentID, mode).
 			Order("id ASC").Limit(page.Limit + 1).Find(&rows).Error; err != nil {
 			return err

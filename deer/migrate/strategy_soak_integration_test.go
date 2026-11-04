@@ -15,8 +15,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
@@ -119,7 +120,7 @@ func runStrategySoak(t *testing.T, duration time.Duration, minimumFills int64) {
 	if result.ElapsedMS < result.TargetMS || result.FillCount < minimumFills {
 		t.Fatal("soak did not reach its physical duration and minimum actual fills")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	waitStrategyProcessesStopped(ctx, t, db, []int64{submit.Input.Authority.StrategyID})
@@ -181,8 +182,8 @@ func startStrategySoakProcesses(ctx context.Context, t *testing.T, db *gorm.DB, 
 	market.Business.Market.LeaseTtl = durationpb.New(10 * time.Second)
 	execution := businessProcessConfig(t, ca, postgres, stream, naming, "execution")
 	execution.Business.ExecutionLeaseTtl = durationpb.New(10 * time.Second)
-	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}

@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	strategybusiness "github.com/hmlax/muskdeer/strategy/business"

@@ -16,7 +16,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -31,24 +32,24 @@ func TestAdminControlExpiryWhileWaitingForStrategyCannotCommit(t *testing.T) {
 	}
 	actor, controls := adminControlFixture(ctx, t, db)
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	instance := identityInstance(instrument.Id, "expiry-control", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = instance.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
 	token, tokenHash := controlTestSecret(11)
 	csrf, csrfHash := controlTestSecret(12)
 	now := controlTestDatabaseTime(ctx, t, db, actor.Principal.UserID)
-	session := &modelv1.AdminSession{
+	session := &commonmodelv1.AdminSession{
 		CreateAt:          now,
 		UpdateAt:          now,
 		UserId:            actor.Principal.UserID,
@@ -57,10 +58,10 @@ func TestAdminControlExpiryWhileWaitingForStrategyCannotCommit(t *testing.T) {
 		CredentialVersion: 1,
 		ExpiresAt:         now + 1000,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Create(session).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
-	locking := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Begin()
+	locking := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Begin()
 	if locking.Error != nil {
 		t.Fatal(locking.Error)
 	}
@@ -72,8 +73,8 @@ func TestAdminControlExpiryWhileWaitingForStrategyCannotCommit(t *testing.T) {
 			}
 		}
 	}()
-	var held modelv1.StrategyInstance
-	if err := locking.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", instance.Id).
+	var held strategymodelv1.StrategyInstance
+	if err := locking.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", instance.Id).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&held).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +82,7 @@ func TestAdminControlExpiryWhileWaitingForStrategyCannotCommit(t *testing.T) {
 	var once sync.Once
 	const callback = "test:control-expiry-resource-lock"
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(tx *gorm.DB) {
-		_, strategy := tx.Statement.Dest.(*modelv1.StrategyInstance)
+		_, strategy := tx.Statement.Dest.(*strategymodelv1.StrategyInstance)
 		if strategy && tx.Statement.Context.Value(controlExpiryMarker{}) == true {
 			once.Do(func() { close(entered) })
 		}
@@ -131,9 +132,9 @@ func TestAdminControlExpiryWhileWaitingForStrategyCannotCommit(t *testing.T) {
 		t.Fatal("session expired during resource wait still committed", err)
 	}
 	assertControlInstance(ctx, t, db, instance.Id, domain.StrategyStateCreated, domain.StrategyStateStopped, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 0)
 	var audits int64
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("action = ?", domain.AdminControlStart).Count(&audits).Error; err != nil || audits != 0 {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("action = ?", domain.AdminControlStart).Count(&audits).Error; err != nil || audits != 0 {
 		t.Fatal("expired management request left an audit/effect", err)
 	}
 }
@@ -147,7 +148,7 @@ func controlTestSecret(seed byte) (string, string) {
 func controlTestDatabaseTime(ctx context.Context, t *testing.T, db *gorm.DB, userID int64) int64 {
 	t.Helper()
 	var clock struct{ NowMS int64 }
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", userID).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", userID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}

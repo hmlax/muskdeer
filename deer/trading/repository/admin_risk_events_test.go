@@ -6,12 +6,12 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 func TestAdminRiskEventValuesPreserveRawExpiredDiagnosticsAndExactIdentity(t *testing.T) {
-	row := &modelv1.RiskSnapshotEvent{
+	row := &executionmodelv1.RiskSnapshotEvent{
 		Id:                   9007199254740993,
 		CreateAt:             1,
 		UpdateAt:             1,
@@ -45,33 +45,33 @@ func TestAdminRiskEventValuesPreserveRawExpiredDiagnosticsAndExactIdentity(t *te
 	if *row.MarketFeedId != 9007199254740999 {
 		t.Fatal("read DTO aliases a generated source pointer")
 	}
-	for _, change := range []func(*modelv1.RiskSnapshotEvent){
-		func(r *modelv1.RiskSnapshotEvent) { r.Id = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.CreateAt = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.UpdateAt++ },
-		func(r *modelv1.RiskSnapshotEvent) { r.DeleteAt = proto.Int64(1) },
-		func(r *modelv1.RiskSnapshotEvent) { r.RiskSnapshotId = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.RiskSnapshotRevision = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.StrategyInstanceId = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.AccountId = "ambiguous%account" },
-		func(r *modelv1.RiskSnapshotEvent) { r.InstrumentId = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.ConfigVersion = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.Kind = "undefined" },
-		func(r *modelv1.RiskSnapshotEvent) { r.Kind = string(domain.RiskSnapshotEventRemoved) },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketDataSource = string(domain.MarketSourceBitget) },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketFeedId = proto.Int64(0) },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketEpoch = -1 },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketSequence = -1 },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketRevision = -1 },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketSourceVersion = -1 },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketMaximumAgeMs = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.MarketMaximumAgeMs = 5001 },
-		func(r *modelv1.RiskSnapshotEvent) { r.ObservedAt = 0 },
-		func(r *modelv1.RiskSnapshotEvent) { r.ExpiresAt = r.ObservedAt },
-		func(r *modelv1.RiskSnapshotEvent) { r.ExpiresAt = r.ObservedAt + 5001 },
-		func(r *modelv1.RiskSnapshotEvent) { r.ReasonCode = "ready" },
+	for _, change := range []func(*executionmodelv1.RiskSnapshotEvent){
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.Id = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.CreateAt = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.UpdateAt++ },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.DeleteAt = proto.Int64(1) },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.RiskSnapshotId = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.RiskSnapshotRevision = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.StrategyInstanceId = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.AccountId = "ambiguous%account" },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.InstrumentId = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.ConfigVersion = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.Kind = "undefined" },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.Kind = string(domain.RiskSnapshotEventRemoved) },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketDataSource = string(domain.MarketSourceBitget) },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketFeedId = proto.Int64(0) },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketEpoch = -1 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketSequence = -1 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketRevision = -1 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketSourceVersion = -1 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketMaximumAgeMs = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.MarketMaximumAgeMs = 5001 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.ObservedAt = 0 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.ExpiresAt = r.ObservedAt },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.ExpiresAt = r.ObservedAt + 5001 },
+		func(r *executionmodelv1.RiskSnapshotEvent) { r.ReasonCode = "ready" },
 	} {
-		candidate := proto.Clone(row).(*modelv1.RiskSnapshotEvent)
+		candidate := proto.Clone(row).(*executionmodelv1.RiskSnapshotEvent)
 		change(candidate)
 		if value, err := adminRiskEventValue(candidate); !errors.Is(err, domain.ErrAdminUnavailable) || value.ID != 0 {
 			t.Fatal("invalid stored history escaped validation", err)

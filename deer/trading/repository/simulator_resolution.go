@@ -8,7 +8,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -20,9 +21,9 @@ func (s *intentStore) resolveSimulatorSubmission(ctx context.Context, current do
 		return domain.IntentSnapshot{}, err
 	}
 	var result domain.IntentSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
-		var strategy modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy, current.Input.Authority.StrategyID).Error; err != nil {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Transaction(func(tx *gorm.DB) error {
+		var strategy strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy, current.Input.Authority.StrategyID).Error; err != nil {
 			return err
 		}
 		if strategy.AccountId != current.Input.AccountID || strategy.InstrumentId != current.Input.InstrumentID {
@@ -44,8 +45,8 @@ func (s *intentStore) resolveSimulatorSubmission(ctx context.Context, current do
 			return domain.ErrOutcomeUnknown
 		}
 		for _, query := range []*gorm.DB{
-			tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ?", row.AccountId, row.ClientOrderId),
-			tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("account_id = ? AND action = ? AND (client_order_id = ? OR intent_id = ?)", row.AccountId, domain.GatewayActionSubmit, row.ClientOrderId, row.Id),
+			tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ?", row.AccountId, row.ClientOrderId),
+			tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("account_id = ? AND action = ? AND (client_order_id = ? OR intent_id = ?)", row.AccountId, domain.GatewayActionSubmit, row.ClientOrderId, row.Id),
 		} {
 			var count int64
 			if err := query.Count(&count).Error; err != nil {

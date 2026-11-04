@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -19,8 +19,8 @@ func (s *adminAccountFlattenings) Progress(ctx context.Context, token string, st
 	var result domain.AdminFlattenProgress
 	snapshots := adminStrategies{db: s.db}
 	err := snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.AdminAccountFlatteningTask
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).
+		var row executionmodelv1.AdminAccountFlatteningTask
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).
 			Where("flattening_id = ? AND strategy_instance_id = ? AND delete_at IS NULL", flatteningID, strategyID).Take(&row).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
@@ -34,7 +34,7 @@ func (s *adminAccountFlattenings) Progress(ctx context.Context, token string, st
 	return result, nil
 }
 
-func adminFlattenProgress(row *modelv1.AdminAccountFlatteningTask) (domain.AdminFlattenProgress, error) {
+func adminFlattenProgress(row *executionmodelv1.AdminAccountFlatteningTask) (domain.AdminFlattenProgress, error) {
 	if row == nil || row.Id <= 0 || row.FlatteningId <= 0 || row.StrategyInstanceId <= 0 || row.InstrumentId <= 0 ||
 		!coreIdentifier(row.AccountId, 64) || row.Revision <= 0 || row.CreateAt <= 0 || row.UpdateAt < row.CreateAt || row.DeleteAt != nil {
 		return domain.AdminFlattenProgress{}, domain.ErrAdminUnavailable

@@ -15,7 +15,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -40,13 +41,13 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 	}
 	fingerprint := adminControlFingerprint(request)
 	var result domain.AdminOperation
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Transaction(func(tx *gorm.DB) error {
 		user, session, err := readAdminControlAuthority(ctx, tx, token, csrf)
 		if err != nil {
 			return err
 		}
-		var existing modelv1.AdminStrategyOperation
-		err = tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).
+		var existing strategymodelv1.AdminStrategyOperation
+		err = tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).
 			Where("actor_user_id = ? AND idempotency_key = ?", user.Id, request.Key).Take(&existing).Error
 		if err == nil {
 			if existing.RequestFingerprint != fingerprint {
@@ -58,8 +59,8 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		var instance modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).
+		var instance strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).
 			Where("id = ? AND delete_at IS NULL", request.StrategyID).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -81,15 +82,15 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 		}
 		target, _ := request.Action.Target()
 
-		guarded := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{})
+		guarded := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{})
 		if !apiValidatedActor(ctx) {
-			alive := tx.WithContext(ctx).Model(&modelv1.AdminSession{}).Select("1").
+			alive := tx.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Select("1").
 				Where("id = ? AND user_id = ? AND credential_version = ? AND revoked_at IS NULL AND delete_at IS NULL AND expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint", session.Id, user.Id, user.CredentialVersion)
 			guarded = guarded.Where("EXISTS (?)", alive)
 		}
 		changed := guarded.
 			Where("id = ? AND revision = ?", instance.Id, instance.Revision).
-			Select("DesiredState", "DesiredRunning", "Revision").Updates(&modelv1.StrategyInstance{
+			Select("DesiredState", "DesiredRunning", "Revision").Updates(&strategymodelv1.StrategyInstance{
 			DesiredState:   string(target),
 			DesiredRunning: target == domain.StrategyStateRunning,
 			Revision:       instance.Revision + 1,
@@ -106,7 +107,7 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 		if err := supersedeAdminControls(ctx, tx, user.Id, &instance, target); err != nil {
 			return err
 		}
-		audit := &modelv1.AdminAudit{
+		audit := &commonmodelv1.AdminAudit{
 			Actor:         user.Username,
 			ActorRole:     user.Role,
 			Action:        string(request.Action),
@@ -115,10 +116,10 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 			BeforeVersion: proto.Int64(instance.Revision),
 			AfterVersion:  proto.Int64(instance.Revision + 1),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 			return err
 		}
-		operation := &modelv1.AdminStrategyOperation{
+		operation := &strategymodelv1.AdminStrategyOperation{
 			ActorUserId:        user.Id,
 			ActorSessionId:     session.Id,
 			StrategyInstanceId: instance.Id,
@@ -136,7 +137,7 @@ func (s *adminStrategyControl) Control(ctx context.Context, token, csrf string, 
 			OutcomeCode:        domain.AdminOperationOutcomePending,
 			Revision:           1,
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Create(operation).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Create(operation).Error; err != nil {
 			return err
 		}
 		result = adminOperation(operation)
@@ -156,12 +157,12 @@ func (s *adminStrategyControl) Operation(ctx context.Context, token string, id i
 		return domain.AdminOperation{}, domain.ErrInvalidAdminControl
 	}
 	var result domain.AdminOperation
-	err := s.db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := readAdminAuthority(ctx, tx, token, "", domain.AdminRoleViewer, ""); err != nil {
 			return err
 		}
-		var row modelv1.AdminStrategyOperation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", id).Take(&row).Error; err != nil {
+		var row strategymodelv1.AdminStrategyOperation
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", id).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
@@ -197,15 +198,15 @@ func adminControlAllowed(action domain.AdminControlAction, state domain.Strategy
 // Record the intermediate replacement while the strategy row is still locked.
 // An asynchronous observer cannot reconstruct a target that changed and changed
 // back between polls. Audit/receipt failure rolls this result back as well.
-func supersedeAdminControls(ctx context.Context, tx *gorm.DB, userID int64, instance *modelv1.StrategyInstance, target domain.StrategyState) error {
+func supersedeAdminControls(ctx context.Context, tx *gorm.DB, userID int64, instance *strategymodelv1.StrategyInstance, target domain.StrategyState) error {
 	now, err := adminDatabaseTime(ctx, tx, userID)
 	if err != nil {
 		return err
 	}
-	return tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).
+	return tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).
 		Where("strategy_instance_id = ? AND state = ? AND (target_state <> ? OR config_version <> ? OR market_data_source <> ?)", instance.Id, domain.AdminOperationAccepted, target, instance.RequestedConfigVersion, instance.MarketDataSource).
 		Select("State", "OutcomeCode", "Revision", "CompletedAt", "ObservedRevision", "ObservedState", "ObservedOwnerId", "ObservedOwnerEpoch").
-		Updates(&modelv1.AdminStrategyOperation{
+		Updates(&strategymodelv1.AdminStrategyOperation{
 			State:              string(domain.AdminOperationSuperseded),
 			OutcomeCode:        domain.AdminOperationOutcomeReplaced,
 			Revision:           2,
@@ -228,7 +229,7 @@ func adminControlFingerprint(request domain.AdminControlRequest) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func adminOperation(row *modelv1.AdminStrategyOperation) domain.AdminOperation {
+func adminOperation(row *strategymodelv1.AdminStrategyOperation) domain.AdminOperation {
 	result := domain.AdminOperation{
 		ID:               row.Id,
 		ActorUserID:      row.ActorUserId,

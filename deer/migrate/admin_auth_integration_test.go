@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -58,19 +58,19 @@ func TestAdminSessionsStoreDigestsAndEnforceRoleCsrfAndLogout(t *testing.T) {
 		if _, err := auth.Identity(ctx, login.Token); !errors.Is(err, domain.ErrUnauthenticated) {
 			t.Fatal("logged-out session remained authenticated")
 		}
-		if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Where("id = ?", stored.Id).UpdateColumn("revoked_at", nil).Error; err == nil {
+		if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Where("id = ?", stored.Id).UpdateColumn("revoked_at", nil).Error; err == nil {
 			t.Fatal("revoked session was resurrected")
 		}
 	}
-	var audits []*modelv1.AdminAudit
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Order("id ASC").Find(&audits).Error; err != nil {
+	var audits []*commonmodelv1.AdminAudit
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Order("id ASC").Find(&audits).Error; err != nil {
 		t.Fatal(err)
 	}
 	if len(audits) != 9 || audits[0].Id <= 0 || audits[0].CreateAt <= 0 || audits[0].UpdateAt <= 0 || audits[0].DeleteAt != nil {
 		t.Fatal("identity/session audit transaction or common fields missing")
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("id = ?", audits[0].Id).UpdateColumn("reason", "rewritten").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("id = ?", audits[0].Id).Delete(&modelv1.AdminAudit{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("id = ?", audits[0].Id).UpdateColumn("reason", "rewritten").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("id = ?", audits[0].Id).Delete(&commonmodelv1.AdminAudit{}).Error, "23514")
 }
 
 func TestAdminFailedLoginsPersistAndCredentialChangesCloseExistingSessions(t *testing.T) {
@@ -100,8 +100,8 @@ func TestAdminFailedLoginsPersistAndCredentialChangesCloseExistingSessions(t *te
 	if _, err := adminLoginRequest(ctx, t, auth, user.Username, adminFixturePassword); !errors.Is(err, domain.ErrUnauthenticated) {
 		t.Fatalf("locked identity did not return the required rejection: error=%v scenario_context=%v", err, ctx.Err())
 	}
-	var row modelv1.AdminUser
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).First(&row, user.UserID).Error; err != nil {
+	var row commonmodelv1.AdminUser
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).First(&row, user.UserID).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.FailedAttempts != domain.MaxAdminLoginFailures || row.LockedUntil <= 0 {
@@ -110,9 +110,9 @@ func TestAdminFailedLoginsPersistAndCredentialChangesCloseExistingSessions(t *te
 	if _, err := adminLoginRequest(ctx, t, auth, "unknown-user", adminFixturePassword); !errors.Is(err, domain.ErrUnauthenticated) {
 		t.Fatal("missing identity leaked a different rejection")
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", row.Id).UpdateColumn("enabled", false).Error, "23514")
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", row.Id).
-		Select("Enabled", "CredentialVersion", "Revision").Updates(&modelv1.AdminUser{
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", row.Id).UpdateColumn("enabled", false).Error, "23514")
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", row.Id).
+		Select("Enabled", "CredentialVersion", "Revision").Updates(&commonmodelv1.AdminUser{
 		Enabled:           false,
 		CredentialVersion: row.CredentialVersion + 1,
 		Revision:          row.Revision + 1,
@@ -141,7 +141,7 @@ func TestAdminSessionAndAuditRollbackTogether(t *testing.T) {
 	failure := errors.New("controlled audit insertion failure")
 	const callback = "test:admin-audit-failure"
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.AdminAudit); ok {
+		if _, ok := tx.Statement.Dest.(*commonmodelv1.AdminAudit); ok {
 			tx.Error = failure
 		}
 	}); err != nil {
@@ -156,7 +156,7 @@ func TestAdminSessionAndAuditRollbackTogether(t *testing.T) {
 		t.Fatal("login succeeded without its durable audit")
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Count(&count).Error; err != nil || count != 0 {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Count(&count).Error; err != nil || count != 0 {
 		t.Fatal("failed audit left a session")
 	}
 }
@@ -177,7 +177,7 @@ func TestAdminSessionExpiryAndActiveSessionLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	var clock struct{ NowMS int64 }
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", user.UserID).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", user.UserID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +185,7 @@ func TestAdminSessionExpiryAndActiveSessionLimit(t *testing.T) {
 	// changing a real token's immutable lifetime or sleeping for eight hours.
 	expiredToken := base64.RawURLEncoding.EncodeToString(bytes.Repeat([]byte{7}, 32))
 	digest := sha256.Sum256([]byte(expiredToken))
-	old := &modelv1.AdminSession{
+	old := &commonmodelv1.AdminSession{
 		CreateAt:          clock.NowMS - 1000,
 		UpdateAt:          clock.NowMS - 1000,
 		UserId:            user.UserID,
@@ -194,13 +194,13 @@ func TestAdminSessionExpiryAndActiveSessionLimit(t *testing.T) {
 		CredentialVersion: 1,
 		ExpiresAt:         clock.NowMS - 1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Create(old).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Create(old).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := auth.Identity(ctx, expiredToken); !errors.Is(err, domain.ErrUnauthenticated) {
 		t.Fatal("expired token remained valid")
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminSession{}).Where("id = ?", old.Id).UpdateColumn("expires_at", clock.NowMS+1000).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Where("id = ?", old.Id).UpdateColumn("expires_at", clock.NowMS+1000).Error, "23514")
 	var first, latest domain.AdminLogin
 	for i := int64(0); i <= domain.MaxAdminSessions; i++ {
 		latest, err = adminLoginRequest(ctx, t, auth, user.Username, adminFixturePassword)
@@ -218,10 +218,10 @@ func TestAdminSessionExpiryAndActiveSessionLimit(t *testing.T) {
 		t.Fatal("new session was not usable")
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", user.UserID, clock.NowMS).Count(&count).Error; err != nil || count != domain.MaxAdminSessions {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Where("user_id = ? AND revoked_at IS NULL AND expires_at > ?", user.UserID, clock.NowMS).Count(&count).Error; err != nil || count != domain.MaxAdminSessions {
 		t.Fatal("active sessions exceeded the bound or counted expired history")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("action = ?", domain.AdminAuditActionSessionEvicted).Count(&count).Error; err != nil || count != 1 {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("action = ?", domain.AdminAuditActionSessionEvicted).Count(&count).Error; err != nil || count != 1 {
 		t.Fatal("session retirement was not audited atomically")
 	}
 }
@@ -245,10 +245,10 @@ func adminProvisionRequest(ctx context.Context, t *testing.T, auth domain.AdminA
 	return auth.Provision(call, "local-provisioner", username, adminFixturePassword, role)
 }
 
-func assertAdminSessionStorage(ctx context.Context, t *testing.T, db *gorm.DB, user domain.AdminPrincipal, login domain.AdminLogin) *modelv1.AdminSession {
+func assertAdminSessionStorage(ctx context.Context, t *testing.T, db *gorm.DB, user domain.AdminPrincipal, login domain.AdminLogin) *commonmodelv1.AdminSession {
 	t.Helper()
-	var stored modelv1.AdminSession
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).First(&stored, login.Principal.SessionID).Error; err != nil {
+	var stored commonmodelv1.AdminSession
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).First(&stored, login.Principal.SessionID).Error; err != nil {
 		t.Fatal(err)
 	}
 	digest := sha256.Sum256([]byte(login.Token))
@@ -256,8 +256,8 @@ func assertAdminSessionStorage(ctx context.Context, t *testing.T, db *gorm.DB, u
 	if stored.TokenHash != hex.EncodeToString(digest[:]) || stored.CsrfHash != hex.EncodeToString(csrf[:]) || stored.TokenHash == login.Token {
 		t.Fatal("raw session secrets persisted")
 	}
-	var identity modelv1.AdminUser
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).First(&identity, user.UserID).Error; err != nil {
+	var identity commonmodelv1.AdminUser
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).First(&identity, user.UserID).Error; err != nil {
 		t.Fatal(err)
 	}
 	cost, err := bcrypt.Cost([]byte(identity.PasswordHash))

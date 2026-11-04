@@ -11,7 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -24,7 +25,7 @@ func TestAdminOverviewCountersAndPageShareAuthorizedRepeatableSnapshot(t *testin
 	const callback = "test:overview-between-count-and-page"
 	created := false
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, strategies := query.Statement.Dest.(*[]*modelv1.StrategyInstance)
+		_, strategies := query.Statement.Dest.(*[]*strategymodelv1.StrategyInstance)
 		if !strategies || created {
 			return
 		}
@@ -60,7 +61,7 @@ func TestAdminOverviewFailuresCancellationAndRevokedViewerReturnNoCounters(t *te
 	const callback = "test:overview-private-page-failure"
 	injected := errors.New("private strategy overview page read failure")
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, strategies := query.Statement.Dest.(*[]*modelv1.StrategyInstance); strategies {
+		if _, strategies := query.Statement.Dest.(*[]*strategymodelv1.StrategyInstance); strategies {
 			_ = query.AddError(injected)
 		}
 	}); err != nil {
@@ -104,12 +105,12 @@ func TestAdminOverviewReadOnlyTransactionCannotDisableFunds(t *testing.T) {
 	attempted := false
 	var writeErr error
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, strategies := query.Statement.Dest.(*[]*modelv1.StrategyInstance)
+		_, strategies := query.Statement.Dest.(*[]*strategymodelv1.StrategyInstance)
 		if !strategies || attempted {
 			return
 		}
 		attempted = true
-		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.SimulatorAccount{}).
+		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&executionmodelv1.SimulatorAccount{}).
 			Where("account_id = ?", submit.Input.AccountID).Update("enabled", false).Error
 		_ = query.AddError(writeErr)
 	}); err != nil {
@@ -125,8 +126,8 @@ func TestAdminOverviewReadOnlyTransactionCannotDisableFunds(t *testing.T) {
 		t.Fatal("overview allowed funds mutation or partial counters", err)
 	}
 	assertDatabaseCode(t, writeErr, "25006")
-	var account modelv1.SimulatorAccount
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ?", submit.Input.AccountID).Take(&account).Error; err != nil || !account.Enabled {
+	var account executionmodelv1.SimulatorAccount
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ?", submit.Input.AccountID).Take(&account).Error; err != nil || !account.Enabled {
 		t.Fatal("overview changed account enablement", err)
 	}
 	if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) {

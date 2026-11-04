@@ -15,7 +15,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -44,7 +45,7 @@ func (s *adminStrategyRisk) Change(ctx context.Context, token, csrf string, requ
 		return domain.AdminRiskReceipt{}, err
 	}
 	var result domain.AdminRiskReceipt
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Transaction(func(tx *gorm.DB) error {
 		var err error
 		result, err = changeAdminRisk(ctx, tx, token, csrf, request)
 		return err
@@ -64,8 +65,8 @@ func changeAdminRisk(ctx context.Context, tx *gorm.DB, token, csrf string, reque
 		return domain.AdminRiskReceipt{}, domain.ErrForbidden
 	}
 	fingerprint := adminRiskFingerprint(request)
-	var previous modelv1.AdminStrategyRiskChange
-	err = tx.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).
+	var previous strategymodelv1.AdminStrategyRiskChange
+	err = tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).
 		Where("actor_user_id = ? AND idempotency_key = ?", user.Id, request.Key).Take(&previous).Error
 	if err == nil {
 		if previous.RequestFingerprint != fingerprint {
@@ -76,8 +77,8 @@ func changeAdminRisk(ctx context.Context, tx *gorm.DB, token, csrf string, reque
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.AdminRiskReceipt{}, err
 	}
-	var instance modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
+	var instance strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 		return domain.AdminRiskReceipt{}, adminRiskLookupFailure(err)
 	}
@@ -96,7 +97,7 @@ func changeAdminRisk(ctx context.Context, tx *gorm.DB, token, csrf string, reque
 	wasEnabled := budget.Enabled
 	budget.Enabled = request.Action == domain.AdminRiskUnblock
 	budget.Revision++
-	if err := reservationResult(tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("id = ? AND revision = ?", budget.Id, budget.Revision-1).
+	if err := reservationResult(tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("id = ? AND revision = ?", budget.Id, budget.Revision-1).
 		Select("Enabled", "Revision").Updates(budget)); err != nil {
 		return domain.AdminRiskReceipt{}, err
 	}
@@ -114,20 +115,20 @@ func changeAdminRisk(ctx context.Context, tx *gorm.DB, token, csrf string, reque
 	return recordAdminRisk(ctx, tx, user, session, &instance, request, fingerprint, wasEnabled, recoveryUntil)
 }
 
-func lockAdminRiskBudget(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance) (*modelv1.StrategyBudget, *modelv1.Instrument, error) {
+func lockAdminRiskBudget(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance) (*strategymodelv1.StrategyBudget, *commonmodelv1.Instrument, error) {
 	// Keep the execution order even for block: instrument -> core account ->
 	// account budget -> strategy budget. Do not reverse shared financial locks.
 	rows, err := lockCoreRows(ctx, tx, instance.AccountId, instance.InstrumentId)
 	if err != nil {
 		return nil, nil, err
 	}
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", instance.AccountId).
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", instance.AccountId).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
 		return nil, nil, err
 	}
-	var budget modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", instance.Id, instance.AccountId).
+	var budget strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", instance.Id, instance.AccountId).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&budget).Error; err != nil {
 		return nil, nil, err
 	}
@@ -136,13 +137,13 @@ func lockAdminRiskBudget(ctx context.Context, tx *gorm.DB, instance *modelv1.Str
 
 func adminRiskRevision(ctx context.Context, tx *gorm.DB, strategyID int64) (int64, error) {
 	var result struct{ Revision int64 }
-	err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Where("strategy_instance_id = ?", strategyID).
+	err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Where("strategy_instance_id = ?", strategyID).
 		Select("COALESCE(max(revision), 1)::bigint AS revision").Take(&result).Error
 	return result.Revision, err
 }
 
-func recordAdminRisk(ctx context.Context, tx *gorm.DB, user *modelv1.AdminUser, session *modelv1.AdminSession, instance *modelv1.StrategyInstance, request domain.AdminRiskRequest, fingerprint string, previousEnabled bool, recoveryUntil *int64) (domain.AdminRiskReceipt, error) {
-	audit := &modelv1.AdminAudit{
+func recordAdminRisk(ctx context.Context, tx *gorm.DB, user *commonmodelv1.AdminUser, session *commonmodelv1.AdminSession, instance *strategymodelv1.StrategyInstance, request domain.AdminRiskRequest, fingerprint string, previousEnabled bool, recoveryUntil *int64) (domain.AdminRiskReceipt, error) {
+	audit := &commonmodelv1.AdminAudit{
 		Actor:         user.Username,
 		ActorRole:     user.Role,
 		Action:        string(request.Action),
@@ -151,10 +152,10 @@ func recordAdminRisk(ctx context.Context, tx *gorm.DB, user *modelv1.AdminUser, 
 		BeforeVersion: proto.Int64(request.ExpectedRevision),
 		AfterVersion:  proto.Int64(request.ExpectedRevision + 1),
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 		return domain.AdminRiskReceipt{}, err
 	}
-	row := &modelv1.AdminStrategyRiskChange{
+	row := &strategymodelv1.AdminStrategyRiskChange{
 		ActorUserId:        user.Id,
 		ActorSessionId:     session.Id,
 		StrategyInstanceId: instance.Id,
@@ -173,7 +174,7 @@ func recordAdminRisk(ctx context.Context, tx *gorm.DB, user *modelv1.AdminUser, 
 		row.ExpectedConfigVersion = proto.Int64(request.ExpectedConfigVersion)
 		row.ExpectedDesiredState = proto.String(string(request.ExpectedDesiredState))
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Create(row).Error; err != nil {
 		return domain.AdminRiskReceipt{}, err
 	}
 	return adminRiskReceipt(row), nil
@@ -191,7 +192,7 @@ func adminRiskFingerprint(request domain.AdminRiskRequest) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func adminRiskReceipt(row *modelv1.AdminStrategyRiskChange) domain.AdminRiskReceipt {
+func adminRiskReceipt(row *strategymodelv1.AdminStrategyRiskChange) domain.AdminRiskReceipt {
 	return domain.AdminRiskReceipt{
 		ID:                    row.Id,
 		ActorUserID:           row.ActorUserId,

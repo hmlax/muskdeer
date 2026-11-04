@@ -5,11 +5,12 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func marketSnapshotModel(feed domain.MarketFeedDefinition, instrument *modelv1.Instrument, previous *modelv1.MarketSnapshot, token domain.LeaseToken, reading domain.MarketReading, now time.Time, expiresAt int64) (*modelv1.MarketSnapshot, error) {
+func marketSnapshotModel(feed domain.MarketFeedDefinition, instrument *commonmodelv1.Instrument, previous *marketmodelv1.MarketSnapshot, token domain.LeaseToken, reading domain.MarketReading, now time.Time, expiresAt int64) (*marketmodelv1.MarketSnapshot, error) {
 	baseline := decimal.Zero
 	baselineAt := int64(0)
 	if previous.Id != 0 {
@@ -29,7 +30,7 @@ func marketSnapshotModel(feed domain.MarketFeedDefinition, instrument *modelv1.I
 		reading.Bid, reading.Ask, reading.Mid = decimal.Zero, decimal.Zero, decimal.Zero
 		reading.BidQuantity, reading.AskQuantity = decimal.Zero, decimal.Zero
 	}
-	return &modelv1.MarketSnapshot{
+	return &marketmodelv1.MarketSnapshot{
 		MarketFeedId:     feed.ID,
 		PublisherOwnerId: token.OwnerID,
 		PublisherEpoch:   token.Epoch,
@@ -53,7 +54,7 @@ func marketSnapshotModel(feed domain.MarketFeedDefinition, instrument *modelv1.I
 	}, nil
 }
 
-func checkMarketQuality(feed domain.MarketFeedDefinition, instrument *modelv1.Instrument, reading domain.MarketReading, baseline decimal.Decimal, now time.Time, expiresAt int64) domain.MarketReading {
+func checkMarketQuality(feed domain.MarketFeedDefinition, instrument *commonmodelv1.Instrument, reading domain.MarketReading, baseline decimal.Decimal, now time.Time, expiresAt int64) domain.MarketReading {
 	reading.EvaluatedAt = now
 	if reading.Quality != domain.MarketQualityHealthy {
 		return reading
@@ -89,7 +90,7 @@ func checkMarketQuality(feed domain.MarketFeedDefinition, instrument *modelv1.In
 	return reading
 }
 
-func marketPublicationValue(feed domain.MarketFeedDefinition, row *modelv1.MarketSnapshot, expiresAt int64) (domain.MarketPublication, error) {
+func marketPublicationValue(feed domain.MarketFeedDefinition, row *marketmodelv1.MarketSnapshot, expiresAt int64) (domain.MarketPublication, error) {
 	reading := domain.MarketReading{
 		Source:        feed.Source,
 		InstrumentID:  feed.InstrumentID,
@@ -133,7 +134,7 @@ func marketPublicationValue(feed domain.MarketFeedDefinition, row *modelv1.Marke
 	}, nil
 }
 
-func marketSnapshotNumbers(row *modelv1.MarketSnapshot, reading *domain.MarketReading, baseline *domain.MarketBaseline) error {
+func marketSnapshotNumbers(row *marketmodelv1.MarketSnapshot, reading *domain.MarketReading, baseline *domain.MarketBaseline) error {
 	rule := domain.DecimalRule{
 		IntegerDigits: 20,
 		Scale:         18,

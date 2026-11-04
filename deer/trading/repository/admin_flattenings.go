@@ -11,7 +11,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -34,7 +36,7 @@ func (s *adminAccountFlattenings) Request(ctx context.Context, token, csrf strin
 		return domain.AdminFlattenReceipt{}, err
 	}
 	var result domain.AdminFlattenReceipt
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Transaction(func(tx *gorm.DB) error {
 		var err error
 		result, err = requestAdminFlattening(ctx, tx, token, csrf, request)
 		return err
@@ -52,8 +54,8 @@ func (s *adminAccountFlattenings) Confirmation(ctx context.Context, token string
 	var result domain.AdminFlattenReceipt
 	snapshots := adminStrategies{db: s.db}
 	err := snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.AdminAccountFlattening
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).
+		var row executionmodelv1.AdminAccountFlattening
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).
 			Where("id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&row).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
@@ -80,8 +82,8 @@ func requestAdminFlattening(ctx context.Context, tx *gorm.DB, token, csrf string
 	if err != nil || found {
 		return previous, err
 	}
-	var instance modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
+	var instance strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 		return domain.AdminFlattenReceipt{}, adminRiskLookupFailure(err)
 	}
@@ -92,8 +94,8 @@ func requestAdminFlattening(ctx context.Context, tx *gorm.DB, token, csrf string
 	if err != nil {
 		return domain.AdminFlattenReceipt{}, err
 	}
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", request.AccountID).
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", request.AccountID).
 		Clauses(clause.Locking{Strength: "UPDATE"}).Take(&account).Error; err != nil {
 		return domain.AdminFlattenReceipt{}, err
 	}
@@ -103,7 +105,7 @@ func requestAdminFlattening(ctx context.Context, tx *gorm.DB, token, csrf string
 		return previous, err
 	}
 	var pending int64
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Where("account_id = ? AND delete_at IS NULL", request.AccountID).Count(&pending).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Where("account_id = ? AND delete_at IS NULL", request.AccountID).Count(&pending).Error; err != nil {
 		return domain.AdminFlattenReceipt{}, err
 	}
 	if pending != 0 {
@@ -128,8 +130,8 @@ func requestAdminFlattening(ctx context.Context, tx *gorm.DB, token, csrf string
 }
 
 func previousAdminFlattening(ctx context.Context, tx *gorm.DB, actorID int64, key, fingerprint string) (domain.AdminFlattenReceipt, bool, error) {
-	var row modelv1.AdminAccountFlattening
-	err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Where("actor_user_id = ? AND idempotency_key = ?", actorID, key).Take(&row).Error
+	var row executionmodelv1.AdminAccountFlattening
+	err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Where("actor_user_id = ? AND idempotency_key = ?", actorID, key).Take(&row).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.AdminFlattenReceipt{}, false, nil
 	}
@@ -143,8 +145,8 @@ func previousAdminFlattening(ctx context.Context, tx *gorm.DB, actorID int64, ke
 	return result, true, err
 }
 
-func recordAdminFlattening(ctx context.Context, tx *gorm.DB, user *modelv1.AdminUser, session *modelv1.AdminSession, request domain.AdminFlattenRequest, fingerprint string) (domain.AdminFlattenReceipt, error) {
-	audit := &modelv1.AdminAudit{
+func recordAdminFlattening(ctx context.Context, tx *gorm.DB, user *commonmodelv1.AdminUser, session *commonmodelv1.AdminSession, request domain.AdminFlattenRequest, fingerprint string) (domain.AdminFlattenReceipt, error) {
+	audit := &commonmodelv1.AdminAudit{
 		Actor:         user.Username,
 		ActorRole:     user.Role,
 		Action:        domain.AdminFlattenAction,
@@ -153,10 +155,10 @@ func recordAdminFlattening(ctx context.Context, tx *gorm.DB, user *modelv1.Admin
 		BeforeVersion: proto.Int64(request.ExpectedPortfolioRevision),
 		AfterVersion:  proto.Int64(request.ExpectedPortfolioRevision),
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 		return domain.AdminFlattenReceipt{}, err
 	}
-	row := &modelv1.AdminAccountFlattening{
+	row := &executionmodelv1.AdminAccountFlattening{
 		ActorUserId:               user.Id,
 		ActorSessionId:            session.Id,
 		StrategyInstanceId:        request.StrategyID,
@@ -174,7 +176,7 @@ func recordAdminFlattening(ctx context.Context, tx *gorm.DB, user *modelv1.Admin
 		LimitPrice:                request.LimitPrice.String(),
 		Reason:                    request.Reason,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Create(row).Error; err != nil {
 		return domain.AdminFlattenReceipt{}, err
 	}
 	return adminFlattenReceipt(row)

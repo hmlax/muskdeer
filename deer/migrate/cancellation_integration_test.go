@@ -11,7 +11,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/simulator"
@@ -191,7 +191,7 @@ func TestOMSUnsentCancelOutboxFailureRetainsOriginalIntentAndBudget(t *testing.T
 	injected := errors.New("controlled cancellation event write failure")
 	const callbackName = "muskdeer:test:reject-cancellation-event"
 	if err := db.Callback().Create().Before("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if event, ok := tx.Statement.Dest.(*modelv1.OutboxEvent); ok && event.Event != nil && event.Event.Cancellation != nil {
+		if event, ok := tx.Statement.Dest.(*executionmodelv1.OutboxEvent); ok && event.Event != nil && event.Event.Cancellation != nil {
 			tx.Error = injected
 		}
 	}); err != nil {
@@ -212,7 +212,7 @@ func TestOMSUnsentCancelOutboxFailureRetainsOriginalIntentAndBudget(t *testing.T
 	}
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Count(&count).Error; err != nil || count != 0 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Count(&count).Error; err != nil || count != 0 {
 		t.Fatalf("failed cancellation left a command: %d, %v", count, err)
 	}
 }

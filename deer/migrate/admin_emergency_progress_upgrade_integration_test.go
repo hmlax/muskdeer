@@ -9,7 +9,9 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -25,21 +27,21 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	source := riskEventLegacySource(ctx, t, db, instrument.Id, false)
-	account := &modelv1.SimulatorAccount{
+	account := &executionmodelv1.SimulatorAccount{
 		AccountId:    source.AccountId,
 		SubjectId:    "legacy-emergency-upgrade-subject",
 		Enabled:      true,
 		QuoteFeeRate: "0",
 		Revision:     1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Create(account).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Create(account).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Create(&modelv1.AccountBudget{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Create(&commonmodelv1.AccountBudget{
 		AccountId:        source.AccountId,
 		Asset:            instrument.QuoteAsset,
 		LimitNotional:    "100",
@@ -49,7 +51,7 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Create(&strategymodelv1.StrategyBudget{
 		StrategyInstanceId: source.StrategyInstanceId,
 		AccountId:          source.AccountId,
 		LimitNotional:      "100",
@@ -61,7 +63,7 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 	}
 	actor := riskActorFixture(ctx, t, db, "legacy-emergency-operator", domain.AdminRoleOperator, 181, domain.AdminSessionTTL)
 	accepted := emergencySchemaCandidate(ctx, t, db, actor, source.StrategyInstanceId, 1)
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).Create(accepted).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).Create(accepted).Error; err != nil {
 		t.Fatal(err)
 	}
 	before := riskEventSourceRow(ctx, t, db, source.StrategyInstanceId)
@@ -69,8 +71,8 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatal("legacy accepted scope progress migration failed", err)
 	}
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.Id).Take(&task).Error; err != nil ||
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.Id).Take(&task).Error; err != nil ||
 		task.StrategyInstanceId != source.StrategyInstanceId || task.State != string(domain.AdminEmergencyCancelAccepted) || task.Revision != 1 ||
 		task.EnrollmentUpperId != nil || task.EnrollmentAfterId != 0 || task.EnrollmentComplete || task.CompletedAt != nil || task.CreateAt <= 0 || task.DeleteAt != nil {
 		t.Fatal("upgrade invented enrollment/completion or lost its source scope", err)
@@ -81,8 +83,8 @@ func TestAdminEmergencyProgressUpgradeAddsOnlyPendingMarkerToAcceptedScope(t *te
 	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatal("progress migration replay failed", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellationTask{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminEmergencyCancellationTask{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }

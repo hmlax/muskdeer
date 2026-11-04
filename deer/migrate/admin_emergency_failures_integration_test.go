@@ -7,7 +7,8 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -82,8 +83,8 @@ func TestAdminEmergencyKnownCancelFailureDoesNotResolveUnknownSubmissionOrReleas
 				t.Fatal("unresolved original submission was treated as a resolved failure")
 			}
 			assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
-			assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 1)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 			if submitted {
 				assertEmergencyHistoricalFailureAfterFill(ctx, t, db, actor, accepted, order, core, intents)
 			}

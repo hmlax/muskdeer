@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "deer/proto/common/v1/development_baseline.proto";
+import "deer/proto/common/v1/himalaya.proto";
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/execution/model/v1;modelv1";
+
+// HimalayaDevelopmentBaseline retains legacy unknown risk independently of
+// native cancellation proof. Each account can be baselined only once.
+message HimalayaDevelopmentBaseline {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_dev_baseline_account\""];
+  muskdeer.common.v1.DevelopmentBaselineRequest request = 6 [(tagger.tags) = "gorm:\"column:request;type:jsonb;serializer:json;not null\""];
+  string request_digest = 7 [(tagger.tags) = "gorm:\"column:request_digest;type:varchar(64);not null\""];
+  muskdeer.common.v1.HimalayaSnapshot snapshot = 8 [(tagger.tags) = "gorm:\"column:snapshot;type:jsonb;serializer:json;not null\""];
+  string legacy_notional = 9 [(tagger.tags) = "gorm:\"column:legacy_notional;type:numeric(76,36);not null\""];
+  string minimum_observed_notional = 10 [(tagger.tags) = "gorm:\"column:minimum_observed_notional;type:numeric(76,36);not null\""];
+  string evidence_digest = 11 [(tagger.tags) = "gorm:\"column:evidence_digest;type:varchar(64);not null\""];
+}

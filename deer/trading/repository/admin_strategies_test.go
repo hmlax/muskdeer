@@ -8,13 +8,13 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 func TestAdminConfigLegacyHasNoInventedParametersAndMalformedDataFailsClosed(t *testing.T) {
-	instance := &modelv1.StrategyInstance{Template: string(domain.StrategyTemplateGrid)}
-	legacy := &modelv1.StrategyConfigVersion{
+	instance := &strategymodelv1.StrategyInstance{Template: string(domain.StrategyTemplateGrid)}
+	legacy := &strategymodelv1.StrategyConfigVersion{
 		InstanceId:       1,
 		Version:          1,
 		MarketDataSource: string(domain.MarketSourceOKX),
@@ -23,7 +23,7 @@ func TestAdminConfigLegacyHasNoInventedParametersAndMalformedDataFailsClosed(t *
 	if err != nil || value.SchemaVersion != 0 || value.Parameters.Template != "" || value.Parameters.Maker != nil || value.Parameters.Grid != nil {
 		t.Fatal("legacy metadata became a runnable template", err)
 	}
-	for _, invalid := range []*modelv1.StrategyConfigVersion{
+	for _, invalid := range []*strategymodelv1.StrategyConfigVersion{
 		{
 			ParametersSchemaVersion: domain.ParametersSchemaVersion,
 			Template:                proto.String(string(domain.StrategyTemplateGrid)),

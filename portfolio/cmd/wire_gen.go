@@ -10,7 +10,7 @@ import (
 	"context"
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/processlog"
-	"github.com/hmlax/muskdeer/deer/proto/config/v1"
+	"github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/portfolio/internal/app"
 	"io"
 )

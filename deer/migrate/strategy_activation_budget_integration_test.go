@@ -14,7 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -55,7 +56,7 @@ func TestStrategyActivationBudgetFollowsBothTemplatesOnlyAfterActivation(t *test
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", current.ID).UpdateColumn("enabled", false).Error; err != nil {
+			if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", current.ID).UpdateColumn("enabled", false).Error; err != nil {
 				t.Fatal(err)
 			}
 			before := activationBudget(ctx, t, db, current.ID)
@@ -91,8 +92,8 @@ func TestStrategyActivationBudgetFollowsBothTemplatesOnlyAfterActivation(t *test
 			if retained := activationBudget(ctx, t, db, current.ID); !proto.Equal(after, retained) {
 				t.Fatal("replaying an active pair changed budget revision")
 			}
-			var account modelv1.AccountBudget
-			if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", submit.Input.AccountID).First(&account).Error; err != nil {
+			var account commonmodelv1.AccountBudget
+			if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", submit.Input.AccountID).First(&account).Error; err != nil {
 				t.Fatal(err)
 			}
 			if !decimal.RequireFromString(account.LimitNotional).Equal(decimal.NewFromInt(300)) || !decimal.RequireFromString(account.ReservedNotional).IsZero() || account.Revision != 1 {
@@ -177,7 +178,7 @@ func TestStrategyActivationBudgetRejectsResidualReservation(t *testing.T) {
 	_, submit := admissionFixture(ctx, t, db)
 	strategyID := submit.Input.Authority.StrategyID
 	stageActivationConfig(ctx, t, db, strategyID, domain.MarketSourceOKX, "20", "20.000000000000000002")
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", strategyID).UpdateColumn("reserved_notional", "1").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", strategyID).UpdateColumn("reserved_notional", "1").Error; err != nil {
 		t.Fatal(err)
 	}
 	before := activationBudget(ctx, t, db, strategyID)
@@ -220,7 +221,7 @@ func TestStrategyActivationBudgetDatabaseRejectsBypassedSynchronization(t *testi
 				t.Fatal(err)
 			}
 			if mismatch == "reservation" {
-				if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", strategyID).
+				if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", strategyID).
 					Updates(map[string]any{
 						"limit_notional":    "40.000000000000000004",
 						"reserved_notional": "1",
@@ -229,8 +230,8 @@ func TestStrategyActivationBudgetDatabaseRejectsBypassedSynchronization(t *testi
 				}
 			}
 			before := activationBudget(ctx, t, db, strategyID)
-			err = db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).
-				Select("ActiveConfigVersion", "ActiveMarketDataSource", "Revision").Updates(&modelv1.StrategyInstance{
+			err = db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).
+				Select("ActiveConfigVersion", "ActiveMarketDataSource", "Revision").Updates(&strategymodelv1.StrategyInstance{
 				ActiveConfigVersion:    proto.Int64(2),
 				ActiveMarketDataSource: proto.String(string(domain.MarketSourceOKX)),
 				Revision:               current.Revision + 1,
@@ -271,10 +272,10 @@ func TestStrategyActivationBudgetRollsBackOnInventoryAndCommitFence(t *testing.T
 				want = domain.ErrLeaseLost
 				const callback = "test:expire-strategy-budget-activation"
 				if err := db.Callback().Update().After("gorm:update").Register(callback, func(tx *gorm.DB) {
-					if tx.Error != nil || tx.Statement.Schema == nil || tx.Statement.Schema.ModelType != reflect.TypeFor[modelv1.StrategyBudget]() {
+					if tx.Error != nil || tx.Statement.Schema == nil || tx.Statement.Schema.ModelType != reflect.TypeFor[strategymodelv1.StrategyBudget]() {
 						return
 					}
-					result := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.StrategyLease{}).
+					result := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&strategymodelv1.StrategyLease{}).
 						Where("strategy_instance_id = ?", strategyID).UpdateColumn("expires_at", 0)
 					if result.Error != nil {
 						tx.Error = errors.Join(tx.Error, result.Error)
@@ -299,10 +300,10 @@ func TestStrategyActivationBudgetRollsBackOnInventoryAndCommitFence(t *testing.T
 	}
 }
 
-func stageActivationConfig(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64, source domain.MarketSource, inventory, budget string) *modelv1.StrategyConfigVersion {
+func stageActivationConfig(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64, source domain.MarketSource, inventory, budget string) *strategymodelv1.StrategyConfigVersion {
 	t.Helper()
-	var previous modelv1.StrategyConfigVersion
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ?", strategyID).Order("version DESC").First(&previous).Error; err != nil {
+	var previous strategymodelv1.StrategyConfigVersion
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("instance_id = ?", strategyID).Order("version DESC").First(&previous).Error; err != nil {
 		t.Fatal(err)
 	}
 	version := proto.CloneOf(&previous)
@@ -313,11 +314,11 @@ func stageActivationConfig(ctx context.Context, t *testing.T, db *gorm.DB, strat
 	} else {
 		version.GridParameters.TotalBudget, version.GridParameters.InventoryLimit = budget, inventory
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).
 			Updates(map[string]any{
 				"requested_config_version": version.Version,
 				"market_data_source":       string(source),
@@ -329,16 +330,16 @@ func stageActivationConfig(ctx context.Context, t *testing.T, db *gorm.DB, strat
 	return version
 }
 
-func activationBudget(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) *modelv1.StrategyBudget {
+func activationBudget(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64) *strategymodelv1.StrategyBudget {
 	t.Helper()
-	var row modelv1.StrategyBudget
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", strategyID).First(&row).Error; err != nil {
+	var row strategymodelv1.StrategyBudget
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", strategyID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return &row
 }
 
-func assertActivationUnchanged(ctx context.Context, t *testing.T, db *gorm.DB, lifecycle domain.StrategyLifecycle, before domain.StrategySpec, budget *modelv1.StrategyBudget) {
+func assertActivationUnchanged(ctx context.Context, t *testing.T, db *gorm.DB, lifecycle domain.StrategyLifecycle, before domain.StrategySpec, budget *strategymodelv1.StrategyBudget) {
 	t.Helper()
 	retained, err := lifecycle.Instance(ctx, before.ID)
 	if err != nil || retained != before || !proto.Equal(budget, activationBudget(ctx, t, db, before.ID)) {

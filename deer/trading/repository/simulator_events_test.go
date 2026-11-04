@@ -3,20 +3,20 @@ package repository
 import (
 	"testing"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 )
 
 func TestSimulatorFillEventBindsSourceAndPreservesExactLedgerValues(t *testing.T) {
-	order := &modelv1.SimulatorOrder{
+	order := &executionmodelv1.SimulatorOrder{
 		Id:                 7,
 		AccountId:          "event-account",
 		StrategyInstanceId: 3,
 		InstrumentId:       5,
 		Side:               string(domain.SideBuy),
 	}
-	fill := &modelv1.SimulatorFill{
+	fill := &executionmodelv1.SimulatorFill{
 		Id:            11,
 		CoreOrderId:   7,
 		TradeId:       "event-trade",

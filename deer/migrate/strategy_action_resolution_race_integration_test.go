@@ -11,7 +11,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -45,7 +45,7 @@ func TestActionResolutionWaitsForInFlightAdmissionPastItsDeadline(t *testing.T) 
 	}()
 	const callback = "muskdeer:test:hold-action-admission-commit"
 	if err := db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
-		row, ok := tx.Statement.Dest.(*modelv1.OrderIntent)
+		row, ok := tx.Statement.Dest.(*executionmodelv1.OrderIntent)
 		if !ok || row.IdempotencyKey != attempted.IdempotencyKey {
 			return
 		}

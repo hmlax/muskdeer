@@ -14,7 +14,8 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -51,14 +52,14 @@ func TestPortfolioInboxNaturalKeysAndOutOfOrderRebuild(t *testing.T) {
 	if err != nil || !duplicate.Values.CostQuote.Equal(complete.Values.CostQuote) || !duplicate.Values.RealizedPnlQuote.Equal(complete.Values.RealizedPnlQuote) {
 		t.Fatalf("new delivery ID repeated a natural trade: %+v, %v", duplicate, err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 3)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 3)
 	conflicting := proto.Clone(buyEvent).(*commonv1.ExecutionEvent)
 	conflicting.RequestId = "changed-envelope"
 	if _, err := portfolio.Apply(ctx, portfolioNotice(ctx, t, conflicting)); !errors.Is(err, domain.ErrIdempotencyConflict) {
 		t.Fatalf("same event ID changed its fingerprint: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).UpdateColumn("quantity", "9").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).UpdateColumn("quantity", "9").Error; err != nil {
 		t.Fatal(err)
 	}
 	if checked, err := portfolio.Get(ctx, submit.Input.AccountID); err != nil || checked.Reconciled {
@@ -68,10 +69,10 @@ func TestPortfolioInboxNaturalKeysAndOutOfOrderRebuild(t *testing.T) {
 	if err != nil || !rebuilt.Reconciled || !rebuilt.Values.Quantity.Equal(complete.Values.Quantity) || !rebuilt.Values.CostQuote.Equal(complete.Values.CostQuote) || !rebuilt.Values.RealizedPnlQuote.Equal(complete.Values.RealizedPnlQuote) {
 		t.Fatalf("fact rebuild differs from original: %+v, %v", rebuilt, err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).UpdateColumn("opening_quantity", "9").Error
+	err = db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).UpdateColumn("opening_quantity", "9").Error
 	assertDatabaseCode(t, err, "23514")
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).First(&risk).Error; err != nil || risk.Reconciled {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).First(&risk).Error; err != nil || risk.Reconciled {
 		t.Fatalf("portfolio silently reopened a risk grant: %v, %v", &risk, err)
 	}
 }
@@ -91,7 +92,7 @@ func TestPortfolioProjectionFailureRollsBackInboxAndFact(t *testing.T) {
 	active := true
 	const callbackName = "muskdeer:test:reject-portfolio-write"
 	if err := db.Callback().Update().Before("gorm:update").Register(callbackName, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.PortfolioAccount); ok && active {
+		if _, ok := tx.Statement.Dest.(*portfoliomodelv1.PortfolioAccount); ok && active {
 			tx.Error = injected
 		}
 	}); err != nil {
@@ -105,8 +106,8 @@ func TestPortfolioProjectionFailureRollsBackInboxAndFact(t *testing.T) {
 	if _, err := portfolio.Apply(ctx, portfolioNotice(ctx, t, buyEvent)); !errors.Is(err, injected) {
 		t.Fatalf("projection failure lost its cause: %v", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 1)
 	active = false
 	if complete, err := portfolio.Apply(ctx, portfolioNotice(ctx, t, buyEvent)); err != nil || !complete.Reconciled {
 		t.Fatalf("rolled-back event could not recover: %+v, %v", complete, err)

@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/execution/simulator"
 )
@@ -125,8 +125,8 @@ func TestCancellationRPCRecoversLostReplyByStableKeyWithoutAnotherCancel(t *test
 			t.Fatalf("missing or wrong-account key leaked another request: %v", err)
 		}
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorCommand{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorCommand{}, 2)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 }
 

@@ -9,21 +9,24 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func adminFlattenBasis(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, core coreRows, account *modelv1.AccountBudget) (domain.AdminFlattenBasis, error) {
+func adminFlattenBasis(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, core coreRows, account *commonmodelv1.AccountBudget) (domain.AdminFlattenBasis, error) {
 	if !core.account.Enabled || core.instrument.Status != domain.InstrumentStatusTrading || account.Asset != core.instrument.QuoteAsset {
 		return domain.AdminFlattenBasis{}, domain.ErrAdminFlattenDenied
 	}
-	var budget modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", instance.Id, account.AccountId).
+	var budget strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", instance.Id, account.AccountId).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&budget).Error; err != nil {
 		return domain.AdminFlattenBasis{}, err
 	}
-	var portfolio modelv1.PortfolioAccount
-	if err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", account.AccountId).
+	var portfolio portfoliomodelv1.PortfolioAccount
+	if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", account.AccountId).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&portfolio).Error; err != nil {
 		return domain.AdminFlattenBasis{}, err
 	}
@@ -35,8 +38,8 @@ func adminFlattenBasis(ctx context.Context, tx *gorm.DB, instance *modelv1.Strat
 	if err != nil {
 		return domain.AdminFlattenBasis{}, err
 	}
-	var siblings []*modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Select("id").Where("account_id = ? AND delete_at IS NULL", account.AccountId).Limit(2).Find(&siblings).Error; err != nil {
+	var siblings []*strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Select("id").Where("account_id = ? AND delete_at IS NULL", account.AccountId).Limit(2).Find(&siblings).Error; err != nil {
 		return domain.AdminFlattenBasis{}, err
 	}
 	basis.StrategyCount = int64(len(siblings))
@@ -65,7 +68,7 @@ func adminFlattenBasis(ctx context.Context, tx *gorm.DB, instance *modelv1.Strat
 	return basis, nil
 }
 
-func flattenBasisValues(portfolio *modelv1.PortfolioAccount, base, quote *modelv1.SimulatorBalance, instrument *modelv1.Instrument, account *modelv1.AccountBudget, budget *modelv1.StrategyBudget) (domain.AdminFlattenBasis, error) {
+func flattenBasisValues(portfolio *portfoliomodelv1.PortfolioAccount, base, quote *executionmodelv1.SimulatorBalance, instrument *commonmodelv1.Instrument, account *commonmodelv1.AccountBudget, budget *strategymodelv1.StrategyBudget) (domain.AdminFlattenBasis, error) {
 	snapshot, err := portfolioSnapshot(portfolio)
 	if err != nil {
 		return domain.AdminFlattenBasis{}, err
@@ -117,19 +120,19 @@ func flattenOrderDecimalRule() domain.DecimalRule {
 // original strategy's scope has historical final proof. Counts are never added.
 func flattenAccountObligations(ctx context.Context, tx *gorm.DB, accountID string) (bool, error) {
 	var count int64
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND delete_at IS NULL", accountID).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND delete_at IS NULL", accountID).
 		Where("(state IN ? OR reserved_quote_notional <> 0)", []domain.OrderState{domain.OrderStateIntent, domain.OrderStateSubmitting, domain.OrderStateLive, domain.OrderStatePartiallyFilled, domain.OrderStateUnknown}).Count(&count).Error; err != nil || count != 0 {
 		return count != 0, err
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND delete_at IS NULL AND state IN ?", accountID,
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND delete_at IS NULL AND state IN ?", accountID,
 		[]domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}).Count(&count).Error; err != nil || count != 0 {
 		return count != 0, err
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyAction{}).Where("account_id = ? AND delete_at IS NULL AND state IN ?", accountID,
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Where("account_id = ? AND delete_at IS NULL AND state IN ?", accountID,
 		[]domain.StrategyActionState{domain.StrategyActionPending, domain.StrategyActionDispatching, domain.StrategyActionWaiting, domain.StrategyActionUnknown}).Count(&count).Error; err != nil || count != 0 {
 		return count != 0, err
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("account_id = ? AND delete_at IS NULL AND state IN ?", accountID,
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("account_id = ? AND delete_at IS NULL AND state IN ?", accountID,
 		[]domain.CancellationState{domain.CancellationRequested, domain.CancellationSubmitting, domain.CancellationPending, domain.CancellationUnknown}).Count(&count).Error; err != nil || count != 0 {
 		return count != 0, err
 	}
@@ -137,12 +140,12 @@ func flattenAccountObligations(ctx context.Context, tx *gorm.DB, accountID strin
 }
 
 func flattenCancellationProof(ctx context.Context, tx *gorm.DB, strategyID, id int64) (domain.AdminEmergencyCancelRecord, error) {
-	var row modelv1.AdminEmergencyCancellation
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellation{}).Where("id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&row).Error; err != nil {
+	var row executionmodelv1.AdminEmergencyCancellation
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellation{}).Where("id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&row).Error; err != nil {
 		return domain.AdminEmergencyCancelRecord{}, adminRiskLookupFailure(err)
 	}
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&task).Error; err != nil {
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ? AND strategy_instance_id = ? AND delete_at IS NULL", id, strategyID).Take(&task).Error; err != nil {
 		return domain.AdminEmergencyCancelRecord{}, emergencyTaskLookupFailure(err)
 	}
 	return adminEmergencyRecord(&row, &task)

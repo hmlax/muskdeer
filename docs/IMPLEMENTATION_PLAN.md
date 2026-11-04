@@ -1,5 +1,13 @@
 # Codex 实施任务
 
+## P21：Proto 按服务归属整理
+
+状态：目录与协议兼容验收完成；验证范围与首次失败记录见 P21 进度。
+
+本轮验收：所有项目 Proto 以服务或 common 为第一层；模型/配置/内部 RPC 按定义归属迁移，公共资金和协议继续共用；保留 Proto 消息/服务全名、字段、GORM 元数据与数据库迁移，HimalayaAuthority 不改。更新生成、目录/模型门禁、Wire 和全部调用点；对原有未提交内容做语义保留验证，独立提交目录调整。验证结果见 PROGRESS。
+
+2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。
+
 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。
 
 ## P20：服务归属、旧入口清理与 gRPC 健康

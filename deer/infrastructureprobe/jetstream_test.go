@@ -19,8 +19,8 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/jetstream"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	probev1 "github.com/hmlax/muskdeer/deer/proto/rpc/probe/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/proto/common/probe/v1"
 )
 
 func TestJetStreamInfrastructure(t *testing.T) {

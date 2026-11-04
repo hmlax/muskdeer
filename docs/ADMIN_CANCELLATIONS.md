@@ -24,11 +24,11 @@ P07.35提供持久请求/结果仓储及实际策略控制器处理，P07.36增�
 
 核心取消已确认但 OMS 仍 LIVE/PENDING 时，收据继续 ACCEPTED，OMS 预留仍在；只有原执行恢复流程确认终态并处理预算后才完成。撤单期间成交继续通过原账本和成交事实核算。收据身份、原因、初始确认、动作关联及终态不可重写或删除；数据库独立验证关联目标和完成证明。
 
-生成模型为 [AdminOrderCancellation](../deer/proto/model/v1/admin_cancellation.proto)，迁移30只增加该表、索引和约束，不改写已有订单、预算或运行目标。验证见 [P07.35](validation/P07-35.md)。
+生成模型为 [AdminOrderCancellation](../deer/proto/execution/model/v1/admin_cancellation.proto)，迁移30只增加该表、索引和约束，不改写已有订单、预算或运行目标。验证见 [P07.35](validation/P07-35.md)。
 
 ## Typed gRPC 与同源 HTTP
 
-[具体 Proto 合同](../deer/proto/rpc/strategy/v1/cancellations.proto)分开声明 `StrategyOrderCancellationQuery.GetOrderCancellation` 和 `StrategyOrderCancellationControl.RequestOrderCancellation`。前者随 `business.strategy.management_enabled` 注册；写入额外要求 `control_enabled`。管理节点未配置账户时可以保存请求和查询结果，但不会取得策略/执行租约，也不会凭受理完成撤单。原账户执行者可在接管后处理这些请求。
+[具体 Proto 合同](../deer/proto/strategy/v1/cancellations.proto)分开声明 `StrategyOrderCancellationQuery.GetOrderCancellation` 和 `StrategyOrderCancellationControl.RequestOrderCancellation`。前者随 `business.strategy.management_enabled` 注册；写入额外要求 `control_enabled`。管理节点未配置账户时可以保存请求和查询结果，但不会取得策略/执行租约，也不会凭受理完成撤单。原账户执行者可在接管后处理这些请求。
 
 两个 RPC 都要求当前已验证 `api.grpc` mTLS 身份、规范会话、正数且最多5秒原生期限、≤2KiB请求及无未知字段；写入还要求独立 CSRF、操作者幂等键、明确策略/订单及确认 revision。业务事务独立验证当前权限。返回具体收据及可空 `OrderCancellationObservation`，不包含会话、指纹、幂等键或动作键。
 

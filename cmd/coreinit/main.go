@@ -14,7 +14,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/migrate"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/processfailure"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

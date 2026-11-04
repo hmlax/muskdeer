@@ -7,7 +7,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -15,17 +16,17 @@ import (
 // Keep the admission order: instrument -> core account -> account budget -> own
 // budget. Locking the shared budget first can deadlock another strategy's core
 // writer. All changes roll back with the active pair and final lease fence.
-func prepareActivationBudget(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyInstance, replacing bool) error {
+func prepareActivationBudget(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyInstance, replacing bool) error {
 	if _, err := lockCoreRows(ctx, tx, row.AccountId, row.InstrumentId); err != nil {
 		return err
 	}
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", row.AccountId).
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", row.AccountId).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&account).Error; err != nil {
 		return err
 	}
-	var own modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", row.Id, row.AccountId).
+	var own strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", row.Id, row.AccountId).
 		Clauses(clause.Locking{Strength: "UPDATE"}).First(&own).Error; err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func prepareActivationBudget(ctx context.Context, tx *gorm.DB, row *modelv1.Stra
 	}
 	previous := own.Revision
 	own.LimitNotional, own.Revision = limit.String(), previous+1
-	return reservationResult(tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("id = ? AND revision = ?", own.Id, previous).
+	return reservationResult(tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("id = ? AND revision = ?", own.Id, previous).
 		Select("LimitNotional", "Revision").Updates(&own))
 }
 

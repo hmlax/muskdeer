@@ -12,7 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -94,8 +95,8 @@ func TestAdminAuditsReadActualManagementHistoryWithExactFiltersAndPagination(t *
 	if _, err := reader.Detail(ctx, actor.Token, entries[2].ID+100); !errors.Is(err, domain.ErrAdminNotFound) {
 		t.Fatal("missing audit detail fabricated a result", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 4)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 4)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 1)
 	assertGatewayOrderCount(ctx, t, db, 0)
 	instance := publicationInstance(ctx, t, db, created.StrategyID)
 	if instance.State != string(domain.StrategyStateCreated) || instance.RuntimeOwnerEpoch != 0 || instance.ActiveConfigVersion != nil {
@@ -158,7 +159,7 @@ func TestAdminAuditsKeepViewerAuthorityAndHistoryInOneSnapshot(t *testing.T) {
 	}
 	const callback = "test:audit-concurrent-record"
 	inserted := false
-	row := &modelv1.AdminAudit{
+	row := &commonmodelv1.AdminAudit{
 		Actor:     actor.Principal.Username,
 		ActorRole: string(domain.AdminRoleViewer),
 		Action:    domain.AdminAuditActionLogin,
@@ -166,11 +167,11 @@ func TestAdminAuditsKeepViewerAuthorityAndHistoryInOneSnapshot(t *testing.T) {
 		Reason:    domain.AdminAuditReasonLogin,
 	}
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, ok := query.Statement.Dest.(*modelv1.AdminSession); !ok || inserted {
+		if _, ok := query.Statement.Dest.(*commonmodelv1.AdminSession); !ok || inserted {
 			return
 		}
 		inserted = true
-		if err := db.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(row).Error; err != nil {
+		if err := db.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(row).Error; err != nil {
 			_ = query.AddError(err)
 		}
 	}); err != nil {
@@ -190,8 +191,8 @@ func TestAdminAuditsKeepViewerAuthorityAndHistoryInOneSnapshot(t *testing.T) {
 	if err != nil || len(after.Items) != 1 || after.Items[0].ID != row.Id {
 		t.Fatal("viewer could not read the next committed audit snapshot", err)
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("id = ?", row.Id).UpdateColumn("reason", "rewrite").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("id = ?", row.Id).Delete(&modelv1.AdminAudit{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("id = ?", row.Id).UpdateColumn("reason", "rewrite").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("id = ?", row.Id).Delete(&commonmodelv1.AdminAudit{}).Error, "23514")
 	auth, err := repository.NewAdminAuth(db)
 	if err != nil {
 		t.Fatal(err)
@@ -211,7 +212,7 @@ func TestAdminAuditsRejectCurrentCredentialChangeAndKeepStoredVersionsOwned(t *t
 		t.Fatal(err)
 	}
 	actor := adminControlSessionFixtureForRole(ctx, t, db, domain.AdminRoleViewer)
-	row := &modelv1.AdminAudit{
+	row := &commonmodelv1.AdminAudit{
 		Actor:         actor.Principal.Username,
 		ActorRole:     string(domain.AdminRoleViewer),
 		Action:        domain.AdminAuditActionLogin,
@@ -220,7 +221,7 @@ func TestAdminAuditsRejectCurrentCredentialChangeAndKeepStoredVersionsOwned(t *t
 		BeforeVersion: proto.Int64(9007199254740993),
 		AfterVersion:  proto.Int64(9007199254740994),
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
 	reader, err := repository.NewAdminAudits(db)
@@ -236,8 +237,8 @@ func TestAdminAuditsRejectCurrentCredentialChangeAndKeepStoredVersionsOwned(t *t
 	if err != nil || again.AfterVersion == nil || *again.AfterVersion != *row.AfterVersion {
 		t.Fatal("caller mutation changed persisted audit history", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", actor.Principal.UserID).
-		Select("CredentialVersion", "Revision").Updates(&modelv1.AdminUser{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", actor.Principal.UserID).
+		Select("CredentialVersion", "Revision").Updates(&commonmodelv1.AdminUser{
 		CredentialVersion: 2,
 		Revision:          2,
 	}).Error; err != nil {
@@ -261,7 +262,7 @@ func TestAdminAuditsReturnNoPartialHistoryOnStorageFailureOrCancellation(t *test
 	const callback = "test:audit-query-failure"
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
 		switch query.Statement.Dest.(type) {
-		case *[]*modelv1.AdminAudit, *modelv1.AdminAudit:
+		case *[]*commonmodelv1.AdminAudit, *commonmodelv1.AdminAudit:
 			_ = query.AddError(errors.New("private persistence diagnostics"))
 		}
 	}); err != nil {

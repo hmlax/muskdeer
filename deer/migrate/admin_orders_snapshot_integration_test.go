@@ -11,7 +11,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -34,7 +35,7 @@ func TestAdminOrdersKeepAuthorityOMSAndCoreWithinOneReadSnapshot(t *testing.T) {
 	inserted := false
 	const callback = "test:order-core-after-authentication-snapshot"
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, ok := query.Statement.Dest.(*modelv1.AdminSession); !ok || inserted {
+		if _, ok := query.Statement.Dest.(*commonmodelv1.AdminSession); !ok || inserted {
 			return
 		}
 		inserted = true
@@ -86,7 +87,7 @@ func TestAdminOrdersFailuresAndRevokedAuthorityReturnNoPartialData(t *testing.T)
 	injected := errors.New("private core query storage failure")
 	const callback = "test:reject-admin-order-core-read"
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, ok := query.Statement.Dest.(*[]*modelv1.SimulatorOrder); ok {
+		if _, ok := query.Statement.Dest.(*[]*executionmodelv1.SimulatorOrder); ok {
 			_ = query.AddError(injected)
 		}
 	}); err != nil {
@@ -124,5 +125,5 @@ func TestAdminOrdersFailuresAndRevokedAuthorityReturnNoPartialData(t *testing.T)
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "220")
 	assertGatewayOrderCount(ctx, t, db, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 3)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 3)
 }

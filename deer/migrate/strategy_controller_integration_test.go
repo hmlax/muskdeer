@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/strategy/usecase"
@@ -53,18 +53,18 @@ func TestStrategyControllerQuotesProtectsAndWaitsForTerminalStop(t *testing.T) {
 		strategyControllerTick(ctx, t, controller, market)
 		t.Logf("unavailable tick %d: submit=%d cancel=%d", tick, execution.submits, execution.cancels)
 	}
-	var state modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&state, submit.Input.Authority.StrategyID).Error; err != nil {
+	var state strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&state, submit.Input.Authority.StrategyID).Error; err != nil {
 		t.Fatal(err)
 	}
 	if state.State != string(domain.StrategyStateRecovering) || execution.submits > 4 || execution.cancels == 0 {
 		t.Fatalf("selected market loss did not protect existing quotes: %s submit=%d cancel=%d", state.State, execution.submits, execution.cancels)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", state.Id).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", state.Id).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	strategyControllerTick(ctx, t, controller, market)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&state, state.Id).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&state, state.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if state.State != string(domain.StrategyStateStopping) {
@@ -78,7 +78,7 @@ func TestStrategyControllerQuotesProtectsAndWaitsForTerminalStop(t *testing.T) {
 	for range 6 {
 		strategyControllerTick(ctx, t, controller, market)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&state, state.Id).Error; err != nil || state.State != string(domain.StrategyStateStopped) {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&state, state.Id).Error; err != nil || state.State != string(domain.StrategyStateStopped) {
 		t.Fatalf("terminal orders did not complete stop: %s, %v", state.State, err)
 	}
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
@@ -344,8 +344,8 @@ func TestStrategyControllerReobservesConcurrentControlRequest(t *testing.T) {
 	for range 3 {
 		strategyControllerTick(ctx, t, controller, market)
 	}
-	var row modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&row, submit.Input.Authority.StrategyID).Error; err != nil {
+	var row strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&row, submit.Input.Authority.StrategyID).Error; err != nil {
 		t.Fatal(err)
 	}
 	if row.State != string(domain.StrategyStateStopped) || row.DesiredRunning || execution.submits != 0 {
@@ -367,8 +367,8 @@ func (s *concurrentStopLifecycle) Instance(ctx context.Context, id int64) (domai
 	}
 	s.changed = true
 	// Commit the management request after the controller read, before its CAS.
-	err = s.db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).
-		Select("DesiredRunning", "Revision").Updates(&modelv1.StrategyInstance{
+	err = s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).
+		Select("DesiredRunning", "Revision").Updates(&strategymodelv1.StrategyInstance{
 		DesiredRunning: false,
 		Revision:       row.Revision + 1,
 	}).Error

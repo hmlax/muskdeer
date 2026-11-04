@@ -9,7 +9,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -25,7 +25,7 @@ func adminControlSessionFixture(ctx context.Context, t *testing.T, db *gorm.DB) 
 
 func adminControlSessionFixtureForRole(ctx context.Context, t *testing.T, db *gorm.DB, role domain.AdminRole) domain.AdminLogin {
 	t.Helper()
-	user := &modelv1.AdminUser{
+	user := &commonmodelv1.AdminUser{
 		Username:          "control-operator",
 		PasswordHash:      controlFixturePasswordHash,
 		Role:              string(role),
@@ -33,13 +33,13 @@ func adminControlSessionFixtureForRole(ctx context.Context, t *testing.T, db *go
 		CredentialVersion: 1,
 		Revision:          1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Create(user).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Create(user).Error; err != nil {
 		t.Fatal(err)
 	}
 	now := controlTestDatabaseTime(ctx, t, db, user.Id)
 	token, tokenHash := controlTestSecret(41)
 	csrf, csrfHash := controlTestSecret(42)
-	session := &modelv1.AdminSession{
+	session := &commonmodelv1.AdminSession{
 		CreateAt:          now,
 		UpdateAt:          now,
 		UserId:            user.Id,
@@ -48,7 +48,7 @@ func adminControlSessionFixtureForRole(ctx context.Context, t *testing.T, db *go
 		CredentialVersion: user.CredentialVersion,
 		ExpiresAt:         now + domain.AdminSessionTTL.Milliseconds(),
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Create(session).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
 	return domain.AdminLogin{

@@ -13,8 +13,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -72,8 +73,8 @@ func strategySourceProcessScenario(t *testing.T, lost domain.MarketSource) {
 	execution := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), naming, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}
@@ -112,7 +113,7 @@ func strategySourceProcessScenario(t *testing.T, lost domain.MarketSource) {
 		t.Fatal("original source did not recover with its own current feed proof")
 	}
 	ids := []int64{binanceStrategy, okxStrategy}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id IN ?", ids).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id IN ?", ids).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	waitStrategyProcessesStopped(ctx, t, db, ids)
@@ -127,18 +128,18 @@ func waitStrategySourceDrained(ctx context.Context, t *testing.T, db *gorm.DB, i
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		var row modelv1.StrategyInstance
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&row, id).Error; err != nil {
+		var row strategymodelv1.StrategyInstance
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&row, id).Error; err != nil {
 			t.Fatal(err)
 		}
 		if row.GetActiveMarketDataSource() != string(source) || row.MarketDataSource != string(source) || !row.DesiredRunning {
 			t.Fatal("source failure changed operator intent or source selection")
 		}
 		var open, active int64
-		if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ? AND state NOT IN ?", id, []domain.OrderState{domain.OrderStateFilled, domain.OrderStateCanceled, domain.OrderStateRejected}).Count(&open).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("strategy_instance_id = ? AND state NOT IN ?", id, []domain.OrderState{domain.OrderStateFilled, domain.OrderStateCanceled, domain.OrderStateRejected}).Count(&open).Error; err != nil {
 			t.Fatal(err)
 		}
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyAction{}).Where("strategy_instance_id = ? AND state IN ?", id, []domain.StrategyActionState{domain.StrategyActionPending, domain.StrategyActionDispatching, domain.StrategyActionWaiting, domain.StrategyActionUnknown}).Count(&active).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyAction{}).Where("strategy_instance_id = ? AND state IN ?", id, []domain.StrategyActionState{domain.StrategyActionPending, domain.StrategyActionDispatching, domain.StrategyActionWaiting, domain.StrategyActionUnknown}).Count(&active).Error; err != nil {
 			t.Fatal(err)
 		}
 		if row.State == string(domain.StrategyStateRecovering) && open == 0 && active == 0 {
@@ -156,7 +157,7 @@ func waitStrategySourceDrained(ctx context.Context, t *testing.T, db *gorm.DB, i
 func strategyMaximumIntentID(ctx context.Context, t *testing.T, db *gorm.DB, id int64) int64 {
 	t.Helper()
 	var maximum int64
-	if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ?", id).Select("COALESCE(max(id), 0)").Scan(&maximum).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("strategy_instance_id = ?", id).Select("COALESCE(max(id), 0)").Scan(&maximum).Error; err != nil {
 		t.Fatal(err)
 	}
 	return maximum
@@ -167,12 +168,12 @@ func waitHealthyStrategyProgress(ctx context.Context, t *testing.T, db *gorm.DB,
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		var risk modelv1.RiskSnapshot
-		if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", id).First(&risk).Error; err != nil {
+		var risk executionmodelv1.RiskSnapshot
+		if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", id).First(&risk).Error; err != nil {
 			t.Fatal(err)
 		}
 		var live int64
-		if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ? AND id > ? AND state = ?", id, after, domain.OrderStateLive).Count(&live).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("strategy_instance_id = ? AND id > ? AND state = ?", id, after, domain.OrderStateLive).Count(&live).Error; err != nil {
 			t.Fatal(err)
 		}
 		if live > 0 && risk.AllowNewRisk && risk.GetMarketFeedId() == feedID {

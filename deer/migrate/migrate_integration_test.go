@@ -26,8 +26,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/postgres"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }
@@ -56,26 +56,26 @@ func TestConcurrentMigrationAndGeneratedLedgerConstraints(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	var rows []*modelv1.SchemaMigration
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Find(&rows).Error; err != nil {
+	var rows []*commonmodelv1.SchemaMigration
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Find(&rows).Error; err != nil {
 		t.Fatal(err)
 	}
 	if len(rows) != 37 || rows[0].Id <= 0 || rows[0].CreateAt <= 0 || rows[0].UpdateAt <= 0 || rows[0].DeleteAt != nil {
 		t.Fatalf("generated ledger = %v", rows)
 	}
 	for _, column := range []string{"create_at", "update_at"} {
-		err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("id = ?", rows[0].Id).UpdateColumn(column, nil).Error
+		err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("id = ?", rows[0].Id).UpdateColumn(column, nil).Error
 		var databaseError *pgconn.PgError
 		if !errors.As(err, &databaseError) || databaseError.Code != "23502" {
 			t.Fatalf("%s NULL constraint = %v", column, err)
 		}
 	}
-	extra := &modelv1.SchemaMigration{
+	extra := &commonmodelv1.SchemaMigration{
 		Version:  38,
 		Name:     "future-test.sql",
 		Checksum: strings.Repeat("a", 64),
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Create(extra).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Create(extra).Error; err != nil {
 		t.Fatal(err)
 	}
 	if extra.Id <= rows[0].Id || extra.DeleteAt != nil {
@@ -94,11 +94,11 @@ func TestFailedMigrationRollsBackDDLAndRejectsChangedHistory(t *testing.T) {
 		t.Fatal(err)
 	}
 	deletedAt := time.Now().UTC().UnixMilli()
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).UpdateColumn("delete_at", deletedAt).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).UpdateColumn("delete_at", deletedAt).Error; err != nil {
 		t.Fatal(err)
 	}
-	var marked modelv1.SchemaMigration
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).First(&marked).Error; err != nil {
+	var marked commonmodelv1.SchemaMigration
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).First(&marked).Error; err != nil {
 		t.Fatal(err)
 	}
 	if marked.DeleteAt == nil || *marked.DeleteAt != deletedAt {
@@ -107,7 +107,7 @@ func TestFailedMigrationRollsBackDDLAndRejectsChangedHistory(t *testing.T) {
 	if _, err := Apply(ctx, db); !errors.Is(err, ErrHistoryMismatch) {
 		t.Fatalf("deleted history was accepted: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).UpdateColumn("delete_at", nil).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).UpdateColumn("delete_at", nil).Error; err != nil {
 		t.Fatal(err)
 	}
 	definitions, err := loadDefinitions()
@@ -124,20 +124,20 @@ func TestFailedMigrationRollsBackDDLAndRejectsChangedHistory(t *testing.T) {
 	if err := applyDefinitions(ctx, db, definitions); err == nil {
 		t.Fatal("invalid migration unexpectedly committed")
 	}
-	if db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Migrator().HasColumn(&modelv1.SchemaMigration{}, "rollback_probe") {
+	if db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Migrator().HasColumn(&commonmodelv1.SchemaMigration{}, "rollback_probe") {
 		t.Fatal("failed version left its earlier DDL committed")
 	}
 	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatalf("rollback left a lock or partial history: %d, %v", version, err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).
-		Select("Checksum").Updates(&modelv1.SchemaMigration{Checksum: strings.Repeat("0", 64)}).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).
+		Select("Checksum").Updates(&commonmodelv1.SchemaMigration{Checksum: strings.Repeat("0", 64)}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Apply(ctx, db); !errors.Is(err, ErrHistoryMismatch) {
 		t.Fatalf("checksum rewrite was accepted: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version > ?", 0).Delete(&modelv1.SchemaMigration{}).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version > ?", 0).Delete(&commonmodelv1.SchemaMigration{}).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := Apply(ctx, db); !errors.Is(err, ErrHistoryMismatch) {
@@ -155,8 +155,8 @@ func TestMigrationLockContentionHonorsCallerDeadline(t *testing.T) {
 	var holderError error
 	go func() {
 		defer close(completed)
-		holderError = db.WithContext(holderCtx).Model(&modelv1.SchemaMigration{}).Transaction(func(tx *gorm.DB) error {
-			if err := tx.WithContext(holderCtx).Model(&modelv1.SchemaMigration{}).
+		holderError = db.WithContext(holderCtx).Model(&commonmodelv1.SchemaMigration{}).Transaction(func(tx *gorm.DB) error {
+			if err := tx.WithContext(holderCtx).Model(&commonmodelv1.SchemaMigration{}).
 				Exec("SELECT pg_advisory_xact_lock(?, ?)", migrationLockNamespace, migrationLockKey).Error; err != nil {
 				return err
 			}
@@ -271,14 +271,14 @@ func migrationDatabase(t *testing.T) (*gorm.DB, *configv1.Postgres) {
 	t.Cleanup(func() {
 		ctx, cancel := context.WithTimeout(context.WithoutCancel(t.Context()), 3*time.Second)
 		defer cancel()
-		if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Exec("DROP SCHEMA " + identifier + " CASCADE").Error; err != nil {
+		if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Exec("DROP SCHEMA " + identifier + " CASCADE").Error; err != nil {
 			t.Error(err)
 		}
 		if err := client.Close(); err != nil {
 			t.Error(err)
 		}
 	})
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Exec("CREATE SCHEMA " + identifier).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Exec("CREATE SCHEMA " + identifier).Error; err != nil {
 		t.Fatal(err)
 	}
 	return db, cfg

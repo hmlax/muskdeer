@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/model/v1;modelv1";
+
+// HimalayaSchemaMigration keeps the SDK extension separate from core history.
+message HimalayaSchemaMigration {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 version = 5 [(tagger.tags) = "gorm:\"column:version;type:bigint;not null;uniqueIndex:uk_himalaya_migration_version\""];
+  string checksum = 6 [(tagger.tags) = "gorm:\"column:checksum;type:varchar(64);not null\""];
+}

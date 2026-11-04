@@ -10,7 +10,9 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -33,8 +35,8 @@ func TestAdminRiskEventsPageAndFilterHistoricalScopesWithoutLiveAccounts(t *test
 	}
 	unfunded := adminRiskEventUnfundedSource(ctx, t, db)
 	original := riskEventSourceRow(ctx, t, db, submit.Input.Authority.StrategyID)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", original.Id).
-		Select("AllowNewRisk", "ReasonCode", "Revision").Updates(&modelv1.RiskSnapshot{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", original.Id).
+		Select("AllowNewRisk", "ReasonCode", "Revision").Updates(&executionmodelv1.RiskSnapshot{
 		AllowNewRisk: false,
 		ReasonCode:   string(domain.RiskReasonBudget),
 		Revision:     original.Revision + 1,
@@ -64,12 +66,12 @@ func TestAdminRiskEventsPageAndFilterHistoricalScopesWithoutLiveAccounts(t *test
 		t.Fatal("retired/unprovisioned historical scope was lost or precision changed", err)
 	}
 	var accounts int64
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ?", unfunded.AccountId).Count(&accounts).Error; err != nil || accounts != 0 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ?", unfunded.AccountId).Count(&accounts).Error; err != nil || accounts != 0 {
 		t.Fatal("history query initialized a missing core account", err)
 	}
 }
 
-func assertAdminRiskEventFilters(ctx context.Context, t *testing.T, store domain.AdminRiskEvents, token string, original, other *modelv1.RiskSnapshot, gridID int64, ids []int64) {
+func assertAdminRiskEventFilters(ctx context.Context, t *testing.T, store domain.AdminRiskEvents, token string, original, other *executionmodelv1.RiskSnapshot, gridID int64, ids []int64) {
 	t.Helper()
 	for _, test := range []struct {
 		filter domain.AdminRiskEventFilter
@@ -135,11 +137,11 @@ func assertAdminRiskEventFilters(ctx context.Context, t *testing.T, store domain
 }
 
 // Explicit retired history fixture has no core account and no live market feed.
-func adminRiskEventUnfundedSource(ctx context.Context, t *testing.T, db *gorm.DB) *modelv1.RiskSnapshot {
+func adminRiskEventUnfundedSource(ctx context.Context, t *testing.T, db *gorm.DB) *executionmodelv1.RiskSnapshot {
 	t.Helper()
 	instrument := identityInstrument()
 	instrument.Symbol, instrument.BaseAsset = "ETH-USDT", "ETH"
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	instance := identityInstance(instrument.Id, "unfunded-retired-risk-history", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
@@ -147,16 +149,16 @@ func adminRiskEventUnfundedSource(ctx context.Context, t *testing.T, db *gorm.DB
 	retired := time.Now().UnixMilli()
 	instance.DeleteAt = &retired
 	config := storedParameterFixture(domain.StrategyTemplateMarketMaker)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
 		config.InstanceId = instance.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(config).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(config).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
-	row := &modelv1.RiskSnapshot{
+	row := &executionmodelv1.RiskSnapshot{
 		StrategyInstanceId: instance.Id,
 		AccountId:          instance.AccountId,
 		InstrumentId:       instrument.Id,
@@ -170,7 +172,7 @@ func adminRiskEventUnfundedSource(ctx context.Context, t *testing.T, db *gorm.DB
 		Revision:           1,
 		DeleteAt:           &retired,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Create(row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Create(row).Error; err != nil {
 		t.Fatal(err)
 	}
 	return row

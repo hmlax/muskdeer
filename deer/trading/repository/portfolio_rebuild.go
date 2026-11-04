@@ -6,11 +6,11 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func rebuildPortfolioRows(ctx context.Context, tx *gorm.DB, row *modelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
+func rebuildPortfolioRows(ctx context.Context, tx *gorm.DB, row *portfoliomodelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
 	stored, err := portfolioSnapshot(row)
 	if err != nil {
 		return domain.PortfolioSnapshot{}, err
@@ -19,8 +19,8 @@ func rebuildPortfolioRows(ctx context.Context, tx *gorm.DB, row *modelv1.Portfol
 	if err != nil {
 		return domain.PortfolioSnapshot{}, err
 	}
-	var records []*modelv1.PortfolioFill
-	if err := tx.WithContext(ctx).Model(&modelv1.PortfolioFill{}).Where("account_id = ? AND instrument_id = ? AND delete_at IS NULL", row.AccountId, row.InstrumentId).
+	var records []*portfoliomodelv1.PortfolioFill
+	if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).Where("account_id = ? AND instrument_id = ? AND delete_at IS NULL", row.AccountId, row.InstrumentId).
 		Order("source_sequence ASC").Limit(domain.MaxPortfolioFacts + 1).Find(&records).Error; err != nil {
 		return domain.PortfolioSnapshot{}, err
 	}
@@ -67,7 +67,7 @@ func rebuildPortfolioRows(ctx context.Context, tx *gorm.DB, row *modelv1.Portfol
 	}
 	previous := row.Revision
 	row.Revision++
-	result := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("id = ? AND revision = ?", row.Id, previous).
+	result := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("id = ? AND revision = ?", row.Id, previous).
 		Select("Quantity", "CashQuote", "CostQuote", "RealizedPnlQuote", "FeesQuote", "LastSourceSequence", "Reconciled", "ErrorCode", "Revision").Updates(row)
 	if err := reservationResult(result); err != nil {
 		return domain.PortfolioSnapshot{}, err
@@ -75,7 +75,7 @@ func rebuildPortfolioRows(ctx context.Context, tx *gorm.DB, row *modelv1.Portfol
 	return portfolioSnapshot(row)
 }
 
-func setPortfolioValues(row *modelv1.PortfolioAccount, values domain.PortfolioValues) {
+func setPortfolioValues(row *portfoliomodelv1.PortfolioAccount, values domain.PortfolioValues) {
 	row.Quantity = values.Quantity.String()
 	row.CashQuote = values.CashQuote.String()
 	row.CostQuote = values.CostQuote.String()

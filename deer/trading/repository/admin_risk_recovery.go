@@ -9,11 +9,13 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func validateAdminRiskRecovery(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, budget *modelv1.StrategyBudget, instrument *modelv1.Instrument) (time.Time, error) {
+func validateAdminRiskRecovery(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, budget *strategymodelv1.StrategyBudget, instrument *commonmodelv1.Instrument) (time.Time, error) {
 	reserved, err := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)
 	if err != nil {
 		return time.Time{}, err
@@ -28,7 +30,7 @@ func validateAdminRiskRecovery(ctx context.Context, tx *gorm.DB, instance *model
 		return time.Time{}, adminRiskRecoveryFailure(err)
 	}
 	var pending int64
-	if err := tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).
 		Where("strategy_instance_id = ? AND delete_at IS NULL AND state IN ?", instance.Id,
 			[]domain.CancellationState{domain.CancellationRequested, domain.CancellationSubmitting, domain.CancellationPending, domain.CancellationUnknown}).Count(&pending).Error; err != nil {
 		return time.Time{}, err
@@ -62,9 +64,9 @@ func validateAdminRiskRecovery(ctx context.Context, tx *gorm.DB, instance *model
 	return until, nil
 }
 
-func validateRiskRecoveryInventory(ctx context.Context, tx *gorm.DB, candidate *modelv1.StrategyInstance, instrument *modelv1.Instrument) error {
-	var version modelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).
+func validateRiskRecoveryInventory(ctx context.Context, tx *gorm.DB, candidate *strategymodelv1.StrategyInstance, instrument *commonmodelv1.Instrument) error {
+	var version strategymodelv1.StrategyConfigVersion
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).
 		Where("instance_id = ? AND version = ? AND delete_at IS NULL", candidate.Id, candidate.RequestedConfigVersion).First(&version).Error; err != nil {
 		return err
 	}
@@ -73,7 +75,7 @@ func validateRiskRecoveryInventory(ctx context.Context, tx *gorm.DB, candidate *
 		return err
 	}
 	var active int64
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).
 		Where("account_id = ? AND instrument_id = ? AND active_config_version IS NOT NULL AND delete_at IS NULL", candidate.AccountId, candidate.InstrumentId).Count(&active).Error; err != nil {
 		return err
 	}

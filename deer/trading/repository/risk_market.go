@@ -7,12 +7,14 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 // A cached risk flag never substitutes for the current selected publication.
-func validateRiskMarket(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, risk *modelv1.RiskSnapshot) (int64, error) {
+func validateRiskMarket(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, risk *executionmodelv1.RiskSnapshot) (int64, error) {
 	if risk.GetMarketFeedId() <= 0 || risk.MarketRevision <= 0 || risk.MarketSourceVersion <= 0 {
 		return 0, domain.ErrRiskDenied
 	}
@@ -29,7 +31,7 @@ func validateRiskMarket(ctx context.Context, tx *gorm.DB, strategy *modelv1.Stra
 
 // The lease is locked before the snapshot, matching the publisher's order.
 // Evaluation and order admission share exactly this current-data boundary.
-func readRiskPublication(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, feedID, maximumAgeMS int64) (domain.MarketReference, time.Time, error) {
+func readRiskPublication(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, feedID, maximumAgeMS int64) (domain.MarketReference, time.Time, error) {
 	if feedID <= 0 || maximumAgeMS < 1 || maximumAgeMS > 5000 || strategy.ActiveMarketDataSource == nil {
 		return domain.MarketReference{}, time.Time{}, domain.ErrRiskDenied
 	}
@@ -40,12 +42,12 @@ func readRiskPublication(ctx context.Context, tx *gorm.DB, strategy *modelv1.Str
 	if string(feed.Source) != *strategy.ActiveMarketDataSource || feed.InstrumentID != strategy.InstrumentId || string(feed.Mode) != strategy.MarketMode || instrument.Status != domain.InstrumentStatusTrading {
 		return domain.MarketReference{}, time.Time{}, domain.ErrRiskDenied
 	}
-	var publisher modelv1.MarketPublisherLease
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ? AND delete_at IS NULL", feed.ID).Clauses(clause.Locking{Strength: "SHARE"}).First(&publisher).Error; err != nil {
+	var publisher marketmodelv1.MarketPublisherLease
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ? AND delete_at IS NULL", feed.ID).Clauses(clause.Locking{Strength: "SHARE"}).First(&publisher).Error; err != nil {
 		return domain.MarketReference{}, time.Time{}, marketRiskFailure(err)
 	}
-	var snapshot modelv1.MarketSnapshot
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("market_feed_id = ? AND delete_at IS NULL", feed.ID).Clauses(clause.Locking{Strength: "SHARE"}).First(&snapshot).Error; err != nil {
+	var snapshot marketmodelv1.MarketSnapshot
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("market_feed_id = ? AND delete_at IS NULL", feed.ID).Clauses(clause.Locking{Strength: "SHARE"}).First(&snapshot).Error; err != nil {
 		return domain.MarketReference{}, time.Time{}, marketRiskFailure(err)
 	}
 	now, err := marketDatabaseTime(ctx, tx, feed.ID)

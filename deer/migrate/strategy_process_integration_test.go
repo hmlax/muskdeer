@@ -14,8 +14,11 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -46,8 +49,8 @@ func TestStrategyCommandsDiscoverTakeOverQuoteAndCompleteStop(t *testing.T) {
 	execution := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), naming, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}
@@ -60,8 +63,8 @@ func TestStrategyCommandsDiscoverTakeOverQuoteAndCompleteStop(t *testing.T) {
 	if firstPID == secondPID || firstPID == executionPID || firstPID == marketPID || firstPID == os.Getpid() {
 		t.Fatal("strategy, standby, execution and market did not run as separate processes")
 	}
-	var still modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&still, prior.Id).Error; err != nil || still.RuntimeOwnerId != prior.RuntimeOwnerId {
+	var still strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&still, prior.Id).Error; err != nil || still.RuntimeOwnerId != prior.RuntimeOwnerId {
 		t.Fatal("standby startup stole a valid instance lease")
 	}
 	process, err := os.FindProcess(firstPID)
@@ -80,7 +83,7 @@ func TestStrategyCommandsDiscoverTakeOverQuoteAndCompleteStop(t *testing.T) {
 	siblingID := createProcessStrategy(ctx, t, db, submit)
 	waitStrategyProcessQuotes(ctx, t, db, siblingID, 0)
 	ids := []int64{prior.Id, siblingID}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id IN ?", ids).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id IN ?", ids).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	waitStrategyProcessesStopped(ctx, t, db, ids)
@@ -99,18 +102,18 @@ func createSourceProcessStrategy(ctx context.Context, t *testing.T, db *gorm.DB,
 	t.Helper()
 	row := identityInstance(submit.Input.InstrumentID, "created-after-strategy-start", domain.StrategyTemplateMarketMaker, source)
 	row.AccountId, row.DesiredRunning = submit.Input.AccountID, true
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(row).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(row).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = row.Id
 		parameters.MarketDataSource = string(source)
 		parameters.MakerParameters.InventoryHardLimit = "20"
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Create(&strategymodelv1.StrategyBudget{
 			StrategyInstanceId: row.Id,
 			AccountId:          row.AccountId,
 			LimitNotional:      "300",
@@ -130,7 +133,7 @@ func strategyProcessConfig(t *testing.T, ca *testcert.Authority, postgres *confi
 	cfg.InstanceId = "business-strategy." + instance
 	cfg.Business.OperationTimeout = durationpb.New(time.Second)
 	cfg.Business.PollInterval = durationpb.New(100 * time.Millisecond)
-	cfg.Business.Strategy = &configv1.StrategyRuntime{
+	cfg.Business.Strategy = &strategyconfigv1.StrategyRuntime{
 		AccountIds: []string{account},
 		LeaseTtl:   durationpb.New(3 * time.Second),
 	}
@@ -139,17 +142,17 @@ func strategyProcessConfig(t *testing.T, ca *testcert.Authority, postgres *confi
 	return cfg
 }
 
-func waitStrategyProcessQuotes(ctx context.Context, t *testing.T, db *gorm.DB, id, afterEpoch int64) *modelv1.StrategyInstance {
+func waitStrategyProcessQuotes(ctx context.Context, t *testing.T, db *gorm.DB, id, afterEpoch int64) *strategymodelv1.StrategyInstance {
 	t.Helper()
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		var row modelv1.StrategyInstance
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&row, id).Error; err != nil {
+		var row strategymodelv1.StrategyInstance
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&row, id).Error; err != nil {
 			t.Fatal(err)
 		}
-		var orders []*modelv1.OrderIntent
-		if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+		var orders []*executionmodelv1.OrderIntent
+		if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 			Where("strategy_instance_id = ? AND state = ? AND cancel_state = ? AND delete_at IS NULL", id, domain.OrderStateLive, domain.CancelStateNone).Find(&orders).Error; err != nil {
 			t.Fatal(err)
 		}
@@ -174,8 +177,8 @@ func logStrategyRecoveryState(ctx context.Context, t *testing.T, db *gorm.DB, id
 	t.Helper()
 	inspect, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Second)
 	defer cancel()
-	var actions []*modelv1.StrategyAction
-	if err := db.WithContext(inspect).Model(&modelv1.StrategyAction{}).Where("strategy_instance_id = ?", id).Order("id DESC").Limit(12).Find(&actions).Error; err != nil {
+	var actions []*strategymodelv1.StrategyAction
+	if err := db.WithContext(inspect).Model(&strategymodelv1.StrategyAction{}).Where("strategy_instance_id = ?", id).Order("id DESC").Limit(12).Find(&actions).Error; err != nil {
 		t.Log("strategy action diagnostic query did not complete")
 		return
 	}
@@ -183,8 +186,8 @@ func logStrategyRecoveryState(ctx context.Context, t *testing.T, db *gorm.DB, id
 		t.Logf("strategy action id=%d kind=%s state=%s deadline=%d intent=%d cancellation=%d order_state=%s cancellation_state=%s",
 			action.Id, action.Kind, action.State, action.DeadlineAt, action.GetIntentId(), action.GetCancellationId(), action.ObservedOrderState, action.ObservedCancellationState)
 	}
-	var orders []*modelv1.OrderIntent
-	if err := db.WithContext(inspect).Model(&modelv1.OrderIntent{}).Where("strategy_instance_id = ?", id).Order("id DESC").Limit(12).Find(&orders).Error; err != nil {
+	var orders []*executionmodelv1.OrderIntent
+	if err := db.WithContext(inspect).Model(&executionmodelv1.OrderIntent{}).Where("strategy_instance_id = ?", id).Order("id DESC").Limit(12).Find(&orders).Error; err != nil {
 		t.Log("strategy order diagnostic query did not complete")
 		return
 	}
@@ -200,7 +203,7 @@ func waitStrategyProcessesStopped(ctx context.Context, t *testing.T, db *gorm.DB
 	defer ticker.Stop()
 	for {
 		var count int64
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id IN ? AND state = ?", ids, domain.StrategyStateStopped).Count(&count).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id IN ? AND state = ?", ids, domain.StrategyStateStopped).Count(&count).Error; err != nil {
 			t.Fatal(err)
 		}
 		if count == int64(len(ids)) {

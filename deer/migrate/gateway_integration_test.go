@@ -15,7 +15,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -28,22 +30,22 @@ func TestGatewayFencesBothOwnersAtCommandCommit(t *testing.T) {
 	if err := gatewayOrderFixture(ctx, db, command); err != nil {
 		t.Fatal(err)
 	}
-	var order modelv1.SimulatorOrder
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).First(&order).Error; err != nil {
+	var order executionmodelv1.SimulatorOrder
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).First(&order).Error; err != nil {
 		t.Fatal(err)
 	}
 	price, err := decimal.NewFromString(order.Price)
 	if err != nil || !price.Equal(decimal.RequireFromString("99999999999999999999.123456789012345678")) || order.Id <= 0 || order.CreateAt <= 0 || order.UpdateAt <= 0 || order.DeleteAt != nil {
 		t.Fatalf("gateway order lost numeric/common fields: %v", &order)
 	}
-	for _, change := range []func(*modelv1.SimulatorCommand){
-		func(row *modelv1.SimulatorCommand) { row.OwnerEpoch++ },
-		func(row *modelv1.SimulatorCommand) { row.ExecutionEpoch++ },
-		func(row *modelv1.SimulatorCommand) { row.OwnerId += "-stale" },
-		func(row *modelv1.SimulatorCommand) { row.ExecutionOwnerId += "-stale" },
-		func(row *modelv1.SimulatorCommand) { row.DeadlineAt = 1 },
+	for _, change := range []func(*executionmodelv1.SimulatorCommand){
+		func(row *executionmodelv1.SimulatorCommand) { row.OwnerEpoch++ },
+		func(row *executionmodelv1.SimulatorCommand) { row.ExecutionEpoch++ },
+		func(row *executionmodelv1.SimulatorCommand) { row.OwnerId += "-stale" },
+		func(row *executionmodelv1.SimulatorCommand) { row.ExecutionOwnerId += "-stale" },
+		func(row *executionmodelv1.SimulatorCommand) { row.DeadlineAt = 1 },
 	} {
-		candidate := proto.Clone(command).(*modelv1.SimulatorCommand)
+		candidate := proto.Clone(command).(*executionmodelv1.SimulatorCommand)
 		candidate.Id = 0
 		candidate.CommandKey += "-invalid"
 		candidate.ClientOrderId += "-invalid"
@@ -61,7 +63,7 @@ func TestGatewayRevalidatesAfterEffectsAreStaged(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 			defer cancel()
 			command := gatewayCommandFixture(ctx, t, db)
-			err := db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Transaction(func(tx *gorm.DB) error {
+			err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Transaction(func(tx *gorm.DB) error {
 				if err := stageGatewayOrder(ctx, tx, command); err != nil {
 					t.Fatalf("valid command failed before controlled expiry: %v", err)
 				}
@@ -79,7 +81,7 @@ func TestGatewayRevalidatesAfterEffectsAreStaged(t *testing.T) {
 			assertGatewayFence(t, err)
 			assertGatewayOrderCount(ctx, t, db, 0)
 			var commands int64
-			if err := db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Count(&commands).Error; err != nil || commands != 0 {
+			if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Count(&commands).Error; err != nil || commands != 0 {
 				t.Fatalf("rejected authority committed command: %d, %v", commands, err)
 			}
 		})
@@ -91,25 +93,25 @@ func TestGatewayCannotCommitUnusedAuthorityOrAcceptNumericNaN(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	command := gatewayCommandFixture(ctx, t, db)
-	err := db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(command).Error
+	err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Create(command).Error
 	assertDatabaseCode(t, err, "23514")
 	for _, column := range []string{"price_tick", "quantity_step", "min_notional"} {
-		err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ?", command.InstrumentId).UpdateColumn(column, "NaN").Error
+		err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ?", command.InstrumentId).UpdateColumn(column, "NaN").Error
 		assertDatabaseCode(t, err, "23514")
 	}
 	command.Id = 0
 	if err := gatewayOrderFixture(ctx, db, command); err != nil {
 		t.Fatal(err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("id = ?", command.Id).UpdateColumn("deadline_at", command.DeadlineAt+1).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("id = ?", command.Id).UpdateColumn("deadline_at", command.DeadlineAt+1).Error
 	assertDatabaseCode(t, err, "23514")
 	for _, column := range []string{"price", "quantity", "filled_quantity", "frozen_amount"} {
-		err := db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("initial_command_id = ?", command.Id).UpdateColumn(column, "NaN").Error
+		err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("initial_command_id = ?", command.Id).UpdateColumn(column, "NaN").Error
 		assertDatabaseCode(t, err, "23514")
 	}
 }
 
-func assertGatewayTakeover(ctx context.Context, t *testing.T, db *gorm.DB, original *modelv1.SimulatorCommand) {
+func assertGatewayTakeover(ctx context.Context, t *testing.T, db *gorm.DB, original *executionmodelv1.SimulatorCommand) {
 	t.Helper()
 	store, err := repository.NewLeases(db)
 	if err != nil {
@@ -128,7 +130,7 @@ func assertGatewayTakeover(ctx context.Context, t *testing.T, db *gorm.DB, origi
 	if err != nil || lease.Epoch <= original.OwnerEpoch {
 		t.Fatalf("gateway successor lease = %v, %v", lease, err)
 	}
-	stale := proto.Clone(original).(*modelv1.SimulatorCommand)
+	stale := proto.Clone(original).(*executionmodelv1.SimulatorCommand)
 	stale.Id = 0
 	stale.CommandKey += "-old-process"
 	stale.ClientOrderId += "-old-process"
@@ -141,7 +143,7 @@ func assertGatewayTakeover(ctx context.Context, t *testing.T, db *gorm.DB, origi
 	assertGatewayOrderCount(ctx, t, db, 2)
 }
 
-func gatewayCommandFixture(ctx context.Context, t *testing.T, db *gorm.DB) *modelv1.SimulatorCommand {
+func gatewayCommandFixture(ctx context.Context, t *testing.T, db *gorm.DB) *executionmodelv1.SimulatorCommand {
 	t.Helper()
 	if _, err := Apply(ctx, db); err != nil {
 		t.Fatal(err)
@@ -151,21 +153,21 @@ func gatewayCommandFixture(ctx context.Context, t *testing.T, db *gorm.DB) *mode
 
 // gatewayCommandAfterSchema also seeds reviewed older schemas without silently
 // advancing an upgrade test to the latest embedded migration first.
-func gatewayCommandAfterSchema(ctx context.Context, t *testing.T, db *gorm.DB) *modelv1.SimulatorCommand {
+func gatewayCommandAfterSchema(ctx context.Context, t *testing.T, db *gorm.DB) *executionmodelv1.SimulatorCommand {
 	t.Helper()
 	strategyID := leaseStrategyFixture(ctx, t, db)
-	var strategy modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&strategy, strategyID).Error; err != nil {
+	var strategy strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&strategy, strategyID).Error; err != nil {
 		t.Fatal(err)
 	}
 	parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 	parameters.MakerParameters.InventoryHardLimit = "20"
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", strategyID, 1).
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", strategyID, 1).
 		Select("ParametersSchemaVersion", "Template", "MakerParameters").Updates(parameters).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).
-		Select("State", "DesiredRunning", "ActiveConfigVersion", "ActiveMarketDataSource").Updates(&modelv1.StrategyInstance{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).
+		Select("State", "DesiredRunning", "ActiveConfigVersion", "ActiveMarketDataSource").Updates(&strategymodelv1.StrategyInstance{
 		State:                  string(domain.StrategyStateRunning),
 		DesiredRunning:         true,
 		ActiveConfigVersion:    proto.Int64(1),
@@ -181,7 +183,7 @@ func gatewayCommandAfterSchema(ctx context.Context, t *testing.T, db *gorm.DB) *
 		Kind:      domain.LeaseKindExecution,
 		AccountID: strategy.AccountId,
 	})
-	return &modelv1.SimulatorCommand{
+	return &executionmodelv1.SimulatorCommand{
 		AccountId:          strategy.AccountId,
 		CommandKey:         "gateway-submit-1",
 		Action:             "SUBMIT", // External database contract fixture.
@@ -215,17 +217,17 @@ func acquireGatewayLease(ctx context.Context, t *testing.T, db *gorm.DB, key dom
 	return lease
 }
 
-func gatewayOrderFixture(ctx context.Context, db *gorm.DB, command *modelv1.SimulatorCommand) error {
-	return db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Transaction(func(tx *gorm.DB) error {
+func gatewayOrderFixture(ctx context.Context, db *gorm.DB, command *executionmodelv1.SimulatorCommand) error {
+	return db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Transaction(func(tx *gorm.DB) error {
 		return stageGatewayOrder(ctx, tx, command)
 	})
 }
 
-func stageGatewayOrder(ctx context.Context, tx *gorm.DB, command *modelv1.SimulatorCommand) error {
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(command).Error; err != nil {
+func stageGatewayOrder(ctx context.Context, tx *gorm.DB, command *executionmodelv1.SimulatorCommand) error {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Create(command).Error; err != nil {
 		return err
 	}
-	return tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Create(&modelv1.SimulatorOrder{
+	return tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Create(&executionmodelv1.SimulatorOrder{
 		AccountId:          command.AccountId,
 		ClientOrderId:      command.ClientOrderId,
 		InitialCommandId:   command.Id,
@@ -266,7 +268,7 @@ func assertDatabaseCode(t *testing.T, err error, code string) {
 func assertGatewayOrderCount(ctx context.Context, t *testing.T, db *gorm.DB, expected int64) {
 	t.Helper()
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Count(&count).Error; err != nil || count != expected {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Count(&count).Error; err != nil || count != expected {
 		t.Fatalf("gateway order effects = %d, %v; expected %d", count, err, expected)
 	}
 }

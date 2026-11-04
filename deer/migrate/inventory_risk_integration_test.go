@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -77,17 +79,17 @@ func TestInventoryActivationCannotLowerHardLimitBelowOutstandingExposure(t *test
 	}
 	err := insertInventoryVersion(ctx, db, submit, "11")
 	assertDatabaseCode(t, err, "23514")
-	var strategy modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&strategy, submit.Input.Authority.StrategyID).Error; err != nil || strategy.GetActiveConfigVersion() != 1 {
+	var strategy strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&strategy, submit.Input.Authority.StrategyID).Error; err != nil || strategy.GetActiveConfigVersion() != 1 {
 		t.Fatalf("failed activation changed current version: %v, %v", &strategy, err)
 	}
-	var row modelv1.StrategyConfigVersion
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", submit.Input.Authority.StrategyID, 1).First(&row).Error; err != nil {
+	var row strategymodelv1.StrategyConfigVersion
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("instance_id = ? AND version = ?", submit.Input.Authority.StrategyID, 1).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	changed := proto.CloneOf(row.MakerParameters)
 	changed.InventoryHardLimit = "1000"
-	err = db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("id = ?", row.Id).Update("maker_parameters", changed).Error
+	err = db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("id = ?", row.Id).Update("maker_parameters", changed).Error
 	assertDatabaseCode(t, err, "23514")
 }
 
@@ -99,10 +101,10 @@ func TestFinalInventoryFenceRollsBackAlreadyStagedFunds(t *testing.T) {
 	core, store := executionFixture(t, db)
 	const callbackName = "muskdeer:test:staged-base-inventory-change"
 	if err := db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
-		err := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, "BTC").UpdateColumn("available", "19").Error
+		err := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, "BTC").UpdateColumn("available", "19").Error
 		tx.Error = errors.Join(tx.Error, err)
 	}); err != nil {
 		t.Fatal(err)
@@ -128,21 +130,21 @@ func activateInventoryVersion(ctx context.Context, t *testing.T, db *gorm.DB, su
 		t.Fatal(err)
 	}
 	submit.Input.Authority.ConfigVersion = 2
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).UpdateColumn("config_version", 2).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).UpdateColumn("config_version", 2).Error; err != nil {
 		t.Fatal(err)
 	}
 }
 
 func insertInventoryVersion(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmit, hard string) error {
-	return db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+	return db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = submit.Input.Authority.StrategyID
 		parameters.Version = 2
 		parameters.MakerParameters.InventoryHardLimit = hard
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).Select("RequestedConfigVersion", "ActiveConfigVersion").Updates(&modelv1.StrategyInstance{
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).Select("RequestedConfigVersion", "ActiveConfigVersion").Updates(&strategymodelv1.StrategyInstance{
 			RequestedConfigVersion: 2,
 			ActiveConfigVersion:    proto.Int64(2),
 		}).Error
@@ -151,10 +153,10 @@ func insertInventoryVersion(ctx context.Context, db *gorm.DB, submit domain.Gate
 
 func raiseInventoryTestBudgets(ctx context.Context, t *testing.T, db *gorm.DB, accountID string) {
 	t.Helper()
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", accountID).UpdateColumn("limit_notional", "1000").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", accountID).UpdateColumn("limit_notional", "1000").Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("account_id = ?", accountID).UpdateColumn("limit_notional", "1000").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("account_id = ?", accountID).UpdateColumn("limit_notional", "1000").Error; err != nil {
 		t.Fatal(err)
 	}
 }

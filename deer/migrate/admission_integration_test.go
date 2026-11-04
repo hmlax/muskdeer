@@ -13,8 +13,10 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -38,8 +40,8 @@ func TestIntentReservationAndTypedOutboxCommitOrRollBackTogether(t *testing.T) {
 		t.Fatalf("different business content reused an intent: %v", err)
 	}
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
-	var events []*modelv1.OutboxEvent
-	if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Find(&events).Error; err != nil {
+	var events []*executionmodelv1.OutboxEvent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Find(&events).Error; err != nil {
 		t.Fatal(err)
 	}
 	if len(events) != 1 || events[0].Event == nil || events[0].State != domain.OutboxStatePending || events[0].Event.Intent == nil || events[0].Event.Fill != nil {
@@ -62,7 +64,7 @@ func assertAdmissionRollback(ctx context.Context, t *testing.T, db *gorm.DB, sto
 	injected := errors.New("controlled outbox write failure")
 	const callbackName = "muskdeer:test:reject-outbox"
 	if err := db.Callback().Create().Before("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.OutboxEvent); ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.OutboxEvent); ok {
 			tx.Error = injected
 		}
 	}); err != nil {
@@ -79,7 +81,7 @@ func assertAdmissionRollback(ctx context.Context, t *testing.T, db *gorm.DB, sto
 		t.Fatalf("injected outbox failure lost its cause: %v", err)
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Count(&count).Error; err != nil || count != 1 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Count(&count).Error; err != nil || count != 1 {
 		t.Fatalf("failed outbox left an intent: %d, %v", count, err)
 	}
 }
@@ -125,15 +127,15 @@ func TestStaleOrWrongSourceRiskCannotReserveAnIntent(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	store, submit := admissionFixture(ctx, t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).
 		UpdateColumn("market_data_source", string(domain.MarketSourceOKX)).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := store.Accept(ctx, submit.Input, submit.ExecutionAuthority); !errors.Is(err, domain.ErrRiskDenied) {
 		t.Fatalf("wrong source admitted risk: %v", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).
-		Select("MarketDataSource", "ObservedAt", "ExpiresAt").Updates(&modelv1.RiskSnapshot{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).
+		Select("MarketDataSource", "ObservedAt", "ExpiresAt").Updates(&executionmodelv1.RiskSnapshot{
 		MarketDataSource: string(domain.MarketSourceBinance),
 		ObservedAt:       1,
 		ExpiresAt:        2,
@@ -149,7 +151,7 @@ func TestStaleOrWrongSourceRiskCannotReserveAnIntent(t *testing.T) {
 func admissionFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.IntentRepository, domain.GatewaySubmit) {
 	t.Helper()
 	_, submit := coreFixture(ctx, t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Create(&modelv1.AccountBudget{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Create(&commonmodelv1.AccountBudget{
 		AccountId:        submit.Input.AccountID,
 		Asset:            "USDT",
 		LimitNotional:    "300",
@@ -170,7 +172,7 @@ func admissionFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain.In
 
 func seedAdmissionStrategy(ctx context.Context, t *testing.T, db *gorm.DB, input domain.OrderInput) {
 	t.Helper()
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Create(&strategymodelv1.StrategyBudget{
 		StrategyInstanceId: input.Authority.StrategyID,
 		AccountId:          input.AccountID,
 		LimitNotional:      "300",
@@ -182,11 +184,11 @@ func seedAdmissionStrategy(ctx context.Context, t *testing.T, db *gorm.DB, input
 	}
 	feed, _, _, publication := admissionSelectedMarket(ctx, t, db, input.InstrumentID)
 	var clock struct{ NowMS int64 }
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", input.Authority.StrategyID).
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", input.Authority.StrategyID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Create(&modelv1.RiskSnapshot{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Create(&executionmodelv1.RiskSnapshot{
 		StrategyInstanceId:  input.Authority.StrategyID,
 		AccountId:           input.AccountID,
 		InstrumentId:        input.InstrumentID,
@@ -216,14 +218,14 @@ func admissionSibling(ctx context.Context, t *testing.T, db *gorm.DB, original d
 	strategy.DesiredRunning = true
 	strategy.ActiveConfigVersion = proto.Int64(1)
 	strategy.ActiveMarketDataSource = proto.String(string(domain.MarketSourceBinance))
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(strategy).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(strategy).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.MakerParameters.InventoryHardLimit = "20"
 		parameters.InstanceId = strategy.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -244,8 +246,8 @@ func admissionSibling(ctx context.Context, t *testing.T, db *gorm.DB, original d
 
 func assertReservedBudget(ctx context.Context, t *testing.T, db *gorm.DB, accountID, expected string) {
 	t.Helper()
-	var budget modelv1.AccountBudget
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", accountID).First(&budget).Error; err != nil {
+	var budget commonmodelv1.AccountBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", accountID).First(&budget).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(budget.ReservedNotional).Equal(decimal.RequireFromString(expected)) {

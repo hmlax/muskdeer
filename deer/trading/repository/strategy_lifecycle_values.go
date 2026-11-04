@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -28,7 +28,7 @@ func lifecycleBoundary(ctx context.Context, strategyID int64, token domain.Lease
 	return nil
 }
 
-func lifecycleDesired(row *modelv1.StrategyInstance, transition domain.StrategyTransition) error {
+func lifecycleDesired(row *strategymodelv1.StrategyInstance, transition domain.StrategyTransition) error {
 	var target domain.StrategyState
 	switch transition.State {
 	case domain.StrategyStateRunning:
@@ -44,12 +44,12 @@ func lifecycleDesired(row *modelv1.StrategyInstance, transition domain.StrategyT
 	return nil
 }
 
-func lifecycleUnchanged(row *modelv1.StrategyInstance, token domain.LeaseToken, transition domain.StrategyTransition) bool {
+func lifecycleUnchanged(row *strategymodelv1.StrategyInstance, token domain.LeaseToken, transition domain.StrategyTransition) bool {
 	return row.RuntimeOwnerId == token.OwnerID && row.RuntimeOwnerEpoch == token.Epoch && row.State == string(transition.State) &&
 		(!transition.ActivateRequested || row.GetActiveConfigVersion() == row.RequestedConfigVersion && row.GetActiveMarketDataSource() == row.MarketDataSource)
 }
 
-func strategySpec(row *modelv1.StrategyInstance) domain.StrategySpec {
+func strategySpec(row *strategymodelv1.StrategyInstance) domain.StrategySpec {
 	return domain.StrategySpec{
 		ID:                row.Id,
 		Key:               row.InstanceKey,

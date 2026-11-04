@@ -9,7 +9,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -50,7 +51,7 @@ func TestStrategyRemoteRiskRefusalRetainsRealAttemptWithoutCoreEffects(t *testin
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", submit.Input.Authority.StrategyID).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	// Only the pre-existing deadline proof can resolve this absent request.
@@ -70,8 +71,8 @@ func TestStrategyRemoteRiskRefusalRetainsRealAttemptWithoutCoreEffects(t *testin
 	if err != nil || resolved.ID != active[0].ID || resolved.IdempotencyKey != active[0].IdempotencyKey || resolved.State != domain.StrategyActionNotAccepted || execution.submits != 1 {
 		t.Fatal("refused submission was resent or resolved without its original deadline proof")
 	}
-	var instance modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&instance, active[0].StrategyID).Error; err != nil || instance.State != string(domain.StrategyStateStopped) {
+	var instance strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&instance, active[0].StrategyID).Error; err != nil || instance.State != string(domain.StrategyStateStopped) {
 		t.Fatal("observed remote refusal prevented terminal stop")
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)
@@ -87,7 +88,7 @@ type refuseOneRemoteSubmission struct {
 
 func (r *refuseOneRemoteSubmission) Submit(ctx context.Context, input domain.OrderInput) (domain.IntentSnapshot, error) {
 	if !r.refused {
-		if err := r.db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", input.Authority.StrategyID).UpdateColumn("allow_new_risk", false).Error; err != nil {
+		if err := r.db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", input.Authority.StrategyID).UpdateColumn("allow_new_risk", false).Error; err != nil {
 			return domain.IntentSnapshot{}, err
 		}
 		r.refused = true

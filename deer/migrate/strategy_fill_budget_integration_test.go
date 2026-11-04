@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -31,7 +31,7 @@ func TestStrategyFillConfirmationHasItsOwnBoundedRequestBudget(t *testing.T) {
 		t.Fatal("actual fill and duplicate observation did not finish")
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Count(&count).Error; err != nil || count != 1 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Count(&count).Error; err != nil || count != 1 {
 		t.Fatal("independent confirmation repeated the actual fill effect")
 	}
 }

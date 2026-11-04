@@ -10,8 +10,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -64,7 +65,7 @@ func AssembleWorkers(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarna
 	if len(accounts) == 0 {
 		return nil, nil
 	}
-	for _, entity := range []any{&modelv1.SimulatorAccount{}, &modelv1.AccountBudget{}} {
+	for _, entity := range []any{&executionmodelv1.SimulatorAccount{}, &commonmodelv1.AccountBudget{}} {
 		var count int64
 		if err := db.WithContext(ctx).Model(entity).Where("account_id IN ? AND delete_at IS NULL", accounts).Count(&count).Error; err != nil {
 			return nil, err

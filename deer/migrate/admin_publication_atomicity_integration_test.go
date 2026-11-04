@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -110,10 +112,10 @@ func TestAdminPublicationConcurrentReplayAndCompetingKeysHaveOneEffect(t *testin
 	if replayed, err := publisher.Publish(ctx, actor.Token, actor.CSRF, request); err != nil || replayed != first {
 		t.Fatal("later publication changed the original receipt", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyPublication{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyConfigVersion{}, 3)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyPublication{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyConfigVersion{}, 3)
 	var audits int64
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("action = ?", domain.AdminStrategyPublish).Count(&audits).Error; err != nil || audits != 2 {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("action = ?", domain.AdminStrategyPublish).Count(&audits).Error; err != nil || audits != 2 {
 		t.Fatal("concurrent publishers did not retain exactly two publication audits", err)
 	}
 }
@@ -143,20 +145,20 @@ func TestAdminPublicationAuditFailureAndRejectionsRollBackAllEffects(t *testing.
 		t.Fatal(err)
 	}
 	before = publicationInstance(ctx, t, db, before.Id)
-	var previousOperation modelv1.AdminStrategyOperation
-	if err := db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", pending.ID).First(&previousOperation).Error; err != nil {
+	var previousOperation strategymodelv1.AdminStrategyOperation
+	if err := db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", pending.ID).First(&previousOperation).Error; err != nil {
 		t.Fatal(err)
 	}
 	budget := activationBudget(ctx, t, db, before.Id)
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).First(&risk).Error; err != nil {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).First(&risk).Error; err != nil {
 		t.Fatal(err)
 	}
 	request := publicationRequest(adminCreationRequest(t, submit, domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance), before.Id, before.Revision, before.RequestedConfigVersion)
 	const callback = "test:publication-audit-rollback"
 	injected := errors.New("controlled publication audit failure")
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.AdminAudit); ok {
+		if _, ok := tx.Statement.Dest.(*commonmodelv1.AdminAudit); ok {
 			tx.Error = injected
 		}
 	}); err != nil {
@@ -185,20 +187,20 @@ func TestAdminPublicationAuditFailureAndRejectionsRollBackAllEffects(t *testing.
 	if _, err := publisher.Publish(ctx, actor.Token, "", request); !errors.Is(err, domain.ErrForbidden) {
 		t.Fatal("publication accepted missing CSRF", err)
 	}
-	var retainedRisk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", risk.Id).First(&retainedRisk).Error; err != nil {
+	var retainedRisk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", risk.Id).First(&retainedRisk).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) || !proto.Equal(budget, activationBudget(ctx, t, db, before.Id)) || !proto.Equal(&risk, &retainedRisk) {
 		t.Fatal("failed publication retained a partial requested target, budget or risk closure")
 	}
-	var retainedOperation modelv1.AdminStrategyOperation
-	if err := db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", pending.ID).First(&retainedOperation).Error; err != nil || !proto.Equal(&previousOperation, &retainedOperation) {
+	var retainedOperation strategymodelv1.AdminStrategyOperation
+	if err := db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", pending.ID).First(&retainedOperation).Error; err != nil || !proto.Equal(&previousOperation, &retainedOperation) {
 		t.Fatal("failed publication superseded the previous control permanently", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyPublication{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyConfigVersion{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyPublication{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyConfigVersion{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 1)
 }
 
 func TestAdminPublicationRequiresCurrentRoleAndExactSelectedFeed(t *testing.T) {
@@ -228,8 +230,8 @@ func TestAdminPublicationRequiresCurrentRoleAndExactSelectedFeed(t *testing.T) {
 			if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) {
 				t.Fatal("rejected publication changed the requested pair")
 			}
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyPublication{}, 0)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyConfigVersion{}, 1)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyPublication{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyConfigVersion{}, 1)
 		})
 	}
 }
@@ -246,7 +248,7 @@ func TestAdminPublicationExpiryBeforeReceiptRollsBackConfigurationAndRisk(t *tes
 	now := controlTestDatabaseTime(ctx, t, db, actor.Principal.UserID)
 	token, tokenHash := controlTestSecret(23)
 	csrf, csrfHash := controlTestSecret(24)
-	session := &modelv1.AdminSession{
+	session := &commonmodelv1.AdminSession{
 		CreateAt:          now,
 		UpdateAt:          now,
 		UserId:            actor.Principal.UserID,
@@ -255,7 +257,7 @@ func TestAdminPublicationExpiryBeforeReceiptRollsBackConfigurationAndRisk(t *tes
 		CredentialVersion: 1,
 		ExpiresAt:         now + 1000,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminSession{}).Create(session).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Create(session).Error; err != nil {
 		t.Fatal(err)
 	}
 	before := publicationInstance(ctx, t, db, submit.Input.Authority.StrategyID)
@@ -263,7 +265,7 @@ func TestAdminPublicationExpiryBeforeReceiptRollsBackConfigurationAndRisk(t *tes
 	const callback = "test:publication-expiry-before-receipt"
 	delayed := false
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.AdminStrategyPublication); !ok {
+		if _, ok := tx.Statement.Dest.(*strategymodelv1.AdminStrategyPublication); !ok {
 			return
 		}
 		delayed = true
@@ -289,11 +291,11 @@ func TestAdminPublicationExpiryBeforeReceiptRollsBackConfigurationAndRisk(t *tes
 	if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) || !proto.Equal(budget, activationBudget(ctx, t, db, before.Id)) {
 		t.Fatal("expired publication retained partial state")
 	}
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).First(&risk).Error; err != nil || !risk.AllowNewRisk || risk.Revision != 1 {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", before.Id).First(&risk).Error; err != nil || !risk.AllowNewRisk || risk.Revision != 1 {
 		t.Fatal("expired publication retained risk changes", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyConfigVersion{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyPublication{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyConfigVersion{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyPublication{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 }

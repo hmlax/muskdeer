@@ -10,7 +10,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -26,7 +28,7 @@ func TestRiskSnapshotEventUpgradeStartsBaselineWithoutInventingOldTransitions(t 
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	for _, retired := range []bool{false, true} {
@@ -35,8 +37,8 @@ func TestRiskSnapshotEventUpgradeStartsBaselineWithoutInventingOldTransitions(t 
 			t.Fatal("legacy source fixture lost int64 precision")
 		}
 	}
-	var before []*modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Order("id ASC").Find(&before).Error; err != nil {
+	var before []*executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Order("id ASC").Find(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	if version, err := Apply(ctx, db); err != nil || version != 37 {
@@ -54,12 +56,12 @@ func TestRiskSnapshotEventUpgradeStartsBaselineWithoutInventingOldTransitions(t 
 	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatal("checked migration replay failed", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshotEvent{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshotEvent{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
 }
 
-func riskEventLegacySource(ctx context.Context, t *testing.T, db *gorm.DB, instrumentID int64, retired bool) *modelv1.RiskSnapshot {
+func riskEventLegacySource(ctx context.Context, t *testing.T, db *gorm.DB, instrumentID int64, retired bool) *executionmodelv1.RiskSnapshot {
 	t.Helper()
 	key := "risk-history-existing-active"
 	if retired {
@@ -67,17 +69,17 @@ func riskEventLegacySource(ctx context.Context, t *testing.T, db *gorm.DB, instr
 	}
 	instance := identityInstance(instrumentID, key, domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 	config := storedParameterFixture(domain.StrategyTemplateMarketMaker)
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
 		config.InstanceId = instance.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(config).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(config).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now().UnixMilli()
-	source := &modelv1.RiskSnapshot{
+	source := &executionmodelv1.RiskSnapshot{
 		StrategyInstanceId: instance.Id,
 		AccountId:          instance.AccountId,
 		InstrumentId:       instrumentID,
@@ -94,7 +96,7 @@ func riskEventLegacySource(ctx context.Context, t *testing.T, db *gorm.DB, instr
 	if retired {
 		source.DeleteAt = &now
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Create(source).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Create(source).Error; err != nil {
 		t.Fatal(err)
 	}
 	return source

@@ -12,7 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -32,7 +33,7 @@ func TestAdminPortfoliosAuthorityProjectionSourceAndFundsShareRepeatableSnapshot
 	const callback = "test:portfolio-concurrent-core-fill"
 	filled := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, portfolios := query.Statement.Dest.(*[]*modelv1.PortfolioAccount)
+		_, portfolios := query.Statement.Dest.(*[]*portfoliomodelv1.PortfolioAccount)
 		if !portfolios || filled {
 			return
 		}
@@ -81,7 +82,7 @@ func TestAdminPortfoliosStorageFailureCancellationAndRevokedAuthorityReturnNothi
 	injected := errors.New("private core balance read failure")
 	const callback = "test:portfolio-balance-read-failure"
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, balances := query.Statement.Dest.(*[]*modelv1.SimulatorBalance); balances {
+		if _, balances := query.Statement.Dest.(*[]*executionmodelv1.SimulatorBalance); balances {
 			_ = query.AddError(injected)
 		}
 	}); err != nil {
@@ -129,12 +130,12 @@ func TestAdminPortfoliosReadSnapshotCannotWriteFundsOrReconciliation(t *testing.
 	attempted := false
 	var writeErr error
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, portfolios := query.Statement.Dest.(*[]*modelv1.PortfolioAccount)
+		_, portfolios := query.Statement.Dest.(*[]*portfoliomodelv1.PortfolioAccount)
 		if !portfolios || attempted {
 			return
 		}
 		attempted = true
-		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.PortfolioAccount{}).
+		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&portfoliomodelv1.PortfolioAccount{}).
 			Where("id = ?", before.Id).Update("reconciled", false).Error
 		_ = query.AddError(writeErr)
 	}); err != nil {

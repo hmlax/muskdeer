@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package muskdeer.model.v1;
+
+import "deer/proto/common/v1/synthetic.proto";
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/execution/model/v1;modelv1";
+
+// SyntheticTapeIntent is a consumed send slot, independent of financial ledgers.
+message SyntheticTapeIntent {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string run_id = 5 [(tagger.tags) = "gorm:\"column:run_id;type:varchar(20);not null;uniqueIndex:uk_synthetic_tape_slot\""];
+  string symbol = 6 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(32);not null;uniqueIndex:uk_synthetic_tape_slot\""];
+  int64 sequence = 7 [(tagger.tags) = "gorm:\"column:sequence;type:bigint;not null;uniqueIndex:uk_synthetic_tape_slot\""];
+  string policy_digest = 8 [(tagger.tags) = "gorm:\"column:policy_digest;type:varchar(64);not null\""];
+  muskdeer.common.v1.SyntheticTapePlan plan = 9 [(tagger.tags) = "gorm:\"column:plan;type:jsonb;serializer:json;not null\""];
+  string notional = 10 [(tagger.tags) = "gorm:\"column:notional;type:numeric(76,36);not null\""];
+  muskdeer.common.v1.SyntheticTapeResult result = 11 [(tagger.tags) = "gorm:\"column:result;type:jsonb;serializer:json;not null\""];
+}

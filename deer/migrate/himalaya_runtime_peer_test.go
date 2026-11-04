@@ -21,13 +21,13 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
 type nativeMarketFixture struct {
-	himalayav1.UnimplementedMarketServer
+	markethimalayav1.UnimplementedMarketServer
 	authority        *commonv1.HimalayaAuthority
 	stop             atomic.Bool
 	offset           atomic.Int64
@@ -43,7 +43,7 @@ type nativeMarketFixture struct {
 	tradeUnavailable atomic.Bool
 }
 
-func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *himalayav1.TradeRequest) (*commonv1.HimalayaTrade, error) {
+func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *markethimalayav1.TradeRequest) (*commonv1.HimalayaTrade, error) {
 	m.tradeRequests.Add(1)
 	if m.tradeUnavailable.Load() || m.tradeAuthority == nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
@@ -78,7 +78,7 @@ func (m *nativeMarketFixture) GetTrade(ctx context.Context, _ *himalayav1.TradeR
 	}, nil
 }
 
-func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *himalayav1.BookRequest) (*commonv1.HimalayaBook, error) {
+func (m *nativeMarketFixture) GetBook(ctx context.Context, _ *markethimalayav1.BookRequest) (*commonv1.HimalayaBook, error) {
 	if m.stop.Load() {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}

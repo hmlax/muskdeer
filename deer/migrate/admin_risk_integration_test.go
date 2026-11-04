@@ -10,7 +10,8 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -64,9 +65,9 @@ func TestAdminRiskBlockRejectsManagedDirectCoreSubmissions(t *testing.T) {
 	assertGatewayOrderCount(ctx, t, db, 1)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "799.8", "200.2")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 1)
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Where("id = ?", receipt.ID).UpdateColumn("reason", "rewritten history").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Where("id = ?", receipt.ID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyRiskChange{}).Where("id = ?", receipt.ID).Delete(&modelv1.AdminStrategyRiskChange{}).Error, "23514")
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 1)
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Where("id = ?", receipt.ID).UpdateColumn("reason", "rewritten history").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Where("id = ?", receipt.ID).UpdateColumn("delete_at", time.Now().UnixMilli()).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyRiskChange{}).Where("id = ?", receipt.ID).Delete(&strategymodelv1.AdminStrategyRiskChange{}).Error, "23514")
 }

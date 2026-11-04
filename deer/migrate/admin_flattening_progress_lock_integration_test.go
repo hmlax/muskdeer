@@ -11,7 +11,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 )
 
 func TestAdminFlatteningProgressWaitsForStrategyBeforeTakingLease(t *testing.T) {
@@ -19,7 +20,7 @@ func TestAdminFlatteningProgressWaitsForStrategyBeforeTakingLease(t *testing.T) 
 	ctx, cancel := context.WithTimeout(t.Context(), 20*time.Second)
 	defer cancel()
 	_, submit, receipt := flattenSchemaFixture(ctx, t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlattening{}).Create(receipt).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlattening{}).Create(receipt).Error; err != nil {
 		t.Fatal(err)
 	}
 	setFlattenRuntimeOwner(ctx, t, db, submit.Input.Authority)
@@ -27,19 +28,19 @@ func TestAdminFlatteningProgressWaitsForStrategyBeforeTakingLease(t *testing.T) 
 	process := make(chan int64, 1)
 	finished := make(chan error, 1)
 	var workers sync.WaitGroup
-	holderErr := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(holder *gorm.DB) error {
-		var strategy modelv1.StrategyInstance
-		if err := holder.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", receipt.StrategyInstanceId).
+	holderErr := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(holder *gorm.DB) error {
+		var strategy strategymodelv1.StrategyInstance
+		if err := holder.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", receipt.StrategyInstanceId).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&strategy).Error; err != nil {
 			return err
 		}
 		workers.Go(func() {
-			err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Transaction(func(tx *gorm.DB) error {
+			err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Transaction(func(tx *gorm.DB) error {
 				if err := updateFlattenTaskClaim(ctx, tx, claim); err != nil {
 					return err
 				}
 				var backend struct{ ProcessID int64 }
-				if err := tx.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Where("id = ?", claim.Id).
+				if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Where("id = ?", claim.Id).
 					Select("pg_backend_pid() AS process_id").Take(&backend).Error; err != nil {
 					return err
 				}
@@ -62,8 +63,8 @@ func TestAdminFlatteningProgressWaitsForStrategyBeforeTakingLease(t *testing.T) 
 		}
 		// A final sender already holding the strategy mutex must be able to
 		// take its lease now. A reversed claim order has already locked it.
-		var lease modelv1.StrategyLease
-		return holder.WithContext(ctx).Model(&modelv1.StrategyLease{}).Where("strategy_instance_id = ?", receipt.StrategyInstanceId).
+		var lease strategymodelv1.StrategyLease
+		return holder.WithContext(ctx).Model(&strategymodelv1.StrategyLease{}).Where("strategy_instance_id = ?", receipt.StrategyInstanceId).
 			Clauses(clause.Locking{
 				Strength: "UPDATE",
 				Options:  "NOWAIT",
@@ -86,7 +87,7 @@ func waitFlattenClaimBlocked(ctx context.Context, db *gorm.DB, taskID, pid int64
 	defer ticker.Stop()
 	for {
 		var observation struct{ Blockers int64 }
-		if err := db.WithContext(ctx).Model(&modelv1.AdminAccountFlatteningTask{}).Where("id = ?", taskID).
+		if err := db.WithContext(ctx).Model(&executionmodelv1.AdminAccountFlatteningTask{}).Where("id = ?", taskID).
 			Select("cardinality(pg_blocking_pids(?)) AS blockers", pid).Take(&observation).Error; err != nil {
 			return err
 		}

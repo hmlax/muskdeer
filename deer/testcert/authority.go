@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 // Authority owns an in-memory test signing key. It is not a production issuer.

@@ -11,9 +11,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -43,13 +43,13 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 	// the execution, strategy and source authority rows until the bounded,
 	// single attempt completes.
 	var response *pb.WashTradeResponse
-	err = s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, left, err := lockSyntheticAuthorities(ctx, tx, execution, row.Plan)
 		if err != nil {
 			return err
 		}
-		var persisted modelv1.SyntheticTapeIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).First(&persisted).Error; err != nil {
+		var persisted executionmodelv1.SyntheticTapeIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).First(&persisted).Error; err != nil {
 			return err
 		}
 		if persisted.PolicyDigest != digest || persisted.Result.GetState() != native.SyntheticUnknown || !proto.Equal(persisted.Plan, row.Plan) {
@@ -80,7 +80,7 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 		TimestampMs: response.TimestampMs,
 		SourceTrade: proto.CloneOf(row.Plan.SourceTrade),
 	}
-	if err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).Select("Result").Updates(row).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("id = ?", row.Id).Select("Result").Updates(row).Error; err != nil {
 		return nil, err
 	}
 	return proto.CloneOf(row.Result), nil
@@ -96,16 +96,16 @@ func validSyntheticPlan(cfg *commonv1.HimalayaPolicy, execution domain.LeaseToke
 	return err == nil && proto.Equal(expected, plan)
 }
 
-func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *commonv1.HimalayaPolicy, plan *commonv1.SyntheticTapePlan, digest string) (*modelv1.SyntheticTapeIntent, bool, error) {
-	var result *modelv1.SyntheticTapeIntent
+func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *commonv1.HimalayaPolicy, plan *commonv1.SyntheticTapePlan, digest string) (*executionmodelv1.SyntheticTapeIntent, bool, error) {
+	var result *executionmodelv1.SyntheticTapeIntent
 	fresh := false
-	err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, _, err := lockSDKLease(ctx, tx, execution.Key.AccountID, execution.OwnerID, uint64(execution.Epoch))
 		if err != nil {
 			return err
 		}
-		var rows []*modelv1.SyntheticTapeIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Where("run_id = ? AND symbol = ?", plan.RunId, plan.Symbol).Order("sequence").Limit(1001).Find(&rows).Error; err != nil {
+		var rows []*executionmodelv1.SyntheticTapeIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ? AND symbol = ?", plan.RunId, plan.Symbol).Order("sequence").Limit(1001).Find(&rows).Error; err != nil {
 			return err
 		}
 		if len(rows) > 1000 {
@@ -163,7 +163,7 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 		if total.Add(notional).GreaterThan(maximum) {
 			return ErrRiskLimit
 		}
-		result = &modelv1.SyntheticTapeIntent{
+		result = &executionmodelv1.SyntheticTapeIntent{
 			CreateAt:     now,
 			UpdateAt:     now,
 			RunId:        plan.RunId,
@@ -177,7 +177,7 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 				SourceTrade: proto.CloneOf(plan.SourceTrade),
 			},
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Create(result).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Create(result).Error; err != nil {
 			return err
 		}
 		fresh = true
@@ -197,7 +197,7 @@ func validateSyntheticTradeAudit(cfg *commonv1.HimalayaPolicy, plan *commonv1.Sy
 	return native.TradeSequence(plan.SourceTrade)
 }
 
-func syntheticReservation(row *modelv1.SyntheticTapeIntent, digest string, sequence int64) (decimal.Decimal, error) {
+func syntheticReservation(row *executionmodelv1.SyntheticTapeIntent, digest string, sequence int64) (decimal.Decimal, error) {
 	amount, e1 := domain.ParseLedgerDecimal(row.Notional, false, false)
 	price, e2 := native.Value(row.Plan.GetPrice(), false, false)
 	quantity, e3 := native.Value(row.Plan.GetQuantity(), false, false)

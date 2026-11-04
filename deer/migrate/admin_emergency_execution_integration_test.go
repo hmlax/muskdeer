@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/simulator"
@@ -100,10 +102,10 @@ func TestAdminEmergencyScopeKeepsLostCancelAndRacingFillAcrossFencedTakeover(t *
 		}
 		assertCoreBalance(ctx, t, execution.core, submit.Input.AccountID, "USDT", "899.9", "0")
 		assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-		assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 1)
-		assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 1)
-		assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 1)
-		assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorFill{}, 1)
+		assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 1)
+		assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 1)
+		assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 1)
+		assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorFill{}, 1)
 		return
 	}
 	t.Fatal("scope did not persist completion after authoritative terminal confirmation")
@@ -140,8 +142,8 @@ func TestAdminEmergencyProgressWaitsForUnsentSubmissionBarrier(t *testing.T) {
 	if err != nil || result.State != domain.AdminEmergencyCancelAccepted || result.Progress.PendingSubmissions != 1 || result.Progress.EnrollmentComplete {
 		t.Fatal("unobserved outgoing submission was hidden by zero OMS targets", err)
 	}
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&task).Error; err != nil || task.EnrollmentUpperId != nil {
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&task).Error; err != nil || task.EnrollmentUpperId != nil {
 		t.Fatal("cutoff was sealed before the original submit could be ruled out", err)
 	}
 	if _, err := actions.Discard(ctx, action, submit.Input.Authority); err != nil {
@@ -168,14 +170,14 @@ func TestAdminEmergencyEnrollmentFailureRollsBackCursorChildrenAndTheirAudits(t 
 	if err != nil {
 		t.Fatal(err)
 	}
-	var before modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&before).Error; err != nil {
+	var before executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	injected := errors.New("test-only enrollment storage failure")
 	const callback = "test:fail-emergency-child"
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, child := tx.Statement.Dest.(*modelv1.AdminOrderCancellation); child {
+		if _, child := tx.Statement.Dest.(*executionmodelv1.AdminOrderCancellation); child {
 			tx.Error = injected
 		}
 	}); err != nil {
@@ -190,12 +192,12 @@ func TestAdminEmergencyEnrollmentFailureRollsBackCursorChildrenAndTheirAudits(t 
 	if !errors.Is(err, injected) || result.AcceptanceID != 0 {
 		t.Fatal("failed enrollment returned partial progress or lost its private cause", err)
 	}
-	var after modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("id = ?", before.Id).Take(&after).Error; err != nil || !proto.Equal(&before, &after) {
+	var after executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("id = ?", before.Id).Take(&after).Error; err != nil || !proto.Equal(&before, &after) {
 		t.Fatal("failed child write advanced durable cursor or sealed cutoff", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 2)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
 	assertGatewayOrderCount(ctx, t, db, 0)
 }

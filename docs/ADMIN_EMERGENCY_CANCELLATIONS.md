@@ -20,7 +20,7 @@ P07.63提供内部当前viewer历史分页和单范围观测端口，复用同�
 
 单范围观测含数据库采样时间、存储结果及当前计数，读取不调用Prepare、不推进游标、不发执行RPC。ACCEPTED即使当前为空仍保持原存储结果；曾经FAILED的取消目标若后来成交并归结，其当前terminal可增加、failed可减少，原FAILED/修订/完成时间保持不变。任务结果和当前计数分别表述，不能以当前计数改写历史结果、恢复风险或证明持仓为零。
 
-P07.64的[typed Proto](../deer/proto/rpc/strategy/v1/emergencies.proto)区分StrategyEmergencyCancellationControl与Query。RequestEmergencyCancellation显式携带scope、strategy_id、expected_risk_revision、原因、幂等键、当前会话和独立CSRF，只返回不可变受理。GetEmergencyCancellation提供存储Record、当前Progress及数据库观测时间；ListEmergencyCancellations返回有界历史。所有身份/修订/计数为int64，若经Proto JSON呈现为十进制字符串，不经浮点；没有JSON/bytes业务载荷。
+P07.64的[typed Proto](../deer/proto/strategy/v1/emergencies.proto)区分StrategyEmergencyCancellationControl与Query。RequestEmergencyCancellation显式携带scope、strategy_id、expected_risk_revision、原因、幂等键、当前会话和独立CSRF，只返回不可变受理。GetEmergencyCancellation提供存储Record、当前Progress及数据库观测时间；ListEmergencyCancellations返回有界历史。所有身份/修订/计数为int64，若经Proto JSON呈现为十进制字符串，不经浮点；没有JSON/bytes业务载荷。
 
 服务借用同一Deer数据库，只有ManagementEnabled注册查询，ControlEnabled才另注册写入。API-peer mTLS、当前持久viewer/operator权限、原调用期限（最多5秒）、2KiB请求上限与请求及相关嵌套消息的未知字段拒绝均保留；使用原rpcclient单次调用、禁止透明重试，不直接发交易指令。返回前验证范围/完整确认、状态/可空证明/计数/分页及精确毫秒时间，私有存储错误统一公开分类。
 

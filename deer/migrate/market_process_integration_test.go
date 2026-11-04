@@ -14,8 +14,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketconfigv1 "github.com/hmlax/muskdeer/deer/proto/market/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -104,8 +105,8 @@ func TestIndependentMarketCommandsServeSelectedSourcesOverDiscoveryAndMTLS(t *te
 	if !closed.Reading.Mid.IsZero() || stillHealthy.Reading.Mid.String() != "200" || stillHealthy.OwnerEpoch != second.OwnerEpoch {
 		t.Fatal("one source shutdown switched or poisoned the other")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorAccount{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorAccount{}, 0)
 }
 
 func marketProcessConfig(t *testing.T, ca *testcert.Authority, postgres *configv1.Postgres, naming *configv1.Nacos, feedID int64, instance, bid, ask string) *configv1.ServiceConfig {
@@ -113,9 +114,9 @@ func marketProcessConfig(t *testing.T, ca *testcert.Authority, postgres *configv
 	cfg := businessProcessConfig(t, ca, postgres, nil, naming, "market")
 	cfg.InstanceId = "business-market-" + instance
 	cfg.Business.OperationTimeout = durationpb.New(time.Second)
-	cfg.Business.Market = &configv1.MarketRuntime{
+	cfg.Business.Market = &marketconfigv1.MarketRuntime{
 		LeaseTtl: durationpb.New(3 * time.Second),
-		Feeds: []*configv1.MarketFeedRuntime{{
+		Feeds: []*marketconfigv1.MarketFeedRuntime{{
 			FeedId:         feedID,
 			ReplayBid:      bid,
 			ReplayAsk:      ask,

@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -56,8 +56,8 @@ func actionRPCKey(strategyID int64, decisionKey string) string {
 	return strategyActionRPCPrefix + hex.EncodeToString(digest[:])
 }
 
-func newActionRow(authority domain.StrategyAuthority, plan domain.StrategyActionPlan) (*modelv1.StrategyAction, error) {
-	row := &modelv1.StrategyAction{
+func newActionRow(authority domain.StrategyAuthority, plan domain.StrategyActionPlan) (*strategymodelv1.StrategyAction, error) {
+	row := &strategymodelv1.StrategyAction{
 		StrategyInstanceId: authority.StrategyID,
 		DecisionKey:        plan.Key,
 		AccountId:          plan.AccountID,
@@ -87,7 +87,7 @@ func newActionRow(authority domain.StrategyAuthority, plan domain.StrategyAction
 	return row, nil
 }
 
-func actionSnapshot(row *modelv1.StrategyAction) (domain.StrategyAction, error) {
+func actionSnapshot(row *strategymodelv1.StrategyAction) (domain.StrategyAction, error) {
 	if row == nil || row.Id <= 0 || row.DeleteAt != nil || row.Revision <= 0 || row.ConfigVersion <= 0 || row.OwnerEpoch <= 0 || !ownerid.Valid(row.OwnerId) ||
 		row.CreateAt <= 0 || row.UpdateAt < row.CreateAt || row.IdempotencyKey != actionRPCKey(row.StrategyInstanceId, row.DecisionKey) {
 		return domain.StrategyAction{}, domain.ErrInvalidOrder
@@ -155,15 +155,15 @@ func sameActionPlan(old domain.StrategyAction, plan domain.StrategyActionPlan, v
 		p.TargetIntentID == plan.TargetIntentID && p.TargetClientOrderID == plan.TargetClientOrderID
 }
 
-func lockActionAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority) (*modelv1.StrategyInstance, int64, error) {
+func lockActionAuthority(ctx context.Context, tx *gorm.DB, authority domain.StrategyAuthority) (*strategymodelv1.StrategyInstance, int64, error) {
 	if err := coreContext(ctx); err != nil {
 		return nil, 0, err
 	}
 	if err := actionAuthorityFields(authority); err != nil {
 		return nil, 0, err
 	}
-	var strategy modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).
+	var strategy strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).
 		Where("id = ? AND delete_at IS NULL", authority.StrategyID).Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&strategy).Error; err != nil {
 		return nil, 0, err
 	}

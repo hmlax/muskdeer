@@ -21,7 +21,7 @@
 
 ## 配置内容
 
-每个服务发布两份严格 YAML：`data.yaml` 对应 [DataConfig](../deer/proto/config/v1/data.proto)，定义 PostgreSQL/Redis/JetStream 连接、密码环境变量名以及业务运行控制；`service.yaml` 对应 [ServiceSettings](../deer/proto/config/v1/service.proto)，定义身份、版本、启动/关闭期限、gRPC/HTTP/监控监听、TLS、日志、RPC 客户端和注册参数。示例见 [market/data.yaml](../configs/local/market/data.yaml) 与 [market/service.yaml](../configs/local/market/service.yaml)，其他服务各有独立目录。示例默认只是基础探针，不授权交易。
+每个服务发布两份严格 YAML：`data.yaml` 对应 [DataConfig](../deer/proto/common/config/v1/data.proto)，定义 PostgreSQL/Redis/JetStream 连接、密码环境变量名以及业务运行控制；`service.yaml` 对应 [ServiceSettings](../deer/proto/common/config/v1/service.proto)，定义身份、版本、启动/关闭期限、gRPC/HTTP/监控监听、TLS、日志、RPC 客户端和注册参数。示例见 [market/data.yaml](../configs/local/market/data.yaml) 与 [market/service.yaml](../configs/local/market/service.yaml)，其他服务各有独立目录。示例默认只是基础探针，不授权交易。
 
 两份文档的 name/version 必须一致，service.yaml 的 data_sha256 必须等于 data.yaml **原始字节**的 SHA-256（包含注释和换行）。准备/发布工具自动计算并先发布 data、最后发布 service；手工编辑时可用 `shasum -a 256 data.yaml` 取得绑定值。配对中途启动会失败，已有进程保持原不可变快照。ServiceConfig 仅为内部装配结果，不是第三份配置源。
 

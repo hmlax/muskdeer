@@ -19,9 +19,10 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/jetstream"
 	"github.com/hmlax/muskdeer/deer/ownerid"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -70,7 +71,7 @@ func TestOutboxClaimsExcludePeersAndFenceExpiredOwner(t *testing.T) {
 		t.Fatalf("expected exactly one claim, got %d", len(claimed))
 	}
 	old := claimed[0]
-	if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Where("id = ?", old.ID).UpdateColumn("claim_expires_at", 0).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Where("id = ?", old.ID).UpdateColumn("claim_expires_at", 0).Error; err != nil {
 		t.Fatal(err)
 	}
 	successor, err := store.Claim(ctx, outboxOwner(t), time.Minute)
@@ -86,8 +87,8 @@ func TestOutboxClaimsExcludePeersAndFenceExpiredOwner(t *testing.T) {
 	if premature, err := store.Claim(ctx, outboxOwner(t), time.Second); err != nil || premature != nil {
 		t.Fatalf("persisted retry deadline ignored: %+v, %v", premature, err)
 	}
-	var row modelv1.OutboxEvent
-	if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).First(&row, old.ID).Error; err != nil || row.Attempts != 2 || row.State != domain.OutboxStatePending || row.ErrorCode != outbox.CodePublishFailed || row.ClaimedBy != "" || row.ClaimExpiresAt != 0 {
+	var row executionmodelv1.OutboxEvent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).First(&row, old.ID).Error; err != nil || row.Attempts != 2 || row.State != domain.OutboxStatePending || row.ErrorCode != outbox.CodePublishFailed || row.ClaimedBy != "" || row.ClaimExpiresAt != 0 {
 		t.Fatalf("retry state = %v, %v", &row, err)
 	}
 }
@@ -127,7 +128,7 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Where("id = ? AND state = ?", fault.interrupted.ID, domain.OutboxStatePublishing).
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Where("id = ? AND state = ?", fault.interrupted.ID, domain.OutboxStatePublishing).
 		UpdateColumn("claim_expires_at", 0).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -152,7 +153,7 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 		}
 	}
 	var remaining int64
-	if err := db.WithContext(ctx).Model(&modelv1.OutboxEvent{}).Where("state <> ?", domain.OutboxStatePublished).Count(&remaining).Error; err != nil || remaining != 0 {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OutboxEvent{}).Where("state <> ?", domain.OutboxStatePublished).Count(&remaining).Error; err != nil || remaining != 0 {
 		t.Fatalf("unpublished events = %d, %v", remaining, err)
 	}
 	info, err := stream.Info(ctx)
@@ -165,8 +166,8 @@ func TestOutboxStoredBeforeCompletionAndInboxCommittedBeforeAck(t *testing.T) {
 	}
 	consumePortfolioWithRedelivery(ctx, t, consumer, handler, info.State.Msgs)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 2)
 	projection, err := portfolio.Get(ctx, submit.Input.AccountID)
 	if err != nil || !projection.Reconciled || !projection.Values.Quantity.Equal(decimal.NewFromInt(10)) || !projection.Values.CashQuote.Equal(decimal.RequireFromString("1001.8")) {
 		t.Fatalf("publication/redelivery changed business accounting: %+v, %v", projection, err)

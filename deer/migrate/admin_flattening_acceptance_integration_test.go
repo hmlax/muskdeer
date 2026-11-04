@@ -13,7 +13,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -30,7 +32,7 @@ func TestAdminFlatteningAcceptancePersistsExactScopeAndReplaysHistoricalConfirma
 		receipt.InstrumentID != request.InstrumentID || receipt.CancellationID != request.CancellationID || !receipt.ConfirmedQuantity.Equal(decimal.NewFromInt(10)) || !receipt.LimitPrice.Equal(request.LimitPrice) {
 		t.Fatal("actual flatten request did not persist exact confirmation", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 1)
 	assertFlatAuditCount(ctx, t, db, 1)
 	if !proto.Equal(before, publicationInstance(ctx, t, db, request.StrategyID)) {
 		t.Fatal("metadata acceptance changed strategy state or target")
@@ -40,8 +42,8 @@ func TestAdminFlatteningAcceptancePersistsExactScopeAndReplaysHistoricalConfirma
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "1000", "0")
 	// Explicit post-acceptance balance fault: replay must retain history and a
 	// viewer read must never repair the projection or manufacture funds.
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", request.AccountID, "BTC").
-		Select("Available", "Revision").Updates(&modelv1.SimulatorBalance{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", request.AccountID, "BTC").
+		Select("Available", "Revision").Updates(&executionmodelv1.SimulatorBalance{
 		Available: "9",
 		Revision:  request.ExpectedBaseRevision + 1,
 	}).Error; err != nil {
@@ -57,7 +59,7 @@ func TestAdminFlatteningAcceptancePersistsExactScopeAndReplaysHistoricalConfirma
 		t.Fatal("current viewer lost the historical scoped confirmation", err)
 	}
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "BTC", "9", "0")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 1)
 	assertFlatAuditCount(ctx, t, db, 1)
 	assertGatewayOrderCount(ctx, t, db, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
@@ -101,7 +103,7 @@ func TestAdminFlatteningAcceptanceConcurrentOriginalKeyHasOneEffectAndBlocksNewK
 	if _, err := store.Request(ctx, admin.Token, admin.CSRF, changed); !errors.Is(err, domain.ErrAdminConflict) {
 		t.Fatal("new key bypassed the account's pending confirmation", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAccountFlattening{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminAccountFlattening{}, 1)
 	assertFlatAuditCount(ctx, t, db, 1)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
@@ -117,12 +119,12 @@ func flattenAcceptanceFixture(ctx context.Context, t *testing.T, db *gorm.DB) (d
 		t.Fatal("flatten request fixture lacks completed real cancellation proof", err)
 	}
 	admin := riskActorFixture(ctx, t, db, "flatten-acceptance-admin", domain.AdminRoleAdmin, 250, domain.AdminSessionTTL)
-	var portfolio modelv1.PortfolioAccount
-	if err := db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).Take(&portfolio).Error; err != nil {
+	var portfolio portfoliomodelv1.PortfolioAccount
+	if err := db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).Take(&portfolio).Error; err != nil {
 		t.Fatal(err)
 	}
-	var balance modelv1.SimulatorBalance
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, portfolio.BaseAsset).Take(&balance).Error; err != nil {
+	var balance executionmodelv1.SimulatorBalance
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, portfolio.BaseAsset).Take(&balance).Error; err != nil {
 		t.Fatal(err)
 	}
 	quantity, err := domain.ParseLedgerDecimal(portfolio.Quantity, false, true)
@@ -157,7 +159,7 @@ func flattenAcceptanceStore(t *testing.T, db *gorm.DB) domain.AdminAccountFlatte
 func assertFlatAuditCount(ctx context.Context, t *testing.T, db *gorm.DB, expected int64) {
 	t.Helper()
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("action = ?", domain.AdminFlattenAction).Count(&count).Error; err != nil || count != expected {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("action = ?", domain.AdminFlattenAction).Count(&count).Error; err != nil || count != expected {
 		t.Fatal("flatten request left the wrong number of separate audits", err, count)
 	}
 }

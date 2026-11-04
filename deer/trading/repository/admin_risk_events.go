@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -28,7 +28,7 @@ func (s *adminRiskEvents) List(ctx context.Context, token string, filter domain.
 	var result domain.AdminRiskEventPage
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
 		query := adminRiskEventQuery(ctx, tx, filter)
-		var rows []*modelv1.RiskSnapshotEvent
+		var rows []*executionmodelv1.RiskSnapshotEvent
 		if err := query.Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -61,8 +61,8 @@ func (s *adminRiskEvents) Detail(ctx context.Context, token string, id int64) (d
 	}
 	var result domain.AdminRiskEvent
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.RiskSnapshotEvent
-		if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshotEvent{}).
+		var row executionmodelv1.RiskSnapshotEvent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshotEvent{}).
 			Where("id = ? AND delete_at IS NULL", id).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
@@ -80,7 +80,7 @@ func (s *adminRiskEvents) Detail(ctx context.Context, token string, id int64) (d
 }
 
 func adminRiskEventQuery(ctx context.Context, tx *gorm.DB, filter domain.AdminRiskEventFilter) *gorm.DB {
-	query := tx.WithContext(ctx).Model(&modelv1.RiskSnapshotEvent{}).
+	query := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshotEvent{}).
 		Where("id > ? AND delete_at IS NULL", filter.Page.AfterID)
 	if filter.StrategyID != 0 {
 		query = query.Where("strategy_instance_id = ?", filter.StrategyID)
@@ -103,7 +103,7 @@ func adminRiskEventQuery(ctx context.Context, tx *gorm.DB, filter domain.AdminRi
 	return query
 }
 
-func adminRiskEventValue(row *modelv1.RiskSnapshotEvent) (domain.AdminRiskEvent, error) {
+func adminRiskEventValue(row *executionmodelv1.RiskSnapshotEvent) (domain.AdminRiskEvent, error) {
 	if !validAdminRiskEventIdentity(row) || !validAdminRiskEventObservation(row) {
 		return domain.AdminRiskEvent{}, domain.ErrAdminUnavailable
 	}
@@ -137,7 +137,7 @@ func adminRiskEventValue(row *modelv1.RiskSnapshotEvent) (domain.AdminRiskEvent,
 	return result, nil
 }
 
-func validAdminRiskEventIdentity(row *modelv1.RiskSnapshotEvent) bool {
+func validAdminRiskEventIdentity(row *executionmodelv1.RiskSnapshotEvent) bool {
 	return row != nil && row.Id > 0 && row.CreateAt > 0 && row.UpdateAt == row.CreateAt && row.DeleteAt == nil &&
 		row.RiskSnapshotId > 0 && row.RiskSnapshotRevision > 0 && row.StrategyInstanceId > 0 &&
 		coreIdentifier(row.AccountId, 64) && row.InstrumentId > 0 && row.ConfigVersion > 0 &&
@@ -145,7 +145,7 @@ func validAdminRiskEventIdentity(row *modelv1.RiskSnapshotEvent) bool {
 		(row.Kind != string(domain.RiskSnapshotEventRemoved) || row.SnapshotDeleted)
 }
 
-func validAdminRiskEventObservation(row *modelv1.RiskSnapshotEvent) bool {
+func validAdminRiskEventObservation(row *executionmodelv1.RiskSnapshotEvent) bool {
 	return domain.MarketSource(row.MarketDataSource).ValidateSelection() == nil &&
 		(row.MarketFeedId == nil || *row.MarketFeedId > 0) && row.MarketEpoch >= 0 && row.MarketSequence >= 0 &&
 		row.MarketRevision >= 0 && row.MarketSourceVersion >= 0 && row.MarketMaximumAgeMs > 0 &&

@@ -16,10 +16,12 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/nacos"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -81,7 +83,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	discovery.entries[rpcsecurity.ServiceMarket] = nacos.Instance{
 		ID:      "market-test",
 		Service: rpcsecurity.ServiceMarket,
-		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { rpc.RegisterMarketServer(server, market) }),
+		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { markethimalayav1.RegisterMarketServer(server, market) }),
 	}
 	logger := nativeWorkerLogger(ctx, t, lease.OwnerID)
 	t.Setenv("SYNTHETIC_TEST_TOKEN", "test-token")
@@ -125,7 +127,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := rpc.NewExecutionClient(connection).PublishSynthetic(ctx, &commonv1.SyntheticTapePlan{}); status.Code(err) != codes.PermissionDenied {
+	if _, err := executionhimalayav1.NewExecutionClient(connection).PublishSynthetic(ctx, &commonv1.SyntheticTapePlan{}); status.Code(err) != codes.PermissionDenied {
 		t.Fatalf("PublishSynthetic(portfolio peer)=%v, want PermissionDenied", err)
 	}
 	strategyFactory := nativeFactory(ctx, t, ca, rpcsecurity.ServiceStrategy, discovery)
@@ -159,8 +161,8 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 		market.tradeUnavailable.Store(false)
 	}
 	nativeWait(ctx, t, func() bool {
-		var rows []*modelv1.SyntheticTapeIntent
-		if db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Find(&rows).Error != nil || len(rows) != 2 {
+		var rows []*executionmodelv1.SyntheticTapeIntent
+		if db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Find(&rows).Error != nil || len(rows) != 2 {
 			return false
 		}
 		return sdk.syntheticCount() == 2 && rows[0].Result.GetState() == native.SyntheticPublished && rows[1].Result.GetState() == native.SyntheticPublished
@@ -168,8 +170,8 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
 		assertSyntheticTradeReceipts(ctx, t, db)
 	}
-	var before modelv1.ExecutionShardLease
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("account_id = ?", native.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, request.Symbol)).First(&before).Error; err != nil {
+	var before commonmodelv1.ExecutionShardLease
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", native.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, request.Symbol)).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
 	// A new worker starts its local sequence at zero, but the persisted slots
@@ -186,8 +188,8 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	}
 	runNativeWorkers(ctx, t, selected)
 	nativeWait(ctx, t, func() bool {
-		var after modelv1.ExecutionShardLease
-		return db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Where("id = ?", before.Id).First(&after).Error == nil && after.UpdateAt >= before.UpdateAt+100
+		var after commonmodelv1.ExecutionShardLease
+		return db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("id = ?", before.Id).First(&after).Error == nil && after.UpdateAt >= before.UpdateAt+100
 	})
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()

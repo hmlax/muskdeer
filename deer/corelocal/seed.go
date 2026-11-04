@@ -10,8 +10,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -42,8 +44,8 @@ func Seed(ctx context.Context, db *gorm.DB) (Resources, error) {
 		return Resources{}, ErrResources
 	}
 	var result Resources
-	err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Transaction(func(tx *gorm.DB) error {
-		instrument := &modelv1.Instrument{
+	err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Transaction(func(tx *gorm.DB) error {
+		instrument := &commonmodelv1.Instrument{
 			ExecutionVenue:  domain.ExecutionVenueSimulator,
 			Symbol:          symbol,
 			BaseAsset:       baseAsset,
@@ -54,10 +56,10 @@ func Seed(ctx context.Context, db *gorm.DB) (Resources, error) {
 			Status:          domain.InstrumentStatusTrading,
 			MetadataVersion: 1,
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Clauses(clause.OnConflict{DoNothing: true}).Create(instrument).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Clauses(clause.OnConflict{DoNothing: true}).Create(instrument).Error; err != nil {
 			return err
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("execution_venue = ? AND symbol = ? AND delete_at IS NULL", domain.ExecutionVenueSimulator, symbol).First(instrument).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("execution_venue = ? AND symbol = ? AND delete_at IS NULL", domain.ExecutionVenueSimulator, symbol).First(instrument).Error; err != nil {
 			return err
 		}
 		if instrument.BaseAsset != baseAsset || instrument.QuoteAsset != quoteAsset || instrument.MetadataVersion != 1 {
@@ -100,7 +102,7 @@ func seedFeed(ctx context.Context, tx *gorm.DB, instrumentID int64, source domai
 		RecoverySamples:  int32(policy.RecoverySamples),
 		RecoveryWindowMs: policy.RecoveryWindow.Milliseconds(),
 	}
-	row := &modelv1.MarketFeed{
+	row := &marketmodelv1.MarketFeed{
 		Source:         string(source),
 		InstrumentId:   instrumentID,
 		ExternalSymbol: external,
@@ -108,11 +110,11 @@ func seedFeed(ctx context.Context, tx *gorm.DB, instrumentID int64, source domai
 		SourceVersion:  domain.MarketSourceVersion,
 		Policy:         storedPolicy,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Clauses(clause.OnConflict{DoNothing: true}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Clauses(clause.OnConflict{DoNothing: true}).Create(row).Error; err != nil {
 		return 0, err
 	}
-	var saved modelv1.MarketFeed
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).
+	var saved marketmodelv1.MarketFeed
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).
 		Where("source = ? AND instrument_id = ? AND mode = ? AND delete_at IS NULL", source, instrumentID, domain.MarketModeReplay).First(&saved).Error; err != nil {
 		return 0, err
 	}
@@ -123,23 +125,23 @@ func seedFeed(ctx context.Context, tx *gorm.DB, instrumentID int64, source domai
 }
 
 func seedAccount(ctx context.Context, tx *gorm.DB) error {
-	account := &modelv1.SimulatorAccount{
+	account := &executionmodelv1.SimulatorAccount{
 		AccountId:    AccountID,
 		SubjectId:    subjectID,
 		Enabled:      false,
 		QuoteFeeRate: "0",
 		Revision:     1,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Clauses(clause.OnConflict{DoNothing: true}).Create(account).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Clauses(clause.OnConflict{DoNothing: true}).Create(account).Error; err != nil {
 		return err
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", AccountID).First(account).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", AccountID).First(account).Error; err != nil {
 		return err
 	}
 	if account.SubjectId != subjectID || account.Enabled {
 		return ErrResources
 	}
-	budget := &modelv1.AccountBudget{
+	budget := &commonmodelv1.AccountBudget{
 		AccountId:        AccountID,
 		Asset:            quoteAsset,
 		LimitNotional:    "1",
@@ -147,10 +149,10 @@ func seedAccount(ctx context.Context, tx *gorm.DB) error {
 		Enabled:          false,
 		Revision:         1,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Clauses(clause.OnConflict{DoNothing: true}).Create(budget).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Clauses(clause.OnConflict{DoNothing: true}).Create(budget).Error; err != nil {
 		return err
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", AccountID).First(budget).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", AccountID).First(budget).Error; err != nil {
 		return err
 	}
 	if budget.Asset != quoteAsset || budget.Enabled {

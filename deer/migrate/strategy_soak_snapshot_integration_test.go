@@ -10,7 +10,10 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -57,7 +60,7 @@ func observeSoakQuotes(ctx context.Context, db *gorm.DB, submit domain.GatewaySu
 		Buys  int64
 		Sells int64
 	}
-	err := db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).
+	err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).
 		Where("account_id = ? AND strategy_instance_id = ? AND state IN ? AND cancel_state = ? AND delete_at IS NULL",
 			submit.Input.AccountID, submit.Input.Authority.StrategyID, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}, domain.CancelStateNone).
 		Select("count(*) FILTER (WHERE side = ?) AS buys, count(*) FILTER (WHERE side = ?) AS sells", domain.SideBuy, domain.SideSell).Scan(&sides).Error
@@ -66,9 +69,9 @@ func observeSoakQuotes(ctx context.Context, db *gorm.DB, submit domain.GatewaySu
 
 func readSoakSample(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmit) (soakSample, error) {
 	var sample soakSample
-	err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Transaction(func(tx *gorm.DB) error {
-		var balances []*modelv1.SimulatorBalance
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND delete_at IS NULL", submit.Input.AccountID).Find(&balances).Error; err != nil {
+	err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Transaction(func(tx *gorm.DB) error {
+		var balances []*executionmodelv1.SimulatorBalance
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND delete_at IS NULL", submit.Input.AccountID).Find(&balances).Error; err != nil {
 			return err
 		}
 		var base, quote, baseFrozen, quoteFrozen decimal.Decimal
@@ -97,7 +100,7 @@ func readSoakSample(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmi
 			return err
 		}
 		var sum soakAmount
-		if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ?", submit.Input.AccountID).Select("COALESCE(sum(reserved_quote_notional), 0)::text AS amount").Scan(&sum).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ?", submit.Input.AccountID).Select("COALESCE(sum(reserved_quote_notional), 0)::text AS amount").Scan(&sum).Error; err != nil {
 			return err
 		}
 		reserved, err := domain.ParseLedgerDecimal(sum.Amount, false, true)
@@ -108,7 +111,7 @@ func readSoakSample(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmi
 			return err
 		}
 		var buys soakAmount
-		if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 			Where("account_id = ? AND side = ? AND state IN ? AND delete_at IS NULL", submit.Input.AccountID, domain.SideBuy, []domain.OrderState{domain.OrderStateIntent, domain.OrderStateSubmitting, domain.OrderStateUnknown, domain.OrderStateLive, domain.OrderStatePartiallyFilled}).
 			Select("COALESCE(sum(quantity - filled_quantity), 0)::text AS amount").Scan(&buys).Error; err != nil {
 			return err
@@ -130,8 +133,8 @@ func readSoakSample(ctx context.Context, db *gorm.DB, submit domain.GatewaySubmi
 }
 
 func checkSoakFrozen(ctx context.Context, tx *gorm.DB, account string, sample *soakSample, baseFrozen, quoteFrozen decimal.Decimal) error {
-	var orders []*modelv1.SimulatorOrder
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND state IN ? AND delete_at IS NULL", account, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}).Find(&orders).Error; err != nil {
+	var orders []*executionmodelv1.SimulatorOrder
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND state IN ? AND delete_at IS NULL", account, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}).Find(&orders).Error; err != nil {
 		return err
 	}
 	var base, quote decimal.Decimal
@@ -162,28 +165,28 @@ func checkSoakFrozen(ctx context.Context, tx *gorm.DB, account string, sample *s
 	if !base.Equal(baseFrozen) || !quote.Equal(quoteFrozen) {
 		return fmt.Errorf("core frozen totals: %w", domain.ErrReconciliationMismatch)
 	}
-	intents := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Select("client_order_id").Where("account_id = ?", account)
+	intents := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Select("client_order_id").Where("account_id = ?", account)
 	var unexplained int64
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id NOT IN (?)", account, intents).Count(&unexplained).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id NOT IN (?)", account, intents).Count(&unexplained).Error; err != nil {
 		return err
 	}
 	if unexplained != 0 {
 		return fmt.Errorf("core orders without prior intents: %w", domain.ErrReconciliationMismatch)
 	}
-	return tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ?", account).Count(&sample.CoreOrders).Error
+	return tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ?", account).Count(&sample.CoreOrders).Error
 }
 
 func checkSoakBudgets(ctx context.Context, tx *gorm.DB, submit domain.GatewaySubmit, expected decimal.Decimal) error {
-	var account modelv1.AccountBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", submit.Input.AccountID).First(&account).Error; err != nil {
+	var account commonmodelv1.AccountBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", submit.Input.AccountID).First(&account).Error; err != nil {
 		return err
 	}
-	var strategy modelv1.StrategyBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&strategy).Error; err != nil {
+	var strategy strategymodelv1.StrategyBudget
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&strategy).Error; err != nil {
 		return err
 	}
-	var global []*modelv1.RiskBudget
-	if err := tx.WithContext(ctx).Model(&modelv1.RiskBudget{}).Find(&global).Error; err != nil {
+	var global []*commonmodelv1.RiskBudget
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Find(&global).Error; err != nil {
 		return err
 	}
 	if len(global) != 2 {
@@ -210,20 +213,20 @@ func checkSoakBudgets(ctx context.Context, tx *gorm.DB, submit domain.GatewaySub
 }
 
 func readSoakProjection(ctx context.Context, tx *gorm.DB, submit domain.GatewaySubmit, sample *soakSample, base, quote decimal.Decimal) error {
-	orders := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("id").Where("account_id = ?", submit.Input.AccountID)
+	orders := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("id").Where("account_id = ?", submit.Input.AccountID)
 	var source struct {
 		Count int64
 		Last  int64
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Where("core_order_id IN (?)", orders).Select("count(*) AS count, COALESCE(max(id), 0) AS last").Scan(&source).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Where("core_order_id IN (?)", orders).Select("count(*) AS count, COALESCE(max(id), 0) AS last").Scan(&source).Error; err != nil {
 		return err
 	}
 	sample.FillCount = source.Count
-	if err := tx.WithContext(ctx).Model(&modelv1.PortfolioFill{}).Where("account_id = ?", submit.Input.AccountID).Count(&sample.ProjectedFills).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).Where("account_id = ?", submit.Input.AccountID).Count(&sample.ProjectedFills).Error; err != nil {
 		return err
 	}
-	var portfolio modelv1.PortfolioAccount
-	if err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).First(&portfolio).Error; err != nil {
+	var portfolio portfoliomodelv1.PortfolioAccount
+	if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", submit.Input.AccountID).First(&portfolio).Error; err != nil {
 		return err
 	}
 	sample.Reconciled = portfolio.Reconciled && portfolio.LastSourceSequence == source.Last && sample.ProjectedFills == source.Count
@@ -232,14 +235,14 @@ func readSoakProjection(ctx context.Context, tx *gorm.DB, submit domain.GatewayS
 	if sample.Reconciled && (!decimal.RequireFromString(portfolio.Quantity).Equal(base) || !decimal.RequireFromString(portfolio.CashQuote).Equal(quote)) {
 		return fmt.Errorf("projected balances: %w", domain.ErrReconciliationMismatch)
 	}
-	var risk modelv1.RiskSnapshot
-	if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&risk).Error; err != nil {
+	var risk executionmodelv1.RiskSnapshot
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&risk).Error; err != nil {
 		return err
 	}
 	sample.RiskFlag, sample.RiskReason = risk.AllowNewRisk, risk.ReasonCode
 	sample.RiskReconciled = risk.Reconciled
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", risk.Id).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", risk.Id).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return err
 	}

@@ -16,7 +16,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -82,7 +84,7 @@ func TestFinalGlobalGateDoesNotDeadlockAnotherIntentRelease(t *testing.T) {
 		}
 	})
 	if err := db.Callback().Create().After("gorm:create").Register(createHook, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
 		sendBackendPID(tx, corePID)
@@ -93,7 +95,7 @@ func TestFinalGlobalGateDoesNotDeadlockAnotherIntentRelease(t *testing.T) {
 		if tx.Statement.Context.Value(globalReleaseProbeKey{}) != true {
 			return
 		}
-		if _, ok := tx.Statement.Dest.(*modelv1.AccountBudget); !ok {
+		if _, ok := tx.Statement.Dest.(*commonmodelv1.AccountBudget); !ok {
 			return
 		}
 		sendBackendPID(tx, releasePID)
@@ -102,9 +104,9 @@ func TestFinalGlobalGateDoesNotDeadlockAnotherIntentRelease(t *testing.T) {
 	}
 	gateReady, gateResult := make(chan struct{}, 1), make(chan error, 1)
 	workers.Go(func() {
-		gateResult <- db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Transaction(func(tx *gorm.DB) error {
-			var row modelv1.MarketFeed
-			if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row, feed.ID).Error; err != nil {
+		gateResult <- db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Transaction(func(tx *gorm.DB) error {
+			var row marketmodelv1.MarketFeed
+			if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row, feed.ID).Error; err != nil {
 				return err
 			}
 			gateReady <- struct{}{}
@@ -171,7 +173,7 @@ func TestFinalGlobalGateDoesNotDeadlockAnotherIntentRelease(t *testing.T) {
 
 func sendBackendPID(tx *gorm.DB, target chan<- int) {
 	var pid int
-	err := tx.WithContext(tx.Statement.Context).Session(&gorm.Session{NewDB: true}).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).Select("pg_backend_pid()").Scan(&pid).Error
+	err := tx.WithContext(tx.Statement.Context).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).Select("pg_backend_pid()").Scan(&pid).Error
 	if err != nil {
 		tx.Error = errors.Join(tx.Error, err)
 		return
@@ -200,7 +202,7 @@ func waitBackendLock(ctx context.Context, t *testing.T, db *gorm.DB, pid int) {
 	for {
 		var state struct{ Waiting bool }
 		// Only PostgreSQL diagnostics for this test's explicitly captured backend.
-		err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).Select("EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid = ? AND wait_event_type = 'Lock') AS waiting", pid).Take(&state).Error
+		err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).Select("EXISTS (SELECT 1 FROM pg_stat_activity WHERE pid = ? AND wait_event_type = 'Lock') AS waiting", pid).Take(&state).Error
 		if err != nil {
 			t.Fatal(err)
 		}

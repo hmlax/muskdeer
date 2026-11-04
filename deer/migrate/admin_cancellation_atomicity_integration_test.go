@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -102,9 +104,9 @@ func TestAdminCancellationConcurrentReplayAndExistingActionHaveOneEffect(t *test
 	if _, err := worker.Prepare(ctx, submit.Input.Authority, 0); !errors.Is(err, domain.ErrLeaseLost) {
 		t.Fatal("expired owner prepared management work", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 }
 
@@ -129,8 +131,8 @@ func TestAdminCancellationWriteFailuresRollBackAuditAndRequest(t *testing.T) {
 			injected := errors.New("test-only cancellation storage failure")
 			const callback = "test:reject-admin-cancellation-write"
 			if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-				_, audit := tx.Statement.Dest.(*modelv1.AdminAudit)
-				_, receipt := tx.Statement.Dest.(*modelv1.AdminOrderCancellation)
+				_, audit := tx.Statement.Dest.(*commonmodelv1.AdminAudit)
+				_, receipt := tx.Statement.Dest.(*executionmodelv1.AdminOrderCancellation)
 				if failReceipt && receipt || !failReceipt && audit {
 					tx.Error = injected
 				}
@@ -153,9 +155,9 @@ func TestAdminCancellationWriteFailuresRollBackAuditAndRequest(t *testing.T) {
 			if !proto.Equal(before, publicationInstance(ctx, t, db, before.Id)) {
 				t.Fatal("failed request changed strategy identity or runtime target")
 			}
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
-			assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
+			assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
 			assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 		})
 	}
@@ -175,7 +177,7 @@ func TestAdminCancellationSessionCannotExpireBetweenReceiptAndCommit(t *testing.
 	}
 	const callback = "test:expire-cancellation-authority-after-receipt"
 	if err := db.Callback().Create().After("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.AdminOrderCancellation); ok && tx.Error == nil {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.AdminOrderCancellation); ok && tx.Error == nil {
 			waitRiskDatabaseExpiry(ctx, t, db, actor.Principal.UserID, short.Principal.ExpiresAt.UnixMilli())
 		}
 	}); err != nil {
@@ -194,7 +196,7 @@ func TestAdminCancellationSessionCannotExpireBetweenReceiptAndCommit(t *testing.
 	if !errors.Is(err, domain.ErrUnauthenticated) || result.ID != 0 {
 		t.Fatal("expired authority committed management cancellation", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 0)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 }

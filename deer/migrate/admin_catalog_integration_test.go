@@ -11,7 +11,10 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/market/marketquality"
@@ -36,7 +39,7 @@ func TestAdminCatalogKeepsActualChoicesPrecisionAndCurrentViewerAuthority(t *tes
 	}
 	assertCatalogAccounts(ctx, t, db, catalog, actor.Token)
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	instruments, err := catalog.Instruments(ctx, actor.Token, page)
@@ -74,15 +77,15 @@ func TestAdminCatalogKeepsActualChoicesPrecisionAndCurrentViewerAuthority(t *tes
 	}
 	assertCatalogAuthorityDenied(ctx, t, catalog, actor.Token, instrument.Id)
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyInstance{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.MarketPublisherLease{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.MarketSnapshot{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyInstance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &marketmodelv1.MarketPublisherLease{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &marketmodelv1.MarketSnapshot{}, 0)
 }
 
 func assertCatalogAccounts(ctx context.Context, t *testing.T, db *gorm.DB, catalog domain.AdminCatalog, token string) {
 	t.Helper()
 	page := domain.AdminPage{Limit: 1}
-	accounts := []*modelv1.SimulatorAccount{
+	accounts := []*executionmodelv1.SimulatorAccount{
 		{
 			AccountId:    "catalog-enabled",
 			SubjectId:    "catalog-subject",
@@ -99,7 +102,7 @@ func assertCatalogAccounts(ctx context.Context, t *testing.T, db *gorm.DB, catal
 		},
 	}
 	for _, row := range accounts {
-		if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Create(row).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Create(row).Error; err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -175,7 +178,7 @@ func TestAdminCatalogFeedBindingAndInstrumentShareOneSnapshot(t *testing.T) {
 	}
 	actor := adminControlSessionFixture(ctx, t, db)
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	feeds := catalogFeedFixtures(ctx, t, db, instrument.Id)
@@ -186,7 +189,7 @@ func TestAdminCatalogFeedBindingAndInstrumentShareOneSnapshot(t *testing.T) {
 	const callback = "test:catalog-concurrent-binding"
 	inserted := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		row, ok := query.Statement.Dest.(*modelv1.Instrument)
+		row, ok := query.Statement.Dest.(*commonmodelv1.Instrument)
 		if !ok || row.Id != instrument.Id || inserted {
 			return
 		}
@@ -218,8 +221,8 @@ func TestAdminCatalogFeedBindingAndInstrumentShareOneSnapshot(t *testing.T) {
 	if err != nil || len(after.Items) != 1 || after.Items[0].Mode != domain.MarketModeLive || after.Items[0].Source != domain.MarketSourceBinance {
 		t.Fatal("next catalog snapshot lost the committed binding", err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", actor.Principal.UserID).
-		Select("CredentialVersion", "Revision").Updates(&modelv1.AdminUser{
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", actor.Principal.UserID).
+		Select("CredentialVersion", "Revision").Updates(&commonmodelv1.AdminUser{
 		CredentialVersion: 2,
 		Revision:          2,
 	}).Error; err != nil {

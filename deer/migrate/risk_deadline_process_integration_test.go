@@ -18,8 +18,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/testprocess"
 )
@@ -30,14 +31,14 @@ func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing
 	defer cancel()
 	_, submit := admissionFixture(ctx, t, db)
 	expireLeaseFixture(ctx, t, db, submit.ExecutionAuthority.Key)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).
 		Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).UpdateColumn("allow_new_risk", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	cfg := businessProcessConfig(t, testcert.New(t), postgres, businessStream(ctx, t), businessNaming(), "execution")
 	cfg.Business.OperationTimeout = durationpb.New(200 * time.Millisecond)
 	cfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	cfg.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	cfg.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
 	data, err := protojson.Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -48,9 +49,9 @@ func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing
 	}
 	// Keep the evaluator's first strategy lock unavailable beyond its native
 	// budget. It must terminate and withdraw rather than publish a stale grant.
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		var strategy modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		var strategy strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&strategy, submit.Input.Authority.StrategyID).Error; err != nil {
 			return err
 		}
@@ -75,8 +76,8 @@ func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing
 	}); err != nil {
 		t.Fatal(err)
 	}
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).
 		Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&risk).Error; err != nil {
 		t.Fatal(err)
 	}

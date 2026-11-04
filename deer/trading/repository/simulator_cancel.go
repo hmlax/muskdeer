@@ -9,7 +9,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -26,7 +26,7 @@ func (s *simulator) Cancel(ctx context.Context, command domain.GatewayCancel) (d
 	digest := sha256.Sum256([]byte(in.AccountID + "\n" + in.ClientOrderID))
 	fingerprint := hex.EncodeToString(digest[:])
 	var result domain.CoreOrder
-	err := s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Transaction(func(tx *gorm.DB) error {
 		if _, err := lockGateway(ctx, tx, in.Authority, command.ExecutionAuthority, in.AccountID, in.InstrumentID); err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (s *simulator) Cancel(ctx context.Context, command domain.GatewayCancel) (d
 		if command.IntentID > 0 {
 			record.IntentId = &command.IntentID
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(record).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Create(record).Error; err != nil {
 			return err
 		}
 		order.LastCommandId = record.Id
@@ -78,7 +78,7 @@ func (s *simulator) ConfirmCancel(ctx context.Context, accountID, clientOrderID 
 		return domain.CoreOrder{}, err
 	}
 	var result domain.CoreOrder
-	err = s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Transaction(func(tx *gorm.DB) error {
 		rows, err := lockCoreRows(ctx, tx, accountID, initial.InstrumentID)
 		if err != nil {
 			return err

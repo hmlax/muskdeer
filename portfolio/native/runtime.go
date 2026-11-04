@@ -16,10 +16,11 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	portfoliohimalayav1 "github.com/hmlax/muskdeer/deer/proto/portfolio/himalaya/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -29,7 +30,7 @@ import (
 
 // Runtime polls authoritative execution observations; it never simulates money.
 type Runtime struct {
-	himalayav1.UnimplementedPortfolioServer
+	portfoliohimalayav1.UnimplementedPortfolioServer
 	db      *gorm.DB
 	owner   string
 	cfg     *values.RuntimeConfig
@@ -60,7 +61,7 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 
 // RegisterGRPC exposes current scoped observations only.
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
-	himalayav1.RegisterPortfolioServer(registrar, r)
+	portfoliohimalayav1.RegisterPortfolioServer(registrar, r)
 }
 
 // Workers owns one bounded projection loop per fund.
@@ -108,19 +109,19 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePol
 	if err != nil {
 		return err
 	}
-	snapshot, err := himalayav1.NewExecutionClient(connection).GetSnapshot(ctx, values.Scope(profile))
+	snapshot, err := executionhimalayav1.NewExecutionClient(connection).GetSnapshot(ctx, values.Scope(profile))
 	if err != nil {
 		return err
 	}
 	if snapshot.ValidUntilMs <= time.Now().UnixMilli() || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId || snapshot.Scope.Symbol != profile.Symbol {
 		return values.ErrInvalid
 	}
-	return r.db.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Transaction(func(tx *gorm.DB) error {
+	return r.db.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Transaction(func(tx *gorm.DB) error {
 		if _, err := repository.LockNativeAuthority(ctx, tx, values.Authority(token)); err != nil {
 			return err
 		}
-		var row modelv1.HimalayaProjection
-		err := tx.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Where("account_id = ?", values.ScopeKey(profile.UserId, profile.FundId)).First(&row).Error
+		var row portfoliomodelv1.HimalayaProjection
+		err := tx.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Where("account_id = ?", values.ScopeKey(profile.UserId, profile.FundId)).First(&row).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
@@ -128,9 +129,9 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePol
 		row.AccountId = values.ScopeKey(profile.UserId, profile.FundId)
 		row.Snapshot, row.PublisherOwnerId, row.PublisherEpoch = proto.CloneOf(snapshot), token.OwnerID, token.Epoch
 		if fresh {
-			return tx.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Create(&row).Error
+			return tx.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Create(&row).Error
 		}
-		return tx.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Where("id = ?", row.Id).
+		return tx.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Where("id = ?", row.Id).
 			Select("Snapshot", "PublisherOwnerId", "PublisherEpoch").Updates(&row).Error
 	})
 }
@@ -143,8 +144,8 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope
 	if _, err := values.Profile(r.cfg.Himalaya, scope); err != nil {
 		return nil, status.Error(codes.InvalidArgument, values.MessageInvalid)
 	}
-	var row modelv1.HimalayaProjection
-	if err := r.db.WithContext(ctx).Model(&modelv1.HimalayaProjection{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {
+	var row portfoliomodelv1.HimalayaProjection
+	if err := r.db.WithContext(ctx).Model(&portfoliomodelv1.HimalayaProjection{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {
 		return nil, status.Error(codes.Unavailable, values.MessageInvalid)
 	}
 	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, &commonv1.HimalayaAuthority{

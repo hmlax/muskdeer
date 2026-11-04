@@ -14,8 +14,10 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -62,7 +64,7 @@ func TestAdminEmergencyProcessesEnrollCancelAndFinishAcrossOwnerTakeover(t *test
 	execution := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), discovery.Config, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &configv1.RiskRuntime{
+	execution.Business.Risk = &executionconfigv1.RiskRuntime{
 		AccountIds: []string{submit.Input.AccountID},
 	}
 	executionPID := startBusinessProcess(ctx, t, execution, discovery.Client)
@@ -92,7 +94,7 @@ func TestAdminEmergencyProcessesEnrollCancelAndFinishAcrossOwnerTakeover(t *test
 		t.Fatal("replacement reused the departed incarnation")
 	}
 	assertEmergencyProcessPending(ctx, t, db, accepted.ID)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 1)
 	if _, err := core.Fill(ctx, domain.CoreFillRequest{
 		AccountID:           submit.Input.AccountID,
 		ClientOrderID:       order.ClientOrderID,
@@ -134,17 +136,17 @@ func emergencyProcessDiscovery(ctx context.Context, t *testing.T) (*testcert.Aut
 	}
 }
 
-func waitEmergencyProcessCancel(ctx context.Context, t *testing.T, db *gorm.DB, accepted domain.AdminEmergencyCancelAcceptance, orderID int64) *modelv1.StrategyInstance {
+func waitEmergencyProcessCancel(ctx context.Context, t *testing.T, db *gorm.DB, accepted domain.AdminEmergencyCancelAcceptance, orderID int64) *strategymodelv1.StrategyInstance {
 	t.Helper()
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		var order modelv1.OrderIntent
-		if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("id = ?", orderID).Take(&order).Error; err != nil {
+		var order executionmodelv1.OrderIntent
+		if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("id = ?", orderID).Take(&order).Error; err != nil {
 			t.Fatal(err)
 		}
 		var children int64
-		if err := db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Where("emergency_cancellation_id = ?", accepted.ID).Count(&children).Error; err != nil {
+		if err := db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Where("emergency_cancellation_id = ?", accepted.ID).Count(&children).Error; err != nil {
 			t.Fatal(err)
 		}
 		if children == 1 && order.CancelState == string(domain.CancelStatePending) {
@@ -165,8 +167,8 @@ func waitEmergencyProcessTask(ctx context.Context, t *testing.T, db *gorm.DB, id
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		var task modelv1.AdminEmergencyCancellationTask
-		if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", id).Take(&task).Error; err != nil {
+		var task executionmodelv1.AdminEmergencyCancellationTask
+		if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", id).Take(&task).Error; err != nil {
 			t.Fatal(err)
 		}
 		if task.State == string(state) && task.EnrollmentComplete && task.CompletedAt != nil {
@@ -180,7 +182,7 @@ func waitEmergencyProcessTask(ctx context.Context, t *testing.T, db *gorm.DB, id
 	}
 }
 
-func waitEmergencyProcessOwner(ctx context.Context, t *testing.T, db *gorm.DB, prior *modelv1.StrategyInstance) *modelv1.StrategyInstance {
+func waitEmergencyProcessOwner(ctx context.Context, t *testing.T, db *gorm.DB, prior *strategymodelv1.StrategyInstance) *strategymodelv1.StrategyInstance {
 	t.Helper()
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
@@ -199,8 +201,8 @@ func waitEmergencyProcessOwner(ctx context.Context, t *testing.T, db *gorm.DB, p
 
 func assertEmergencyProcessPending(ctx context.Context, t *testing.T, db *gorm.DB, id int64) {
 	t.Helper()
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", id).Take(&task).Error; err != nil ||
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", id).Take(&task).Error; err != nil ||
 		task.State != string(domain.AdminEmergencyCancelAccepted) || !task.EnrollmentComplete || task.CompletedAt != nil {
 		t.Fatal("unconfirmed core cancel became scoped completion", err)
 	}
@@ -213,7 +215,7 @@ func assertEmergencyProcessFinal(ctx context.Context, t *testing.T, db *gorm.DB,
 		t.Fatal("native scoped completion lost terminal funds or racing fill", err)
 	}
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
-	for _, entity := range []any{&modelv1.OrderIntent{}, &modelv1.SimulatorOrder{}, &modelv1.AdminOrderCancellation{}, &modelv1.StrategyAction{}, &modelv1.CancellationRequest{}, &modelv1.SimulatorFill{}} {
+	for _, entity := range []any{&executionmodelv1.OrderIntent{}, &executionmodelv1.SimulatorOrder{}, &executionmodelv1.AdminOrderCancellation{}, &strategymodelv1.StrategyAction{}, &executionmodelv1.CancellationRequest{}, &executionmodelv1.SimulatorFill{}} {
 		assertPortfolioRowCount(ctx, t, db, entity, 1)
 	}
 	if activationBudget(ctx, t, db, submit.Input.Authority.StrategyID).Enabled {

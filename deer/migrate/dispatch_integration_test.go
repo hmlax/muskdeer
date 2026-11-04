@@ -13,7 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/simulator"
@@ -128,7 +128,7 @@ func TestOMSConfirmedCoreRejectionReleasesOnlyItsReservation(t *testing.T) {
 	defer cancel()
 	_, submit := admissionFixture(ctx, t, db)
 	core, store := executionFixture(t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, "USDT").UpdateColumn("available", "0").Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, "USDT").UpdateColumn("available", "0").Error; err != nil {
 		t.Fatal(err)
 	}
 	service := intentServiceFixture(t, store, core)
@@ -153,7 +153,7 @@ func TestOMSFinalTargetRejectsRiskChangedAfterPrepare(t *testing.T) {
 			if err != nil || prepared.State != domain.OrderStateSubmitting {
 				t.Fatalf("gateway called before durable SUBMITTING: %+v, %v", prepared, err)
 			}
-			return db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", command.Input.Authority.StrategyID).UpdateColumn("allow_new_risk", false).Error
+			return db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", command.Input.Authority.StrategyID).UpdateColumn("allow_new_risk", false).Error
 		},
 	}
 	service := intentServiceFixture(t, store, observed)
@@ -231,8 +231,8 @@ func TestOMSCallerLossAfterCommitRecoversDurableSubmitting(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("OMS did not join canceled caller")
 	}
-	var persisted modelv1.OrderIntent
-	if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).First(&persisted).Error; err != nil || persisted.State != string(domain.OrderStateSubmitting) {
+	var persisted executionmodelv1.OrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).First(&persisted).Error; err != nil || persisted.State != string(domain.OrderStateSubmitting) {
 		t.Fatalf("lost caller did not retain recoverable SUBMITTING: %v, %v", &persisted, err)
 	}
 	recovered, err := service.Recover(ctx, submit.Input.AccountID, persisted.Id)
@@ -254,7 +254,7 @@ func TestOMSRecoveryDuringUncommittedCoreCommandDoesNotDeadlock(t *testing.T) {
 	var releaseOnce sync.Once
 	const callbackName = "muskdeer:test:hold-core-before-commit"
 	if err := db.Callback().Create().After("gorm:create").Register(callbackName, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Dest.(*modelv1.SimulatorOrder); !ok {
+		if _, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorOrder); !ok {
 			return
 		}
 		staged <- struct{}{}
@@ -285,8 +285,8 @@ func TestOMSRecoveryDuringUncommittedCoreCommandDoesNotDeadlock(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("core order did not reach the held transaction boundary")
 	}
-	var persisted modelv1.OrderIntent
-	if err := db.WithContext(ctx).Model(&modelv1.OrderIntent{}).First(&persisted).Error; err != nil {
+	var persisted executionmodelv1.OrderIntent
+	if err := db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).First(&persisted).Error; err != nil {
 		t.Fatal(err)
 	}
 	probeCtx, stopProbe := context.WithTimeout(ctx, 2*time.Second)

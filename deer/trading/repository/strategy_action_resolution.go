@@ -5,14 +5,15 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
 // The caller holds the same strategy admission mutex as execution. Once the
 // original database deadline has passed, an absent request cannot be accepted
 // later. The migration independently proves absence and seals every old key.
-func resolveUnacceptedAction(ctx context.Context, tx *gorm.DB, row *modelv1.StrategyAction, now int64) error {
+func resolveUnacceptedAction(ctx context.Context, tx *gorm.DB, row *strategymodelv1.StrategyAction, now int64) error {
 	if row.DeadlineAt <= 0 || row.DeadlineAt > now || row.ObservedOrderState != "" || row.ObservedCancellationState != "" {
 		return nil
 	}
@@ -22,9 +23,9 @@ func resolveUnacceptedAction(ctx context.Context, tx *gorm.DB, row *modelv1.Stra
 			return nil
 		}
 		queries = []*gorm.DB{
-			tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND (idempotency_key = ? OR client_order_id = ?)", row.AccountId, row.IdempotencyKey, row.ClientOrderId),
-			tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ?", row.AccountId, row.ClientOrderId),
-			tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("account_id = ? AND action = ? AND client_order_id = ?", row.AccountId, domain.GatewayActionSubmit, row.ClientOrderId),
+			tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND (idempotency_key = ? OR client_order_id = ?)", row.AccountId, row.IdempotencyKey, row.ClientOrderId),
+			tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("account_id = ? AND client_order_id = ?", row.AccountId, row.ClientOrderId),
+			tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("account_id = ? AND action = ? AND client_order_id = ?", row.AccountId, domain.GatewayActionSubmit, row.ClientOrderId),
 		}
 	} else {
 		if row.CancellationId != nil {
@@ -35,8 +36,8 @@ func resolveUnacceptedAction(ctx context.Context, tx *gorm.DB, row *modelv1.Stra
 			return err
 		}
 		queries = []*gorm.DB{
-			tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("account_id = ? AND idempotency_key = ?", row.AccountId, row.IdempotencyKey),
-			tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Where("account_id = ? AND action = ? AND command_key = ?", row.AccountId, domain.GatewayActionCancel, domain.CoreCancelKeyPrefix+digest),
+			tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("account_id = ? AND idempotency_key = ?", row.AccountId, row.IdempotencyKey),
+			tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Where("account_id = ? AND action = ? AND command_key = ?", row.AccountId, domain.GatewayActionCancel, domain.CoreCancelKeyPrefix+digest),
 		}
 	}
 	for _, query := range queries {

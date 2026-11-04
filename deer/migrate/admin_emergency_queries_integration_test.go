@@ -12,7 +12,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -69,8 +70,8 @@ func TestAdminEmergencyQueriesObserveStoredProofWithoutAdvancingEmptyScope(t *te
 	if result, err := store.Observation(ctx, viewer.Token, accepted.StrategyID, accepted.ID); !errors.Is(err, domain.ErrUnauthenticated) || result.Record.Acceptance.ID != 0 {
 		t.Fatal("revoked viewer retained scoped progress", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
@@ -139,8 +140,8 @@ func TestAdminEmergencyQueriesPageOnlyDeclaredHistoryWithBoundedCursor(t *testin
 			t.Fatal("invalid history bounds leaked a partial page", err)
 		}
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellationTask{}, 4)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminEmergencyCancellationTask{}, 4)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
 
@@ -168,7 +169,7 @@ func TestAdminEmergencyQueriesAuthorityTaskAndCountsShareRepeatableSnapshot(t *t
 	changed := false
 	const callback = "test:emergency-task-snapshot"
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, ok := query.Statement.Model.(*modelv1.AdminEmergencyCancellationTask); !ok || changed || query.Error != nil {
+		if _, ok := query.Statement.Model.(*executionmodelv1.AdminEmergencyCancellationTask); !ok || changed || query.Error != nil {
 			return
 		}
 		changed = true
@@ -200,10 +201,10 @@ func TestAdminEmergencyQueriesAuthorityTaskAndCountsShareRepeatableSnapshot(t *t
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
 
-func emergencyQueryTask(ctx context.Context, t *testing.T, db *gorm.DB, id int64) *modelv1.AdminEmergencyCancellationTask {
+func emergencyQueryTask(ctx context.Context, t *testing.T, db *gorm.DB, id int64) *executionmodelv1.AdminEmergencyCancellationTask {
 	t.Helper()
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", id).Take(&task).Error; err != nil {
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", id).Take(&task).Error; err != nil {
 		t.Fatal(err)
 	}
 	return &task
@@ -222,7 +223,7 @@ func TestAdminEmergencyQueriesHistoryKeepsAcceptanceAndTaskInSameSnapshot(t *tes
 	changed := false
 	const callback = "test:emergency-history-snapshot"
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, ok := query.Statement.Dest.(*[]*modelv1.AdminEmergencyCancellation); !ok || changed || query.Error != nil {
+		if _, ok := query.Statement.Dest.(*[]*executionmodelv1.AdminEmergencyCancellation); !ok || changed || query.Error != nil {
 			return
 		}
 		changed = true
@@ -269,11 +270,11 @@ func TestAdminEmergencyQueriesUseDatabaseReadOnlyAndReturnNoPartialResults(t *te
 			var writeErr error
 			const callback = "test:emergency-read-only"
 			if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-				if _, ok := query.Statement.Model.(*modelv1.AdminEmergencyCancellationTask); !ok || attempted || query.Error != nil {
+				if _, ok := query.Statement.Model.(*executionmodelv1.AdminEmergencyCancellationTask); !ok || attempted || query.Error != nil {
 					return
 				}
 				attempted = true
-				writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.SimulatorAccount{}).
+				writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&executionmodelv1.SimulatorAccount{}).
 					Where("account_id = ?", submit.Input.AccountID).Update("enabled", false).Error
 				_ = query.AddError(writeErr)
 			}); err != nil {
@@ -289,8 +290,8 @@ func TestAdminEmergencyQueriesUseDatabaseReadOnlyAndReturnNoPartialResults(t *te
 				t.Fatal("read-only test did not reach the actual task query")
 			}
 			assertDatabaseCode(t, writeErr, "25006")
-			var account modelv1.SimulatorAccount
-			if err := db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ?", submit.Input.AccountID).Take(&account).Error; err != nil || !account.Enabled ||
+			var account executionmodelv1.SimulatorAccount
+			if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ?", submit.Input.AccountID).Take(&account).Error; err != nil || !account.Enabled ||
 				!proto.Equal(before, emergencyQueryTask(ctx, t, db, accepted.ID)) {
 				t.Fatal("read failure changed funds or task progress", err)
 			}

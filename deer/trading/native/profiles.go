@@ -7,9 +7,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -29,8 +29,8 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	}
 	op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
 	defer cancel()
-	var rows []*modelv1.HimalayaBudget
-	if err := db.WithContext(op).Model(&modelv1.HimalayaBudget{}).Where("delete_at IS NULL").Order("id").Limit(9).Find(&rows).Error; err != nil {
+	var rows []*commonmodelv1.HimalayaBudget
+	if err := db.WithContext(op).Model(&commonmodelv1.HimalayaBudget{}).Where("delete_at IS NULL").Order("id").Limit(9).Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	if len(rows) == 0 || len(rows) > 8 {
@@ -66,7 +66,7 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 
 // ProfileFromBudget maps the generated model directly to immutable business
 // fields, normalizing database numeric padding without a JSON conversion bridge.
-func ProfileFromBudget(row *modelv1.HimalayaBudget) (*commonv1.HimalayaProfilePolicy, error) {
+func ProfileFromBudget(row *commonmodelv1.HimalayaBudget) (*commonv1.HimalayaProfilePolicy, error) {
 	if row == nil || row.DeleteAt != nil || row.AccountId != ScopeKey(row.UserId, row.FundId) {
 		return nil, ErrInvalid
 	}

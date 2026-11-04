@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/hmlax/muskdeer/deer"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/strategy/delivery/strategygrpc"
 )

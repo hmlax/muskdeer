@@ -12,8 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
@@ -26,23 +27,23 @@ func TestTypedProtoParametersRoundTripThroughGeneratedJSONBModels(t *testing.T) 
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	for _, template := range []domain.StrategyTemplate{domain.StrategyTemplateMarketMaker, domain.StrategyTemplateGrid} {
 		version := storedParameterFixture(template)
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 			instance := identityInstance(instrument.Id, "typed-"+string(template), template, domain.MarketSourceBinance)
-			if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+			if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 				return err
 			}
 			version.InstanceId = instance.Id
-			return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error
+			return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(version).Error
 		}); err != nil {
 			t.Fatal(err)
 		}
-		var stored modelv1.StrategyConfigVersion
-		if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).First(&stored, version.Id).Error; err != nil {
+		var stored strategymodelv1.StrategyConfigVersion
+		if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).First(&stored, version.Id).Error; err != nil {
 			t.Fatal(err)
 		}
 		if !proto.Equal(version, &stored) {
@@ -59,20 +60,20 @@ func TestTypedProtoParametersRoundTripThroughGeneratedJSONBModels(t *testing.T) 
 	}
 }
 
-func assertInvalidParameterRows(ctx context.Context, t *testing.T, db *gorm.DB, original *modelv1.StrategyConfigVersion) {
+func assertInvalidParameterRows(ctx context.Context, t *testing.T, db *gorm.DB, original *strategymodelv1.StrategyConfigVersion) {
 	t.Helper()
-	for _, change := range []func(*modelv1.StrategyConfigVersion){
-		func(row *modelv1.StrategyConfigVersion) { row.ParametersSchemaVersion = 2 },
-		func(row *modelv1.StrategyConfigVersion) { row.ParametersSchemaVersion = 0 },
-		func(row *modelv1.StrategyConfigVersion) {
+	for _, change := range []func(*strategymodelv1.StrategyConfigVersion){
+		func(row *strategymodelv1.StrategyConfigVersion) { row.ParametersSchemaVersion = 2 },
+		func(row *strategymodelv1.StrategyConfigVersion) { row.ParametersSchemaVersion = 0 },
+		func(row *strategymodelv1.StrategyConfigVersion) {
 			row.MakerParameters = nil
 			row.GridParameters = nil
 		},
-		func(row *modelv1.StrategyConfigVersion) {
+		func(row *strategymodelv1.StrategyConfigVersion) {
 			row.MakerParameters = storedParameterFixture(domain.StrategyTemplateMarketMaker).MakerParameters
 			row.GridParameters = storedParameterFixture(domain.StrategyTemplateGrid).GridParameters
 		},
-		func(row *modelv1.StrategyConfigVersion) {
+		func(row *strategymodelv1.StrategyConfigVersion) {
 			if row.MakerParameters != nil {
 				row.Template = proto.String(string(domain.StrategyTemplateGrid))
 				row.MakerParameters = nil
@@ -88,7 +89,7 @@ func assertInvalidParameterRows(ctx context.Context, t *testing.T, db *gorm.DB, 
 		invalid.Id = 0
 		invalid.Version = 2
 		change(invalid)
-		err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(invalid).Error
+		err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(invalid).Error
 		var databaseError *pgconn.PgError
 		if !errors.As(err, &databaseError) || databaseError.Code != "23514" && databaseError.Code != "23503" {
 			t.Fatalf("invalid parameter envelope was stored: %v", err)
@@ -103,7 +104,7 @@ func assertInvalidParameterRows(ctx context.Context, t *testing.T, db *gorm.DB, 
 	// These are explicit stored-wire corruption fixtures, not object-to-map
 	// bridges. JSONB constraints reject both unknown fields and decimal numbers.
 	for _, fragment := range []string{`{"unrecognized":"invalid"}`, `{"` + field + `":1}`} {
-		err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("id = ?", original.Id).
+		err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("id = ?", original.Id).
 			UpdateColumn(column, gorm.Expr(column+" || ?::jsonb", fragment)).Error
 		var databaseError *pgconn.PgError
 		if !errors.As(err, &databaseError) || databaseError.Code != "23514" {
@@ -112,8 +113,8 @@ func assertInvalidParameterRows(ctx context.Context, t *testing.T, db *gorm.DB, 
 	}
 }
 
-func storedParameterFixture(template domain.StrategyTemplate) *modelv1.StrategyConfigVersion {
-	row := &modelv1.StrategyConfigVersion{
+func storedParameterFixture(template domain.StrategyTemplate) *strategymodelv1.StrategyConfigVersion {
+	row := &strategymodelv1.StrategyConfigVersion{
 		Version:                 1,
 		MarketDataSource:        string(domain.MarketSourceBinance),
 		CodeVersion:             identityFixtureCode,

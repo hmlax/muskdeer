@@ -11,7 +11,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -32,10 +33,10 @@ func TestAdminOverviewEmptyDatabaseDoesNotCreateStrategiesOrOwnership(t *testing
 	if err != nil || page.ObservedAt.UnixMilli() <= 0 || page.Total != 0 || page.RequestedRunning != 0 || page.StoredStates == nil || len(page.StoredStates) != 0 || page.Items == nil || len(page.Items) != 0 || page.NextAfterID != 0 {
 		t.Fatal("empty overview fabricated metadata, health or ownership", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyInstance{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyLease{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.RiskSnapshot{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorBalance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyInstance{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyLease{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.RiskSnapshot{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorBalance{}, 0)
 }
 
 func TestAdminOverviewCountsIgnoreCursorAndLeaseFactsNeverClaimProcessHealth(t *testing.T) {
@@ -92,7 +93,7 @@ func TestAdminOverviewCountsIgnoreCursorAndLeaseFactsNeverClaimProcessHealth(t *
 
 func assertAdminOverviewZeroSlot(ctx context.Context, t *testing.T, db *gorm.DB, store domain.AdminOverview, token string, after, id int64) {
 	t.Helper()
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyLease{}).Create(&modelv1.StrategyLease{StrategyInstanceId: id}).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyLease{}).Create(&strategymodelv1.StrategyLease{StrategyInstanceId: id}).Error; err != nil {
 		t.Fatal(err)
 	}
 	value, err := store.Strategies(ctx, token, domain.AdminOverviewFilter{

@@ -7,7 +7,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -31,7 +32,7 @@ func (s *adminOrders) List(ctx context.Context, token string, filter domain.Admi
 		if err != nil {
 			return err
 		}
-		query := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+		query := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 			Where("strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND id > ? AND delete_at IS NULL", instance.Id, instance.AccountId, instance.InstrumentId, filter.Page.AfterID)
 		if filter.State != domain.OrderStateUnspecified {
 			query = query.Where("state = ?", filter.State)
@@ -39,7 +40,7 @@ func (s *adminOrders) List(ctx context.Context, token string, filter domain.Admi
 		if filter.OpenOnly {
 			query = query.Where("state IN ?", []domain.OrderState{domain.OrderStateIntent, domain.OrderStateSubmitting, domain.OrderStateLive, domain.OrderStatePartiallyFilled, domain.OrderStateUnknown})
 		}
-		var rows []*modelv1.OrderIntent
+		var rows []*executionmodelv1.OrderIntent
 		if err := query.Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -66,15 +67,15 @@ func (s *adminOrders) Detail(ctx context.Context, token string, strategyID, orde
 		if err != nil {
 			return err
 		}
-		var row modelv1.OrderIntent
-		if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+		var row executionmodelv1.OrderIntent
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 			Where("id = ? AND strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND delete_at IS NULL", orderID, instance.Id, instance.AccountId, instance.InstrumentId).Take(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
 			return err
 		}
-		values, err := readAdminOrders(ctx, tx, instance, []*modelv1.OrderIntent{&row})
+		values, err := readAdminOrders(ctx, tx, instance, []*executionmodelv1.OrderIntent{&row})
 		if err != nil {
 			return err
 		}
@@ -87,7 +88,7 @@ func (s *adminOrders) Detail(ctx context.Context, token string, strategyID, orde
 	return result, nil
 }
 
-func readAdminOrders(ctx context.Context, tx *gorm.DB, instance *modelv1.StrategyInstance, rows []*modelv1.OrderIntent) ([]domain.AdminOrder, error) {
+func readAdminOrders(ctx context.Context, tx *gorm.DB, instance *strategymodelv1.StrategyInstance, rows []*executionmodelv1.OrderIntent) ([]domain.AdminOrder, error) {
 	result := make([]domain.AdminOrder, 0, len(rows))
 	if len(rows) == 0 {
 		return result, nil
@@ -98,8 +99,8 @@ func readAdminOrders(ctx context.Context, tx *gorm.DB, instance *modelv1.Strateg
 		versions = append(versions, row.ConfigVersion)
 		clients = append(clients, row.ClientOrderId)
 	}
-	var configs []*modelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).
+	var configs []*strategymodelv1.StrategyConfigVersion
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).
 		Select("Id", "Version", "MarketDataSource").Where("instance_id = ? AND version IN ? AND delete_at IS NULL", instance.Id, versions).Find(&configs).Error; err != nil {
 		return nil, err
 	}
@@ -111,12 +112,12 @@ func readAdminOrders(ctx context.Context, tx *gorm.DB, instance *modelv1.Strateg
 		}
 		sources[config.Version] = source
 	}
-	var cores []*modelv1.SimulatorOrder
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).
+	var cores []*executionmodelv1.SimulatorOrder
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).
 		Where("strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND client_order_id IN ? AND delete_at IS NULL", instance.Id, instance.AccountId, instance.InstrumentId, clients).Find(&cores).Error; err != nil {
 		return nil, err
 	}
-	byClient := make(map[string]*modelv1.SimulatorOrder, len(cores))
+	byClient := make(map[string]*executionmodelv1.SimulatorOrder, len(cores))
 	for _, core := range cores {
 		byClient[core.ClientOrderId] = core
 	}
@@ -134,7 +135,7 @@ func readAdminOrders(ctx context.Context, tx *gorm.DB, instance *modelv1.Strateg
 	return result, nil
 }
 
-func adminOrderValue(row *modelv1.OrderIntent, source domain.MarketSource, core *modelv1.SimulatorOrder) (domain.AdminOrder, error) {
+func adminOrderValue(row *executionmodelv1.OrderIntent, source domain.MarketSource, core *executionmodelv1.SimulatorOrder) (domain.AdminOrder, error) {
 	intent, err := intentSnapshot(row)
 	if err != nil {
 		return domain.AdminOrder{}, err

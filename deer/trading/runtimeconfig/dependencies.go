@@ -9,7 +9,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/migrate"
 	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 

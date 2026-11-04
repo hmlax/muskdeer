@@ -12,7 +12,8 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -39,7 +40,7 @@ func (r *marketSnapshots) Publish(ctx context.Context, authority domain.LeaseTok
 		return domain.MarketPublication{}, err
 	}
 	var result domain.MarketPublication
-	err := r.db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Transaction(func(tx *gorm.DB) error {
+	err := r.db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Transaction(func(tx *gorm.DB) error {
 		feed, instrument, err := lockMarketProduct(ctx, tx, authority.Key.MarketFeedID)
 		if err != nil {
 			return err
@@ -54,8 +55,8 @@ func (r *marketSnapshots) Publish(ctx context.Context, authority domain.LeaseTok
 		if lease.GetOwnerId() != authority.OwnerID || lease.GetEpoch() != authority.Epoch || lease.GetExpiresAt() <= nowMS {
 			return domain.ErrLeaseLost
 		}
-		var previous modelv1.MarketSnapshot
-		err = tx.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("market_feed_id = ? AND delete_at IS NULL", feed.ID).
+		var previous marketmodelv1.MarketSnapshot
+		err = tx.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("market_feed_id = ? AND delete_at IS NULL", feed.ID).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).First(&previous).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
@@ -72,9 +73,9 @@ func (r *marketSnapshots) Publish(ctx context.Context, authority domain.LeaseTok
 			return err
 		}
 		if previous.Id == 0 {
-			err = tx.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Create(row).Error
+			err = tx.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Create(row).Error
 		} else {
-			update := tx.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("id = ? AND revision = ?", previous.Id, revision).
+			update := tx.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("id = ? AND revision = ?", previous.Id, revision).
 				Select("PublisherOwnerId", "PublisherEpoch", "Revision", "Connection", "Generation", "Sequence", "Quality", "Reason", "BidPrice", "BidQuantity", "AskPrice", "AskQuantity", "MidPrice", "EventAt", "ReceivedAt", "EvaluatedAt", "ValidUntil", "BaselineMid", "BaselineAt").Updates(row)
 			err = update.Error
 			if err == nil && update.RowsAffected != 1 {
@@ -101,19 +102,19 @@ func (r *marketSnapshots) Get(ctx context.Context, feedID int64) (domain.MarketP
 		return domain.MarketPublication{}, domain.ErrMarketIdentity
 	}
 	var result domain.MarketPublication
-	err := r.db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Transaction(func(tx *gorm.DB) error {
+	err := r.db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Transaction(func(tx *gorm.DB) error {
 		feed, instrument, err := lockMarketProduct(ctx, tx, feedID)
 		if err != nil {
 			return err
 		}
-		var lease modelv1.MarketPublisherLease
-		err = tx.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ? AND delete_at IS NULL", feedID).
+		var lease marketmodelv1.MarketPublisherLease
+		err = tx.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ? AND delete_at IS NULL", feedID).
 			Clauses(clause.Locking{Strength: "SHARE"}).First(&lease).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		var row modelv1.MarketSnapshot
-		if err := tx.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("market_feed_id = ? AND delete_at IS NULL", feedID).First(&row).Error; err != nil {
+		var row marketmodelv1.MarketSnapshot
+		if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("market_feed_id = ? AND delete_at IS NULL", feedID).First(&row).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrMarketMissing
 			}
@@ -141,17 +142,17 @@ func (r *marketSnapshots) Get(ctx context.Context, feedID int64) (domain.MarketP
 	return result, nil
 }
 
-func lockMarketProduct(ctx context.Context, tx *gorm.DB, feedID int64) (domain.MarketFeedDefinition, *modelv1.Instrument, error) {
-	var row modelv1.MarketFeed
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ? AND delete_at IS NULL", feedID).First(&row).Error; err != nil {
+func lockMarketProduct(ctx context.Context, tx *gorm.DB, feedID int64) (domain.MarketFeedDefinition, *commonmodelv1.Instrument, error) {
+	var row marketmodelv1.MarketFeed
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ? AND delete_at IS NULL", feedID).First(&row).Error; err != nil {
 		return domain.MarketFeedDefinition{}, nil, err
 	}
 	feed, err := marketFeedValue(&row)
 	if err != nil {
 		return domain.MarketFeedDefinition{}, nil, err
 	}
-	var instrument modelv1.Instrument
-	if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", feed.InstrumentID).
+	var instrument commonmodelv1.Instrument
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", feed.InstrumentID).
 		Clauses(clause.Locking{Strength: "SHARE"}).First(&instrument).Error; err != nil {
 		return domain.MarketFeedDefinition{}, nil, err
 	}
@@ -160,7 +161,7 @@ func lockMarketProduct(ctx context.Context, tx *gorm.DB, feedID int64) (domain.M
 
 func marketDatabaseTime(ctx context.Context, tx *gorm.DB, feedID int64) (time.Time, error) {
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ?", feedID).
+	if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ?", feedID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return time.Time{}, err
 	}
@@ -177,7 +178,7 @@ func validateMarketPublication(ctx context.Context, token domain.LeaseToken, rev
 	return reading.Validate()
 }
 
-func marketOrder(previous *modelv1.MarketSnapshot, token domain.LeaseToken, reading domain.MarketReading) error {
+func marketOrder(previous *marketmodelv1.MarketSnapshot, token domain.LeaseToken, reading domain.MarketReading) error {
 	if previous.Id == 0 || previous.PublisherEpoch < token.Epoch {
 		return nil
 	}

@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -26,7 +26,7 @@ func (s *executionQueries) Orders(ctx context.Context, filter domain.ExecutionFi
 	if err := executionFilter(ctx, filter); err != nil {
 		return nil, 0, err
 	}
-	query := s.db.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+	query := s.db.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("account_id = ? AND id > ? AND delete_at IS NULL", filter.AccountID, filter.AfterID)
 	if filter.StrategyID > 0 {
 		query = query.Where("strategy_instance_id = ?", filter.StrategyID)
@@ -37,7 +37,7 @@ func (s *executionQueries) Orders(ctx context.Context, filter domain.ExecutionFi
 	if filter.OpenOnly {
 		query = query.Where("state IN ?", []domain.OrderState{domain.OrderStateIntent, domain.OrderStateSubmitting, domain.OrderStateLive, domain.OrderStatePartiallyFilled, domain.OrderStateUnknown})
 	}
-	var rows []*modelv1.OrderIntent
+	var rows []*executionmodelv1.OrderIntent
 	if err := query.Order("id ASC").Limit(filter.Limit + 1).Find(&rows).Error; err != nil {
 		return nil, 0, coreFailure(ctx, err)
 	}
@@ -64,15 +64,15 @@ func (s *executionQueries) Fills(ctx context.Context, filter domain.ExecutionFil
 	if filter.OpenOnly {
 		return nil, 0, domain.ErrInvalidOrder
 	}
-	orders := s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("id").Where("account_id = ? AND delete_at IS NULL", filter.AccountID)
+	orders := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("id").Where("account_id = ? AND delete_at IS NULL", filter.AccountID)
 	if filter.StrategyID > 0 {
 		orders = orders.Where("strategy_instance_id = ?", filter.StrategyID)
 	}
 	if filter.InstrumentID > 0 {
 		orders = orders.Where("instrument_id = ?", filter.InstrumentID)
 	}
-	var rows []*modelv1.SimulatorFill
-	if err := s.db.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Where("core_order_id IN (?) AND id > ? AND delete_at IS NULL", orders, filter.AfterID).
+	var rows []*executionmodelv1.SimulatorFill
+	if err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Where("core_order_id IN (?) AND id > ? AND delete_at IS NULL", orders, filter.AfterID).
 		Order("id ASC").Limit(filter.Limit + 1).Find(&rows).Error; err != nil {
 		return nil, 0, coreFailure(ctx, err)
 	}
@@ -84,18 +84,18 @@ func (s *executionQueries) Fills(ctx context.Context, filter domain.ExecutionFil
 	return s.executionFills(ctx, rows, next)
 }
 
-func (s *executionQueries) executionFills(ctx context.Context, rows []*modelv1.SimulatorFill, next int64) ([]domain.ExecutionFill, int64, error) {
+func (s *executionQueries) executionFills(ctx context.Context, rows []*executionmodelv1.SimulatorFill, next int64) ([]domain.ExecutionFill, int64, error) {
 	ids := make([]int64, 0, len(rows))
 	for _, row := range rows {
 		ids = append(ids, row.CoreOrderId)
 	}
-	var orders []*modelv1.SimulatorOrder
+	var orders []*executionmodelv1.SimulatorOrder
 	if len(ids) != 0 {
-		if err := s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Where("id IN ? AND delete_at IS NULL", ids).Find(&orders).Error; err != nil {
+		if err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Where("id IN ? AND delete_at IS NULL", ids).Find(&orders).Error; err != nil {
 			return nil, 0, coreFailure(ctx, err)
 		}
 	}
-	byID := make(map[int64]*modelv1.SimulatorOrder, len(orders))
+	byID := make(map[int64]*executionmodelv1.SimulatorOrder, len(orders))
 	for _, order := range orders {
 		byID[order.Id] = order
 	}
@@ -130,14 +130,14 @@ func (s *executionQueries) Account(ctx context.Context, accountID string) (domai
 		return domain.ExecutionAccount{}, domain.ErrInvalidOrder
 	}
 	var result domain.ExecutionAccount
-	err := s.db.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Transaction(func(tx *gorm.DB) error {
-		var account modelv1.SimulatorAccount
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Transaction(func(tx *gorm.DB) error {
+		var account executionmodelv1.SimulatorAccount
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).
 			Clauses(clause.Locking{Strength: "SHARE"}).First(&account).Error; err != nil {
 			return err
 		}
-		var rows []*modelv1.SimulatorBalance
-		if err := tx.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND delete_at IS NULL", accountID).
+		var rows []*executionmodelv1.SimulatorBalance
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND delete_at IS NULL", accountID).
 			Order("asset ASC").Limit(domain.MaximumExecutionAssets + 1).Find(&rows).Error; err != nil {
 			return err
 		}

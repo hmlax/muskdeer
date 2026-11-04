@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -32,8 +32,8 @@ func (s *adminStrategyControl) Pending(ctx context.Context, after int64, limit i
 	}) {
 		return nil, domain.ErrInvalidAdminControl
 	}
-	var rows []*modelv1.AdminStrategyOperation
-	err := s.db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Select("Id").
+	var rows []*strategymodelv1.AdminStrategyOperation
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Select("Id").
 		Where("id > ? AND state = ? AND delete_at IS NULL", after, domain.AdminOperationAccepted).Order("id ASC").Limit(limit).Find(&rows).Error
 	if err != nil {
 		return nil, adminControlFailure(err)
@@ -53,9 +53,9 @@ func (s *adminStrategyControl) Observe(ctx context.Context, id int64) (bool, err
 		return false, domain.ErrInvalidAdminControl
 	}
 	completed := false
-	err := s.db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Transaction(func(tx *gorm.DB) error {
-		var initial modelv1.AdminStrategyOperation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", id).Take(&initial).Error; err != nil {
+	err := s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Transaction(func(tx *gorm.DB) error {
+		var initial strategymodelv1.AdminStrategyOperation
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", id).Take(&initial).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
 			}
@@ -66,13 +66,13 @@ func (s *adminStrategyControl) Observe(ctx context.Context, id int64) (bool, err
 		}
 		// Strategy before operation: management, runtime and observers share
 		// the same lock order. Result projection never claims a controller.
-		var strategy modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", initial.StrategyInstanceId).
+		var strategy strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", initial.StrategyInstanceId).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&strategy).Error; err != nil {
 			return err
 		}
-		var operation modelv1.AdminStrategyOperation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", id).
+		var operation strategymodelv1.AdminStrategyOperation
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", id).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&operation).Error; err != nil {
 			return err
 		}
@@ -92,9 +92,9 @@ func (s *adminStrategyControl) Observe(ctx context.Context, id int64) (bool, err
 		if err != nil {
 			return err
 		}
-		updated := tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ? AND state = ? AND revision = ?", id, domain.AdminOperationAccepted, operation.Revision).
+		updated := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ? AND state = ? AND revision = ?", id, domain.AdminOperationAccepted, operation.Revision).
 			Select("State", "OutcomeCode", "Revision", "CompletedAt", "ObservedRevision", "ObservedState", "ObservedOwnerId", "ObservedOwnerEpoch").
-			Updates(&modelv1.AdminStrategyOperation{
+			Updates(&strategymodelv1.AdminStrategyOperation{
 				State:              string(state),
 				OutcomeCode:        outcome,
 				Revision:           operation.Revision + 1,
@@ -122,7 +122,7 @@ func (s *adminStrategyControl) Observe(ctx context.Context, id int64) (bool, err
 	return completed, nil
 }
 
-func adminOperationReady(ctx context.Context, tx *gorm.DB, strategy *modelv1.StrategyInstance, operation *modelv1.AdminStrategyOperation) (bool, error) {
+func adminOperationReady(ctx context.Context, tx *gorm.DB, strategy *strategymodelv1.StrategyInstance, operation *strategymodelv1.AdminStrategyOperation) (bool, error) {
 	if strategy.State != operation.TargetState {
 		return false, nil
 	}
@@ -135,15 +135,15 @@ func adminOperationReady(ctx context.Context, tx *gorm.DB, strategy *modelv1.Str
 			return false, err
 		}
 		var reserved int64
-		err = tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).
+		err = tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).
 			Where("strategy_instance_id = ? AND delete_at IS NULL AND reserved_notional <> ?", strategy.Id, 0).Count(&reserved).Error
 		return err == nil && reserved == 0, err
 	}
 	if strategy.RuntimeOwnerEpoch <= 0 || strategy.GetActiveConfigVersion() != operation.ConfigVersion || strategy.GetActiveMarketDataSource() != operation.MarketDataSource {
 		return false, nil
 	}
-	var lease modelv1.StrategyLease
-	err := tx.WithContext(ctx).Model(&modelv1.StrategyLease{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).
+	var lease strategymodelv1.StrategyLease
+	err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyLease{}).Where("strategy_instance_id = ? AND delete_at IS NULL", strategy.Id).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&lease).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
@@ -157,7 +157,7 @@ func adminOperationReady(ctx context.Context, tx *gorm.DB, strategy *modelv1.Str
 
 func adminOperationTime(ctx context.Context, tx *gorm.DB, id int64) (int64, error) {
 	var clock struct{ NowMS int64 }
-	err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", id).
+	err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", id).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error
 	return clock.NowMS, err
 }

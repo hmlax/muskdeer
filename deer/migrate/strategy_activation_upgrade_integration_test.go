@@ -10,7 +10,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -26,7 +27,7 @@ func TestStrategyActivationUpgradeRetainsExistingActiveBudget(t *testing.T) {
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	instance := identityInstance(instrument.Id, "activation-upgrade-existing", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
@@ -34,7 +35,7 @@ func TestStrategyActivationUpgradeRetainsExistingActiveBudget(t *testing.T) {
 	instance.ActiveConfigVersion = proto.Int64(1)
 	instance.ActiveMarketDataSource = proto.String(string(domain.MarketSourceBinance))
 	config := storedParameterFixture(domain.StrategyTemplateMarketMaker)
-	account := &modelv1.AccountBudget{
+	account := &commonmodelv1.AccountBudget{
 		AccountId:        instance.AccountId,
 		Asset:            "USDT",
 		LimitNotional:    "500",
@@ -42,19 +43,19 @@ func TestStrategyActivationUpgradeRetainsExistingActiveBudget(t *testing.T) {
 		Enabled:          true,
 		Revision:         1,
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Create(account).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Create(account).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(instance).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(instance).Error; err != nil {
 			return err
 		}
 		config.InstanceId = instance.Id
-		return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(config).Error
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(config).Error
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Create(&modelv1.StrategyBudget{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Create(&strategymodelv1.StrategyBudget{
 		StrategyInstanceId: instance.Id,
 		AccountId:          instance.AccountId,
 		LimitNotional:      "300",
@@ -68,12 +69,12 @@ func TestStrategyActivationUpgradeRetainsExistingActiveBudget(t *testing.T) {
 	if version, err := Apply(ctx, db); err != nil || version != 37 {
 		t.Fatalf("activation constraint upgrade failed: %d, %v", version, err)
 	}
-	var actual modelv1.StrategyInstance
-	var actualConfig modelv1.StrategyConfigVersion
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", instance.Id).First(&actual).Error; err != nil {
+	var actual strategymodelv1.StrategyInstance
+	var actualConfig strategymodelv1.StrategyConfigVersion
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", instance.Id).First(&actual).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("id = ?", config.Id).First(&actualConfig).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("id = ?", config.Id).First(&actualConfig).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !proto.Equal(instance, &actual) {

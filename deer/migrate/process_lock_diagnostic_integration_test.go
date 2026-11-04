@@ -10,7 +10,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 type processLockDiagnostic struct {
@@ -45,7 +45,7 @@ func traceProcessLocks(ctx context.Context, t *testing.T, db *gorm.DB, applicati
 			var rows []processLockDiagnostic
 			// Read-only system diagnostics, like waitBackendLock. The generated
 			// ledger binds this fixture's schema without string table selection.
-			err := db.WithContext(call).Model(&modelv1.SchemaMigration{}).
+			err := db.WithContext(call).Model(&commonmodelv1.SchemaMigration{}).
 				Select("pg_stat_activity.pid AS pid, pg_stat_activity.application_name AS application, COALESCE(pg_stat_activity.wait_event_type, '') AS wait_type, COALESCE(pg_stat_activity.wait_event, '') AS wait_event, pg_blocking_pids(pg_stat_activity.pid)::text AS blockers, pg_stat_activity.query AS query").
 				Joins("JOIN pg_stat_activity ON pg_stat_activity.datname = current_database()").
 				Where("version = ? AND pg_stat_activity.application_name IN ? AND pg_stat_activity.state <> ?", 1, applications, "idle").

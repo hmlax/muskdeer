@@ -12,9 +12,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -35,7 +36,7 @@ func TestAdminEmergencyRPCProcessConfirmsScopeAndQueriesWithoutAdvancingExecutio
 	before := publicationInstance(ctx, t, db, submit.Input.Authority.StrategyID)
 	ca, discovery := emergencyProcessDiscovery(ctx, t)
 	config := businessProcessConfig(t, ca, postgres, nil, discovery.Config, "strategy")
-	config.Business.Strategy = &configv1.StrategyRuntime{
+	config.Business.Strategy = &strategyconfigv1.StrategyRuntime{
 		ManagementEnabled: true,
 		ControlEnabled:    true,
 	}
@@ -101,10 +102,10 @@ func TestAdminEmergencyRPCProcessConfirmsScopeAndQueriesWithoutAdvancingExecutio
 	}
 	assertCoreBalance(ctx, t, core, submit.Input.AccountID, "USDT", "799.8", "200.2")
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminEmergencyCancellation{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyRiskChange{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminEmergencyCancellation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyRiskChange{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 }
 
 func assertEmergencyRPCObservation(ctx context.Context, t *testing.T, reader strategyv1.StrategyEmergencyCancellationQueryClient, query *strategyv1.GetEmergencyCancellationRequest, accepted *strategyv1.EmergencyCancellationAcceptance) {
@@ -135,7 +136,7 @@ func TestAdminEmergencyRPCQueryOnlyProcessDoesNotRegisterControl(t *testing.T) {
 	}
 	ca, discovery := emergencyProcessDiscovery(ctx, t)
 	config := businessProcessConfig(t, ca, postgres, nil, discovery.Config, "strategy")
-	config.Business.Strategy = &configv1.StrategyRuntime{ManagementEnabled: true}
+	config.Business.Strategy = &strategyconfigv1.StrategyRuntime{ManagementEnabled: true}
 	startBusinessProcess(ctx, t, config, discovery.Client)
 	connection := adminStrategyProcessConnection(ctx, t, ca, discovery.Client, rpcsecurity.ServiceAPI)
 	if _, err := strategyv1.NewStrategyEmergencyCancellationControlClient(connection).RequestEmergencyCancellation(ctx, &strategyv1.RequestEmergencyCancellationRequest{}); status.Code(err) != codes.Unimplemented {
@@ -149,7 +150,7 @@ func TestAdminEmergencyRPCQueryOnlyProcessDoesNotRegisterControl(t *testing.T) {
 	if err != nil || value.Record.State != string(domain.AdminEmergencyCancelAccepted) || value.Record.EnrollmentComplete || value.Record.CompletedAtMs != nil {
 		t.Fatal("query-only process advanced an empty accepted scope", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyAction{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyAction{}, 0)
 	assertGatewayOrderCount(ctx, t, db, 0)
 }
 

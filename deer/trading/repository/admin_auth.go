@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -65,7 +65,7 @@ func (a *adminAuth) Provision(ctx context.Context, actor, username, password str
 	if err := ctx.Err(); err != nil {
 		return domain.AdminPrincipal{}, err
 	}
-	row := &modelv1.AdminUser{
+	row := &commonmodelv1.AdminUser{
 		Username:          name,
 		PasswordHash:      string(hash),
 		Role:              string(role),
@@ -73,8 +73,8 @@ func (a *adminAuth) Provision(ctx context.Context, actor, username, password str
 		CredentialVersion: 1,
 		Revision:          1,
 	}
-	err = a.db.WithContext(ctx).Model(&modelv1.AdminUser{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminUser{}).Create(row).Error; err != nil {
+	err = a.db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Create(row).Error; err != nil {
 			return err
 		}
 		return writeAdminAudit(ctx, tx, actor, domain.AdminRoleAdmin, domain.AdminAuditActionProvision, domain.AdminAuditResourceUser, row.Id, domain.AdminAuditReasonProvision)
@@ -98,8 +98,8 @@ func (a *adminAuth) Login(ctx context.Context, username, password string) (domai
 		return domain.AdminLogin{}, err
 	}
 	defer a.releaseHash()
-	var candidate modelv1.AdminUser
-	err := a.db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("username = ? AND delete_at IS NULL", name).Take(&candidate).Error
+	var candidate commonmodelv1.AdminUser
+	err := a.db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("username = ? AND delete_at IS NULL", name).Take(&candidate).Error
 	found := err == nil
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.AdminLogin{}, adminAuthFailure(err)

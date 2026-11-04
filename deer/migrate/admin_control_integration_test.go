@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -39,7 +41,7 @@ func TestAdminControlReceiptsReplayAndDoNotInventRuntimeCompletion(t *testing.T)
 		t.Fatal("same actor/key caused another control effect", err)
 	}
 	assertAdminControlRejections(ctx, t, controls, actor, viewer, request)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 1)
 	assertControlInstance(ctx, t, db, request.StrategyID, domain.StrategyStateCreated, domain.StrategyStateRunning, 2)
 	assertAdminOperationCannotComplete(ctx, t, db, accepted.ID, request.StrategyID)
 	observer, err := repository.NewAdminOperationObserver(db)
@@ -71,8 +73,8 @@ func TestAdminControlReceiptsReplayAndDoNotInventRuntimeCompletion(t *testing.T)
 	}
 	// A legacy epoch-zero stopped record has no runtime or monetary effects.
 	// Only the observer changes the result, after observing this real DB state.
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", request.StrategyID).
-		Select("State", "Revision").Updates(&modelv1.StrategyInstance{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", request.StrategyID).
+		Select("State", "Revision").Updates(&strategymodelv1.StrategyInstance{
 		State:    string(domain.StrategyStateStopped),
 		Revision: 4,
 	}).Error; err != nil {
@@ -80,8 +82,8 @@ func TestAdminControlReceiptsReplayAndDoNotInventRuntimeCompletion(t *testing.T)
 	}
 	assertAdminOperationCompleted(ctx, t, db, controls, observer, actor.Token, stop.ID)
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorAccount{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.StrategyLease{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorAccount{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyLease{}, 0)
 }
 
 func assertAdminControlRejections(ctx context.Context, t *testing.T, controls domain.AdminStrategyControl, actor, viewer domain.AdminLogin, request domain.AdminControlRequest) {
@@ -132,7 +134,7 @@ func TestAdminControlAuditFailureRollsBackAndConcurrentReplayHasOneEffect(t *tes
 	const callback = "test:reject-control-audit"
 	failure := errors.New("controlled audit failure")
 	if err := db.Callback().Create().Before("gorm:create").Register(callback, func(tx *gorm.DB) {
-		if _, audit := tx.Statement.Dest.(*modelv1.AdminAudit); audit {
+		if _, audit := tx.Statement.Dest.(*commonmodelv1.AdminAudit); audit {
 			tx.Error = failure
 		}
 	}); err != nil {
@@ -147,9 +149,9 @@ func TestAdminControlAuditFailureRollsBackAndConcurrentReplayHasOneEffect(t *tes
 		t.Fatal("audit failure was hidden or treated as accepted", err)
 	}
 	assertControlInstance(ctx, t, db, request.StrategyID, domain.StrategyStateRunning, domain.StrategyStateRunning, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 0)
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", request.StrategyID).Take(&risk).Error; err != nil || !risk.AllowNewRisk || risk.Revision != 1 {
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 0)
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", request.StrategyID).Take(&risk).Error; err != nil || !risk.AllowNewRisk || risk.Revision != 1 {
 		t.Fatal("failed audit committed a risk change", err)
 	}
 	if err := db.Callback().Create().Remove(callback); err != nil {
@@ -157,9 +159,9 @@ func TestAdminControlAuditFailureRollsBackAndConcurrentReplayHasOneEffect(t *tes
 	}
 	assertConcurrentAdminControl(ctx, t, controls, actor, request)
 	assertControlInstance(ctx, t, db, request.StrategyID, domain.StrategyStateRunning, domain.StrategyStatePaused, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminStrategyOperation{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.AdminStrategyOperation{}, 1)
 	var audits int64
-	if err := db.WithContext(ctx).Model(&modelv1.AdminAudit{}).Where("action = ?", domain.AdminControlPause).Count(&audits).Error; err != nil || audits != 1 {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Where("action = ?", domain.AdminControlPause).Count(&audits).Error; err != nil || audits != 1 {
 		t.Fatal("concurrent replay created duplicate management audit", err)
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)
@@ -212,8 +214,8 @@ func adminControlFixture(ctx context.Context, t *testing.T, db *gorm.DB) (domain
 
 func assertControlInstance(ctx context.Context, t *testing.T, db *gorm.DB, id int64, actual, desired domain.StrategyState, revision int64) {
 	t.Helper()
-	var instance modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", id).Take(&instance).Error; err != nil || instance.State != string(actual) || instance.DesiredState != string(desired) || instance.Revision != revision {
+	var instance strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", id).Take(&instance).Error; err != nil || instance.State != string(actual) || instance.DesiredState != string(desired) || instance.Revision != revision {
 		t.Fatalf("control changed actual state or lost target/revision: state=%s desired=%s revision=%d err=%v", instance.State, instance.DesiredState, instance.Revision, err)
 	}
 }
@@ -230,24 +232,24 @@ func assertAdminOperationCompleted(ctx context.Context, t *testing.T, db *gorm.D
 	if changed, err := observer.Observe(ctx, id); err != nil || changed {
 		t.Fatal("terminal result was observed twice", err)
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", id).UpdateColumn("reason", "rewritten").Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", id).Delete(&modelv1.AdminStrategyOperation{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", id).UpdateColumn("reason", "rewritten").Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", id).Delete(&strategymodelv1.AdminStrategyOperation{}).Error, "23514")
 }
 
 func assertAdminOperationCannotComplete(ctx context.Context, t *testing.T, db *gorm.DB, operationID, strategyID int64) {
 	t.Helper()
-	var strategy modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", strategyID).Take(&strategy).Error; err != nil {
+	var strategy strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", strategyID).Take(&strategy).Error; err != nil {
 		t.Fatal(err)
 	}
 	var clock struct{ NowMS int64 }
-	if err := db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", operationID).
+	if err := db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", operationID).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}
-	err := db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", operationID).
+	err := db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", operationID).
 		Select("State", "OutcomeCode", "Revision", "CompletedAt", "ObservedRevision", "ObservedState", "ObservedOwnerId", "ObservedOwnerEpoch").
-		Updates(&modelv1.AdminStrategyOperation{
+		Updates(&strategymodelv1.AdminStrategyOperation{
 			State:              string(domain.AdminOperationSucceeded),
 			OutcomeCode:        domain.AdminOperationOutcomeReached,
 			Revision:           2,
@@ -258,6 +260,6 @@ func assertAdminOperationCannotComplete(ctx context.Context, t *testing.T, db *g
 			ObservedOwnerEpoch: proto.Int64(strategy.RuntimeOwnerEpoch),
 		}).Error
 	assertDatabaseCode(t, err, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminStrategyOperation{}).Where("id = ?", operationID).
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyOperation{}).Where("id = ?", operationID).
 		UpdateColumn("idempotency_key", "rewritten-operation-key").Error, "23514")
 }

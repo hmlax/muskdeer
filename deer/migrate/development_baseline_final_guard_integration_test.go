@@ -11,7 +11,8 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 )
@@ -34,11 +35,11 @@ func TestDevelopmentBaselineRechecksRetainedRiskAfterDispatchClaim(t *testing.T)
 	const hook = "test:reduce-development-hold-after-claim"
 	injected := false
 	err = db.Callback().Update().After("gorm:update").Register(hook, func(tx *gorm.DB) {
-		if _, ok := tx.Statement.Model.(*modelv1.HimalayaIntent); !ok || injected {
+		if _, ok := tx.Statement.Model.(*executionmodelv1.HimalayaIntent); !ok || injected {
 			return
 		}
 		injected = true
-		change := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("observed_notional", "899")
+		change := tx.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("observed_notional", "899")
 		if change.Error != nil {
 			t.Error(change.Error)
 		}

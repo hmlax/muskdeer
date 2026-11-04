@@ -14,7 +14,9 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/usecase"
@@ -89,7 +91,7 @@ func TestSimulatorUnsentCancellationResolvesOnlyItsExpiredCommandAndKeepsLiveFun
 	if err != nil || confirmed.Request.State != domain.CancellationConfirmed || confirmed.Order.State != domain.OrderStateCanceled {
 		t.Fatal("new cancellation did not confirm its actual core effect")
 	}
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("id = ?", resolved.Request.ID).Delete(&modelv1.CancellationRequest{}).Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("id = ?", resolved.Request.ID).Delete(&executionmodelv1.CancellationRequest{}).Error
 	assertDatabaseCode(t, err, "23514")
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "0")
 	assertCoreBalance(ctx, t, core, input.AccountID, "USDT", "1000", "0")
@@ -116,21 +118,21 @@ func TestSimulatorCancellationResolutionKeepsCommittedCommandAndRejectsSnapshotP
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("id = ?", accepted.ID).UpdateColumn("core_command_key", domain.CoreCancelKeyPrefix+"forged").Error
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("id = ?", accepted.ID).UpdateColumn("core_command_key", domain.CoreCancelKeyPrefix+"forged").Error
 	assertDatabaseCode(t, err, "23514")
 	prepared, err := requests.Prepare(ctx, accepted)
 	if err != nil {
 		t.Fatal(err)
 	}
 	forge := func(tx *gorm.DB) error {
-		return tx.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Where("id = ?", prepared.ID).
-			Select("State", "ErrorCode", "Revision").Updates(&modelv1.CancellationRequest{
+		return tx.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Where("id = ?", prepared.ID).
+			Select("State", "ErrorCode", "Revision").Updates(&executionmodelv1.CancellationRequest{
 			State:     string(domain.CancellationRejected),
 			ErrorCode: domain.IntentErrorCoreNotAccepted,
 			Revision:  prepared.Revision + 1,
 		}).Error
 	}
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(forge)
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Transaction(forge)
 	assertDatabaseCode(t, err, "23514")
 	commandInput := input
 	commandInput.IdempotencyKey = prepared.CoreCommandKey
@@ -142,9 +144,9 @@ func TestSimulatorCancellationResolutionKeepsCommittedCommandAndRejectsSnapshotP
 		t.Fatal(err)
 	}
 	time.Sleep(max(time.Until(input.Deadline.Add(30*time.Millisecond)), time.Millisecond))
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(forge, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Transaction(forge, &sql.TxOptions{Isolation: sql.LevelRepeatableRead})
 	assertDatabaseCode(t, err, "23514")
-	err = db.WithContext(ctx).Model(&modelv1.CancellationRequest{}).Transaction(forge)
+	err = db.WithContext(ctx).Model(&executionmodelv1.CancellationRequest{}).Transaction(forge)
 	assertDatabaseCode(t, err, "23514")
 	unknown, err := requests.Observe(ctx, prepared, domain.CancellationUnknown, domain.IntentErrorOutcomeUnknown)
 	if err != nil || unknown.State != domain.CancellationUnknown || unknown.ErrorCode == domain.IntentErrorCoreNotAccepted {
@@ -168,8 +170,8 @@ func TestSimulatorCoreAdmissionRejectsRepeatableSnapshotBeforeAnyIntentLookup(t 
 	defer cancel()
 	_, submit := admissionFixture(ctx, t, db)
 	core, _ := executionFixture(t, db)
-	err := db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Transaction(func(tx *gorm.DB) error {
-		return tx.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Create(&modelv1.SimulatorCommand{
+	err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Transaction(func(tx *gorm.DB) error {
+		return tx.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Create(&executionmodelv1.SimulatorCommand{
 			AccountId:          submit.Input.AccountID,
 			CommandKey:         submit.Input.IdempotencyKey,
 			Action:             domain.GatewayActionSubmit,
@@ -198,15 +200,15 @@ func assertCancellationResolutionBudgets(ctx context.Context, t *testing.T, db *
 	t.Helper()
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, expected)
 	value := decimal.RequireFromString(expected)
-	var strategy modelv1.StrategyBudget
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyBudget{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&strategy).Error; err != nil {
+	var strategy strategymodelv1.StrategyBudget
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&strategy).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !decimal.RequireFromString(strategy.ReservedNotional).Equal(value) {
 		t.Fatal("cancellation resolution changed strategy reservation")
 	}
-	var global []*modelv1.RiskBudget
-	if err := db.WithContext(ctx).Model(&modelv1.RiskBudget{}).Find(&global).Error; err != nil {
+	var global []*commonmodelv1.RiskBudget
+	if err := db.WithContext(ctx).Model(&commonmodelv1.RiskBudget{}).Find(&global).Error; err != nil {
 		t.Fatal(err)
 	}
 	if len(global) != 2 {

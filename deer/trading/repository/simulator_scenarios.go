@@ -7,7 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -30,11 +30,11 @@ func (s *simulatorScenarios) DueCancellation(ctx context.Context, accountID stri
 	}
 	// Commands are immutable. Partial fills update the order, but cannot move
 	// the original cancellation request's database-clock eligibility time.
-	commands := s.db.WithContext(ctx).Model(&modelv1.SimulatorCommand{}).Select("id").
+	commands := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorCommand{}).Select("id").
 		Where("account_id = ? AND action = ? AND delete_at IS NULL", accountID, domain.GatewayActionCancel).
 		Where("create_at <= floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint - ?", delay.Milliseconds())
-	var row modelv1.SimulatorOrder
-	err := s.db.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("ClientOrderId").
+	var row executionmodelv1.SimulatorOrder
+	err := s.db.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("ClientOrderId").
 		Where("account_id = ? AND cancel_state = ? AND state IN ? AND last_command_id IN (?) AND delete_at IS NULL",
 			accountID, domain.CancelStatePending, []domain.OrderState{domain.OrderStateLive, domain.OrderStatePartiallyFilled}, commands).
 		Order("id ASC").Take(&row).Error

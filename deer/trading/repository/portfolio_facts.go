@@ -7,16 +7,17 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func verifyPortfolioSource(ctx context.Context, tx *gorm.DB, portfolio *modelv1.PortfolioAccount, fact domain.FillFact) error {
+func verifyPortfolioSource(ctx context.Context, tx *gorm.DB, portfolio *portfoliomodelv1.PortfolioAccount, fact domain.FillFact) error {
 	if fact.AccountID != portfolio.AccountId || fact.InstrumentID != portfolio.InstrumentId || fact.FeeAsset != portfolio.QuoteAsset {
 		return domain.ErrInvalidOrder
 	}
-	var source modelv1.SimulatorFill
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Where("id = ? AND trade_id = ? AND delete_at IS NULL", fact.SourceSequence, fact.TradeID).First(&source).Error; err != nil {
+	var source executionmodelv1.SimulatorFill
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Where("id = ? AND trade_id = ? AND delete_at IS NULL", fact.SourceSequence, fact.TradeID).First(&source).Error; err != nil {
 		return err
 	}
 	if source.CoreOrderId != fact.CoreOrderID || source.FeeAsset != fact.FeeAsset ||
@@ -24,12 +25,12 @@ func verifyPortfolioSource(ctx context.Context, tx *gorm.DB, portfolio *modelv1.
 		!decimalTextEqual(source.QuoteNotional, fact.QuoteNotional) || !decimalTextEqual(source.FeeAmount, fact.FeeAmount) {
 		return domain.ErrInvalidOrder
 	}
-	var order modelv1.SimulatorOrder
-	if err := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).First(&order, fact.CoreOrderID).Error; err != nil {
+	var order executionmodelv1.SimulatorOrder
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).First(&order, fact.CoreOrderID).Error; err != nil {
 		return err
 	}
-	var intent modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).First(&intent, fact.IntentID).Error; err != nil {
+	var intent executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).First(&intent, fact.IntentID).Error; err != nil {
 		return err
 	}
 	if order.AccountId != fact.AccountID || order.InstrumentId != fact.InstrumentID || order.StrategyInstanceId != fact.StrategyID || order.Side != string(fact.Side) ||
@@ -39,9 +40,9 @@ func verifyPortfolioSource(ctx context.Context, tx *gorm.DB, portfolio *modelv1.
 	return nil
 }
 
-func recordPortfolioInbox(ctx context.Context, tx *gorm.DB, row *modelv1.PortfolioAccount, notice domain.FillNotice) error {
-	var existing modelv1.ConsumerInbox
-	err := tx.WithContext(ctx).Model(&modelv1.ConsumerInbox{}).Where("consumer = ? AND event_id = ?", domain.PortfolioConsumer, notice.EventID).First(&existing).Error
+func recordPortfolioInbox(ctx context.Context, tx *gorm.DB, row *portfoliomodelv1.PortfolioAccount, notice domain.FillNotice) error {
+	var existing portfoliomodelv1.ConsumerInbox
+	err := tx.WithContext(ctx).Model(&portfoliomodelv1.ConsumerInbox{}).Where("consumer = ? AND event_id = ?", domain.PortfolioConsumer, notice.EventID).First(&existing).Error
 	if err == nil {
 		if existing.DeleteAt != nil || existing.PayloadHash != notice.PayloadHash {
 			return domain.ErrIdempotencyConflict
@@ -55,7 +56,7 @@ func recordPortfolioInbox(ctx context.Context, tx *gorm.DB, row *modelv1.Portfol
 	if err != nil {
 		return err
 	}
-	return tx.WithContext(ctx).Model(&modelv1.ConsumerInbox{}).Create(&modelv1.ConsumerInbox{
+	return tx.WithContext(ctx).Model(&portfoliomodelv1.ConsumerInbox{}).Create(&portfoliomodelv1.ConsumerInbox{
 		Consumer:    domain.PortfolioConsumer,
 		EventId:     notice.EventID,
 		PayloadHash: notice.PayloadHash,
@@ -64,8 +65,8 @@ func recordPortfolioInbox(ctx context.Context, tx *gorm.DB, row *modelv1.Portfol
 }
 
 func recordPortfolioFill(ctx context.Context, tx *gorm.DB, fact domain.FillFact) error {
-	var existing modelv1.PortfolioFill
-	err := tx.WithContext(ctx).Model(&modelv1.PortfolioFill{}).Where("execution_venue = ? AND trade_id = ?", fact.ExecutionVenue, fact.TradeID).First(&existing).Error
+	var existing portfoliomodelv1.PortfolioFill
+	err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).Where("execution_venue = ? AND trade_id = ?", fact.ExecutionVenue, fact.TradeID).First(&existing).Error
 	if err == nil {
 		if existing.DeleteAt != nil || !samePortfolioFact(&existing, fact) {
 			return domain.ErrIdempotencyConflict
@@ -75,7 +76,7 @@ func recordPortfolioFill(ctx context.Context, tx *gorm.DB, fact domain.FillFact)
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	}
-	return tx.WithContext(ctx).Model(&modelv1.PortfolioFill{}).Create(&modelv1.PortfolioFill{
+	return tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioFill{}).Create(&portfoliomodelv1.PortfolioFill{
 		ExecutionVenue:     fact.ExecutionVenue,
 		TradeId:            fact.TradeID,
 		SourceSequence:     fact.SourceSequence,
@@ -93,7 +94,7 @@ func recordPortfolioFill(ctx context.Context, tx *gorm.DB, fact domain.FillFact)
 	}).Error
 }
 
-func samePortfolioFact(row *modelv1.PortfolioFill, fact domain.FillFact) bool {
+func samePortfolioFact(row *portfoliomodelv1.PortfolioFill, fact domain.FillFact) bool {
 	return row.SourceSequence == fact.SourceSequence && row.IntentId == fact.IntentID && row.CoreOrderId == fact.CoreOrderID && row.AccountId == fact.AccountID &&
 		row.StrategyInstanceId == fact.StrategyID && row.InstrumentId == fact.InstrumentID && row.Side == string(fact.Side) && row.FeeAsset == fact.FeeAsset &&
 		decimalTextEqual(row.Price, fact.Price) && decimalTextEqual(row.Quantity, fact.Quantity) && decimalTextEqual(row.QuoteNotional, fact.QuoteNotional) && decimalTextEqual(row.FeeAmount, fact.FeeAmount)
@@ -105,7 +106,7 @@ func decimalTextEqual(text string, value decimal.Decimal) bool {
 }
 
 func portfolioSourceStats(ctx context.Context, tx *gorm.DB, accountID string, instrumentID int64) (int64, int64, error) {
-	orders := tx.WithContext(ctx).Model(&modelv1.SimulatorOrder{}).Select("id").Where("account_id = ?", accountID)
+	orders := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorOrder{}).Select("id").Where("account_id = ?", accountID)
 	if instrumentID > 0 {
 		orders = orders.Where("instrument_id = ?", instrumentID)
 	}
@@ -113,14 +114,14 @@ func portfolioSourceStats(ctx context.Context, tx *gorm.DB, accountID string, in
 		Count int64
 		Last  int64
 	}
-	err := tx.WithContext(ctx).Model(&modelv1.SimulatorFill{}).Where("core_order_id IN (?)", orders).
+	err := tx.WithContext(ctx).Model(&executionmodelv1.SimulatorFill{}).Where("core_order_id IN (?)", orders).
 		Select("COUNT(*) AS count, COALESCE(MAX(id), 0) AS last").Scan(&stats).Error
 	return stats.Count, stats.Last, err
 }
 
 func portfolioClock(ctx context.Context, tx *gorm.DB, id int64) (int64, error) {
 	var clock struct{ NowMS int64 }
-	err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("id = ?", id).
+	err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("id = ?", id).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error
 	return clock.NowMS, err
 }

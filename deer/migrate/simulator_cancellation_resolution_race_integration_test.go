@@ -11,7 +11,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -57,7 +58,7 @@ func TestSimulatorCancellationResolutionWaitsForOriginalCoreTransaction(t *testi
 		}
 	})
 	if err := db.Callback().Create().After("gorm:create").Register(createHook, func(tx *gorm.DB) {
-		row, ok := tx.Statement.Dest.(*modelv1.SimulatorCommand)
+		row, ok := tx.Statement.Dest.(*executionmodelv1.SimulatorCommand)
 		if !ok || row.Action != domain.GatewayActionCancel {
 			return
 		}
@@ -72,7 +73,7 @@ func TestSimulatorCancellationResolutionWaitsForOriginalCoreTransaction(t *testi
 	}
 	if err := db.Callback().Query().Before("gorm:query").Register(queryHook, func(tx *gorm.DB) {
 		if !tx.DryRun && tx.Statement.Context.Value(simulatorResolutionProbeKey{}) == true {
-			if _, ok := tx.Statement.Dest.(*modelv1.StrategyInstance); ok {
+			if _, ok := tx.Statement.Dest.(*strategymodelv1.StrategyInstance); ok {
 				sendBackendPID(tx, resolverPID)
 			}
 		}

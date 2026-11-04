@@ -10,7 +10,9 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -29,7 +31,7 @@ func TestAdminTradesCoreAndCollectedFactShareOneRepeatableSnapshot(t *testing.T)
 	const callback = "test:trade-concurrent-collection"
 	collected := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, fills := query.Statement.Dest.(*[]*modelv1.SimulatorFill)
+		_, fills := query.Statement.Dest.(*[]*executionmodelv1.SimulatorFill)
 		if !fills || collected {
 			return
 		}
@@ -54,7 +56,7 @@ func TestAdminTradesCoreAndCollectedFactShareOneRepeatableSnapshot(t *testing.T)
 	if err != nil || next.PortfolioFact == nil {
 		t.Fatal("next snapshot failed to observe the committed collected fact", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 1)
 	assertCancellationResolutionBudgets(ctx, t, db, submit, "200")
 }
 
@@ -70,7 +72,7 @@ func TestAdminTradesFailureCancellationAndRevokedAuthorityReturnNoPartialData(t 
 	injected := errors.New("private collected-fact query failure")
 	const callback = "test:trade-collected-fact-failure"
 	if err := db.Callback().Query().Before("gorm:query").Register(callback, func(query *gorm.DB) {
-		if _, facts := query.Statement.Dest.(*[]*modelv1.PortfolioFill); facts {
+		if _, facts := query.Statement.Dest.(*[]*portfoliomodelv1.PortfolioFill); facts {
 			_ = query.AddError(injected)
 		}
 	}); err != nil {
@@ -106,7 +108,7 @@ func TestAdminTradesFailureCancellationAndRevokedAuthorityReturnNoPartialData(t 
 	if value, err := store.Detail(ctx, actor.Token, filter.StrategyID, buy.AggregateId); !errors.Is(err, domain.ErrUnauthenticated) || value.ID != 0 {
 		t.Fatal("revoked session read a trade detail", err)
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 0)
 }
 
 func TestAdminTradesDatabaseRejectsWritesInsideReadSnapshot(t *testing.T) {
@@ -120,12 +122,12 @@ func TestAdminTradesDatabaseRejectsWritesInsideReadSnapshot(t *testing.T) {
 	attempted := false
 	var writeErr error
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, fills := query.Statement.Dest.(*[]*modelv1.SimulatorFill)
+		_, fills := query.Statement.Dest.(*[]*executionmodelv1.SimulatorFill)
 		if !fills || attempted {
 			return
 		}
 		attempted = true
-		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.Instrument{}).
+		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.Instrument{}).
 			Where("id = ?", submit.Input.InstrumentID).Update("status", domain.InstrumentStatusHalted).Error
 		_ = query.AddError(writeErr)
 	}); err != nil {
@@ -141,8 +143,8 @@ func TestAdminTradesDatabaseRejectsWritesInsideReadSnapshot(t *testing.T) {
 		t.Fatal("read snapshot allowed an injected mutation or partial page", err)
 	}
 	assertDatabaseCode(t, writeErr, "25006")
-	var instrument modelv1.Instrument
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ?", submit.Input.InstrumentID).Take(&instrument).Error; err != nil || instrument.Status != domain.InstrumentStatusTrading {
+	var instrument commonmodelv1.Instrument
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ?", submit.Input.InstrumentID).Take(&instrument).Error; err != nil || instrument.Status != domain.InstrumentStatusTrading {
 		t.Fatal("failed trade read changed the instrument", err)
 	}
 }

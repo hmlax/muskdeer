@@ -10,7 +10,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -37,8 +37,8 @@ func TestSoakSampleAcceptsClosedRiskDuringActualProjectionLag(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&risk).Error; err != nil {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&risk).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !risk.AllowNewRisk || risk.Reconciled {
@@ -55,13 +55,13 @@ func TestSoakSampleAcceptsClosedRiskDuringActualProjectionLag(t *testing.T) {
 	assertGatewayOrderCount(ctx, t, db, 1)
 	// A forged current reconciliation flag must still fail the observation.
 	refreshBusinessRisk(ctx, t, db)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", risk.Id).UpdateColumn("reconciled", true).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", risk.Id).UpdateColumn("reconciled", true).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := readSoakSample(ctx, db, submit); !errors.Is(err, domain.ErrReconciliationMismatch) {
 		t.Fatal("an eligible risk snapshot referenced an unprojected fill")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("id = ?", risk.Id).UpdateColumn("reconciled", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("id = ?", risk.Id).UpdateColumn("reconciled", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	if _, err := portfolio.Apply(ctx, portfolioNotice(ctx, t, portfolioEventFixture(accepted, fill))); err != nil {

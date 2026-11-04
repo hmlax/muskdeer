@@ -12,7 +12,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -30,7 +32,7 @@ func TestAdminMarketsPublicationAndAuthorityShareOneRepeatableSnapshot(t *testin
 	const callback = "test:admin-market-concurrent-publication"
 	published := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, feeds := query.Statement.Dest.(*[]*modelv1.MarketFeed)
+		_, feeds := query.Statement.Dest.(*[]*marketmodelv1.MarketFeed)
 		if !feeds || published {
 			return
 		}
@@ -39,8 +41,8 @@ func TestAdminMarketsPublicationAndAuthorityShareOneRepeatableSnapshot(t *testin
 			_ = query.AddError(err)
 			return
 		}
-		if err := db.WithContext(ctx).Model(&modelv1.AdminUser{}).Where("id = ?", actor.Principal.UserID).
-			Select("CredentialVersion", "Revision").Updates(&modelv1.AdminUser{
+		if err := db.WithContext(ctx).Model(&commonmodelv1.AdminUser{}).Where("id = ?", actor.Principal.UserID).
+			Select("CredentialVersion", "Revision").Updates(&commonmodelv1.AdminUser{
 			CredentialVersion: 2,
 			Revision:          2,
 		}).Error; err != nil {
@@ -93,9 +95,9 @@ func TestAdminMarketsReadOnlyFailureCancellationAndRevokedSession(t *testing.T) 
 		t.Fatal(err)
 	}
 	assertAdminMarketsUnauthenticated(ctx, t, store, actor.Token, feed.ID)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.MarketSnapshot{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.MarketPublisherLease{}, 1)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &marketmodelv1.MarketSnapshot{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &marketmodelv1.MarketPublisherLease{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
 }
 
 func assertAdminMarketsReadOnly(ctx context.Context, t *testing.T, db *gorm.DB, store domain.AdminMarkets, token string, feed domain.MarketFeedDefinition) {
@@ -104,14 +106,14 @@ func assertAdminMarketsReadOnly(ctx context.Context, t *testing.T, db *gorm.DB, 
 	var writeErr error
 	attempted := false
 	if err := db.Callback().Query().After("gorm:query").Register(callback, func(query *gorm.DB) {
-		_, feeds := query.Statement.Dest.(*[]*modelv1.MarketFeed)
+		_, feeds := query.Statement.Dest.(*[]*marketmodelv1.MarketFeed)
 		if !feeds || attempted {
 			return
 		}
 		attempted = true
 		// Reset the completed SELECT after applying context; a later Session
 		// call with Context would otherwise clone its existing SQL statement.
-		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&modelv1.Instrument{}).
+		writeErr = query.WithContext(ctx).Session(&gorm.Session{NewDB: true}).Model(&commonmodelv1.Instrument{}).
 			Where("id = ?", feed.InstrumentID).Update("status", domain.InstrumentStatusHalted).Error
 		_ = query.AddError(writeErr)
 	}); err != nil {
@@ -131,8 +133,8 @@ func assertAdminMarketsReadOnly(ctx context.Context, t *testing.T, db *gorm.DB, 
 	if !attempted || code != "25006" || !errors.Is(err, domain.ErrAdminUnavailable) || result.Items != nil || strings.Contains(err.Error(), "UPDATE") {
 		t.Fatalf("market snapshot writable/leaked/partial: attempted=%t write=%T SQLSTATE=%s rows=%d public=%v", attempted, writeErr, code, len(result.Items), err)
 	}
-	var instrument modelv1.Instrument
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ?", feed.InstrumentID).Take(&instrument).Error; err != nil || instrument.Status != domain.InstrumentStatusTrading {
+	var instrument commonmodelv1.Instrument
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ?", feed.InstrumentID).Take(&instrument).Error; err != nil || instrument.Status != domain.InstrumentStatusTrading {
 		t.Fatal("failed management read left a product mutation", err)
 	}
 }

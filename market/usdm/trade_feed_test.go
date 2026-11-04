@@ -12,7 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"google.golang.org/grpc/codes"
@@ -74,7 +74,7 @@ func TestAggregateTradeFrameRetainsExactValuesAndRejectsInvalidSource(t *testing
 
 func TestAggregateTradeReadRequiresAnAuthenticatedService(t *testing.T) {
 	runtime := &Runtime{}
-	if _, err := runtime.GetTrade(t.Context(), &rpc.TradeRequest{Symbol: "BTCUSDT"}); status.Code(err) != codes.PermissionDenied {
+	if _, err := runtime.GetTrade(t.Context(), &markethimalayav1.TradeRequest{Symbol: "BTCUSDT"}); status.Code(err) != codes.PermissionDenied {
 		t.Fatalf("GetTrade(without peer identity)=%v, want PermissionDenied", err)
 	}
 }

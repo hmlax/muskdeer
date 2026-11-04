@@ -14,7 +14,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -29,13 +30,13 @@ func TestAdminEmergencyProgressEmptyScopeNeedsExplicitEnrollmentBeforeRecovery(t
 	if err != nil {
 		t.Fatal(err)
 	}
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&task).Error; err != nil ||
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&task).Error; err != nil ||
 		task.State != string(domain.AdminEmergencyCancelAccepted) || task.EnrollmentUpperId != nil || task.EnrollmentComplete || task.CompletedAt != nil {
 		t.Fatal("empty scope was silently completed or lacked its durable marker", err)
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("id = ?", task.Id).
-		Updates(&modelv1.AdminEmergencyCancellationTask{
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("id = ?", task.Id).
+		Updates(&executionmodelv1.AdminEmergencyCancellationTask{
 			State:       string(domain.AdminEmergencyCancelSucceeded),
 			Revision:    2,
 			CompletedAt: proto.Int64(time.Now().UnixMilli()),
@@ -51,12 +52,12 @@ func TestAdminEmergencyProgressEmptyScopeNeedsExplicitEnrollmentBeforeRecovery(t
 	if restored, err := riskControlFixture(t, db).Change(ctx, admin.Token, admin.CSRF, riskRestoreRequest(instance)); err != nil || !restored.Enabled {
 		t.Fatal("durable empty completion did not permit otherwise valid admin recovery", err)
 	}
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("id = ?", result.TaskID).
-		Select("State", "Revision").Updates(&modelv1.AdminEmergencyCancellationTask{
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("id = ?", result.TaskID).
+		Select("State", "Revision").Updates(&executionmodelv1.AdminEmergencyCancellationTask{
 		State:    string(domain.AdminEmergencyCancelAccepted),
 		Revision: result.Revision + 1,
 	}).Error, "23514")
-	assertDatabaseCode(t, db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("id = ?", result.TaskID).Delete(&modelv1.AdminEmergencyCancellationTask{}).Error, "23514")
+	assertDatabaseCode(t, db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("id = ?", result.TaskID).Delete(&executionmodelv1.AdminEmergencyCancellationTask{}).Error, "23514")
 	assertGatewayOrderCount(ctx, t, db, 0)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 }
@@ -76,20 +77,20 @@ func TestAdminEmergencyTaskCannotSkipReservedTargetOrDelegateOutsideRecordedPref
 	if err != nil {
 		t.Fatal(err)
 	}
-	var task modelv1.AdminEmergencyCancellationTask
-	if err := db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&task).Error; err != nil {
+	var task executionmodelv1.AdminEmergencyCancellationTask
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("emergency_cancellation_id = ?", accepted.ID).Take(&task).Error; err != nil {
 		t.Fatal(err)
 	}
-	err = db.WithContext(ctx).Model(&modelv1.AdminEmergencyCancellationTask{}).Where("id = ?", task.Id).
-		Select("EnrollmentUpperId", "EnrollmentAfterId", "EnrollmentComplete", "Revision").Updates(&modelv1.AdminEmergencyCancellationTask{
+	err = db.WithContext(ctx).Model(&executionmodelv1.AdminEmergencyCancellationTask{}).Where("id = ?", task.Id).
+		Select("EnrollmentUpperId", "EnrollmentAfterId", "EnrollmentComplete", "Revision").Updates(&executionmodelv1.AdminEmergencyCancellationTask{
 		EnrollmentUpperId:  proto.Int64(order.ID),
 		EnrollmentAfterId:  order.ID,
 		EnrollmentComplete: true,
 		Revision:           2,
 	}).Error
 	assertEmergencySchemaConstraint(t, err, "admin_emergency_task_enrollment")
-	err = db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Transaction(func(tx *gorm.DB) error {
-		audit := &modelv1.AdminAudit{
+	err = db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Transaction(func(tx *gorm.DB) error {
+		audit := &commonmodelv1.AdminAudit{
 			Actor:         actor.Principal.Username,
 			ActorRole:     string(actor.Principal.Role),
 			Action:        domain.AdminCancellationAction,
@@ -98,10 +99,10 @@ func TestAdminEmergencyTaskCannotSkipReservedTargetOrDelegateOutsideRecordedPref
 			BeforeVersion: proto.Int64(order.Revision),
 			AfterVersion:  proto.Int64(order.Revision),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Create(&modelv1.AdminOrderCancellation{
+		return tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Create(&executionmodelv1.AdminOrderCancellation{
 			ActorUserId:             actor.Principal.UserID,
 			ActorSessionId:          actor.Principal.SessionID,
 			StrategyInstanceId:      accepted.StrategyID,
@@ -118,8 +119,8 @@ func TestAdminEmergencyTaskCannotSkipReservedTargetOrDelegateOutsideRecordedPref
 		}).Error
 	})
 	assertEmergencySchemaConstraint(t, err, "admin_cancellation_emergency_scope")
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminOrderCancellation{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.AdminAudit{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.AdminOrderCancellation{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &commonmodelv1.AdminAudit{}, 2)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "200")
 }
 
@@ -164,8 +165,8 @@ func TestAdminEmergencyEnrollmentIsBoundedAndContinuesOnlyAcceptedScopeAfterLogo
 	if err != nil || again.Progress.Targets != last.Progress.Targets || again.State != domain.AdminEmergencyCancelAccepted {
 		t.Fatal("repeat enrollment duplicated targets or completed unknown obligations", err)
 	}
-	var children []*modelv1.AdminOrderCancellation
-	if err := db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Where("emergency_cancellation_id = ?", accepted.ID).Order("id ASC").Find(&children).Error; err != nil || len(children) != domain.MaxEmergencyTargetsPerStep+1 {
+	var children []*executionmodelv1.AdminOrderCancellation
+	if err := db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Where("emergency_cancellation_id = ?", accepted.ID).Order("id ASC").Find(&children).Error; err != nil || len(children) != domain.MaxEmergencyTargetsPerStep+1 {
 		t.Fatal("accepted scope did not retain typed child requests", err)
 	}
 	for _, child := range children {
@@ -177,7 +178,7 @@ func TestAdminEmergencyEnrollmentIsBoundedAndContinuesOnlyAcceptedScopeAfterLogo
 		t.Fatal("enrollment released unsent reservations without execution proof")
 	}
 	assertGatewayOrderCount(ctx, t, db, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.CancellationRequest{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.CancellationRequest{}, 0)
 	if _, err := emergencyAcceptanceStore(t, db).Acceptance(ctx, actor.Token, accepted.StrategyID, accepted.ID); !errors.Is(err, domain.ErrUnauthenticated) {
 		t.Fatal("durable processing accidentally re-enabled revoked reads", err)
 	}

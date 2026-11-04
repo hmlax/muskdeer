@@ -16,7 +16,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 const probeVenue = "binance"
@@ -82,7 +82,7 @@ func TestPostgresContract(t *testing.T) {
 
 func testDatabaseConstraints(t *testing.T, db *gorm.DB) {
 	t.Helper()
-	columns, err := db.Migrator().ColumnTypes(&modelv1.StorageProbe{})
+	columns, err := db.Migrator().ColumnTypes(&commonmodelv1.StorageProbe{})
 	if err != nil {
 		t.Fatalf("ColumnTypes(StorageProbe) = %v", err)
 	}
@@ -112,16 +112,16 @@ func testIdentityNumericAndUniqueKey(t *testing.T, db *gorm.DB) {
 	t.Helper()
 	first := newProbe("identity-1")
 	second := newProbe("identity-2")
-	for _, record := range []*modelv1.StorageProbe{first, second} {
-		if err := db.Model(&modelv1.StorageProbe{}).Create(record).Error; err != nil {
+	for _, record := range []*commonmodelv1.StorageProbe{first, second} {
+		if err := db.Model(&commonmodelv1.StorageProbe{}).Create(record).Error; err != nil {
 			t.Fatalf("Create(StorageProbe) = %v", err)
 		}
 	}
 	if first.Id <= 0 || second.Id <= first.Id {
 		t.Errorf("database generated IDs = %d, %d; want positive increasing IDs", first.Id, second.Id)
 	}
-	var stored modelv1.StorageProbe
-	if err := db.Model(&modelv1.StorageProbe{}).First(&stored, first.Id).Error; err != nil {
+	var stored commonmodelv1.StorageProbe
+	if err := db.Model(&commonmodelv1.StorageProbe{}).First(&stored, first.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	price, err := decimal.NewFromString(stored.Price)
@@ -129,10 +129,10 @@ func testIdentityNumericAndUniqueKey(t *testing.T, db *gorm.DB) {
 		t.Errorf("numeric round trip = %q, %v; want %q", stored.Price, err, precisePrice)
 	}
 	duplicate := newProbe("identity-1")
-	requireSQLState(t, db.Model(&modelv1.StorageProbe{}).Create(duplicate).Error, "23505")
+	requireSQLState(t, db.Model(&commonmodelv1.StorageProbe{}).Create(duplicate).Error, "23505")
 	duplicateID := newProbe("identity-3")
 	duplicateID.Id = first.Id
-	requireSQLState(t, db.Model(&modelv1.StorageProbe{}).Create(duplicateID).Error, "23505")
+	requireSQLState(t, db.Model(&commonmodelv1.StorageProbe{}).Create(duplicateID).Error, "23505")
 }
 
 func testTimestampsAndZeroValueUpdates(t *testing.T, db *gorm.DB) {
@@ -141,19 +141,19 @@ func testTimestampsAndZeroValueUpdates(t *testing.T, db *gorm.DB) {
 	updated := created.Add(time.Second)
 	record := newProbe("timestamps")
 	createDB := db.Session(&gorm.Session{NowFunc: func() time.Time { return created }})
-	if err := createDB.Model(&modelv1.StorageProbe{}).Create(record).Error; err != nil {
+	if err := createDB.Model(&commonmodelv1.StorageProbe{}).Create(record).Error; err != nil {
 		t.Fatal(err)
 	}
 	if record.CreateAt != created.UnixMilli() || record.UpdateAt != created.UnixMilli() {
 		t.Errorf("insert timestamps = %d, %d; want %d", record.CreateAt, record.UpdateAt, created.UnixMilli())
 	}
 	updateDB := db.Session(&gorm.Session{NowFunc: func() time.Time { return updated }})
-	if err := updateDB.Model(&modelv1.StorageProbe{}).Where("id = ?", record.Id).
-		Select("enabled", "revision").Updates(&modelv1.StorageProbe{}).Error; err != nil {
+	if err := updateDB.Model(&commonmodelv1.StorageProbe{}).Where("id = ?", record.Id).
+		Select("enabled", "revision").Updates(&commonmodelv1.StorageProbe{}).Error; err != nil {
 		t.Fatal(err)
 	}
-	var stored modelv1.StorageProbe
-	if err := db.Model(&modelv1.StorageProbe{}).First(&stored, record.Id).Error; err != nil {
+	var stored commonmodelv1.StorageProbe
+	if err := db.Model(&commonmodelv1.StorageProbe{}).First(&stored, record.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if stored.Enabled || stored.Revision != 0 || stored.CreateAt != created.UnixMilli() || stored.UpdateAt != updated.UnixMilli() {
@@ -161,42 +161,42 @@ func testTimestampsAndZeroValueUpdates(t *testing.T, db *gorm.DB) {
 	}
 	for _, column := range []string{"create_at", "update_at"} {
 		// Check the database constraint without GORM's automatic timestamp callback.
-		requireSQLState(t, db.Model(&modelv1.StorageProbe{}).Where("id = ?", record.Id).UpdateColumn(column, nil).Error, "23502")
+		requireSQLState(t, db.Model(&commonmodelv1.StorageProbe{}).Where("id = ?", record.Id).UpdateColumn(column, nil).Error, "23502")
 	}
 }
 
 func testNullableDeletionTime(t *testing.T, db *gorm.DB) {
 	t.Helper()
 	record := newProbe("nullable")
-	if err := db.Model(&modelv1.StorageProbe{}).Create(record).Error; err != nil {
+	if err := db.Model(&commonmodelv1.StorageProbe{}).Create(record).Error; err != nil {
 		t.Fatal(err)
 	}
 	var count int64
-	if err := db.Model(&modelv1.StorageProbe{}).Where("id = ? AND delete_at IS NULL", record.Id).Count(&count).Error; err != nil {
+	if err := db.Model(&commonmodelv1.StorageProbe{}).Where("id = ? AND delete_at IS NULL", record.Id).Count(&count).Error; err != nil {
 		t.Fatal(err)
 	}
 	if count != 1 {
 		t.Errorf("SQL NULL deletion time count = %d, want 1", count)
 	}
 	for _, value := range []int64{0, time.Date(2026, time.October, 26, 1, 0, 0, 0, time.UTC).UnixMilli()} {
-		if err := db.Model(&modelv1.StorageProbe{}).Where("id = ?", record.Id).
+		if err := db.Model(&commonmodelv1.StorageProbe{}).Where("id = ?", record.Id).
 			Update("delete_at", value).Error; err != nil {
 			t.Fatal(err)
 		}
-		var stored modelv1.StorageProbe
-		if err := db.Model(&modelv1.StorageProbe{}).First(&stored, record.Id).Error; err != nil {
+		var stored commonmodelv1.StorageProbe
+		if err := db.Model(&commonmodelv1.StorageProbe{}).First(&stored, record.Id).Error; err != nil {
 			t.Fatal(err)
 		}
 		if stored.DeleteAt == nil || *stored.DeleteAt != value {
 			t.Errorf("deletion time = %v, want present %d", stored.DeleteAt, value)
 		}
 	}
-	if err := db.Model(&modelv1.StorageProbe{}).Where("id = ?", record.Id).
+	if err := db.Model(&commonmodelv1.StorageProbe{}).Where("id = ?", record.Id).
 		Update("delete_at", nil).Error; err != nil {
 		t.Fatal(err)
 	}
-	var cleared modelv1.StorageProbe
-	if err := db.Model(&modelv1.StorageProbe{}).First(&cleared, record.Id).Error; err != nil {
+	var cleared commonmodelv1.StorageProbe
+	if err := db.Model(&commonmodelv1.StorageProbe{}).First(&cleared, record.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if cleared.DeleteAt != nil {
@@ -208,7 +208,7 @@ func testTransactionRollback(t *testing.T, db *gorm.DB) {
 	t.Helper()
 	rollback := errors.New("probe rollback")
 	err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&modelv1.StorageProbe{}).Create(newProbe("rollback")).Error; err != nil {
+		if err := tx.Model(&commonmodelv1.StorageProbe{}).Create(newProbe("rollback")).Error; err != nil {
 			return err
 		}
 		return rollback
@@ -217,7 +217,7 @@ func testTransactionRollback(t *testing.T, db *gorm.DB) {
 		t.Fatalf("Transaction(rollback) = %v, want original error", err)
 	}
 	var count int64
-	if err := db.Model(&modelv1.StorageProbe{}).Where("instrument = ?", "rollback").Count(&count).Error; err != nil {
+	if err := db.Model(&commonmodelv1.StorageProbe{}).Where("instrument = ?", "rollback").Count(&count).Error; err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
@@ -225,8 +225,8 @@ func testTransactionRollback(t *testing.T, db *gorm.DB) {
 	}
 }
 
-func newProbe(instrument string) *modelv1.StorageProbe {
-	return &modelv1.StorageProbe{
+func newProbe(instrument string) *commonmodelv1.StorageProbe {
+	return &commonmodelv1.StorageProbe{
 		Venue:      probeVenue,
 		Instrument: instrument,
 		Price:      precisePrice,

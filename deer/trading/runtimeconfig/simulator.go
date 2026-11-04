@@ -3,7 +3,7 @@ package runtimeconfig
 import (
 	"time"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 // ValidateSimulatorConfig requires explicit cancellation scope and bounded timing.

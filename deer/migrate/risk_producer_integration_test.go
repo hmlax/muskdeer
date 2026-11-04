@@ -9,7 +9,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -42,8 +43,8 @@ func TestRiskProducerRequiresProjectionAndClipsGrantToInstanceMarketAge(t *testi
 	if allowed.ExpiresAt.After(limit) || !allowed.ExpiresAt.After(allowed.ObservedAt) {
 		t.Fatalf("grant exceeded instance market age: %+v, latest=%v", allowed, limit)
 	}
-	var row modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&row).Error; err != nil {
+	var row executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !row.AllowNewRisk || !row.Reconciled || row.MarketMaximumAgeMs != 500 || row.GetMarketFeedId() != feed.ID || row.MarketRevision != fresh.Revision || row.ReasonCode != string(domain.RiskReasonReady) {
@@ -110,12 +111,12 @@ func TestRiskProducerHonorsPersistentBudgetDisableAndCoreMismatch(t *testing.T) 
 			wanted := domain.RiskReasonBudget
 			switch fault {
 			case "budget-disabled":
-				if err := db.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ?", submit.Input.AccountID).UpdateColumn("enabled", false).Error; err != nil {
+				if err := db.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ?", submit.Input.AccountID).UpdateColumn("enabled", false).Error; err != nil {
 					t.Fatal(err)
 				}
 			case "balance-mismatch":
 				wanted = domain.RiskReasonUnreconciled
-				if err := db.WithContext(ctx).Model(&modelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, "USDT").UpdateColumn("available", "999").Error; err != nil {
+				if err := db.WithContext(ctx).Model(&executionmodelv1.SimulatorBalance{}).Where("account_id = ? AND asset = ?", submit.Input.AccountID, "USDT").UpdateColumn("available", "999").Error; err != nil {
 					t.Fatal(err)
 				}
 			case "publisher-lost":
@@ -131,8 +132,8 @@ func TestRiskProducerHonorsPersistentBudgetDisableAndCoreMismatch(t *testing.T) 
 			if err != nil || denied.Allowed || denied.Reason != wanted {
 				t.Fatalf("%s re-opened risk: %+v, %v", fault, denied, err)
 			}
-			var row modelv1.RiskSnapshot
-			if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&row).Error; err != nil || row.AllowNewRisk {
+			var row executionmodelv1.RiskSnapshot
+			if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).First(&row).Error; err != nil || row.AllowNewRisk {
 				t.Fatalf("denial was not persisted: %v, %v", &row, err)
 			}
 		})

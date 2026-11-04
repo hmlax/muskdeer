@@ -20,9 +20,9 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	marketv1 "github.com/hmlax/muskdeer/deer/proto/rpc/market/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/proto/market/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -107,7 +107,7 @@ func assertMarketRPCIsolation(ctx context.Context, t *testing.T, db *gorm.DB, fe
 	if _, err := snapshots.Publish(ctx, okxToken, 0, marketReadingFixture(okx, 1, "200")); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
 		t.Fatal(err)
 	}
 	reply, err := readMarketReference(ctx, reader, request)

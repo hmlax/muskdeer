@@ -16,8 +16,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
@@ -53,13 +54,13 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 		return domain.AdminPublicationReceipt{}, adminPublicationFailure(err)
 	}
 	var result domain.AdminPublicationReceipt
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminStrategyPublication{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&strategymodelv1.AdminStrategyPublication{}).Transaction(func(tx *gorm.DB) error {
 		user, session, err := readAdminControlAuthority(ctx, tx, token, csrf)
 		if err != nil {
 			return err
 		}
-		var existing modelv1.AdminStrategyPublication
-		err = tx.WithContext(ctx).Model(&modelv1.AdminStrategyPublication{}).
+		var existing strategymodelv1.AdminStrategyPublication
+		err = tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyPublication{}).
 			Where("actor_user_id = ? AND idempotency_key = ?", user.Id, request.Key).Take(&existing).Error
 		if err == nil {
 			if existing.RequestFingerprint != fingerprint {
@@ -71,8 +72,8 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
-		var instance modelv1.StrategyInstance
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
+		var instance strategymodelv1.StrategyInstance
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
 			Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return domain.ErrAdminNotFound
@@ -96,15 +97,15 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 		}); err != nil {
 			return err
 		}
-		var latest modelv1.StrategyConfigVersion
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Select("Version").
+		var latest strategymodelv1.StrategyConfigVersion
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Select("Version").
 			Where("instance_id = ?", instance.Id).Order("version DESC").Take(&latest).Error; err != nil {
 			return err
 		}
 		if latest.Version == math.MaxInt64 {
 			return domain.ErrAdminConflict
 		}
-		version := &modelv1.StrategyConfigVersion{
+		version := &strategymodelv1.StrategyConfigVersion{
 			InstanceId:              instance.Id,
 			Version:                 latest.Version + 1,
 			MarketDataSource:        string(request.Source),
@@ -115,18 +116,18 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 			MakerParameters:         parameters.GetMarketMaker(),
 			GridParameters:          parameters.GetGrid(),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 			return err
 		}
 
-		guarded := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{})
+		guarded := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{})
 		if !apiValidatedActor(ctx) {
-			alive := tx.WithContext(ctx).Model(&modelv1.AdminSession{}).Select("1").
+			alive := tx.WithContext(ctx).Model(&commonmodelv1.AdminSession{}).Select("1").
 				Where("id = ? AND user_id = ? AND credential_version = ? AND revoked_at IS NULL AND delete_at IS NULL AND expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint", session.Id, user.Id, user.CredentialVersion)
 			guarded = guarded.Where("EXISTS (?)", alive)
 		}
 		changed := guarded.Where("id = ? AND revision = ?", instance.Id, instance.Revision).
-			Select("RequestedConfigVersion", "MarketDataSource", "Revision").Updates(&modelv1.StrategyInstance{
+			Select("RequestedConfigVersion", "MarketDataSource", "Revision").Updates(&strategymodelv1.StrategyInstance{
 			RequestedConfigVersion: version.Version,
 			MarketDataSource:       string(request.Source),
 			Revision:               instance.Revision + 1,
@@ -145,7 +146,7 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 		if err := supersedeAdminControls(ctx, tx, user.Id, &instance, domain.StrategyState(instance.DesiredState)); err != nil {
 			return err
 		}
-		audit := &modelv1.AdminAudit{
+		audit := &commonmodelv1.AdminAudit{
 			Actor:         user.Username,
 			ActorRole:     user.Role,
 			Action:        domain.AdminStrategyPublish,
@@ -154,10 +155,10 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 			BeforeVersion: proto.Int64(instance.Revision),
 			AfterVersion:  proto.Int64(instance.Revision + 1),
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 			return err
 		}
-		receipt := &modelv1.AdminStrategyPublication{
+		receipt := &strategymodelv1.AdminStrategyPublication{
 			ActorUserId:           user.Id,
 			ActorSessionId:        session.Id,
 			StrategyInstanceId:    instance.Id,
@@ -171,7 +172,7 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 			MarketDataSource:      string(request.Source),
 			Reason:                request.Reason,
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminStrategyPublication{}).Create(receipt).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.AdminStrategyPublication{}).Create(receipt).Error; err != nil {
 			return err
 		}
 		result = adminPublicationReceipt(receipt)
@@ -183,7 +184,7 @@ func (s *adminStrategyPublisher) Publish(ctx context.Context, token, csrf string
 	return result, nil
 }
 
-func adminPublicationReceipt(row *modelv1.AdminStrategyPublication) domain.AdminPublicationReceipt {
+func adminPublicationReceipt(row *strategymodelv1.AdminStrategyPublication) domain.AdminPublicationReceipt {
 	return domain.AdminPublicationReceipt{
 		ID:                    row.Id,
 		ActorUserID:           row.ActorUserId,

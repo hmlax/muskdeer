@@ -4,7 +4,7 @@
 
 四个核心服务继续各自拥有 Wire、Deer、入口与工作循环：market 提供 Binance USDm 完整二十档；strategy 根据选定来源产生目标订单；execution 持久化意图、预留资金并通过 SDK 执行/撤单；portfolio 从执行服务拉取权威观察并保存可重建 typed 投影。服务间使用 Nacos 发现及 mTLS gRPC，配置仍从 Nacos Proto JSON 读取。
 
-`business.execution_venue=himalaya_sdk` 显式选择此路径。账户、基金、产品、杠杆、额度、行情源及预期 tick/lot 由数据库的生成 Model `HimalayaBudget` 保存，定义见 `deer/proto/model/v1/himalaya.proto`；Nacos 的 `business.himalaya` 不再包含 profiles，仅维护 SDK 连接、二十档/数量比例、租约和有限测试运行控制。四核心启动时读取数据库，缺失或无效即失败，不回退 Nacos 或自动创建。SDK 原生元数据改变时拒绝交易；所选来源失效不切源。当前开发启动选择 Binance USDm，原有 Binance/OKX 现货适配继续保留。行情连接依据 [官方 USDm 连接说明](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)，使用 public 路由。
+`business.execution_venue=himalaya_sdk` 显式选择此路径。账户、基金、产品、杠杆、额度、行情源及预期 tick/lot 由数据库的生成 Model `HimalayaBudget` 保存，定义见 `deer/proto/execution/model/v1/himalaya.proto`；Nacos 的 `business.himalaya` 不再包含 profiles，仅维护 SDK 连接、二十档/数量比例、租约和有限测试运行控制。四核心启动时读取数据库，缺失或无效即失败，不回退 Nacos 或自动创建。SDK 原生元数据改变时拒绝交易；所选来源失效不切源。当前开发启动选择 Binance USDm，原有 Binance/OKX 现货适配继续保留。行情连接依据 [官方 USDm 连接说明](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)，使用 public 路由。
 
 首次准备时，使用 `/himalayainit -profiles /path/to/reviewed-profiles.json` 显式升级独立 SDK 扩展并导入已审查的业务数据；这是维护输入，不是服务启动配置。输入为 `HimalayaProfileImport` 的严格 Proto JSON：`{"profiles":[{"user_id":"101","fund_id":"201","symbol":"BTCUSDT","maximum_notional":"1000","maximum_order_notional":"100","leverage":10,"market_data_source":"binance","price_tick":"0.1","quantity_step":"0.001"}]}`，以上全部为示例。新预算默认禁用；已有预算的启用状态、余额观察、风险预留、历史审计和身份保持。整批原子导入，拒绝有效的执行/策略/行情/持仓租约、已删除记录及低于保留风险的额度缩减。调整前停止相关四核心并等待租约到期，修改后显式重启。
 

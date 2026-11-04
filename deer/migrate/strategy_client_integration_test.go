@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -45,8 +45,8 @@ func TestStrategyClientTradesThroughOwnedRiskMarketAndSimulatorProcesses(t *test
 	executionCfg := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), naming, "execution")
 	executionCfg.Business.OperationTimeout = durationpb.New(time.Second)
 	executionCfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	executionCfg.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	executionCfg.Business.Simulator = &configv1.SimulatorScenarioRuntime{
+	executionCfg.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	executionCfg.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}

@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -72,12 +72,12 @@ func TestAdminOverviewCountsKeepRequestedTargetsSeparateAndRejectOverflow(t *tes
 }
 
 func TestAdminOverviewLeaseValuesRetainZeroSlotsAndReleasedLegacyHolders(t *testing.T) {
-	strategy := &modelv1.StrategyInstance{
+	strategy := &strategymodelv1.StrategyInstance{
 		Id:                9007199254740993,
 		RuntimeOwnerId:    "legacy-holder",
 		RuntimeOwnerEpoch: 9007199254740994,
 	}
-	row := &modelv1.StrategyLease{
+	row := &strategymodelv1.StrategyLease{
 		Id:                 1,
 		StrategyInstanceId: strategy.Id,
 		OwnerId:            strategy.RuntimeOwnerId,
@@ -98,15 +98,15 @@ func TestAdminOverviewLeaseValuesRetainZeroSlotsAndReleasedLegacyHolders(t *test
 	if err != nil || unclaimed.OwnerRecorded || unclaimed.UnexpiredAtObservation || unclaimed.RuntimeMatchesLease || unclaimed.Epoch != 0 {
 		t.Fatal("zero-epoch persisted slot became an owner", err)
 	}
-	for _, change := range []func(*modelv1.StrategyLease){
-		func(r *modelv1.StrategyLease) { r.Id = 0 },
-		func(r *modelv1.StrategyLease) { r.StrategyInstanceId++ },
-		func(r *modelv1.StrategyLease) { r.Epoch = -1 },
-		func(r *modelv1.StrategyLease) { r.ExpiresAt = 1 },
-		func(r *modelv1.StrategyLease) { r.OwnerId = "unexpected-zero-epoch-owner" },
-		func(r *modelv1.StrategyLease) { r.Epoch = 1 },
+	for _, change := range []func(*strategymodelv1.StrategyLease){
+		func(r *strategymodelv1.StrategyLease) { r.Id = 0 },
+		func(r *strategymodelv1.StrategyLease) { r.StrategyInstanceId++ },
+		func(r *strategymodelv1.StrategyLease) { r.Epoch = -1 },
+		func(r *strategymodelv1.StrategyLease) { r.ExpiresAt = 1 },
+		func(r *strategymodelv1.StrategyLease) { r.OwnerId = "unexpected-zero-epoch-owner" },
+		func(r *strategymodelv1.StrategyLease) { r.Epoch = 1 },
 	} {
-		candidate := proto.Clone(row).(*modelv1.StrategyLease)
+		candidate := proto.Clone(row).(*strategymodelv1.StrategyLease)
 		change(candidate)
 		if value, err := adminOverviewLeaseValue(candidate, strategy, 1000); !errors.Is(err, domain.ErrAdminUnavailable) || value != nil {
 			t.Fatal("invalid retained lease escaped read validation", err)

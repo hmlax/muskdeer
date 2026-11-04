@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -23,7 +23,7 @@ func adminFlattenFingerprint(r domain.AdminFlattenRequest) string {
 	return hex.EncodeToString(digest[:])
 }
 
-func adminFlattenReceipt(row *modelv1.AdminAccountFlattening) (domain.AdminFlattenReceipt, error) {
+func adminFlattenReceipt(row *executionmodelv1.AdminAccountFlattening) (domain.AdminFlattenReceipt, error) {
 	if row == nil || row.Id <= 0 || row.ActorUserId <= 0 || row.CreateAt <= 0 || row.DeleteAt != nil {
 		return domain.AdminFlattenReceipt{}, domain.ErrAdminUnavailable
 	}

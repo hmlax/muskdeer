@@ -15,7 +15,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -38,7 +40,7 @@ func (s *adminOrderCancellations) Request(ctx context.Context, token, csrf strin
 		return domain.AdminCancellationReceipt{}, err
 	}
 	var result domain.AdminCancellationReceipt
-	err = s.db.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Transaction(func(tx *gorm.DB) error {
 		var err error
 		result, err = requestAdminCancellation(ctx, tx, token, csrf, request)
 		return err
@@ -56,8 +58,8 @@ func (s *adminOrderCancellations) Receipt(ctx context.Context, token string, str
 	var result domain.AdminCancellationReceipt
 	snapshots := adminStrategies{db: s.db}
 	err := snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.AdminOrderCancellation
-		if err := tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).
+		var row executionmodelv1.AdminOrderCancellation
+		if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).
 			Where("id = ? AND strategy_instance_id = ?", id, strategyID).Take(&row).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
@@ -76,8 +78,8 @@ func requestAdminCancellation(ctx context.Context, tx *gorm.DB, token, csrf stri
 		return domain.AdminCancellationReceipt{}, err
 	}
 	fingerprint := adminCancellationFingerprint(request)
-	var previous modelv1.AdminOrderCancellation
-	err = tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).
+	var previous executionmodelv1.AdminOrderCancellation
+	err = tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).
 		Where("actor_user_id = ? AND idempotency_key = ?", user.Id, request.Key).Take(&previous).Error
 	if err == nil {
 		if previous.RequestFingerprint != fingerprint {
@@ -88,13 +90,13 @@ func requestAdminCancellation(ctx context.Context, tx *gorm.DB, token, csrf stri
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return domain.AdminCancellationReceipt{}, err
 	}
-	var instance modelv1.StrategyInstance
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
+	var instance strategymodelv1.StrategyInstance
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND delete_at IS NULL", request.StrategyID).
 		Clauses(clause.Locking{Strength: "NO KEY UPDATE"}).Take(&instance).Error; err != nil {
 		return domain.AdminCancellationReceipt{}, adminRiskLookupFailure(err)
 	}
-	var order modelv1.OrderIntent
-	if err := tx.WithContext(ctx).Model(&modelv1.OrderIntent{}).
+	var order executionmodelv1.OrderIntent
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.OrderIntent{}).
 		Where("id = ? AND strategy_instance_id = ? AND account_id = ? AND instrument_id = ? AND delete_at IS NULL", request.OrderID, instance.Id, instance.AccountId, instance.InstrumentId).
 		Clauses(clause.Locking{Strength: "SHARE"}).Take(&order).Error; err != nil {
 		return domain.AdminCancellationReceipt{}, adminRiskLookupFailure(err)
@@ -103,14 +105,14 @@ func requestAdminCancellation(ctx context.Context, tx *gorm.DB, token, csrf stri
 		return domain.AdminCancellationReceipt{}, domain.ErrAdminConflict
 	}
 	var pending int64
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).
 		Where("strategy_instance_id = ? AND state = ?", instance.Id, domain.AdminCancellationAccepted).Count(&pending).Error; err != nil {
 		return domain.AdminCancellationReceipt{}, err
 	}
 	if pending >= domain.MaxActiveStrategyActions {
 		return domain.AdminCancellationReceipt{}, domain.ErrAdminConflict
 	}
-	audit := &modelv1.AdminAudit{
+	audit := &commonmodelv1.AdminAudit{
 		Actor:         user.Username,
 		ActorRole:     user.Role,
 		Action:        domain.AdminCancellationAction,
@@ -119,10 +121,10 @@ func requestAdminCancellation(ctx context.Context, tx *gorm.DB, token, csrf stri
 		BeforeVersion: proto.Int64(order.Revision),
 		AfterVersion:  proto.Int64(order.Revision),
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminAudit{}).Create(audit).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&commonmodelv1.AdminAudit{}).Create(audit).Error; err != nil {
 		return domain.AdminCancellationReceipt{}, err
 	}
-	row := &modelv1.AdminOrderCancellation{
+	row := &executionmodelv1.AdminOrderCancellation{
 		ActorUserId:           user.Id,
 		ActorSessionId:        session.Id,
 		StrategyInstanceId:    instance.Id,
@@ -136,7 +138,7 @@ func requestAdminCancellation(ctx context.Context, tx *gorm.DB, token, csrf stri
 		OutcomeCode:           domain.AdminCancellationPending,
 		Revision:              1,
 	}
-	if err := tx.WithContext(ctx).Model(&modelv1.AdminOrderCancellation{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&executionmodelv1.AdminOrderCancellation{}).Create(row).Error; err != nil {
 		return domain.AdminCancellationReceipt{}, err
 	}
 	return adminCancellationReceipt(row), nil
@@ -151,7 +153,7 @@ func adminCancellationFingerprint(request domain.AdminCancellationRequest) strin
 	return hex.EncodeToString(digest[:])
 }
 
-func adminCancellationReceipt(row *modelv1.AdminOrderCancellation) domain.AdminCancellationReceipt {
+func adminCancellationReceipt(row *executionmodelv1.AdminOrderCancellation) domain.AdminCancellationReceipt {
 	result := domain.AdminCancellationReceipt{
 		ID:                    row.Id,
 		ActorUserID:           row.ActorUserId,

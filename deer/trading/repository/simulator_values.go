@@ -3,11 +3,11 @@ package repository
 import (
 	"github.com/shopspring/decimal"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
-func coreOrder(row *modelv1.SimulatorOrder) (domain.CoreOrder, error) {
+func coreOrder(row *executionmodelv1.SimulatorOrder) (domain.CoreOrder, error) {
 	result := domain.CoreOrder{
 		ID:            row.Id,
 		ClientOrderID: row.ClientOrderId,
@@ -57,7 +57,7 @@ func coreOrder(row *modelv1.SimulatorOrder) (domain.CoreOrder, error) {
 	return result, nil
 }
 
-func coreFill(row *modelv1.SimulatorFill) (domain.CoreFill, error) {
+func coreFill(row *executionmodelv1.SimulatorFill) (domain.CoreFill, error) {
 	price, err := decimal.NewFromString(row.Price)
 	if err != nil {
 		return domain.CoreFill{}, err

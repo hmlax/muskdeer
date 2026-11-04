@@ -9,7 +9,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -35,13 +36,13 @@ func (s *portfolioStore) Initialize(ctx context.Context, opening domain.Portfoli
 		return domain.PortfolioSnapshot{}, err
 	}
 	var result domain.PortfolioSnapshot
-	err = s.db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Transaction(func(tx *gorm.DB) error {
+	err = s.db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Transaction(func(tx *gorm.DB) error {
 		core, err := lockCoreRows(ctx, tx, opening.AccountID, opening.InstrumentID)
 		if err != nil {
 			return err
 		}
-		var existing modelv1.PortfolioAccount
-		err = tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ?", opening.AccountID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&existing).Error
+		var existing portfoliomodelv1.PortfolioAccount
+		err = tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ?", opening.AccountID).Clauses(clause.Locking{Strength: "UPDATE"}).First(&existing).Error
 		if err == nil {
 			stored, err := portfolioSnapshot(&existing)
 			if err != nil {
@@ -66,7 +67,7 @@ func (s *portfolioStore) Initialize(ctx context.Context, opening domain.Portfoli
 		if err := comparePortfolioCore(ctx, tx, core, initial); err != nil {
 			return err
 		}
-		row := &modelv1.PortfolioAccount{
+		row := &portfoliomodelv1.PortfolioAccount{
 			AccountId:        opening.AccountID,
 			InstrumentId:     opening.InstrumentID,
 			BaseAsset:        core.instrument.BaseAsset,
@@ -82,7 +83,7 @@ func (s *portfolioStore) Initialize(ctx context.Context, opening domain.Portfoli
 			Reconciled:       true,
 			Revision:         1,
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Create(row).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Create(row).Error; err != nil {
 			return err
 		}
 		result, err = portfolioSnapshot(row)
@@ -101,7 +102,7 @@ func (s *portfolioStore) Apply(ctx context.Context, notice domain.FillNotice) (d
 	if err := validatePortfolioNotice(notice); err != nil {
 		return domain.PortfolioSnapshot{}, err
 	}
-	return s.withPortfolio(ctx, notice.Fact.AccountID, func(tx *gorm.DB, row *modelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
+	return s.withPortfolio(ctx, notice.Fact.AccountID, func(tx *gorm.DB, row *portfoliomodelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
 		if err := verifyPortfolioSource(ctx, tx, row, notice.Fact); err != nil {
 			return domain.PortfolioSnapshot{}, err
 		}
@@ -116,13 +117,13 @@ func (s *portfolioStore) Apply(ctx context.Context, notice domain.FillNotice) (d
 }
 
 func (s *portfolioStore) Rebuild(ctx context.Context, accountID string) (domain.PortfolioSnapshot, error) {
-	return s.withPortfolio(ctx, accountID, func(tx *gorm.DB, row *modelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
+	return s.withPortfolio(ctx, accountID, func(tx *gorm.DB, row *portfoliomodelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
 		return rebuildPortfolioRows(ctx, tx, row, core)
 	})
 }
 
 func (s *portfolioStore) Get(ctx context.Context, accountID string) (domain.PortfolioSnapshot, error) {
-	return s.withPortfolio(ctx, accountID, func(tx *gorm.DB, row *modelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
+	return s.withPortfolio(ctx, accountID, func(tx *gorm.DB, row *portfoliomodelv1.PortfolioAccount, core coreRows) (domain.PortfolioSnapshot, error) {
 		result, err := portfolioSnapshot(row)
 		if err != nil {
 			return domain.PortfolioSnapshot{}, err
@@ -149,25 +150,25 @@ func (s *portfolioStore) Get(ctx context.Context, accountID string) (domain.Port
 	})
 }
 
-func (s *portfolioStore) withPortfolio(ctx context.Context, accountID string, apply func(*gorm.DB, *modelv1.PortfolioAccount, coreRows) (domain.PortfolioSnapshot, error)) (domain.PortfolioSnapshot, error) {
+func (s *portfolioStore) withPortfolio(ctx context.Context, accountID string, apply func(*gorm.DB, *portfoliomodelv1.PortfolioAccount, coreRows) (domain.PortfolioSnapshot, error)) (domain.PortfolioSnapshot, error) {
 	if err := coreContext(ctx); err != nil {
 		return domain.PortfolioSnapshot{}, err
 	}
 	if !coreIdentifier(accountID, 64) {
 		return domain.PortfolioSnapshot{}, domain.ErrInvalidOrder
 	}
-	var identity modelv1.PortfolioAccount
-	if err := s.db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).First(&identity).Error; err != nil {
+	var identity portfoliomodelv1.PortfolioAccount
+	if err := s.db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).First(&identity).Error; err != nil {
 		return domain.PortfolioSnapshot{}, coreFailure(ctx, err)
 	}
 	var result domain.PortfolioSnapshot
-	err := s.db.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Transaction(func(tx *gorm.DB) error {
+	err := s.db.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Transaction(func(tx *gorm.DB) error {
 		core, err := lockCoreRows(ctx, tx, accountID, identity.InstrumentId)
 		if err != nil {
 			return err
 		}
-		var row modelv1.PortfolioAccount
-		if err := tx.WithContext(ctx).Model(&modelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).
+		var row portfoliomodelv1.PortfolioAccount
+		if err := tx.WithContext(ctx).Model(&portfoliomodelv1.PortfolioAccount{}).Where("account_id = ? AND delete_at IS NULL", accountID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
 			return err
 		}
@@ -218,7 +219,7 @@ func comparePortfolioCore(ctx context.Context, tx *gorm.DB, core coreRows, value
 	return nil
 }
 
-func coreBalanceTotal(row *modelv1.SimulatorBalance) (decimal.Decimal, error) {
+func coreBalanceTotal(row *executionmodelv1.SimulatorBalance) (decimal.Decimal, error) {
 	available, err := decimal.NewFromString(row.Available)
 	if err != nil {
 		return decimal.Zero, err

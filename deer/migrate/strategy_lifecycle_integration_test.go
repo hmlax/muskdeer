@@ -8,7 +8,8 @@ import (
 	"testing"
 	"time"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
@@ -52,8 +53,8 @@ func TestStrategyLifecycleRecoversBeforeRunningAndWaitsForTerminalStop(t *testin
 	if err != nil || running.State != domain.StrategyStateRunning || running.ActiveVersion != running.RequestedVersion {
 		t.Fatalf("ready recovery did not activate the requested pair: %+v, %v", running, err)
 	}
-	var risk modelv1.RiskSnapshot
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", running.ID).First(&risk).Error; err != nil {
+	var risk executionmodelv1.RiskSnapshot
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("strategy_instance_id = ?", running.ID).First(&risk).Error; err != nil {
 		t.Fatal(err)
 	}
 	if risk.AllowNewRisk {
@@ -73,7 +74,7 @@ func TestStrategyLifecycleRecoversBeforeRunningAndWaitsForTerminalStop(t *testin
 	if err != nil || live.State != domain.OrderStateLive {
 		t.Fatalf("runtime test order did not become live: %+v, %v", live, err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ?", running.ID).UpdateColumn("desired_running", false).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ?", running.ID).UpdateColumn("desired_running", false).Error; err != nil {
 		t.Fatal(err)
 	}
 	current, err = lifecycle.Instance(ctx, running.ID)

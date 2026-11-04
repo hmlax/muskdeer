@@ -6,7 +6,8 @@ import (
 
 	"gorm.io/gorm"
 
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -20,13 +21,13 @@ func (s *adminStrategyRisk) State(ctx context.Context, token string, strategyID 
 		if err != nil {
 			return err
 		}
-		var budget modelv1.StrategyBudget
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyBudget{}).
+		var budget strategymodelv1.StrategyBudget
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyBudget{}).
 			Where("strategy_instance_id = ? AND account_id = ? AND delete_at IS NULL", instance.Id, instance.AccountId).First(&budget).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
-		var account modelv1.AccountBudget
-		if err := tx.WithContext(ctx).Model(&modelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", instance.AccountId).First(&account).Error; err != nil {
+		var account commonmodelv1.AccountBudget
+		if err := tx.WithContext(ctx).Model(&commonmodelv1.AccountBudget{}).Where("account_id = ? AND delete_at IS NULL", instance.AccountId).First(&account).Error; err != nil {
 			return adminRiskLookupFailure(err)
 		}
 		limit, err := domain.ParseLedgerDecimal(budget.LimitNotional, false, false)

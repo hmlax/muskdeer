@@ -13,9 +13,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/rpc/strategy/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -39,7 +40,7 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 		}
 	})
 	cfg := businessProcessConfig(t, ca, postgres, nil, naming, "strategy")
-	cfg.Business.Strategy = &configv1.StrategyRuntime{ManagementEnabled: true}
+	cfg.Business.Strategy = &strategyconfigv1.StrategyRuntime{ManagementEnabled: true}
 	pid := startBusinessProcess(ctx, t, cfg, observer)
 	if pid <= 0 || pid == os.Getpid() {
 		t.Fatal("management did not start an independent strategy process")
@@ -98,7 +99,7 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 	}); status.Code(err) != codes.Unauthenticated {
 		t.Fatal("native management RPC reused a revoked session", err)
 	}
-	for _, entity := range []any{&modelv1.SimulatorAccount{}, &modelv1.OrderIntent{}, &modelv1.StrategyLease{}, &modelv1.StrategyAction{}} {
+	for _, entity := range []any{&executionmodelv1.SimulatorAccount{}, &executionmodelv1.OrderIntent{}, &strategymodelv1.StrategyLease{}, &strategymodelv1.StrategyAction{}} {
 		var count int64
 		if err := db.WithContext(ctx).Model(entity).Count(&count).Error; err != nil || count != 0 {
 			t.Fatal("management-only process provisioned trading resources", err)

@@ -14,7 +14,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/postgres"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -39,11 +40,11 @@ func TestV1DatabaseUpgradesAndRetainsIndependentSourceVersions(t *testing.T) {
 	})
 	db := writer.GORM()
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
-	var maker, grid *modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+	var maker, grid *strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 		var err error
 		maker, err = insertIdentity(ctx, tx, instrument.Id, "maker-binance", domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 		if err != nil {
@@ -57,22 +58,22 @@ func TestV1DatabaseUpgradesAndRetainsIndependentSourceVersions(t *testing.T) {
 	if maker.Id <= 0 || grid.Id <= maker.Id || maker.MarketDataSource != string(domain.MarketSourceBinance) || grid.MarketDataSource != string(domain.MarketSourceOKX) {
 		t.Fatal("initial template/source identities were not independent")
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		version := &modelv1.StrategyConfigVersion{
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		version := &strategymodelv1.StrategyConfigVersion{
 			InstanceId:       maker.Id,
 			Version:          2,
 			MarketDataSource: string(domain.MarketSourceOKX),
 			CodeVersion:      identityFixtureCode,
 			CreatedBy:        identityFixtureActor,
 		}
-		if err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(version).Error; err != nil {
 			return err
 		}
 		// This is a persistence fixture, not a claim that runtime switching is
 		// implemented. Active input deliberately retains the previous version.
-		return tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Where("id = ? AND revision = ?", maker.Id, 1).
+		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("id = ? AND revision = ?", maker.Id, 1).
 			Select("RequestedConfigVersion", "MarketDataSource", "ActiveConfigVersion", "ActiveMarketDataSource", "State", "DesiredRunning", "Revision").
-			Updates(&modelv1.StrategyInstance{
+			Updates(&strategymodelv1.StrategyInstance{
 				RequestedConfigVersion: 2,
 				MarketDataSource:       string(domain.MarketSourceOKX),
 				ActiveConfigVersion:    proto.Int64(1),
@@ -96,8 +97,8 @@ func TestV1DatabaseUpgradesAndRetainsIndependentSourceVersions(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	var restoredGrid modelv1.StrategyInstance
-	if err := reader.GORM().WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&restoredGrid, grid.Id).Error; err != nil {
+	var restoredGrid strategymodelv1.StrategyInstance
+	if err := reader.GORM().WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&restoredGrid, grid.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if restoredGrid.MarketDataSource != string(domain.MarketSourceOKX) || restoredGrid.RequestedConfigVersion != 1 || restoredGrid.ActiveConfigVersion != nil {
@@ -114,16 +115,16 @@ func TestStrategySourceForeignKeysRejectMismatchAndCandidates(t *testing.T) {
 		t.Fatal(err)
 	}
 	instrument := identityInstrument()
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).Create(instrument).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Create(instrument).Error; err != nil {
 		t.Fatal(err)
 	}
 	for _, source := range []domain.MarketSource{domain.MarketSourceBitget, domain.MarketSourceBybit, domain.MarketSourceBinance} {
-		err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
 			row := identityInstance(instrument.Id, "rejected-source", domain.StrategyTemplateGrid, source)
-			if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(row).Error; err != nil {
+			if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(row).Error; err != nil {
 				return err
 			}
-			return tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(&modelv1.StrategyConfigVersion{
+			return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(&strategymodelv1.StrategyConfigVersion{
 				InstanceId:       row.Id,
 				Version:          1,
 				MarketDataSource: string(domain.MarketSourceOKX),
@@ -137,13 +138,13 @@ func TestStrategySourceForeignKeysRejectMismatchAndCandidates(t *testing.T) {
 		}
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Count(&count).Error; err != nil || count != 0 {
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Count(&count).Error; err != nil || count != 0 {
 		t.Fatalf("rejected source left partial state: %d, %v", count, err)
 	}
 }
 
-func identityInstrument() *modelv1.Instrument {
-	return &modelv1.Instrument{
+func identityInstrument() *commonmodelv1.Instrument {
+	return &commonmodelv1.Instrument{
 		ExecutionVenue:  domain.ExecutionVenueSimulator,
 		Symbol:          "BTC-USDT",
 		BaseAsset:       "BTC",
@@ -156,8 +157,8 @@ func identityInstrument() *modelv1.Instrument {
 	}
 }
 
-func identityInstance(instrumentID int64, key string, template domain.StrategyTemplate, source domain.MarketSource) *modelv1.StrategyInstance {
-	return &modelv1.StrategyInstance{
+func identityInstance(instrumentID int64, key string, template domain.StrategyTemplate, source domain.MarketSource) *strategymodelv1.StrategyInstance {
+	return &strategymodelv1.StrategyInstance{
 		InstanceKey:            key,
 		Template:               string(template),
 		AccountId:              "fixture-shared-account",
@@ -171,13 +172,13 @@ func identityInstance(instrumentID int64, key string, template domain.StrategyTe
 	}
 }
 
-func insertIdentity(ctx context.Context, tx *gorm.DB, instrumentID int64, key string, template domain.StrategyTemplate, source domain.MarketSource) (*modelv1.StrategyInstance, error) {
+func insertIdentity(ctx context.Context, tx *gorm.DB, instrumentID int64, key string, template domain.StrategyTemplate, source domain.MarketSource) (*strategymodelv1.StrategyInstance, error) {
 	row := identityInstance(instrumentID, key, template, source)
 	row.DesiredRunning = template == domain.StrategyTemplateMarketMaker
-	if err := tx.WithContext(ctx).Model(&modelv1.StrategyInstance{}).Create(row).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(row).Error; err != nil {
 		return nil, err
 	}
-	err := tx.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Create(&modelv1.StrategyConfigVersion{
+	err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(&strategymodelv1.StrategyConfigVersion{
 		InstanceId:       row.Id,
 		Version:          1,
 		MarketDataSource: string(source),
@@ -196,15 +197,15 @@ func assertIdentityUpgrade(ctx context.Context, t *testing.T, base *gorm.DB) {
 	if err := applyDefinitions(ctx, base, definitions[:1]); err != nil {
 		t.Fatal(err)
 	}
-	var original modelv1.SchemaMigration
-	if err := base.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).First(&original).Error; err != nil {
+	var original commonmodelv1.SchemaMigration
+	if err := base.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).First(&original).Error; err != nil {
 		t.Fatal(err)
 	}
 	if version, err := Apply(ctx, base); err != nil || version != 37 {
 		t.Fatalf("v1 upgrade = %d, %v", version, err)
 	}
-	var retained modelv1.SchemaMigration
-	if err := base.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).First(&retained).Error; err != nil {
+	var retained commonmodelv1.SchemaMigration
+	if err := base.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).First(&retained).Error; err != nil {
 		t.Fatal(err)
 	}
 	if !proto.Equal(&original, &retained) {
@@ -212,17 +213,17 @@ func assertIdentityUpgrade(ctx context.Context, t *testing.T, base *gorm.DB) {
 	}
 }
 
-func assertRestoredIdentity(ctx context.Context, t *testing.T, db *gorm.DB, makerID int64, instrument *modelv1.Instrument) {
+func assertRestoredIdentity(ctx context.Context, t *testing.T, db *gorm.DB, makerID int64, instrument *commonmodelv1.Instrument) {
 	t.Helper()
-	var restored modelv1.StrategyInstance
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyInstance{}).First(&restored, makerID).Error; err != nil {
+	var restored strategymodelv1.StrategyInstance
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).First(&restored, makerID).Error; err != nil {
 		t.Fatal(err)
 	}
 	if restored.MarketDataSource != string(domain.MarketSourceOKX) || restored.GetActiveMarketDataSource() != string(domain.MarketSourceBinance) || restored.GetActiveConfigVersion() != 1 || restored.RequestedConfigVersion != 2 || restored.DesiredRunning {
 		t.Fatalf("restart lost requested/active source identity: %v", &restored)
 	}
-	var history []*modelv1.StrategyConfigVersion
-	if err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("instance_id = ?", makerID).Order("version ASC").Find(&history).Error; err != nil {
+	var history []*strategymodelv1.StrategyConfigVersion
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("instance_id = ?", makerID).Order("version ASC").Find(&history).Error; err != nil {
 		t.Fatal(err)
 	}
 	if len(history) != 2 || history[0].MarketDataSource != string(domain.MarketSourceBinance) || history[1].MarketDataSource != string(domain.MarketSourceOKX) {
@@ -231,10 +232,10 @@ func assertRestoredIdentity(ctx context.Context, t *testing.T, db *gorm.DB, make
 	// The active historical version is retained. Nullable storage semantics
 	// are exercised below on the inactive legacy draft, without retiring the
 	// version that still supplies the instance's actual input.
-	err := db.WithContext(ctx).Model(&modelv1.StrategyConfigVersion{}).Where("id = ?", history[0].Id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error
+	err := db.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("id = ?", history[0].Id).UpdateColumn("delete_at", time.Now().UnixMilli()).Error
 	assertDatabaseCode(t, err, "23514")
-	var storedInstrument modelv1.Instrument
-	if err := db.WithContext(ctx).Model(&modelv1.Instrument{}).First(&storedInstrument, instrument.Id).Error; err != nil {
+	var storedInstrument commonmodelv1.Instrument
+	if err := db.WithContext(ctx).Model(&commonmodelv1.Instrument{}).First(&storedInstrument, instrument.Id).Error; err != nil {
 		t.Fatal(err)
 	}
 	if storedInstrument.ExecutionVenue != domain.ExecutionVenueSimulator || !decimal.RequireFromString(storedInstrument.MinNotional).Equal(decimal.RequireFromString(instrument.MinNotional)) {
@@ -245,15 +246,15 @@ func assertRestoredIdentity(ctx context.Context, t *testing.T, db *gorm.DB, make
 		id    int64
 	}{
 		{
-			model: &modelv1.Instrument{},
+			model: &commonmodelv1.Instrument{},
 			id:    instrument.Id,
 		},
 		{
-			model: &modelv1.StrategyInstance{},
+			model: &strategymodelv1.StrategyInstance{},
 			id:    makerID,
 		},
 		{
-			model: &modelv1.StrategyConfigVersion{},
+			model: &strategymodelv1.StrategyConfigVersion{},
 			id:    history[1].Id,
 		},
 	} {

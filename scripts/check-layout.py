@@ -6,6 +6,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+from proto_layout import validate_layout
+
 ROOT = Path(__file__).resolve().parents[1]
 MODULE = 'github.com/hmlax/muskdeer/'
 SERVICES = ('market', 'strategy', 'execution', 'portfolio', 'cron')
@@ -40,6 +42,7 @@ def check_packages(packages):
 
 
 def run():
+    validate_layout(ROOT)
     failures = [f'removed entry still exists: {name}' for name in REMOVED if (ROOT / name).exists()]
     output = subprocess.check_output([sys.executable, str(ROOT / 'scripts/go.py'),
                                       'list', '-json', './...'], cwd=ROOT, text=True)

@@ -12,7 +12,7 @@ import (
 	"go.uber.org/goleak"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }

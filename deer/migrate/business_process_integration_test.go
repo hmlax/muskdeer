@@ -23,10 +23,12 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/rpc/execution/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -112,8 +114,8 @@ func TestIndependentBusinessProcessesPublishConsumeAndReconcile(t *testing.T) {
 		}
 	}
 	waitBusinessProjection(ctx, t, db, portfolio, submit.Input.AccountID)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.PortfolioFill{}, 2)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.ConsumerInbox{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.PortfolioFill{}, 2)
+	assertPortfolioRowCount(ctx, t, db, &portfoliomodelv1.ConsumerInbox{}, 2)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 }
 
@@ -129,11 +131,11 @@ func waitBusinessProjection(ctx context.Context, t *testing.T, db *gorm.DB, port
 			t.Fatal(err)
 		}
 		var incomplete int64
-		if err := db.WithContext(proof).Model(&modelv1.OrderIntent{}).Where("account_id = ? AND state <> ?", account, domain.OrderStateFilled).Count(&incomplete).Error; err != nil {
+		if err := db.WithContext(proof).Model(&executionmodelv1.OrderIntent{}).Where("account_id = ? AND state <> ?", account, domain.OrderStateFilled).Count(&incomplete).Error; err != nil {
 			t.Fatal(err)
 		}
 		var pending int64
-		if err := db.WithContext(proof).Model(&modelv1.OutboxEvent{}).Where("state <> ?", domain.OutboxStatePublished).Count(&pending).Error; err != nil {
+		if err := db.WithContext(proof).Model(&executionmodelv1.OutboxEvent{}).Where("state <> ?", domain.OutboxStatePublished).Count(&pending).Error; err != nil {
 			t.Fatal(err)
 		}
 		if projection.Reconciled && incomplete == 0 && pending == 0 {
@@ -395,11 +397,11 @@ func waitBusinessProcessStop(t *testing.T, cfg *configv1.ServiceConfig, command 
 func refreshBusinessRisk(ctx context.Context, t *testing.T, db *gorm.DB) {
 	t.Helper()
 	var clock struct{ NowMS int64 }
-	if err := db.WithContext(ctx).Model(&modelv1.SchemaMigration{}).Where("version = ?", 1).
+	if err := db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Where("version = ?", 1).
 		Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		t.Fatal(err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).Where("delete_at IS NULL").Select("ObservedAt", "ExpiresAt", "Revision").Updates(&modelv1.RiskSnapshot{
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).Where("delete_at IS NULL").Select("ObservedAt", "ExpiresAt", "Revision").Updates(&executionmodelv1.RiskSnapshot{
 		ObservedAt: clock.NowMS,
 		ExpiresAt:  clock.NowMS + domain.MaxRiskSnapshotAge.Milliseconds(),
 		Revision:   2,

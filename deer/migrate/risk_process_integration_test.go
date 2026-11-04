@@ -14,8 +14,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
@@ -29,7 +30,7 @@ func TestExecutionProcessRefreshesRiskAndClosesOnSelectedMarketLoss(t *testing.T
 	feed, marketOwner, _, _ := admissionSelectedMarket(ctx, t, db, submit.Input.InstrumentID)
 	expireLeaseFixture(ctx, t, db, submit.ExecutionAuthority.Key)
 	expireLeaseFixture(ctx, t, db, marketOwner.Key)
-	if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).
+	if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).
 		Where("strategy_instance_id = ?", submit.Input.Authority.StrategyID).
 		UpdateColumn("allow_new_risk", false).Error; err != nil {
 		t.Fatal(err)
@@ -54,7 +55,7 @@ func TestExecutionProcessRefreshesRiskAndClosesOnSelectedMarketLoss(t *testing.T
 	// target. The separate forced-lock case verifies the short native deadline.
 	executionCfg.Business.OperationTimeout = durationpb.New(time.Second)
 	executionCfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	executionCfg.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	executionCfg.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
 	executionPID := startBusinessProcess(ctx, t, executionCfg, observer)
 	if marketPID == executionPID || executionPID == os.Getpid() || marketPID == os.Getpid() {
 		t.Fatal("risk and market did not run in independent processes")
@@ -65,8 +66,8 @@ func TestExecutionProcessRefreshesRiskAndClosesOnSelectedMarketLoss(t *testing.T
 		ready.ExpiresAt-ready.ObservedAt > 500 || ready.ExpiresAt <= ready.ObservedAt {
 		t.Fatalf("risk process omitted selected-market evidence: %+v", ready)
 	}
-	var lease modelv1.ExecutionShardLease
-	if err := db.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).
+	var lease commonmodelv1.ExecutionShardLease
+	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
 		Where("account_id = ?", submit.Input.AccountID).First(&lease).Error; err != nil {
 		t.Fatal(err)
 	}
@@ -84,18 +85,18 @@ func TestExecutionProcessRefreshesRiskAndClosesOnSelectedMarketLoss(t *testing.T
 	if closed.AllowNewRisk || closed.Revision <= ready.Revision || closed.GetMarketFeedId() != 0 {
 		t.Fatal("selected source loss did not close the durable risk grant")
 	}
-	assertPortfolioRowCount(ctx, t, db, &modelv1.OrderIntent{}, 0)
-	assertPortfolioRowCount(ctx, t, db, &modelv1.SimulatorAccount{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.SimulatorAccount{}, 1)
 	assertReservedBudget(ctx, t, db, submit.Input.AccountID, "0")
 }
 
-func waitProcessRisk(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64, reason domain.RiskReason) *modelv1.RiskSnapshot {
+func waitProcessRisk(ctx context.Context, t *testing.T, db *gorm.DB, strategyID int64, reason domain.RiskReason) *executionmodelv1.RiskSnapshot {
 	t.Helper()
 	ticker := time.NewTicker(20 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		var row modelv1.RiskSnapshot
-		if err := db.WithContext(ctx).Model(&modelv1.RiskSnapshot{}).
+		var row executionmodelv1.RiskSnapshot
+		if err := db.WithContext(ctx).Model(&executionmodelv1.RiskSnapshot{}).
 			Where("strategy_instance_id = ?", strategyID).First(&row).Error; err != nil {
 			t.Fatal(err)
 		}

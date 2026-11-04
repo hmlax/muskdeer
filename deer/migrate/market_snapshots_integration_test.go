@@ -14,7 +14,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/market/marketquality"
@@ -82,7 +82,7 @@ func waitMarketDatabaseExpiry(ctx context.Context, t *testing.T, db *gorm.DB, fe
 	defer ticks.Stop()
 	for {
 		var clock struct{ NowMS int64 }
-		if err := db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ?", feedID).
+		if err := db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ?", feedID).
 			Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 			t.Fatal(err)
 		}
@@ -135,7 +135,7 @@ func assertMarketTakeover(ctx context.Context, t *testing.T, db *gorm.DB, snapsh
 	if err != nil || recovered.Reading.Quality != domain.MarketQualityHealthy {
 		t.Fatalf("valid next-epoch reference rejected: %+v, %v", recovered, err)
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error; err != nil {
 		t.Fatal(err)
 	}
 	expired, err := snapshots.Get(ctx, feed.ID)
@@ -156,29 +156,29 @@ func TestMarketSnapshotCommitFenceRollsBackExpiredPublisherAndBaseline(t *testin
 		t.Fatal(err)
 	}
 	feed, token, _ := marketSnapshotFixture(ctx, t, db)
-	var row *modelv1.MarketSnapshot
-	err := db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Transaction(func(tx *gorm.DB) error {
+	var row *marketmodelv1.MarketSnapshot
+	err := db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Transaction(func(tx *gorm.DB) error {
 		row = rawMarketSnapshot(feed, token)
-		if err := tx.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Create(row).Error; err != nil {
+		if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Create(row).Error; err != nil {
 			return err
 		}
 		// Authorization changes after the write but before deferred validation.
-		return tx.WithContext(ctx).Model(&modelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error
+		return tx.WithContext(ctx).Model(&marketmodelv1.MarketPublisherLease{}).Where("market_feed_id = ?", feed.ID).Update("expires_at", 1).Error
 	})
 	var databaseError *pgconn.PgError
 	if !errors.As(err, &databaseError) || databaseError.ConstraintName != "market_snapshot_fence" {
 		t.Fatalf("final target did not revalidate authority: %v", err)
 	}
 	var count int64
-	if err := db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Where("market_feed_id = ?", feed.ID).Count(&count).Error; err != nil || count != 0 {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Where("market_feed_id = ?", feed.ID).Count(&count).Error; err != nil || count != 0 {
 		t.Fatalf("rejected publication left quote/baseline: count=%d, err=%v", count, err)
 	}
 	row = rawMarketSnapshot(feed, token)
 	row.MidPrice = "NaN"
-	if err := db.WithContext(ctx).Model(&modelv1.MarketSnapshot{}).Create(row).Error; err == nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketSnapshot{}).Create(row).Error; err == nil {
 		t.Fatal("non-finite market reference reached storage")
 	}
-	badPolicy := &modelv1.MarketFeed{
+	badPolicy := &marketmodelv1.MarketFeed{
 		Source:         string(domain.MarketSourceOKX),
 		InstrumentId:   feed.InstrumentID,
 		ExternalSymbol: "BTC-USDT",
@@ -186,7 +186,7 @@ func TestMarketSnapshotCommitFenceRollsBackExpiredPublisherAndBaseline(t *testin
 		SourceVersion:  domain.MarketSourceVersion,
 		Policy:         &commonv1.MarketPolicy{},
 	}
-	if err := db.WithContext(ctx).Model(&modelv1.MarketFeed{}).Create(badPolicy).Error; err == nil {
+	if err := db.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Create(badPolicy).Error; err == nil {
 		t.Fatal("NULL SQL check semantics accepted missing policy fields")
 	}
 }
@@ -256,9 +256,9 @@ func marketReadingFixture(feed domain.MarketFeedDefinition, sequence int64, mid 
 	}
 }
 
-func rawMarketSnapshot(feed domain.MarketFeedDefinition, token domain.LeaseToken) *modelv1.MarketSnapshot {
+func rawMarketSnapshot(feed domain.MarketFeedDefinition, token domain.LeaseToken) *marketmodelv1.MarketSnapshot {
 	reading := marketReadingFixture(feed, 1, "100")
-	return &modelv1.MarketSnapshot{
+	return &marketmodelv1.MarketSnapshot{
 		MarketFeedId:     feed.ID,
 		PublisherOwnerId: token.OwnerID,
 		PublisherEpoch:   token.Epoch,

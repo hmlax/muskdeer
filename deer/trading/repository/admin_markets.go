@@ -8,7 +8,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -29,12 +30,12 @@ func (s *adminMarkets) List(ctx context.Context, token string, filter domain.Adm
 	result := domain.AdminMarketPage{Items: make([]domain.AdminMarket, 0, filter.Page.Limit)}
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
 		if filter.InstrumentID > 0 {
-			var instrument modelv1.Instrument
-			if err := tx.WithContext(ctx).Model(&modelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", filter.InstrumentID).Take(&instrument).Error; err != nil {
+			var instrument commonmodelv1.Instrument
+			if err := tx.WithContext(ctx).Model(&commonmodelv1.Instrument{}).Where("id = ? AND delete_at IS NULL", filter.InstrumentID).Take(&instrument).Error; err != nil {
 				return adminMarketNotFound(err)
 			}
 		}
-		query := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).
+		query := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).
 			Where("id > ? AND mode = ? AND delete_at IS NULL", filter.Page.AfterID, filter.Mode)
 		if filter.Source != domain.MarketSourceUnspecified {
 			query = query.Where("source = ?", filter.Source)
@@ -42,7 +43,7 @@ func (s *adminMarkets) List(ctx context.Context, token string, filter domain.Adm
 		if filter.InstrumentID > 0 {
 			query = query.Where("instrument_id = ?", filter.InstrumentID)
 		}
-		var rows []*modelv1.MarketFeed
+		var rows []*marketmodelv1.MarketFeed
 		if err := query.Order("id ASC").Limit(filter.Page.Limit + 1).Find(&rows).Error; err != nil {
 			return err
 		}
@@ -66,11 +67,11 @@ func (s *adminMarkets) Detail(ctx context.Context, token string, id int64) (doma
 	}
 	var result domain.AdminMarket
 	err := s.snapshots.snapshot(ctx, token, func(tx *gorm.DB) error {
-		var row modelv1.MarketFeed
-		if err := tx.WithContext(ctx).Model(&modelv1.MarketFeed{}).Where("id = ? AND delete_at IS NULL", id).Take(&row).Error; err != nil {
+		var row marketmodelv1.MarketFeed
+		if err := tx.WithContext(ctx).Model(&marketmodelv1.MarketFeed{}).Where("id = ? AND delete_at IS NULL", id).Take(&row).Error; err != nil {
 			return adminMarketNotFound(err)
 		}
-		items, err := adminMarketValues(ctx, tx, []*modelv1.MarketFeed{&row})
+		items, err := adminMarketValues(ctx, tx, []*marketmodelv1.MarketFeed{&row})
 		if err != nil {
 			return err
 		}
@@ -83,7 +84,7 @@ func (s *adminMarkets) Detail(ctx context.Context, token string, id int64) (doma
 	return result, nil
 }
 
-func adminMarketValues(ctx context.Context, tx *gorm.DB, feeds []*modelv1.MarketFeed) ([]domain.AdminMarket, error) {
+func adminMarketValues(ctx context.Context, tx *gorm.DB, feeds []*marketmodelv1.MarketFeed) ([]domain.AdminMarket, error) {
 	result := make([]domain.AdminMarket, 0, len(feeds))
 	if len(feeds) == 0 {
 		return result, nil
@@ -106,7 +107,7 @@ func adminMarketValues(ctx context.Context, tx *gorm.DB, feeds []*modelv1.Market
 	return result, nil
 }
 
-func adminMarketValue(row *modelv1.MarketFeed, rows adminMarketRows, now time.Time) (domain.AdminMarket, error) {
+func adminMarketValue(row *marketmodelv1.MarketFeed, rows adminMarketRows, now time.Time) (domain.AdminMarket, error) {
 	feed, err := marketFeedValue(row)
 	if err != nil {
 		return domain.AdminMarket{}, err
@@ -139,7 +140,7 @@ func adminMarketValue(row *modelv1.MarketFeed, rows adminMarketRows, now time.Ti
 	return result, nil
 }
 
-func adminMarketObservation(feed domain.MarketFeedDefinition, instrument *modelv1.Instrument, row *modelv1.MarketSnapshot, lease *modelv1.MarketPublisherLease, now time.Time) (*domain.AdminMarketSnapshot, error) {
+func adminMarketObservation(feed domain.MarketFeedDefinition, instrument *commonmodelv1.Instrument, row *marketmodelv1.MarketSnapshot, lease *marketmodelv1.MarketPublisherLease, now time.Time) (*domain.AdminMarketSnapshot, error) {
 	if row.MarketFeedId != feed.ID || row.Revision <= 0 || row.PublisherEpoch <= 0 || !ownerid.Valid(row.PublisherOwnerId) {
 		return nil, domain.ErrMarketIdentity
 	}

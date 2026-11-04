@@ -8,9 +8,10 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
-	rpc "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -66,7 +67,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if err != nil {
 		return err
 	}
-	book, err := rpc.NewMarketClient(market).GetBook(ctx, &rpc.BookRequest{Symbol: symbol})
+	book, err := markethimalayav1.NewMarketClient(market).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: symbol})
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 		Strategy: values.Authority(token),
 	}
 	if cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
-		proposal.SourceTrade, err = rpc.NewMarketClient(market).GetTrade(ctx, &rpc.TradeRequest{Symbol: symbol})
+		proposal.SourceTrade, err = markethimalayav1.NewMarketClient(market).GetTrade(ctx, &markethimalayav1.TradeRequest{Symbol: symbol})
 		if err != nil {
 			return err
 		}
@@ -98,7 +99,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if err != nil {
 		return err
 	}
-	result, err := rpc.NewExecutionClient(execution).PublishSynthetic(ctx, plan)
+	result, err := executionhimalayav1.NewExecutionClient(execution).PublishSynthetic(ctx, plan)
 	if err != nil {
 		return err
 	}
