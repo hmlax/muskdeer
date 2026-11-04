@@ -12,6 +12,7 @@ import shlex
 
 from infra import ROOT, endpoint, inventory, values
 from nacos_config import ConfigStore
+from config_parts import load_directory, split
 
 
 class Environment:
@@ -34,7 +35,7 @@ class Environment:
         store = self.config_store()
         store.ensure_namespace()
         secrets = store.environment() | {
-            'NACOS_DATA_ID': '',
+            'NACOS_DATA_ID': '', 'NACOS_DATA_CONFIG_ID': '', 'NACOS_SERVICE_CONFIG_ID': '',
             'MUSKDEER_DEV_POSTGRES_PASSWORD': postgres['POSTGRES_PASSWORD'],
             'MUSKDEER_DEV_REDIS_PASSWORD': redis_password,
             'MUSKDEER_DEV_NACOS_PASSWORD': os.environ.get('MUSKDEER_INFRA_NACOS_PASSWORD', ''),
@@ -44,7 +45,7 @@ class Environment:
         self.write('endpoints.json', json.dumps(state, indent=2) + '\n')
         self.write('environment.sh', ''.join('export ' + key + '=' + shlex.quote(value) + '\n' for key, value in secrets.items()))
         for index, role in enumerate(('market', 'strategy', 'execution', 'portfolio')):
-            config = json.loads((ROOT / 'configs/local' / (role + '.json')).read_text())
+            config = load_directory(ROOT / 'configs/local' / role)
             config['grpc']['address'] = '127.0.0.1:' + str(59002 + index)
             config['monitoring']['address'] = '127.0.0.1:' + str(59102 + index)
             config['postgres'] = {
@@ -63,8 +64,10 @@ class Environment:
                 'key_prefix': self.project + ':' + role,
             }
             # This attachment only enables infrastructure probes, never trading.
-            self.write(role + '.json', json.dumps(config, indent=2) + '\n')
-            store.publish(role + '.json', config)
+            data, service = split(config)
+            self.write(role + '/data.yaml', data)
+            self.write(role + '/service.yaml', service)
+            store.publish_pair(role, config)
         print('Attached existing infra; no container or volume was created', flush=True)
         return state
 
@@ -79,6 +82,7 @@ class Environment:
     def write(self, name, content):
         self.directory.mkdir(parents=True, exist_ok=True)
         destination = self.directory / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
         temporary = destination.with_suffix(destination.suffix + '.tmp')
         temporary.write_text(content)
         temporary.chmod(0o600)

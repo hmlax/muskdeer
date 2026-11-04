@@ -13,12 +13,8 @@ import (
 	"strconv"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 )
 
 // Command never accepts a role switch. Every process has its own executable.
@@ -43,23 +39,28 @@ func Command(ctx context.Context, name, path string) (*exec.Cmd, func() error, e
 	if err != nil {
 		return nil, nil, err
 	}
-	remote := proto.CloneOf(cfg)
-	remote.Nacos = &configv1.Nacos{Registration: proto.CloneOf(cfg.Nacos.Registration)}
-	data, err := protojson.Marshal(remote)
-	dataID := name + "-" + rand.Text() + ".json"
+	data, service, err := deer.EncodeConfigPair(cfg)
+	prefix := name + "-" + rand.Text()
+	dataID, serviceID := prefix+".data.yaml", prefix+".service.yaml"
 	cleanup := func() error {
 		bounded, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
-		return errors.Join(source.DeleteConfig(bounded, dataID), source.Close())
+		return errors.Join(source.DeleteConfig(bounded, dataID), source.DeleteConfig(bounded, serviceID), source.Close())
 	}
 	published := false
 	if err == nil {
-		err = source.PublishConfig(ctx, dataID, data)
+		err = source.PublishYAMLConfig(ctx, dataID, data)
 		published = err == nil
+		if err == nil {
+			err = source.PublishYAMLConfig(ctx, serviceID, service)
+		}
 	}
 	if err == nil {
 		visible, cancel := context.WithTimeout(ctx, cfg.Nacos.CommandTimeout.AsDuration())
 		err = waitPublishedConfig(visible, source, dataID, data)
+		if err == nil {
+			err = waitPublishedConfig(visible, source, serviceID, service)
+		}
 		cancel()
 	}
 	if err != nil {
@@ -74,7 +75,7 @@ func Command(ctx context.Context, name, path string) (*exec.Cmd, func() error, e
 		"NACOS_GROUP="+cfg.Nacos.Group, "NACOS_CLUSTER="+cfg.Nacos.Cluster,
 		"NACOS_USERNAME="+cfg.Nacos.Username, "NACOS_PASSWORD="+os.Getenv(cfg.Nacos.PasswordEnv),
 		"NACOS_TLS_ENABLED="+strconv.FormatBool(cfg.Nacos.TlsEnabled == nil || cfg.Nacos.GetTlsEnabled()),
-		"NACOS_ROOT_CERT_FILE="+cfg.Nacos.RootCertFile, "NACOS_DATA_ID="+dataID,
+		"NACOS_ROOT_CERT_FILE="+cfg.Nacos.RootCertFile, "NACOS_DATA_ID=", "NACOS_DATA_CONFIG_ID="+dataID, "NACOS_SERVICE_CONFIG_ID="+serviceID,
 		"NACOS_CONNECT_TIMEOUT="+cfg.Nacos.ConnectTimeout.AsDuration().String(),
 		"NACOS_COMMAND_TIMEOUT="+cfg.Nacos.CommandTimeout.AsDuration().String())
 	return command, cleanup, nil

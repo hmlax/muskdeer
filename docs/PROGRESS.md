@@ -1696,3 +1696,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 第 09 轮实际 636 个持久槽逐条核验，新数据库快照计算的执行政策指纹与全部旧记录一致，来源单调唯一及 Plan/Result 审计保持。恢复首轮审计仍为 BTC 246 发布/1 未知、ETH 387 发布/2 未知，不重置次数、不重发未知、不创建新轮；继续沿用既有重启读取回执的路径，未将这次不变计数描述为新增发布。
 - SDK 采样同时存在 BTC 买5/卖3、ETH 买1/卖6，后续观察为 BTC 买6/卖8、ETH 买5/卖4；双币各一笔原仓位仍可见，未批准且超过五秒的新 DISPATCHED 为零。后续 mTLS 探针确认双币二十档来源和持仓新鲜，GetTrade 返回新鲜 Binance/USDm 观察。首个持仓探针曾因 stale 正确拒绝，证据保留；不将健康容器等同于每次业务快照有效，也不声明解决既有重报价空档。
 - 六共享容器 ID/启动时间、SDK 十六文件和用户原四十九文件保持。本步仅部署与只读验收；相关三十八项 integration/race、生成、格式、静态及构建见 P18.1，全包测试未运行。文档链接及 diff 检查通过，四服务继续运行。
+
+## 2026-11-04：P19.1 data.yaml / service.yaml 强类型配置拆分
+
+- 按用户最新要求替代单份 Proto JSON：DataConfig/data.proto 定义 PostgreSQL、Redis、JetStream 与业务运行控制，ServiceSettings/service.proto 定义身份、gRPC/HTTP/监控监听、TLS、日志、RPC 客户端及生命周期；既有 Proto 业务字段编号保持。ServiceConfig 仅为 Deer/既有接口的内存装配结果，核心启动不再消费该聚合配置。六个本地/历史示例均拆为各自目录下 data.yaml、service.yaml，账户业务参数仍在数据库。
+- Nacos 每服务读取两项 `<service>.data.yaml`、`<service>.service.yaml`；新 env 为 NACOS_DATA_CONFIG_ID/NACOS_SERVICE_CONFIG_ID，通用工具必须明确提供，旧 NACOS_DATA_ID 拒绝。两文档同名/同版本，service 的 data_sha256 绑定 data 原始字节，缺项、错误分区、未知字段或半次发布失败。连接认证仍来自 env，内容只能提供注册参数，不覆盖 bootstrap；发布先 data 后 service，启动后无热更新/本地回退。
+- YAML 输入使用 Node 转换真实传输语法后交给 Proto 严格解码，无 typed Go→map 桥接或浮点中间值；重复键、多文档、anchor/alias/merge、自定义 tag、非十进制整数和未加引号的小数拒绝。完整精度字符串、类型装配往返、错配/篡改、安全错误与 context 取消覆盖通过，最初双 YAML 启动回归先因旧加载器未实现而失败，再通过。维护脚本使用现有 PyYAML 6.0.2 并固定到 requirements，Go YAML 依赖沿用 3.0.1。
+- Compose、开发准备、镜像 smoke 与 testprocess 都改成成对发布/读取/删除；真实核心进程无参数、无配置挂载，历史显式 JSON 工具/测试入口兼容保留。相关单元/race、31 项 Python 工具测试、71 Proto/Wire 生成比较、格式、lint/govet 0 issues 及核心/维护构建通过。四项真实进程 integration/race 均有通过记录，覆盖成交发布/消费/对账、CoreLocal 不注资、broker 合同及策略接管报价停止；一次复核在新风险门禁处拒绝，未确认具体延迟原因，该用例按原 25 秒 context 单独通过（案例 3.92 秒、包 5.344 秒），未扩大期限或降低断言。完整全包测试未运行。
+- 保留原用户四十九文件；期间另出现 portfolio_facts.go 的无关换行整理，单独备份并排除提交/构建，最终隔离源码使用其 HEAD 版本。SDK 十六文件保持。为真实进程复核已停止本项目策略、撤净原生挂单后暂停其他三核心，基础容器保持；当前四份运行配置与资金/合成审计已备份，本步尚未部署。提交推送后按原业务参数发布八份 YAML 并恢复四核心，保留第 09 轮 BTC 519 发布/1 未知、ETH 847 发布/2 未知及全部限额，不新建轮次或批准未来未知。

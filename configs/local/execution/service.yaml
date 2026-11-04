@@ -1,0 +1,15 @@
+name: execution
+instance_id: execution-local
+version: local
+startup_timeout: 5s
+shutdown_timeout: 5s
+grpc:
+  address: 127.0.0.1:59003
+  request_timeout: 2s
+logging:
+  level: info
+  stdout: true
+monitoring:
+  address: 127.0.0.1:59103
+  request_timeout: 1s
+data_sha256: 1e9c7f1577d49b7ca1644dedca762a55ba80e21fd2e8a2bc1905d47f19dc0de2

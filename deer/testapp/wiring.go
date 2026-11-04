@@ -30,7 +30,7 @@ type Build func(context.Context, *configv1.ServiceConfig, io.Writer, []deer.Opti
 // a successfully constructed application before Run. It must not run in parallel.
 func AssertLifecycle(t *testing.T, name string, build Build) {
 	t.Helper()
-	cfg, err := deer.LoadConfig(t.Context(), filepath.Join("..", "..", "configs", "local", name+".json"))
+	cfg, err := deer.LoadSplitConfig(t.Context(), filepath.Join("..", "..", "configs", "local", name))
 	if err != nil {
 		t.Fatal(err)
 	}

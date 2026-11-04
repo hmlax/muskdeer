@@ -24,7 +24,8 @@ services:
     image: muskdeer-execution:infra-local
     restart: "no"
     environment:
-      NACOS_DATA_ID: execution.json
+      NACOS_DATA_CONFIG_ID: execution.data.yaml
+      NACOS_SERVICE_CONFIG_ID: execution.service.yaml
     volumes:
       - type: bind
         source: "${MUSKDEER_RUNTIME_DIR}/config/execution/certs"
@@ -38,7 +39,8 @@ services:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-market
     environment:
-      NACOS_DATA_ID: market.json
+      NACOS_DATA_CONFIG_ID: market.data.yaml
+      NACOS_SERVICE_CONFIG_ID: market.service.yaml
     volumes:
       - type: bind
         source: "${MUSKDEER_RUNTIME_DIR}/config/market/certs"
@@ -62,7 +64,8 @@ services:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-strategy
     environment:
-      NACOS_DATA_ID: strategy.json
+      NACOS_DATA_CONFIG_ID: strategy.data.yaml
+      NACOS_SERVICE_CONFIG_ID: strategy.service.yaml
     volumes:
       - type: bind
         source: "${MUSKDEER_RUNTIME_DIR}/config/strategy/certs"
@@ -91,7 +94,8 @@ services:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-execution
     environment:
-      NACOS_DATA_ID: execution.json
+      NACOS_DATA_CONFIG_ID: execution.data.yaml
+      NACOS_SERVICE_CONFIG_ID: execution.service.yaml
       MUSKDEER_HIMALAYA_TOKEN: "${MUSKDEER_HIMALAYA_TOKEN:-}"
     volumes:
       - type: bind
@@ -116,7 +120,8 @@ services:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
       target: runtime-portfolio
     environment:
-      NACOS_DATA_ID: portfolio.json
+      NACOS_DATA_CONFIG_ID: portfolio.data.yaml
+      NACOS_SERVICE_CONFIG_ID: portfolio.service.yaml
     volumes:
       - type: bind
         source: "${MUSKDEER_RUNTIME_DIR}/config/portfolio/certs"

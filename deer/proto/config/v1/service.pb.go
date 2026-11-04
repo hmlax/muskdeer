@@ -22,53 +22,157 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type SyntheticTapeMode int32
+// ServiceSettings is service.yaml: identity, listeners and transport lifecycle.
+// data_sha256 binds the exact data.yaml bytes; mixed publications fail closed.
+type ServiceSettings struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	InstanceId      string                 `protobuf:"bytes,2,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty"`
+	Version         string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
+	StartupTimeout  *durationpb.Duration   `protobuf:"bytes,4,opt,name=startup_timeout,json=startupTimeout,proto3" json:"startup_timeout,omitempty"`
+	ShutdownTimeout *durationpb.Duration   `protobuf:"bytes,5,opt,name=shutdown_timeout,json=shutdownTimeout,proto3" json:"shutdown_timeout,omitempty"`
+	Grpc            *Listener              `protobuf:"bytes,6,opt,name=grpc,proto3" json:"grpc,omitempty"`
+	Http            *Listener              `protobuf:"bytes,7,opt,name=http,proto3" json:"http,omitempty"`
+	Logging         *Logging               `protobuf:"bytes,8,opt,name=logging,proto3" json:"logging,omitempty"`
+	Registration    *NacosRegistration     `protobuf:"bytes,12,opt,name=registration,proto3" json:"registration,omitempty"`
+	GrpcSecurity    *GRPCServerSecurity    `protobuf:"bytes,13,opt,name=grpc_security,json=grpcSecurity,proto3" json:"grpc_security,omitempty"`
+	GrpcClients     *GRPCClients           `protobuf:"bytes,14,opt,name=grpc_clients,json=grpcClients,proto3" json:"grpc_clients,omitempty"`
+	Monitoring      *Listener              `protobuf:"bytes,15,opt,name=monitoring,proto3" json:"monitoring,omitempty"`
+	AdminHttp       *AdminHTTP             `protobuf:"bytes,17,opt,name=admin_http,json=adminHttp,proto3" json:"admin_http,omitempty"`
+	DataSha256      string                 `protobuf:"bytes,18,opt,name=data_sha256,json=dataSha256,proto3" json:"data_sha256,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
 
-const (
-	SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK      SyntheticTapeMode = 0
-	SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE SyntheticTapeMode = 1
-)
+func (x *ServiceSettings) Reset() {
+	*x = ServiceSettings{}
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
 
-// Enum value maps for SyntheticTapeMode.
-var (
-	SyntheticTapeMode_name = map[int32]string{
-		0: "SYNTHETIC_TAPE_MODE_BOOK",
-		1: "SYNTHETIC_TAPE_MODE_AGG_TRADE",
+func (x *ServiceSettings) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServiceSettings) ProtoMessage() {}
+
+func (x *ServiceSettings) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
 	}
-	SyntheticTapeMode_value = map[string]int32{
-		"SYNTHETIC_TAPE_MODE_BOOK":      0,
-		"SYNTHETIC_TAPE_MODE_AGG_TRADE": 1,
-	}
-)
-
-func (x SyntheticTapeMode) Enum() *SyntheticTapeMode {
-	p := new(SyntheticTapeMode)
-	*p = x
-	return p
+	return mi.MessageOf(x)
 }
 
-func (x SyntheticTapeMode) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (SyntheticTapeMode) Descriptor() protoreflect.EnumDescriptor {
-	return file_deer_proto_config_v1_service_proto_enumTypes[0].Descriptor()
-}
-
-func (SyntheticTapeMode) Type() protoreflect.EnumType {
-	return &file_deer_proto_config_v1_service_proto_enumTypes[0]
-}
-
-func (x SyntheticTapeMode) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use SyntheticTapeMode.Descriptor instead.
-func (SyntheticTapeMode) EnumDescriptor() ([]byte, []int) {
+// Deprecated: Use ServiceSettings.ProtoReflect.Descriptor instead.
+func (*ServiceSettings) Descriptor() ([]byte, []int) {
 	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{0}
 }
 
-// ServiceConfig identifies one independently owned service process.
+func (x *ServiceSettings) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ServiceSettings) GetInstanceId() string {
+	if x != nil {
+		return x.InstanceId
+	}
+	return ""
+}
+
+func (x *ServiceSettings) GetVersion() string {
+	if x != nil {
+		return x.Version
+	}
+	return ""
+}
+
+func (x *ServiceSettings) GetStartupTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.StartupTimeout
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetShutdownTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.ShutdownTimeout
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetGrpc() *Listener {
+	if x != nil {
+		return x.Grpc
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetHttp() *Listener {
+	if x != nil {
+		return x.Http
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetLogging() *Logging {
+	if x != nil {
+		return x.Logging
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetRegistration() *NacosRegistration {
+	if x != nil {
+		return x.Registration
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetGrpcSecurity() *GRPCServerSecurity {
+	if x != nil {
+		return x.GrpcSecurity
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetGrpcClients() *GRPCClients {
+	if x != nil {
+		return x.GrpcClients
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetMonitoring() *Listener {
+	if x != nil {
+		return x.Monitoring
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetAdminHttp() *AdminHTTP {
+	if x != nil {
+		return x.AdminHttp
+	}
+	return nil
+}
+
+func (x *ServiceSettings) GetDataSha256() string {
+	if x != nil {
+		return x.DataSha256
+	}
+	return ""
+}
+
+// ServiceConfig is the composed in-memory Deer snapshot, never a source document.
 type ServiceConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -97,7 +201,7 @@ type ServiceConfig struct {
 
 func (x *ServiceConfig) Reset() {
 	*x = ServiceConfig{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[0]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -109,7 +213,7 @@ func (x *ServiceConfig) String() string {
 func (*ServiceConfig) ProtoMessage() {}
 
 func (x *ServiceConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[0]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -122,7 +226,7 @@ func (x *ServiceConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ServiceConfig.ProtoReflect.Descriptor instead.
 func (*ServiceConfig) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{0}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ServiceConfig) GetName() string {
@@ -264,7 +368,7 @@ type AdminHTTP struct {
 
 func (x *AdminHTTP) Reset() {
 	*x = AdminHTTP{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -276,7 +380,7 @@ func (x *AdminHTTP) String() string {
 func (*AdminHTTP) ProtoMessage() {}
 
 func (x *AdminHTTP) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[1]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -289,7 +393,7 @@ func (x *AdminHTTP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AdminHTTP.ProtoReflect.Descriptor instead.
 func (*AdminHTTP) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{1}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AdminHTTP) GetEnabled() bool {
@@ -334,672 +438,6 @@ func (x *AdminHTTP) GetAllowContainerListener() bool {
 	return false
 }
 
-// BusinessRuntime configures owned business work without migrating
-// schemas, provisioning broker resources, seeding money or authorizing risk.
-type BusinessRuntime struct {
-	state             protoimpl.MessageState    `protogen:"open.v1"`
-	Enabled           bool                      `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	ExecutionVenue    string                    `protobuf:"bytes,2,opt,name=execution_venue,json=executionVenue,proto3" json:"execution_venue,omitempty"`
-	PollInterval      *durationpb.Duration      `protobuf:"bytes,3,opt,name=poll_interval,json=pollInterval,proto3" json:"poll_interval,omitempty"`
-	OperationTimeout  *durationpb.Duration      `protobuf:"bytes,4,opt,name=operation_timeout,json=operationTimeout,proto3" json:"operation_timeout,omitempty"`
-	PortfolioConsumer string                    `protobuf:"bytes,5,opt,name=portfolio_consumer,json=portfolioConsumer,proto3" json:"portfolio_consumer,omitempty"`
-	Market            *MarketRuntime            `protobuf:"bytes,6,opt,name=market,proto3" json:"market,omitempty"`
-	Risk              *RiskRuntime              `protobuf:"bytes,7,opt,name=risk,proto3" json:"risk,omitempty"`
-	ExecutionLeaseTtl *durationpb.Duration      `protobuf:"bytes,8,opt,name=execution_lease_ttl,json=executionLeaseTtl,proto3" json:"execution_lease_ttl,omitempty"`
-	Simulator         *SimulatorScenarioRuntime `protobuf:"bytes,9,opt,name=simulator,proto3" json:"simulator,omitempty"`
-	Strategy          *StrategyRuntime          `protobuf:"bytes,10,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Himalaya          *HimalayaRuntime          `protobuf:"bytes,11,opt,name=himalaya,proto3" json:"himalaya,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
-}
-
-func (x *BusinessRuntime) Reset() {
-	*x = BusinessRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BusinessRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BusinessRuntime) ProtoMessage() {}
-
-func (x *BusinessRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BusinessRuntime.ProtoReflect.Descriptor instead.
-func (*BusinessRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *BusinessRuntime) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
-}
-
-func (x *BusinessRuntime) GetExecutionVenue() string {
-	if x != nil {
-		return x.ExecutionVenue
-	}
-	return ""
-}
-
-func (x *BusinessRuntime) GetPollInterval() *durationpb.Duration {
-	if x != nil {
-		return x.PollInterval
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetOperationTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.OperationTimeout
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetPortfolioConsumer() string {
-	if x != nil {
-		return x.PortfolioConsumer
-	}
-	return ""
-}
-
-func (x *BusinessRuntime) GetMarket() *MarketRuntime {
-	if x != nil {
-		return x.Market
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetRisk() *RiskRuntime {
-	if x != nil {
-		return x.Risk
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetExecutionLeaseTtl() *durationpb.Duration {
-	if x != nil {
-		return x.ExecutionLeaseTtl
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetSimulator() *SimulatorScenarioRuntime {
-	if x != nil {
-		return x.Simulator
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetStrategy() *StrategyRuntime {
-	if x != nil {
-		return x.Strategy
-	}
-	return nil
-}
-
-func (x *BusinessRuntime) GetHimalaya() *HimalayaRuntime {
-	if x != nil {
-		return x.Himalaya
-	}
-	return nil
-}
-
-// HimalayaRuntime opts into the existing SDK on the development environment.
-// Secrets are resolved from env only by the execution worker lifecycle.
-type HimalayaRuntime struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Target           string                 `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
-	TokenEnv         string                 `protobuf:"bytes,2,opt,name=token_env,json=tokenEnv,proto3" json:"token_env,omitempty"`
-	QuantityFraction string                 `protobuf:"bytes,4,opt,name=quantity_fraction,json=quantityFraction,proto3" json:"quantity_fraction,omitempty"`
-	Depth            uint32                 `protobuf:"varint,5,opt,name=depth,proto3" json:"depth,omitempty"`
-	LeaseTtl         *durationpb.Duration   `protobuf:"bytes,6,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
-	SyntheticTape    *SyntheticTape         `protobuf:"bytes,7,opt,name=synthetic_tape,json=syntheticTape,proto3" json:"synthetic_tape,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *HimalayaRuntime) Reset() {
-	*x = HimalayaRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *HimalayaRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*HimalayaRuntime) ProtoMessage() {}
-
-func (x *HimalayaRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use HimalayaRuntime.ProtoReflect.Descriptor instead.
-func (*HimalayaRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *HimalayaRuntime) GetTarget() string {
-	if x != nil {
-		return x.Target
-	}
-	return ""
-}
-
-func (x *HimalayaRuntime) GetTokenEnv() string {
-	if x != nil {
-		return x.TokenEnv
-	}
-	return ""
-}
-
-func (x *HimalayaRuntime) GetQuantityFraction() string {
-	if x != nil {
-		return x.QuantityFraction
-	}
-	return ""
-}
-
-func (x *HimalayaRuntime) GetDepth() uint32 {
-	if x != nil {
-		return x.Depth
-	}
-	return 0
-}
-
-func (x *HimalayaRuntime) GetLeaseTtl() *durationpb.Duration {
-	if x != nil {
-		return x.LeaseTtl
-	}
-	return nil
-}
-
-func (x *HimalayaRuntime) GetSyntheticTape() *SyntheticTape {
-	if x != nil {
-		return x.SyntheticTape
-	}
-	return nil
-}
-
-// SyntheticTape is an opt-in, finite market-data test run; it never places orders.
-type SyntheticTape struct {
-	state           protoimpl.MessageState  `protogen:"open.v1"`
-	Enabled         bool                    `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	DevelopmentOnly bool                    `protobuf:"varint,2,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
-	RunId           string                  `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Interval        *durationpb.Duration    `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
-	MaximumEvents   uint32                  `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
-	Profiles        []*SyntheticTapeProfile `protobuf:"bytes,6,rep,name=profiles,proto3" json:"profiles,omitempty"`
-	Mode            SyntheticTapeMode       `protobuf:"varint,7,opt,name=mode,proto3,enum=muskdeer.config.v1.SyntheticTapeMode" json:"mode,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *SyntheticTape) Reset() {
-	*x = SyntheticTape{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SyntheticTape) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SyntheticTape) ProtoMessage() {}
-
-func (x *SyntheticTape) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SyntheticTape.ProtoReflect.Descriptor instead.
-func (*SyntheticTape) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *SyntheticTape) GetEnabled() bool {
-	if x != nil {
-		return x.Enabled
-	}
-	return false
-}
-
-func (x *SyntheticTape) GetDevelopmentOnly() bool {
-	if x != nil {
-		return x.DevelopmentOnly
-	}
-	return false
-}
-
-func (x *SyntheticTape) GetRunId() string {
-	if x != nil {
-		return x.RunId
-	}
-	return ""
-}
-
-func (x *SyntheticTape) GetInterval() *durationpb.Duration {
-	if x != nil {
-		return x.Interval
-	}
-	return nil
-}
-
-func (x *SyntheticTape) GetMaximumEvents() uint32 {
-	if x != nil {
-		return x.MaximumEvents
-	}
-	return 0
-}
-
-func (x *SyntheticTape) GetProfiles() []*SyntheticTapeProfile {
-	if x != nil {
-		return x.Profiles
-	}
-	return nil
-}
-
-func (x *SyntheticTape) GetMode() SyntheticTapeMode {
-	if x != nil {
-		return x.Mode
-	}
-	return SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK
-}
-
-type SyntheticTapeProfile struct {
-	state  protoimpl.MessageState `protogen:"open.v1"`
-	Symbol string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	// Fixed size in BOOK mode; single-event quantity cap in AGG_TRADE mode.
-	Quantity        string `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	MaximumNotional string `protobuf:"bytes,3,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
-}
-
-func (x *SyntheticTapeProfile) Reset() {
-	*x = SyntheticTapeProfile{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SyntheticTapeProfile) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SyntheticTapeProfile) ProtoMessage() {}
-
-func (x *SyntheticTapeProfile) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SyntheticTapeProfile.ProtoReflect.Descriptor instead.
-func (*SyntheticTapeProfile) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *SyntheticTapeProfile) GetSymbol() string {
-	if x != nil {
-		return x.Symbol
-	}
-	return ""
-}
-
-func (x *SyntheticTapeProfile) GetQuantity() string {
-	if x != nil {
-		return x.Quantity
-	}
-	return ""
-}
-
-func (x *SyntheticTapeProfile) GetMaximumNotional() string {
-	if x != nil {
-		return x.MaximumNotional
-	}
-	return ""
-}
-
-// StrategyRuntime discovers existing instances only in explicitly owned accounts.
-type StrategyRuntime struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	AccountIds []string               `protobuf:"bytes,1,rep,name=account_ids,json=accountIds,proto3" json:"account_ids,omitempty"`
-	LeaseTtl   *durationpb.Duration   `protobuf:"bytes,2,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
-	// May serve management reads without any account workers or outbound clients.
-	ManagementEnabled bool `protobuf:"varint,3,opt,name=management_enabled,json=managementEnabled,proto3" json:"management_enabled,omitempty"`
-	// Registers operator controls and a result-only observer; grants no trading resources.
-	ControlEnabled bool `protobuf:"varint,4,opt,name=control_enabled,json=controlEnabled,proto3" json:"control_enabled,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *StrategyRuntime) Reset() {
-	*x = StrategyRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *StrategyRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*StrategyRuntime) ProtoMessage() {}
-
-func (x *StrategyRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use StrategyRuntime.ProtoReflect.Descriptor instead.
-func (*StrategyRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{6}
-}
-
-func (x *StrategyRuntime) GetAccountIds() []string {
-	if x != nil {
-		return x.AccountIds
-	}
-	return nil
-}
-
-func (x *StrategyRuntime) GetLeaseTtl() *durationpb.Duration {
-	if x != nil {
-		return x.LeaseTtl
-	}
-	return nil
-}
-
-func (x *StrategyRuntime) GetManagementEnabled() bool {
-	if x != nil {
-		return x.ManagementEnabled
-	}
-	return false
-}
-
-func (x *StrategyRuntime) GetControlEnabled() bool {
-	if x != nil {
-		return x.ControlEnabled
-	}
-	return false
-}
-
-// SimulatorScenarioRuntime explicitly enables privileged L1 venue responses.
-type SimulatorScenarioRuntime struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccountIds    []string               `protobuf:"bytes,1,rep,name=account_ids,json=accountIds,proto3" json:"account_ids,omitempty"`
-	CancelDelay   *durationpb.Duration   `protobuf:"bytes,2,opt,name=cancel_delay,json=cancelDelay,proto3" json:"cancel_delay,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SimulatorScenarioRuntime) Reset() {
-	*x = SimulatorScenarioRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SimulatorScenarioRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SimulatorScenarioRuntime) ProtoMessage() {}
-
-func (x *SimulatorScenarioRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SimulatorScenarioRuntime.ProtoReflect.Descriptor instead.
-func (*SimulatorScenarioRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{7}
-}
-
-func (x *SimulatorScenarioRuntime) GetAccountIds() []string {
-	if x != nil {
-		return x.AccountIds
-	}
-	return nil
-}
-
-func (x *SimulatorScenarioRuntime) GetCancelDelay() *durationpb.Duration {
-	if x != nil {
-		return x.CancelDelay
-	}
-	return nil
-}
-
-// RiskRuntime grants no resources; it limits evaluation to existing accounts.
-type RiskRuntime struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccountIds    []string               `protobuf:"bytes,1,rep,name=account_ids,json=accountIds,proto3" json:"account_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RiskRuntime) Reset() {
-	*x = RiskRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RiskRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RiskRuntime) ProtoMessage() {}
-
-func (x *RiskRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RiskRuntime.ProtoReflect.Descriptor instead.
-func (*RiskRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{8}
-}
-
-func (x *RiskRuntime) GetAccountIds() []string {
-	if x != nil {
-		return x.AccountIds
-	}
-	return nil
-}
-
-// MarketRuntime binds existing immutable feeds; it never provisions products.
-type MarketRuntime struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Feeds         []*MarketFeedRuntime   `protobuf:"bytes,1,rep,name=feeds,proto3" json:"feeds,omitempty"`
-	LeaseTtl      *durationpb.Duration   `protobuf:"bytes,2,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MarketRuntime) Reset() {
-	*x = MarketRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MarketRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MarketRuntime) ProtoMessage() {}
-
-func (x *MarketRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MarketRuntime.ProtoReflect.Descriptor instead.
-func (*MarketRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *MarketRuntime) GetFeeds() []*MarketFeedRuntime {
-	if x != nil {
-		return x.Feeds
-	}
-	return nil
-}
-
-func (x *MarketRuntime) GetLeaseTtl() *durationpb.Duration {
-	if x != nil {
-		return x.LeaseTtl
-	}
-	return nil
-}
-
-// MarketFeedRuntime requires explicit values only for a REPLAY database binding.
-// A LIVE binding rejects all replay inputs and uses fixed public TLS endpoints.
-type MarketFeedRuntime struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	FeedId         int64                  `protobuf:"varint,1,opt,name=feed_id,json=feedId,proto3" json:"feed_id,omitempty"`
-	ReplayBid      string                 `protobuf:"bytes,2,opt,name=replay_bid,json=replayBid,proto3" json:"replay_bid,omitempty"`
-	ReplayAsk      string                 `protobuf:"bytes,3,opt,name=replay_ask,json=replayAsk,proto3" json:"replay_ask,omitempty"`
-	ReplayQuantity string                 `protobuf:"bytes,4,opt,name=replay_quantity,json=replayQuantity,proto3" json:"replay_quantity,omitempty"`
-	ReplayInterval *durationpb.Duration   `protobuf:"bytes,5,opt,name=replay_interval,json=replayInterval,proto3" json:"replay_interval,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *MarketFeedRuntime) Reset() {
-	*x = MarketFeedRuntime{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MarketFeedRuntime) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MarketFeedRuntime) ProtoMessage() {}
-
-func (x *MarketFeedRuntime) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MarketFeedRuntime.ProtoReflect.Descriptor instead.
-func (*MarketFeedRuntime) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *MarketFeedRuntime) GetFeedId() int64 {
-	if x != nil {
-		return x.FeedId
-	}
-	return 0
-}
-
-func (x *MarketFeedRuntime) GetReplayBid() string {
-	if x != nil {
-		return x.ReplayBid
-	}
-	return ""
-}
-
-func (x *MarketFeedRuntime) GetReplayAsk() string {
-	if x != nil {
-		return x.ReplayAsk
-	}
-	return ""
-}
-
-func (x *MarketFeedRuntime) GetReplayQuantity() string {
-	if x != nil {
-		return x.ReplayQuantity
-	}
-	return ""
-}
-
-func (x *MarketFeedRuntime) GetReplayInterval() *durationpb.Duration {
-	if x != nil {
-		return x.ReplayInterval
-	}
-	return nil
-}
-
 // GRPCClients bounds outbound unary RPCs, including discovery and connection.
 type GRPCClients struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
@@ -1016,7 +454,7 @@ type GRPCClients struct {
 
 func (x *GRPCClients) Reset() {
 	*x = GRPCClients{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[11]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1028,7 +466,7 @@ func (x *GRPCClients) String() string {
 func (*GRPCClients) ProtoMessage() {}
 
 func (x *GRPCClients) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[11]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1041,7 +479,7 @@ func (x *GRPCClients) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GRPCClients.ProtoReflect.Descriptor instead.
 func (*GRPCClients) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{11}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GRPCClients) GetMtls() *MutualTLS {
@@ -1105,7 +543,7 @@ type MutualTLS struct {
 
 func (x *MutualTLS) Reset() {
 	*x = MutualTLS{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[12]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1117,7 +555,7 @@ func (x *MutualTLS) String() string {
 func (*MutualTLS) ProtoMessage() {}
 
 func (x *MutualTLS) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[12]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1130,7 +568,7 @@ func (x *MutualTLS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MutualTLS.ProtoReflect.Descriptor instead.
 func (*MutualTLS) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{12}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MutualTLS) GetCertificateFile() string {
@@ -1165,7 +603,7 @@ type GRPCServerSecurity struct {
 
 func (x *GRPCServerSecurity) Reset() {
 	*x = GRPCServerSecurity{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[13]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1177,7 +615,7 @@ func (x *GRPCServerSecurity) String() string {
 func (*GRPCServerSecurity) ProtoMessage() {}
 
 func (x *GRPCServerSecurity) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[13]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1190,7 +628,7 @@ func (x *GRPCServerSecurity) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GRPCServerSecurity.ProtoReflect.Descriptor instead.
 func (*GRPCServerSecurity) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{13}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GRPCServerSecurity) GetMtls() *MutualTLS {
@@ -1228,7 +666,7 @@ type Nacos struct {
 
 func (x *Nacos) Reset() {
 	*x = Nacos{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[14]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1240,7 +678,7 @@ func (x *Nacos) String() string {
 func (*Nacos) ProtoMessage() {}
 
 func (x *Nacos) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[14]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1253,7 +691,7 @@ func (x *Nacos) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Nacos.ProtoReflect.Descriptor instead.
 func (*Nacos) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{14}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Nacos) GetAddress() string {
@@ -1351,7 +789,7 @@ type NacosRegistration struct {
 
 func (x *NacosRegistration) Reset() {
 	*x = NacosRegistration{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[15]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1363,7 +801,7 @@ func (x *NacosRegistration) String() string {
 func (*NacosRegistration) ProtoMessage() {}
 
 func (x *NacosRegistration) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[15]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1376,7 +814,7 @@ func (x *NacosRegistration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use NacosRegistration.ProtoReflect.Descriptor instead.
 func (*NacosRegistration) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{15}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *NacosRegistration) GetAdvertiseIp() string {
@@ -1393,432 +831,6 @@ func (x *NacosRegistration) GetHeartbeatInterval() *durationpb.Duration {
 	return nil
 }
 
-// JetStream owns a synchronous publisher to a pre-provisioned stream.
-// address is TCP host:port, without a URL or embedded credentials.
-type JetStream struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Address         string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Stream          string                 `protobuf:"bytes,2,opt,name=stream,proto3" json:"stream,omitempty"`
-	SubjectPrefix   string                 `protobuf:"bytes,3,opt,name=subject_prefix,json=subjectPrefix,proto3" json:"subject_prefix,omitempty"`
-	TokenEnv        string                 `protobuf:"bytes,4,opt,name=token_env,json=tokenEnv,proto3" json:"token_env,omitempty"`
-	ConnectTimeout  *durationpb.Duration   `protobuf:"bytes,5,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
-	CommandTimeout  *durationpb.Duration   `protobuf:"bytes,6,opt,name=command_timeout,json=commandTimeout,proto3" json:"command_timeout,omitempty"`
-	MaxInflight     int32                  `protobuf:"varint,7,opt,name=max_inflight,json=maxInflight,proto3" json:"max_inflight,omitempty"`
-	MaxMessageBytes int32                  `protobuf:"varint,8,opt,name=max_message_bytes,json=maxMessageBytes,proto3" json:"max_message_bytes,omitempty"`
-	TlsEnabled      *bool                  `protobuf:"varint,9,opt,name=tls_enabled,json=tlsEnabled,proto3,oneof" json:"tls_enabled,omitempty"`
-	RootCertFile    string                 `protobuf:"bytes,10,opt,name=root_cert_file,json=rootCertFile,proto3" json:"root_cert_file,omitempty"`
-	// Use either token_env or username/password_env, never both.
-	Username      string `protobuf:"bytes,11,opt,name=username,proto3" json:"username,omitempty"`
-	PasswordEnv   string `protobuf:"bytes,12,opt,name=password_env,json=passwordEnv,proto3" json:"password_env,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *JetStream) Reset() {
-	*x = JetStream{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[16]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *JetStream) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JetStream) ProtoMessage() {}
-
-func (x *JetStream) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[16]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JetStream.ProtoReflect.Descriptor instead.
-func (*JetStream) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{16}
-}
-
-func (x *JetStream) GetAddress() string {
-	if x != nil {
-		return x.Address
-	}
-	return ""
-}
-
-func (x *JetStream) GetStream() string {
-	if x != nil {
-		return x.Stream
-	}
-	return ""
-}
-
-func (x *JetStream) GetSubjectPrefix() string {
-	if x != nil {
-		return x.SubjectPrefix
-	}
-	return ""
-}
-
-func (x *JetStream) GetTokenEnv() string {
-	if x != nil {
-		return x.TokenEnv
-	}
-	return ""
-}
-
-func (x *JetStream) GetConnectTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.ConnectTimeout
-	}
-	return nil
-}
-
-func (x *JetStream) GetCommandTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.CommandTimeout
-	}
-	return nil
-}
-
-func (x *JetStream) GetMaxInflight() int32 {
-	if x != nil {
-		return x.MaxInflight
-	}
-	return 0
-}
-
-func (x *JetStream) GetMaxMessageBytes() int32 {
-	if x != nil {
-		return x.MaxMessageBytes
-	}
-	return 0
-}
-
-func (x *JetStream) GetTlsEnabled() bool {
-	if x != nil && x.TlsEnabled != nil {
-		return *x.TlsEnabled
-	}
-	return false
-}
-
-func (x *JetStream) GetRootCertFile() string {
-	if x != nil {
-		return x.RootCertFile
-	}
-	return ""
-}
-
-func (x *JetStream) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *JetStream) GetPasswordEnv() string {
-	if x != nil {
-		return x.PasswordEnv
-	}
-	return ""
-}
-
-// Redis is a standalone, namespaced cache. Monetary authority remains in PostgreSQL.
-type Redis struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Address        string                 `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Database       int32                  `protobuf:"varint,2,opt,name=database,proto3" json:"database,omitempty"`
-	Username       string                 `protobuf:"bytes,3,opt,name=username,proto3" json:"username,omitempty"`
-	PasswordEnv    string                 `protobuf:"bytes,4,opt,name=password_env,json=passwordEnv,proto3" json:"password_env,omitempty"`
-	KeyPrefix      string                 `protobuf:"bytes,5,opt,name=key_prefix,json=keyPrefix,proto3" json:"key_prefix,omitempty"`
-	PoolSize       int32                  `protobuf:"varint,6,opt,name=pool_size,json=poolSize,proto3" json:"pool_size,omitempty"`
-	ConnectTimeout *durationpb.Duration   `protobuf:"bytes,7,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
-	CommandTimeout *durationpb.Duration   `protobuf:"bytes,8,opt,name=command_timeout,json=commandTimeout,proto3" json:"command_timeout,omitempty"`
-	PoolTimeout    *durationpb.Duration   `protobuf:"bytes,9,opt,name=pool_timeout,json=poolTimeout,proto3" json:"pool_timeout,omitempty"`
-	MaxIdleTime    *durationpb.Duration   `protobuf:"bytes,10,opt,name=max_idle_time,json=maxIdleTime,proto3" json:"max_idle_time,omitempty"`
-	MaxLifetime    *durationpb.Duration   `protobuf:"bytes,11,opt,name=max_lifetime,json=maxLifetime,proto3" json:"max_lifetime,omitempty"`
-	TlsEnabled     *bool                  `protobuf:"varint,12,opt,name=tls_enabled,json=tlsEnabled,proto3,oneof" json:"tls_enabled,omitempty"`
-	RootCertFile   string                 `protobuf:"bytes,13,opt,name=root_cert_file,json=rootCertFile,proto3" json:"root_cert_file,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
-}
-
-func (x *Redis) Reset() {
-	*x = Redis{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[17]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Redis) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Redis) ProtoMessage() {}
-
-func (x *Redis) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[17]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Redis.ProtoReflect.Descriptor instead.
-func (*Redis) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{17}
-}
-
-func (x *Redis) GetAddress() string {
-	if x != nil {
-		return x.Address
-	}
-	return ""
-}
-
-func (x *Redis) GetDatabase() int32 {
-	if x != nil {
-		return x.Database
-	}
-	return 0
-}
-
-func (x *Redis) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *Redis) GetPasswordEnv() string {
-	if x != nil {
-		return x.PasswordEnv
-	}
-	return ""
-}
-
-func (x *Redis) GetKeyPrefix() string {
-	if x != nil {
-		return x.KeyPrefix
-	}
-	return ""
-}
-
-func (x *Redis) GetPoolSize() int32 {
-	if x != nil {
-		return x.PoolSize
-	}
-	return 0
-}
-
-func (x *Redis) GetConnectTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.ConnectTimeout
-	}
-	return nil
-}
-
-func (x *Redis) GetCommandTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.CommandTimeout
-	}
-	return nil
-}
-
-func (x *Redis) GetPoolTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.PoolTimeout
-	}
-	return nil
-}
-
-func (x *Redis) GetMaxIdleTime() *durationpb.Duration {
-	if x != nil {
-		return x.MaxIdleTime
-	}
-	return nil
-}
-
-func (x *Redis) GetMaxLifetime() *durationpb.Duration {
-	if x != nil {
-		return x.MaxLifetime
-	}
-	return nil
-}
-
-func (x *Redis) GetTlsEnabled() bool {
-	if x != nil && x.TlsEnabled != nil {
-		return *x.TlsEnabled
-	}
-	return false
-}
-
-func (x *Redis) GetRootCertFile() string {
-	if x != nil {
-		return x.RootCertFile
-	}
-	return ""
-}
-
-// Postgres is optional; when present, initialization and readiness require it.
-// password_env names an environment variable rather than storing its value here.
-type Postgres struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Host             string                 `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
-	Port             uint32                 `protobuf:"varint,2,opt,name=port,proto3" json:"port,omitempty"`
-	Database         string                 `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
-	Username         string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
-	PasswordEnv      string                 `protobuf:"bytes,5,opt,name=password_env,json=passwordEnv,proto3" json:"password_env,omitempty"`
-	SslMode          string                 `protobuf:"bytes,6,opt,name=ssl_mode,json=sslMode,proto3" json:"ssl_mode,omitempty"`
-	RootCertFile     string                 `protobuf:"bytes,7,opt,name=root_cert_file,json=rootCertFile,proto3" json:"root_cert_file,omitempty"`
-	Schema           string                 `protobuf:"bytes,8,opt,name=schema,proto3" json:"schema,omitempty"`
-	MaxOpenConns     int32                  `protobuf:"varint,9,opt,name=max_open_conns,json=maxOpenConns,proto3" json:"max_open_conns,omitempty"`
-	MaxIdleConns     int32                  `protobuf:"varint,10,opt,name=max_idle_conns,json=maxIdleConns,proto3" json:"max_idle_conns,omitempty"`
-	MaxLifetime      *durationpb.Duration   `protobuf:"bytes,11,opt,name=max_lifetime,json=maxLifetime,proto3" json:"max_lifetime,omitempty"`
-	MaxIdleTime      *durationpb.Duration   `protobuf:"bytes,12,opt,name=max_idle_time,json=maxIdleTime,proto3" json:"max_idle_time,omitempty"`
-	ConnectTimeout   *durationpb.Duration   `protobuf:"bytes,13,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
-	StatementTimeout *durationpb.Duration   `protobuf:"bytes,14,opt,name=statement_timeout,json=statementTimeout,proto3" json:"statement_timeout,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *Postgres) Reset() {
-	*x = Postgres{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[18]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *Postgres) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*Postgres) ProtoMessage() {}
-
-func (x *Postgres) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[18]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use Postgres.ProtoReflect.Descriptor instead.
-func (*Postgres) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *Postgres) GetHost() string {
-	if x != nil {
-		return x.Host
-	}
-	return ""
-}
-
-func (x *Postgres) GetPort() uint32 {
-	if x != nil {
-		return x.Port
-	}
-	return 0
-}
-
-func (x *Postgres) GetDatabase() string {
-	if x != nil {
-		return x.Database
-	}
-	return ""
-}
-
-func (x *Postgres) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-func (x *Postgres) GetPasswordEnv() string {
-	if x != nil {
-		return x.PasswordEnv
-	}
-	return ""
-}
-
-func (x *Postgres) GetSslMode() string {
-	if x != nil {
-		return x.SslMode
-	}
-	return ""
-}
-
-func (x *Postgres) GetRootCertFile() string {
-	if x != nil {
-		return x.RootCertFile
-	}
-	return ""
-}
-
-func (x *Postgres) GetSchema() string {
-	if x != nil {
-		return x.Schema
-	}
-	return ""
-}
-
-func (x *Postgres) GetMaxOpenConns() int32 {
-	if x != nil {
-		return x.MaxOpenConns
-	}
-	return 0
-}
-
-func (x *Postgres) GetMaxIdleConns() int32 {
-	if x != nil {
-		return x.MaxIdleConns
-	}
-	return 0
-}
-
-func (x *Postgres) GetMaxLifetime() *durationpb.Duration {
-	if x != nil {
-		return x.MaxLifetime
-	}
-	return nil
-}
-
-func (x *Postgres) GetMaxIdleTime() *durationpb.Duration {
-	if x != nil {
-		return x.MaxIdleTime
-	}
-	return nil
-}
-
-func (x *Postgres) GetConnectTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.ConnectTimeout
-	}
-	return nil
-}
-
-func (x *Postgres) GetStatementTimeout() *durationpb.Duration {
-	if x != nil {
-		return x.StatementTimeout
-	}
-	return nil
-}
-
 // Logging is immutable after construction; omitted logging defaults to stdout INFO.
 type Logging struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1831,7 +843,7 @@ type Logging struct {
 
 func (x *Logging) Reset() {
 	*x = Logging{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[19]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1843,7 +855,7 @@ func (x *Logging) String() string {
 func (*Logging) ProtoMessage() {}
 
 func (x *Logging) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[19]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1856,7 +868,7 @@ func (x *Logging) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Logging.ProtoReflect.Descriptor instead.
 func (*Logging) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{19}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *Logging) GetLevel() string {
@@ -1894,7 +906,7 @@ type LogFile struct {
 
 func (x *LogFile) Reset() {
 	*x = LogFile{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[20]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1906,7 +918,7 @@ func (x *LogFile) String() string {
 func (*LogFile) ProtoMessage() {}
 
 func (x *LogFile) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[20]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1919,7 +931,7 @@ func (x *LogFile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogFile.ProtoReflect.Descriptor instead.
 func (*LogFile) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{20}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *LogFile) GetFilename() string {
@@ -1969,7 +981,7 @@ type Listener struct {
 
 func (x *Listener) Reset() {
 	*x = Listener{}
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[21]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1981,7 +993,7 @@ func (x *Listener) String() string {
 func (*Listener) ProtoMessage() {}
 
 func (x *Listener) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_config_v1_service_proto_msgTypes[21]
+	mi := &file_deer_proto_config_v1_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1994,7 +1006,7 @@ func (x *Listener) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Listener.ProtoReflect.Descriptor instead.
 func (*Listener) Descriptor() ([]byte, []int) {
-	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{21}
+	return file_deer_proto_config_v1_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *Listener) GetAddress() string {
@@ -2015,7 +1027,27 @@ var File_deer_proto_config_v1_service_proto protoreflect.FileDescriptor
 
 const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xaa\a\n" +
+	"\"deer/proto/config/v1/service.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fdeer/proto/config/v1/data.proto\"\xfe\x05\n" +
+	"\x0fServiceSettings\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
+	"\vinstance_id\x18\x02 \x01(\tR\n" +
+	"instanceId\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\tR\aversion\x12B\n" +
+	"\x0fstartup_timeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x0estartupTimeout\x12D\n" +
+	"\x10shutdown_timeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0fshutdownTimeout\x120\n" +
+	"\x04grpc\x18\x06 \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04grpc\x120\n" +
+	"\x04http\x18\a \x01(\v2\x1c.muskdeer.config.v1.ListenerR\x04http\x125\n" +
+	"\alogging\x18\b \x01(\v2\x1b.muskdeer.config.v1.LoggingR\alogging\x12I\n" +
+	"\fregistration\x18\f \x01(\v2%.muskdeer.config.v1.NacosRegistrationR\fregistration\x12K\n" +
+	"\rgrpc_security\x18\r \x01(\v2&.muskdeer.config.v1.GRPCServerSecurityR\fgrpcSecurity\x12B\n" +
+	"\fgrpc_clients\x18\x0e \x01(\v2\x1f.muskdeer.config.v1.GRPCClientsR\vgrpcClients\x12<\n" +
+	"\n" +
+	"monitoring\x18\x0f \x01(\v2\x1c.muskdeer.config.v1.ListenerR\n" +
+	"monitoring\x12<\n" +
+	"\n" +
+	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\x12\x1f\n" +
+	"\vdata_sha256\x18\x12 \x01(\tR\n" +
+	"dataSha256\"\xaa\a\n" +
 	"\rServiceConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -2045,63 +1077,7 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\x17allow_insecure_loopback\x18\x03 \x01(\bR\x15allowInsecureLoopback\x128\n" +
 	"\x18strategy_queries_enabled\x18\x04 \x01(\bR\x16strategyQueriesEnabled\x12:\n" +
 	"\x19strategy_controls_enabled\x18\x05 \x01(\bR\x17strategyControlsEnabled\x128\n" +
-	"\x18allow_container_listener\x18\x06 \x01(\bR\x16allowContainerListener\"\x94\x05\n" +
-	"\x0fBusinessRuntime\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12'\n" +
-	"\x0fexecution_venue\x18\x02 \x01(\tR\x0eexecutionVenue\x12>\n" +
-	"\rpoll_interval\x18\x03 \x01(\v2\x19.google.protobuf.DurationR\fpollInterval\x12F\n" +
-	"\x11operation_timeout\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\x10operationTimeout\x12-\n" +
-	"\x12portfolio_consumer\x18\x05 \x01(\tR\x11portfolioConsumer\x129\n" +
-	"\x06market\x18\x06 \x01(\v2!.muskdeer.config.v1.MarketRuntimeR\x06market\x123\n" +
-	"\x04risk\x18\a \x01(\v2\x1f.muskdeer.config.v1.RiskRuntimeR\x04risk\x12I\n" +
-	"\x13execution_lease_ttl\x18\b \x01(\v2\x19.google.protobuf.DurationR\x11executionLeaseTtl\x12J\n" +
-	"\tsimulator\x18\t \x01(\v2,.muskdeer.config.v1.SimulatorScenarioRuntimeR\tsimulator\x12?\n" +
-	"\bstrategy\x18\n" +
-	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\x12?\n" +
-	"\bhimalaya\x18\v \x01(\v2#.muskdeer.config.v1.HimalayaRuntimeR\bhimalaya\"\x9b\x02\n" +
-	"\x0fHimalayaRuntime\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
-	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\x12+\n" +
-	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
-	"\x05depth\x18\x05 \x01(\rR\x05depth\x126\n" +
-	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12H\n" +
-	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTapeJ\x04\b\x03\x10\x04R\bprofiles\"\xca\x02\n" +
-	"\rSyntheticTape\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\x12)\n" +
-	"\x10development_only\x18\x02 \x01(\bR\x0fdevelopmentOnly\x12\x15\n" +
-	"\x06run_id\x18\x03 \x01(\tR\x05runId\x125\n" +
-	"\binterval\x18\x04 \x01(\v2\x19.google.protobuf.DurationR\binterval\x12%\n" +
-	"\x0emaximum_events\x18\x05 \x01(\rR\rmaximumEvents\x12D\n" +
-	"\bprofiles\x18\x06 \x03(\v2(.muskdeer.config.v1.SyntheticTapeProfileR\bprofiles\x129\n" +
-	"\x04mode\x18\a \x01(\x0e2%.muskdeer.config.v1.SyntheticTapeModeR\x04mode\"u\n" +
-	"\x14SyntheticTapeProfile\x12\x16\n" +
-	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12\x1a\n" +
-	"\bquantity\x18\x02 \x01(\tR\bquantity\x12)\n" +
-	"\x10maximum_notional\x18\x03 \x01(\tR\x0fmaximumNotional\"\xc2\x01\n" +
-	"\x0fStrategyRuntime\x12\x1f\n" +
-	"\vaccount_ids\x18\x01 \x03(\tR\n" +
-	"accountIds\x126\n" +
-	"\tlease_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12-\n" +
-	"\x12management_enabled\x18\x03 \x01(\bR\x11managementEnabled\x12'\n" +
-	"\x0fcontrol_enabled\x18\x04 \x01(\bR\x0econtrolEnabled\"y\n" +
-	"\x18SimulatorScenarioRuntime\x12\x1f\n" +
-	"\vaccount_ids\x18\x01 \x03(\tR\n" +
-	"accountIds\x12<\n" +
-	"\fcancel_delay\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\vcancelDelay\".\n" +
-	"\vRiskRuntime\x12\x1f\n" +
-	"\vaccount_ids\x18\x01 \x03(\tR\n" +
-	"accountIds\"\x84\x01\n" +
-	"\rMarketRuntime\x12;\n" +
-	"\x05feeds\x18\x01 \x03(\v2%.muskdeer.config.v1.MarketFeedRuntimeR\x05feeds\x126\n" +
-	"\tlease_ttl\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\"\xd7\x01\n" +
-	"\x11MarketFeedRuntime\x12\x17\n" +
-	"\afeed_id\x18\x01 \x01(\x03R\x06feedId\x12\x1d\n" +
-	"\n" +
-	"replay_bid\x18\x02 \x01(\tR\treplayBid\x12\x1d\n" +
-	"\n" +
-	"replay_ask\x18\x03 \x01(\tR\treplayAsk\x12'\n" +
-	"\x0freplay_quantity\x18\x04 \x01(\tR\x0ereplayQuantity\x12B\n" +
-	"\x0freplay_interval\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0ereplayInterval\"\xf0\x02\n" +
+	"\x18allow_container_listener\x18\x06 \x01(\bR\x16allowContainerListener\"\xf0\x02\n" +
 	"\vGRPCClients\x121\n" +
 	"\x04mtls\x18\x01 \x01(\v2\x1d.muskdeer.config.v1.MutualTLSR\x04mtls\x12B\n" +
 	"\x0fconnect_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12B\n" +
@@ -2135,57 +1111,7 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\f_tls_enabled\"\x80\x01\n" +
 	"\x11NacosRegistration\x12!\n" +
 	"\fadvertise_ip\x18\x01 \x01(\tR\vadvertiseIp\x12H\n" +
-	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"\xf3\x03\n" +
-	"\tJetStream\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x16\n" +
-	"\x06stream\x18\x02 \x01(\tR\x06stream\x12%\n" +
-	"\x0esubject_prefix\x18\x03 \x01(\tR\rsubjectPrefix\x12\x1b\n" +
-	"\ttoken_env\x18\x04 \x01(\tR\btokenEnv\x12B\n" +
-	"\x0fconnect_timeout\x18\x05 \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12B\n" +
-	"\x0fcommand_timeout\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\x0ecommandTimeout\x12!\n" +
-	"\fmax_inflight\x18\a \x01(\x05R\vmaxInflight\x12*\n" +
-	"\x11max_message_bytes\x18\b \x01(\x05R\x0fmaxMessageBytes\x12$\n" +
-	"\vtls_enabled\x18\t \x01(\bH\x00R\n" +
-	"tlsEnabled\x88\x01\x01\x12$\n" +
-	"\x0eroot_cert_file\x18\n" +
-	" \x01(\tR\frootCertFile\x12\x1a\n" +
-	"\busername\x18\v \x01(\tR\busername\x12!\n" +
-	"\fpassword_env\x18\f \x01(\tR\vpasswordEnvB\x0e\n" +
-	"\f_tls_enabled\"\xd7\x04\n" +
-	"\x05Redis\x12\x18\n" +
-	"\aaddress\x18\x01 \x01(\tR\aaddress\x12\x1a\n" +
-	"\bdatabase\x18\x02 \x01(\x05R\bdatabase\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12!\n" +
-	"\fpassword_env\x18\x04 \x01(\tR\vpasswordEnv\x12\x1d\n" +
-	"\n" +
-	"key_prefix\x18\x05 \x01(\tR\tkeyPrefix\x12\x1b\n" +
-	"\tpool_size\x18\x06 \x01(\x05R\bpoolSize\x12B\n" +
-	"\x0fconnect_timeout\x18\a \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12B\n" +
-	"\x0fcommand_timeout\x18\b \x01(\v2\x19.google.protobuf.DurationR\x0ecommandTimeout\x12<\n" +
-	"\fpool_timeout\x18\t \x01(\v2\x19.google.protobuf.DurationR\vpoolTimeout\x12=\n" +
-	"\rmax_idle_time\x18\n" +
-	" \x01(\v2\x19.google.protobuf.DurationR\vmaxIdleTime\x12<\n" +
-	"\fmax_lifetime\x18\v \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12$\n" +
-	"\vtls_enabled\x18\f \x01(\bH\x00R\n" +
-	"tlsEnabled\x88\x01\x01\x12$\n" +
-	"\x0eroot_cert_file\x18\r \x01(\tR\frootCertFileB\x0e\n" +
-	"\f_tls_enabled\"\xbb\x04\n" +
-	"\bPostgres\x12\x12\n" +
-	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
-	"\x04port\x18\x02 \x01(\rR\x04port\x12\x1a\n" +
-	"\bdatabase\x18\x03 \x01(\tR\bdatabase\x12\x1a\n" +
-	"\busername\x18\x04 \x01(\tR\busername\x12!\n" +
-	"\fpassword_env\x18\x05 \x01(\tR\vpasswordEnv\x12\x19\n" +
-	"\bssl_mode\x18\x06 \x01(\tR\asslMode\x12$\n" +
-	"\x0eroot_cert_file\x18\a \x01(\tR\frootCertFile\x12\x16\n" +
-	"\x06schema\x18\b \x01(\tR\x06schema\x12$\n" +
-	"\x0emax_open_conns\x18\t \x01(\x05R\fmaxOpenConns\x12$\n" +
-	"\x0emax_idle_conns\x18\n" +
-	" \x01(\x05R\fmaxIdleConns\x12<\n" +
-	"\fmax_lifetime\x18\v \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12=\n" +
-	"\rmax_idle_time\x18\f \x01(\v2\x19.google.protobuf.DurationR\vmaxIdleTime\x12B\n" +
-	"\x0fconnect_timeout\x18\r \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12F\n" +
-	"\x11statement_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x10statementTimeout\"h\n" +
+	"\x12heartbeat_interval\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x11heartbeatInterval\"h\n" +
 	"\aLogging\x12\x14\n" +
 	"\x05level\x18\x01 \x01(\tR\x05level\x12\x16\n" +
 	"\x06stdout\x18\x02 \x01(\bR\x06stdout\x12/\n" +
@@ -2200,10 +1126,7 @@ const file_deer_proto_config_v1_service_proto_rawDesc = "" +
 	"\bcompress\x18\x05 \x01(\bR\bcompress\"h\n" +
 	"\bListener\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\x12B\n" +
-	"\x0frequest_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0erequestTimeout*T\n" +
-	"\x11SyntheticTapeMode\x12\x1c\n" +
-	"\x18SYNTHETIC_TAPE_MODE_BOOK\x10\x00\x12!\n" +
-	"\x1dSYNTHETIC_TAPE_MODE_AGG_TRADE\x10\x01B9Z7github.com/hmlax/muskdeer/deer/proto/config/v1;configv1b\x06proto3"
+	"\x0frequest_timeout\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\x0erequestTimeoutB9Z7github.com/hmlax/muskdeer/deer/proto/config/v1;configv1b\x06proto3"
 
 var (
 	file_deer_proto_config_v1_service_proto_rawDescOnce sync.Once
@@ -2217,93 +1140,65 @@ func file_deer_proto_config_v1_service_proto_rawDescGZIP() []byte {
 	return file_deer_proto_config_v1_service_proto_rawDescData
 }
 
-var file_deer_proto_config_v1_service_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
+var file_deer_proto_config_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_deer_proto_config_v1_service_proto_goTypes = []any{
-	(SyntheticTapeMode)(0),           // 0: muskdeer.config.v1.SyntheticTapeMode
-	(*ServiceConfig)(nil),            // 1: muskdeer.config.v1.ServiceConfig
-	(*AdminHTTP)(nil),                // 2: muskdeer.config.v1.AdminHTTP
-	(*BusinessRuntime)(nil),          // 3: muskdeer.config.v1.BusinessRuntime
-	(*HimalayaRuntime)(nil),          // 4: muskdeer.config.v1.HimalayaRuntime
-	(*SyntheticTape)(nil),            // 5: muskdeer.config.v1.SyntheticTape
-	(*SyntheticTapeProfile)(nil),     // 6: muskdeer.config.v1.SyntheticTapeProfile
-	(*StrategyRuntime)(nil),          // 7: muskdeer.config.v1.StrategyRuntime
-	(*SimulatorScenarioRuntime)(nil), // 8: muskdeer.config.v1.SimulatorScenarioRuntime
-	(*RiskRuntime)(nil),              // 9: muskdeer.config.v1.RiskRuntime
-	(*MarketRuntime)(nil),            // 10: muskdeer.config.v1.MarketRuntime
-	(*MarketFeedRuntime)(nil),        // 11: muskdeer.config.v1.MarketFeedRuntime
-	(*GRPCClients)(nil),              // 12: muskdeer.config.v1.GRPCClients
-	(*MutualTLS)(nil),                // 13: muskdeer.config.v1.MutualTLS
-	(*GRPCServerSecurity)(nil),       // 14: muskdeer.config.v1.GRPCServerSecurity
-	(*Nacos)(nil),                    // 15: muskdeer.config.v1.Nacos
-	(*NacosRegistration)(nil),        // 16: muskdeer.config.v1.NacosRegistration
-	(*JetStream)(nil),                // 17: muskdeer.config.v1.JetStream
-	(*Redis)(nil),                    // 18: muskdeer.config.v1.Redis
-	(*Postgres)(nil),                 // 19: muskdeer.config.v1.Postgres
-	(*Logging)(nil),                  // 20: muskdeer.config.v1.Logging
-	(*LogFile)(nil),                  // 21: muskdeer.config.v1.LogFile
-	(*Listener)(nil),                 // 22: muskdeer.config.v1.Listener
-	(*durationpb.Duration)(nil),      // 23: google.protobuf.Duration
+	(*ServiceSettings)(nil),     // 0: muskdeer.config.v1.ServiceSettings
+	(*ServiceConfig)(nil),       // 1: muskdeer.config.v1.ServiceConfig
+	(*AdminHTTP)(nil),           // 2: muskdeer.config.v1.AdminHTTP
+	(*GRPCClients)(nil),         // 3: muskdeer.config.v1.GRPCClients
+	(*MutualTLS)(nil),           // 4: muskdeer.config.v1.MutualTLS
+	(*GRPCServerSecurity)(nil),  // 5: muskdeer.config.v1.GRPCServerSecurity
+	(*Nacos)(nil),               // 6: muskdeer.config.v1.Nacos
+	(*NacosRegistration)(nil),   // 7: muskdeer.config.v1.NacosRegistration
+	(*Logging)(nil),             // 8: muskdeer.config.v1.Logging
+	(*LogFile)(nil),             // 9: muskdeer.config.v1.LogFile
+	(*Listener)(nil),            // 10: muskdeer.config.v1.Listener
+	(*durationpb.Duration)(nil), // 11: google.protobuf.Duration
+	(*Postgres)(nil),            // 12: muskdeer.config.v1.Postgres
+	(*Redis)(nil),               // 13: muskdeer.config.v1.Redis
+	(*JetStream)(nil),           // 14: muskdeer.config.v1.JetStream
+	(*BusinessRuntime)(nil),     // 15: muskdeer.config.v1.BusinessRuntime
 }
 var file_deer_proto_config_v1_service_proto_depIdxs = []int32{
-	23, // 0: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	23, // 1: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
-	22, // 2: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
-	22, // 3: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
-	20, // 4: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
-	19, // 5: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
-	18, // 6: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
-	17, // 7: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
-	15, // 8: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
-	14, // 9: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
-	12, // 10: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
-	22, // 11: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
-	3,  // 12: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
-	2,  // 13: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	23, // 14: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
-	23, // 15: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
-	10, // 16: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
-	9,  // 17: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
-	23, // 18: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
-	8,  // 19: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
-	7,  // 20: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
-	4,  // 21: muskdeer.config.v1.BusinessRuntime.himalaya:type_name -> muskdeer.config.v1.HimalayaRuntime
-	23, // 22: muskdeer.config.v1.HimalayaRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	5,  // 23: muskdeer.config.v1.HimalayaRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
-	23, // 24: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
-	6,  // 25: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
-	0,  // 26: muskdeer.config.v1.SyntheticTape.mode:type_name -> muskdeer.config.v1.SyntheticTapeMode
-	23, // 27: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	23, // 28: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
-	11, // 29: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
-	23, // 30: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	23, // 31: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
-	13, // 32: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	23, // 33: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 34: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
-	13, // 35: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	23, // 36: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 37: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
-	16, // 38: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
-	23, // 39: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
-	23, // 40: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 41: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
-	23, // 42: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 43: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
-	23, // 44: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
-	23, // 45: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
-	23, // 46: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
-	23, // 47: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
-	23, // 48: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
-	23, // 49: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
-	23, // 50: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
-	21, // 51: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	23, // 52: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	53, // [53:53] is the sub-list for method output_type
-	53, // [53:53] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	11, // 0: muskdeer.config.v1.ServiceSettings.startup_timeout:type_name -> google.protobuf.Duration
+	11, // 1: muskdeer.config.v1.ServiceSettings.shutdown_timeout:type_name -> google.protobuf.Duration
+	10, // 2: muskdeer.config.v1.ServiceSettings.grpc:type_name -> muskdeer.config.v1.Listener
+	10, // 3: muskdeer.config.v1.ServiceSettings.http:type_name -> muskdeer.config.v1.Listener
+	8,  // 4: muskdeer.config.v1.ServiceSettings.logging:type_name -> muskdeer.config.v1.Logging
+	7,  // 5: muskdeer.config.v1.ServiceSettings.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	5,  // 6: muskdeer.config.v1.ServiceSettings.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
+	3,  // 7: muskdeer.config.v1.ServiceSettings.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
+	10, // 8: muskdeer.config.v1.ServiceSettings.monitoring:type_name -> muskdeer.config.v1.Listener
+	2,  // 9: muskdeer.config.v1.ServiceSettings.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
+	11, // 10: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	11, // 11: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	10, // 12: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
+	10, // 13: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
+	8,  // 14: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
+	12, // 15: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
+	13, // 16: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
+	14, // 17: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
+	6,  // 18: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
+	5,  // 19: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
+	3,  // 20: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
+	10, // 21: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
+	15, // 22: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
+	2,  // 23: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
+	4,  // 24: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	11, // 25: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
+	11, // 26: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
+	4,  // 27: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	11, // 28: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
+	11, // 29: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
+	7,  // 30: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	11, // 31: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
+	9,  // 32: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	11, // 33: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	34, // [34:34] is the sub-list for method output_type
+	34, // [34:34] is the sub-list for method input_type
+	34, // [34:34] is the sub-list for extension type_name
+	34, // [34:34] is the sub-list for extension extendee
+	0,  // [0:34] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_config_v1_service_proto_init() }
@@ -2311,22 +1206,20 @@ func file_deer_proto_config_v1_service_proto_init() {
 	if File_deer_proto_config_v1_service_proto != nil {
 		return
 	}
-	file_deer_proto_config_v1_service_proto_msgTypes[14].OneofWrappers = []any{}
-	file_deer_proto_config_v1_service_proto_msgTypes[16].OneofWrappers = []any{}
-	file_deer_proto_config_v1_service_proto_msgTypes[17].OneofWrappers = []any{}
+	file_deer_proto_config_v1_data_proto_init()
+	file_deer_proto_config_v1_service_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_config_v1_service_proto_rawDesc), len(file_deer_proto_config_v1_service_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   22,
+			NumEnums:      0,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_deer_proto_config_v1_service_proto_goTypes,
 		DependencyIndexes: file_deer_proto_config_v1_service_proto_depIdxs,
-		EnumInfos:         file_deer_proto_config_v1_service_proto_enumTypes,
 		MessageInfos:      file_deer_proto_config_v1_service_proto_msgTypes,
 	}.Build()
 	File_deer_proto_config_v1_service_proto = out.File

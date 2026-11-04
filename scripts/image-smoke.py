@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 from infra import Infra
 from nacos_config import ConfigStore
+from config_parts import load_directory
 
 
 def inspect(name):
@@ -23,11 +24,11 @@ def smoke(role, store):
     name = 'muskdeer-image-test-' + uuid.uuid4().hex[:12]
     with tempfile.TemporaryDirectory(prefix='image-smoke-', dir=ROOT / '.cache') as directory:
         path = Path(directory) / 'environment'
-        data_id = role + '-' + uuid.uuid4().hex[:12] + '.json'
-        config = json.loads((ROOT / ('configs/local/' + role + '.json')).read_text())
+        prefix = role + '-' + uuid.uuid4().hex[:12]
+        config = load_directory(ROOT / 'configs/local' / role)
         config['instance_id'] = name
-        store.publish(data_id, config)
-        environment = store.environment(container=True) | {'NACOS_DATA_ID': data_id}
+        store.publish_pair(prefix, config)
+        environment = store.environment(container=True) | {'NACOS_DATA_ID': '', 'NACOS_DATA_CONFIG_ID': prefix+'.data.yaml', 'NACOS_SERVICE_CONFIG_ID': prefix+'.service.yaml'}
         path.write_text(''.join(key + '=' + value + '\n' for key, value in environment.items()))
         path.chmod(0o600)
         created = False
@@ -70,7 +71,7 @@ def smoke(role, store):
         finally:
             if created:
                 subprocess.run(['docker', 'rm', '-f', name], check=True)
-            store.delete(data_id)
+            store.delete_pair(prefix)
 
 
 if __name__ == '__main__':

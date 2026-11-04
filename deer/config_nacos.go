@@ -17,13 +17,13 @@ import (
 const nacosPasswordEnvironment = "NACOS_PASSWORD"
 
 // LoadNacosConfig loads an immutable startup snapshot using environment-only
-// Nacos connection settings. An empty expectedName requires NACOS_DATA_ID and
+// Nacos connection settings. An empty expectedName requires both explicit document IDs and
 // is reserved for independent maintenance/readiness tools.
 func LoadNacosConfig(ctx context.Context, expectedName string) (result *configv1.ServiceConfig, resultErr error) {
 	if ctx == nil {
 		return nil, configFailure("bootstrap", errors.New("configuration context is required"))
 	}
-	connection, dataID, err := nacosEnvironment(expectedName)
+	connection, dataID, serviceID, err := nacosEnvironment(expectedName)
 	if err != nil {
 		return nil, configFailure("bootstrap", err)
 	}
@@ -34,11 +34,15 @@ func LoadNacosConfig(ctx context.Context, expectedName string) (result *configv1
 		return nil, configFailure("source", err)
 	}
 	defer func() { resultErr = errors.Join(resultErr, source.Close()) }()
-	content, err := source.GetConfig(bounded, dataID)
+	service, err := source.GetConfig(bounded, serviceID)
 	if err != nil {
-		return nil, configFailure("fetch", err)
+		return nil, configFailure("service fetch", err)
 	}
-	cfg, err := decodeConfig(bounded, content)
+	data, err := source.GetConfig(bounded, dataID)
+	if err != nil {
+		return nil, configFailure("data fetch", err)
+	}
+	cfg, err := decodeConfigPair(bounded, data, service)
 	if err != nil {
 		return nil, err
 	}
@@ -46,13 +50,6 @@ func LoadNacosConfig(ctx context.Context, expectedName string) (result *configv1
 		return nil, configFailure("identity", errors.New("configuration belongs to another service"))
 	}
 	registration := proto.CloneOf(cfg.GetNacos().GetRegistration())
-	if cfg.Nacos != nil {
-		remote := proto.CloneOf(cfg.Nacos)
-		remote.Registration = nil
-		if !proto.Equal(remote, &configv1.Nacos{}) {
-			return nil, configFailure("bootstrap override", errors.New("nacos connection settings must come from environment"))
-		}
-	}
 	cfg.Nacos = proto.CloneOf(connection)
 	cfg.Nacos.Registration = registration
 	validated, err := validateConfig(cfg, cfg.Http != nil)
@@ -62,29 +59,35 @@ func LoadNacosConfig(ctx context.Context, expectedName string) (result *configv1
 	return validated, nil
 }
 
-func nacosEnvironment(service string) (*configv1.Nacos, string, error) {
-	dataID := os.Getenv("NACOS_DATA_ID")
-	if dataID == "" && service != "" {
-		dataID = service + ".json"
+func nacosEnvironment(service string) (*configv1.Nacos, string, string, error) {
+	if os.Getenv("NACOS_DATA_ID") != "" {
+		return nil, "", "", errors.New("single-document configuration is unsupported")
 	}
-	if dataID == "" || os.Getenv("NACOS_ADDRESS") == "" || os.Getenv("NACOS_NAMESPACE") == "" ||
+	dataID, serviceID := os.Getenv("NACOS_DATA_CONFIG_ID"), os.Getenv("NACOS_SERVICE_CONFIG_ID")
+	if dataID == "" && service != "" {
+		dataID = service + ".data.yaml"
+	}
+	if serviceID == "" && service != "" {
+		serviceID = service + ".service.yaml"
+	}
+	if dataID == "" || serviceID == "" || dataID == serviceID || os.Getenv("NACOS_ADDRESS") == "" || os.Getenv("NACOS_NAMESPACE") == "" ||
 		os.Getenv("NACOS_GROUP") == "" || os.Getenv("NACOS_CLUSTER") == "" ||
 		os.Getenv("NACOS_USERNAME") == "" || os.Getenv(nacosPasswordEnvironment) == "" {
-		return nil, "", errors.New("explicit Nacos connection environment is required")
+		return nil, "", "", errors.New("explicit Nacos connection environment is required")
 	}
 	connect, err := nacosDuration("NACOS_CONNECT_TIMEOUT", 5*time.Second)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	command, err := nacosDuration("NACOS_COMMAND_TIMEOUT", 2*time.Second)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	tls := true
 	if value := os.Getenv("NACOS_TLS_ENABLED"); value != "" {
 		tls, err = strconv.ParseBool(value)
 		if err != nil {
-			return nil, "", errors.New("nacos TLS environment is invalid")
+			return nil, "", "", errors.New("nacos TLS environment is invalid")
 		}
 	}
 	return &configv1.Nacos{
@@ -99,7 +102,7 @@ func nacosEnvironment(service string) (*configv1.Nacos, string, error) {
 		ConnectTimeout: durationpb.New(connect),
 		CommandTimeout: durationpb.New(command),
 		MaxInflight:    8,
-	}, dataID, nil
+	}, dataID, serviceID, nil
 }
 
 func nacosDuration(name string, fallback time.Duration) (time.Duration, error) {

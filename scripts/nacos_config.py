@@ -8,6 +8,7 @@ import urllib.parse
 import urllib.request
 
 from infra import ROOT, endpoint, inventory
+from config_parts import split, combine, ids
 
 
 def remote_content(config):
@@ -96,6 +97,33 @@ class ConfigStore:
         result = self.request('DELETE', '/v2/cs/config', self.scope(data_id))
         if result.get('code') != 0 or result.get('data') is not True:
             raise ValueError('Nacos configuration cleanup was not acknowledged')
+
+    def publish_pair(self, prefix, config, replace=False):
+        data_id, service_id = ids(prefix)
+        if not replace:
+            present = [self.get(data_id), self.get(service_id)]
+            if all(value is not None for value in present):
+                combine(*present)
+                return False
+            if any(value is not None for value in present):
+                raise ValueError('partial configuration pair exists; explicit replacement required')
+        data, service = split(config)
+        self.login()
+        for data_id, body in [(data_id, data), (service_id, service)]:
+            result = self.request('POST', '/v2/cs/config', self.scope(data_id) | {'content': body, 'type': 'yaml'})
+            if result.get('code') != 0 or result.get('data') is not True:
+                raise ValueError('Nacos YAML configuration publication failed')
+        return True
+
+    def get_pair(self, prefix):
+        data, service = (self.get(key) for key in ids(prefix))
+        if data is None or service is None:
+            raise ValueError('Nacos configuration pair is incomplete')
+        return combine(data, service)
+
+    def delete_pair(self, prefix):
+        for key in ids(prefix):
+            self.delete(key)
 
     def environment(self, container=False):
         return {

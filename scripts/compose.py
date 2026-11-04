@@ -14,7 +14,8 @@ import urllib.parse
 import urllib.request
 
 from infra import ROOT, endpoint, inventory, literal, values
-from nacos_config import ConfigStore, remote_content
+from nacos_config import ConfigStore
+from config_parts import load_directory, split
 
 DIRECTORY = ROOT / '.cache/compose'
 DATABASE = 'muskdeer_local'
@@ -151,7 +152,7 @@ def certificates():
 def config(role, snapshots, credential, nats, resources=None):
     index = CORES.index(role)
     resources = resources or {}
-    result = json.loads((ROOT / 'configs/local' / (role + '.json')).read_text())
+    result = load_directory(ROOT / 'configs/local' / role)
     result.update({'instance_id': role + '-compose', 'version': 'infra-core-local',
                    'startup_timeout': '15s', 'shutdown_timeout': '10s'})
     result['grpc']['address'] = '0.0.0.0:' + str(59002 + index)
@@ -243,9 +244,11 @@ def prepare(source):
     for role in CORES:
         own_config = DIRECTORY / 'config' / role
         desired = config(role, snapshots, credential, nats, resources)
-        write(DIRECTORY / 'nacos-drafts' / (role + '.json'), json.dumps(remote_content(desired), indent=2) + '\n')
+        data, service = split(desired)
+        write(DIRECTORY / 'nacos-drafts' / role / 'data.yaml', data)
+        write(DIRECTORY / 'nacos-drafts' / role / 'service.yaml', service)
         if role != 'market' or resources is not None:
-            store.publish(role + '.json', desired)
+            store.publish_pair(role, desired)
         for name in ('ca.pem', role + '.pem', role + '.key'):
             write(own_config / 'certs' / name, (DIRECTORY / 'config/certs' / name).read_text())
     environment = {'MUSKDEER_POSTGRES_PASSWORD': state['database_password'],

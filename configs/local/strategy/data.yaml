@@ -1,0 +1,7 @@
+# Infrastructure probes only. Preparation fills environment-specific connections and business controls.
+name: strategy
+version: local
+postgres: null
+redis: null
+jetstream: null
+business: null

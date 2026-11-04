@@ -31,16 +31,24 @@ func (c *Client) PublishConfig(ctx context.Context, dataID string, content []byt
 	if len(content) == 0 || len(content) > maxResponseBytes/2 {
 		return errors.New("nacos configuration content is empty or exceeds its limit")
 	}
-	return c.changeConfig(ctx, http.MethodPost, dataID, content)
+	return c.changeConfig(ctx, http.MethodPost, dataID, content, "json")
+}
+
+// PublishYAMLConfig explicitly provisions one YAML document, never at startup.
+func (c *Client) PublishYAMLConfig(ctx context.Context, dataID string, content []byte) error {
+	if len(content) == 0 || len(content) > maxResponseBytes/2 {
+		return errors.New("invalid YAML configuration size")
+	}
+	return c.changeConfig(ctx, http.MethodPost, dataID, content, "yaml")
 }
 
 // DeleteConfig removes one explicitly named configuration, never a group or namespace.
 func (c *Client) DeleteConfig(ctx context.Context, dataID string) error {
-	return c.changeConfig(ctx, http.MethodDelete, dataID, nil)
+	return c.changeConfig(ctx, http.MethodDelete, dataID, nil, "")
 }
 
-func (c *Client) changeConfig(ctx context.Context, method, dataID string, content []byte) error {
-	data, err := c.configRequest(ctx, method, dataID, content)
+func (c *Client) changeConfig(ctx context.Context, method, dataID string, content []byte, kind string) error {
+	data, err := c.configRequestType(ctx, method, dataID, content, kind)
 	if err != nil {
 		return err
 	}
@@ -55,6 +63,10 @@ func (c *Client) changeConfig(ctx context.Context, method, dataID string, conten
 }
 
 func (c *Client) configRequest(ctx context.Context, method, dataID string, content []byte) ([]byte, error) {
+	return c.configRequestType(ctx, method, dataID, content, "json")
+}
+
+func (c *Client) configRequestType(ctx context.Context, method, dataID string, content []byte, kind string) ([]byte, error) {
 	if !validIdentifier(dataID) {
 		return nil, errors.New("nacos requires an explicit bounded configuration data ID")
 	}
@@ -74,7 +86,7 @@ func (c *Client) configRequest(ctx context.Context, method, dataID string, conte
 	}
 	if method == http.MethodPost {
 		values.Set("content", string(content))
-		values.Set("type", "json")
+		values.Set("type", kind)
 	}
 	data, err := c.request(bounded, method, configPath, values, token.value)
 	if err != nil {

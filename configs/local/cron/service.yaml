@@ -1,0 +1,12 @@
+name: cron
+instance_id: cron-local
+version: local
+startup_timeout: 5s
+shutdown_timeout: 5s
+logging:
+  level: info
+  stdout: true
+monitoring:
+  address: 127.0.0.1:59105
+  request_timeout: 1s
+data_sha256: 61ad65c1381cb86c17543d519b50d84c6cce2c2677c975b9f6b1554bd17453eb

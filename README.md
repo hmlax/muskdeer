@@ -15,7 +15,7 @@
 | execution | execution/cmd | 127.0.0.1:59004 | 意图、OMS、风险、撤单恢复与 outbox |
 | portfolio | portfolio/cmd | 127.0.0.1:59005 | 成交消费、幂等投影与恢复查询 |
 
-每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，服务/业务配置从 Nacos 的严格 Proto JSON 读取，配置更新后显式重启。
+每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，配置从 Nacos 的 data.yaml/service.yaml 强类型 YAML 配对读取，配置更新后显式重启。
 
 公共配置、模型、事件分别位于 `deer/proto/{config,model,common}`；gRPC 契约和生成代码统一位于 `deer/proto/rpc`。仓库内维护的第三方源码、注解和许可证在 [deer/third_party](deer/third_party/README.md)。
 
@@ -23,7 +23,7 @@
 
 ## 本地启动
 
-复用已运行的 PostgreSQL、Redis、Nacos、NATS 及 infra-network。需要 Docker Compose、Python 3.11+ 和 OpenSSL；Go 工具链固定为 1.27.3，Wire 固定为 v0.7.0。
+复用已运行的 PostgreSQL、Redis、Nacos、NATS 及 infra-network。需要 Docker Compose、Python 3.11+、PyYAML（tools/python-requirements.txt 固定版本）和 OpenSSL；Go 工具链固定为 1.27.3，Wire 固定为 v0.7.0。
 
 ```sh
 # 首次准备、显式初始化本地逻辑资源并启动

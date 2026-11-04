@@ -11,7 +11,7 @@
 
 每个进程使用一个 Deer/Kratos 生命周期和自己的 mTLS 身份，Nacos group 为 MUSKDEER_CORE、namespace 为 muskdeer-local。gRPC 是认证的内部接口；strategy/portfolio 当前主要提供后台工作循环及标准健康 RPC，不把管理接口当核心接口重新开启。
 
-核心服务现在**无命令行参数**：直接运行 market/strategy/execution/portfolio。Nacos 连接从 env 获取，服务与业务配置从 Nacos 的对应 `<service>.json` 读取；不使用本地 JSON 或 flags。具体字段和维护流程见 [Nacos 配置](NACOS_CONFIG.md)。
+核心服务现在**无命令行参数**：直接运行 market/strategy/execution/portfolio。Nacos 连接从 env 获取，基础连接及业务运行控制从 `<service>.data.yaml`、监听及生命周期从 `<service>.service.yaml` 配对读取；不使用本地 JSON 或 flags。具体字段和维护流程见 [Nacos 配置](NACOS_CONFIG.md)。
 
 ## 独立装配位置
 

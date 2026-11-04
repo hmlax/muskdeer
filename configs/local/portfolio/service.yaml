@@ -1,0 +1,15 @@
+name: portfolio
+instance_id: portfolio-local
+version: local
+startup_timeout: 5s
+shutdown_timeout: 5s
+grpc:
+  address: 127.0.0.1:59004
+  request_timeout: 2s
+logging:
+  level: info
+  stdout: true
+monitoring:
+  address: 127.0.0.1:59104
+  request_timeout: 1s
+data_sha256: 6d3bbd45a329e177cbe06be754bcf1166be03abcc5aa8a7e266ff2bfea0203c9

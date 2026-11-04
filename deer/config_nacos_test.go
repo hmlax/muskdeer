@@ -9,18 +9,34 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"google.golang.org/protobuf/encoding/protojson"
+
+	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 )
 
 const nacosConfigFixture = `{"name":"strategy","instance_id":"strategy-config-test","version":"test","startup_timeout":"5s","shutdown_timeout":"5s","grpc":{"address":"127.0.0.1:0","request_timeout":"1s"},"monitoring":{"address":"127.0.0.1:59103","request_timeout":"1s"},"business":{"strategy":{"account_ids":["account-from-nacos"]}}}`
 
 func TestNacosConfigurationUsesEnvironmentScopeAndTypedContent(t *testing.T) {
+	var original configv1.ServiceConfig
+	if err := protojson.Unmarshal([]byte(nacosConfigFixture), &original); err != nil {
+		t.Fatal(err)
+	}
+	data, service, err := EncodeConfigPair(&original)
+	if err != nil {
+		t.Fatal(err)
+	}
 	server := configServer(t, func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/nacos/v2/cs/config" || r.URL.Query().Get("dataId") != "strategy-test.json" ||
+		if r.URL.Path != "/nacos/v2/cs/config" || (r.URL.Query().Get("dataId") != "strategy-test.data.yaml" && r.URL.Query().Get("dataId") != "strategy-test.service.yaml") ||
 			r.URL.Query().Get("namespaceId") != "unit-config" || r.URL.Query().Get("group") != "CORE_TEST" ||
 			r.Header.Get("Authorization") != "Bearer unit-config-token" || r.URL.Query().Has("accessToken") {
 			t.Error("configuration read lost its explicit authenticated scope")
 		}
-		writeConfig(t, w, nacosConfigFixture)
+		if r.URL.Query().Get("dataId") == "strategy-test.data.yaml" {
+			writeConfig(t, w, string(data))
+		} else {
+			writeConfig(t, w, string(service))
+		}
 	})
 	setNacosEnvironment(t, server.URL)
 	cfg, err := LoadNacosConfig(t.Context(), "strategy")
@@ -89,7 +105,8 @@ func setNacosEnvironment(t *testing.T, address string) {
 		"NACOS_ADDRESS":   strings.TrimPrefix(address, "http://"),
 		"NACOS_NAMESPACE": "unit-config", "NACOS_GROUP": "CORE_TEST", "NACOS_CLUSTER": "TEST",
 		"NACOS_USERNAME": "config-reader", "NACOS_PASSWORD": "unit-config-password",
-		"NACOS_DATA_ID": "strategy-test.json", "NACOS_TLS_ENABLED": "false",
+		"NACOS_DATA_ID": "", "NACOS_TLS_ENABLED": "false",
+		"NACOS_DATA_CONFIG_ID": "strategy-test.data.yaml", "NACOS_SERVICE_CONFIG_ID": "strategy-test.service.yaml",
 		"NACOS_ROOT_CERT_FILE": "", "NACOS_CONNECT_TIMEOUT": "", "NACOS_COMMAND_TIMEOUT": "",
 	} {
 		t.Setenv(key, value)

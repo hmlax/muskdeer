@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-04 最新配置边界：Nacos 每服务提供 `<service>.data.yaml` 与 `<service>.service.yaml`，分别对应 DataConfig 和 ServiceSettings；前者持有基础连接与业务运行控制，后者持有监听、身份、TLS、日志及生命周期，并以 data_sha256 绑定前者原始字节。启动同时校验版本/服务身份，拒绝半次发布。ServiceConfig 仅为兼容现有 Deer/业务接口的内存装配结果，不再作为核心配置源；此项替代下文历史单份 Proto JSON 描述，数据库业务归属保持。
+
 2026-11-03 更新：根 api/web、管理 HTTP 应用及 OpenAPI/浏览器工具已移除；gRPC 契约统一位于 deer/proto/rpc，四核心服务通信及数据库历史迁移保持。通用 Hertz 仅保留公共运行层和测试用途，不装配管理路由。
 
 ## 服务边界

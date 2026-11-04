@@ -12,15 +12,17 @@ import urllib.error
 import urllib.request
 
 from dev import Environment, ROOT
+from config_parts import load_directory, split, ids
 
 
 def service_smoke(environment):
-    path = environment.directory / 'market.json'
-    config = json.loads(path.read_text())
+    config = load_directory(environment.directory / 'market')
     config['monitoring']['address'] = '127.0.0.1:0'
     config['grpc']['address'] = '127.0.0.1:0'
-    path.write_text(json.dumps(config))
-    environment.config_store().publish('market.json', config, replace=True)
+    data, service = split(config)
+    environment.write('market/data.yaml',data)
+    environment.write('market/service.yaml',service)
+    environment.config_store().publish_pair('market', config, replace=True)
     values = os.environ.copy()
     for line in (environment.directory / 'environment.sh').read_text().splitlines():
         import shlex
@@ -85,8 +87,9 @@ def main():
         finally:
             store = environment.config_store()
             for role in ('market', 'strategy', 'execution', 'portfolio'):
-                if store.get(role + '.json') is not None:
-                    store.delete(role + '.json')
+                for key in ids(role):
+                    if store.get(key) is not None:
+                        store.delete(key)
     return 0
 
 
