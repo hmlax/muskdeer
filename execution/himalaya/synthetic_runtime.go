@@ -43,7 +43,7 @@ func (r *Runtime) PublishSynthetic(ctx context.Context, proposal *commonv1.Synth
 	if proposal.GetRunId() != r.cfg.Himalaya.SyntheticTape.RunId || proposal.GetStrategy().GetAccountId() != native.SyntheticStrategyKey(proposal.RunId, proposal.GetSymbol()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
-	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout.AsDuration())
+	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 	defer cancel()
 	book, err := r.book(op, proposal.Symbol)
 	if err != nil {
@@ -122,7 +122,7 @@ func (c *Client) publishSynthetic(ctx context.Context, input *pb.WashTradeReques
 	return c.sdk.WashTrade(op, input)
 }
 
-func (c *Client) checkSyntheticMarket(ctx context.Context, profile *configv1.HimalayaProfile, plan *commonv1.SyntheticTapePlan) error {
+func (c *Client) checkSyntheticMarket(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *commonv1.SyntheticTapePlan) error {
 	if c == nil || c.sdk == nil || profile == nil {
 		return ErrInvalidSubmit
 	}
@@ -155,7 +155,7 @@ func (r *Runtime) renewSyntheticScopes(ctx context.Context) error {
 		return nil
 	}
 	for _, profile := range r.cfg.Himalaya.SyntheticTape.Profiles {
-		op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout.AsDuration())
+		op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 		_, err := r.acquireSynthetic(op, profile.Symbol)
 		cancel()
 		if err != nil && !errors.Is(err, domain.ErrLeaseHeld) {

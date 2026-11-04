@@ -21,7 +21,7 @@ import (
 
 // PublishSynthetic consumes a durable, finite send slot before its SDK effect.
 // An unknown outcome consumes its quota and is never sent again.
-func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *configv1.HimalayaRuntime, plan *commonv1.SyntheticTapePlan, send func(context.Context, *pb.WashTradeRequest) (*pb.WashTradeResponse, error)) (*commonv1.SyntheticTapeResult, error) {
+func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *commonv1.HimalayaPolicy, plan *commonv1.SyntheticTapePlan, send func(context.Context, *pb.WashTradeRequest) (*pb.WashTradeResponse, error)) (*commonv1.SyntheticTapeResult, error) {
 	if !validStoreContext(ctx) || send == nil || !validSyntheticPlan(cfg, execution, plan) {
 		return nil, ErrInvalidSubmit
 	}
@@ -86,7 +86,7 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 	return proto.CloneOf(row.Result), nil
 }
 
-func validSyntheticPlan(cfg *configv1.HimalayaRuntime, execution domain.LeaseToken, plan *commonv1.SyntheticTapePlan) bool {
+func validSyntheticPlan(cfg *commonv1.HimalayaPolicy, execution domain.LeaseToken, plan *commonv1.SyntheticTapePlan) bool {
 	if plan == nil || execution.Key.AccountID != native.SyntheticExecutionKey(plan.RunId, plan.Symbol) ||
 		plan.GetStrategy().GetAccountId() != native.SyntheticStrategyKey(plan.RunId, plan.Symbol) ||
 		plan.GetBook().GetPublisher().GetAccountId() != native.MarketKey(plan.Symbol) || plan.RunId != cfg.GetSyntheticTape().GetRunId() {
@@ -96,7 +96,7 @@ func validSyntheticPlan(cfg *configv1.HimalayaRuntime, execution domain.LeaseTok
 	return err == nil && proto.Equal(expected, plan)
 }
 
-func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *configv1.HimalayaRuntime, plan *commonv1.SyntheticTapePlan, digest string) (*modelv1.SyntheticTapeIntent, bool, error) {
+func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *commonv1.HimalayaPolicy, plan *commonv1.SyntheticTapePlan, digest string) (*modelv1.SyntheticTapeIntent, bool, error) {
 	var result *modelv1.SyntheticTapeIntent
 	fresh := false
 	err := s.db.WithContext(ctx).Model(&modelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
@@ -188,7 +188,7 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 
 // The already locked execution lease serializes source-event admission across
 // owners. The durable plans retain a monotonic cursor, including unknown slots.
-func validateSyntheticTradeAudit(cfg *configv1.HimalayaRuntime, plan *commonv1.SyntheticTapePlan) (int64, error) {
+func validateSyntheticTradeAudit(cfg *commonv1.HimalayaPolicy, plan *commonv1.SyntheticTapePlan) (int64, error) {
 	target, err := native.SyntheticTradeTarget(cfg, plan.GetSourceTrade())
 	if err != nil || target.Side != plan.GetSide() || target.Price != plan.GetPrice() || target.Quantity != plan.GetQuantity() ||
 		plan.SourceTrade.GetPublisher().GetAccountId() != native.TradeKey(plan.Symbol) {

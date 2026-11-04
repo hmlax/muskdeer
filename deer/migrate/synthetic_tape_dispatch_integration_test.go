@@ -140,7 +140,7 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	}
 }
 
-func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseToken, *configv1.HimalayaRuntime, *commonv1.SyntheticTapePlan) {
+func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseToken, *commonv1.HimalayaPolicy, *commonv1.SyntheticTapePlan) {
 	t.Helper()
 	db, store, fundLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
@@ -154,8 +154,8 @@ func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.L
 		Price:    "100.1",
 		Quantity: "1",
 	}}
-	cfg := &configv1.HimalayaRuntime{
-		Profiles: []*configv1.HimalayaProfile{{
+	cfg := &commonv1.HimalayaPolicy{
+		Profiles: []*commonv1.HimalayaProfilePolicy{{
 			Symbol:       request.Symbol,
 			PriceTick:    "0.1",
 			QuantityStep: "0.001",

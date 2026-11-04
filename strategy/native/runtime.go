@@ -10,6 +10,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/logging"
+	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
@@ -20,7 +21,11 @@ import (
 )
 
 // Workers describes one fenced, bounded maker actor per configured fund.
-func Workers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
+func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
+	cfg, err := values.LoadRuntime(ctx, db, input)
+	if err != nil {
+		return nil, err
+	}
 	leases, err := repository.NewLeases(db)
 	if err != nil {
 		return nil, err
@@ -32,7 +37,7 @@ func Workers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *
 			Run: func(ctx context.Context) error {
 				failed := false
 				for ctx.Err() == nil {
-					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
+					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
 					err := tick(op, db, leases, factory, owner, cfg, profile)
 					cancel()
 					if err != nil && !failed && ctx.Err() == nil {
@@ -41,7 +46,7 @@ func Workers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *
 						}
 					}
 					failed = err != nil
-					if err := values.Wait(ctx, cfg.PollInterval.AsDuration()); err != nil {
+					if err := values.Wait(ctx, cfg.PollInterval); err != nil {
 						return err
 					}
 				}
@@ -52,7 +57,7 @@ func Workers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *
 	return append(workers, syntheticWorkers(db, owner, cfg, factory, logger, leases)...), nil
 }
 
-func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *configv1.BusinessRuntime, profile *configv1.HimalayaProfile) error {
+func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *values.RuntimeConfig, profile *commonv1.HimalayaProfilePolicy) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.StrategyKey(profile.UserId, profile.FundId),

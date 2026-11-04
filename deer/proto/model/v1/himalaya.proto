@@ -37,6 +37,10 @@ message HimalayaBudget {
   uint32 leverage = 15 [(tagger.tags) = "gorm:\"column:leverage;type:integer;not null\""];
   string worst_fee_rate = 16 [(tagger.tags) = "gorm:\"column:worst_fee_rate;type:numeric(76,36);not null;default:0\""];
   bool cutover_completed = 17 [(tagger.tags) = "gorm:\"column:cutover_completed;type:boolean;not null\""];
+  string symbol = 18 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(32);not null;default:'';uniqueIndex:uk_himalaya_budget_symbol,where:symbol <> '' AND delete_at IS NULL\""];
+  string market_data_source = 19 [(tagger.tags) = "gorm:\"column:market_data_source;type:varchar(32);not null;default:''\""];
+  string price_tick = 20 [(tagger.tags) = "gorm:\"column:price_tick;type:numeric(76,36);not null;default:0\""];
+  string quantity_step = 21 [(tagger.tags) = "gorm:\"column:quantity_step;type:numeric(76,36);not null;default:0\""];
 }
 
 // HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be

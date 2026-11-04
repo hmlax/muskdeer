@@ -129,6 +129,10 @@ type HimalayaBudget struct {
 	Leverage             uint32                 `protobuf:"varint,15,opt,name=leverage,proto3" json:"leverage,omitempty" gorm:"column:leverage;type:integer;not null"`
 	WorstFeeRate         string                 `protobuf:"bytes,16,opt,name=worst_fee_rate,json=worstFeeRate,proto3" json:"worst_fee_rate,omitempty" gorm:"column:worst_fee_rate;type:numeric(76,36);not null;default:0"`
 	CutoverCompleted     bool                   `protobuf:"varint,17,opt,name=cutover_completed,json=cutoverCompleted,proto3" json:"cutover_completed,omitempty" gorm:"column:cutover_completed;type:boolean;not null"`
+	Symbol               string                 `protobuf:"bytes,18,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);not null;default:'';uniqueIndex:uk_himalaya_budget_symbol,where:symbol <> '' AND delete_at IS NULL"`
+	MarketDataSource     string                 `protobuf:"bytes,19,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty" gorm:"column:market_data_source;type:varchar(32);not null;default:''"`
+	PriceTick            string                 `protobuf:"bytes,20,opt,name=price_tick,json=priceTick,proto3" json:"price_tick,omitempty" gorm:"column:price_tick;type:numeric(76,36);not null;default:0"`
+	QuantityStep         string                 `protobuf:"bytes,21,opt,name=quantity_step,json=quantityStep,proto3" json:"quantity_step,omitempty" gorm:"column:quantity_step;type:numeric(76,36);not null;default:0"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -280,6 +284,34 @@ func (x *HimalayaBudget) GetCutoverCompleted() bool {
 		return x.CutoverCompleted
 	}
 	return false
+}
+
+func (x *HimalayaBudget) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *HimalayaBudget) GetMarketDataSource() string {
+	if x != nil {
+		return x.MarketDataSource
+	}
+	return ""
+}
+
+func (x *HimalayaBudget) GetPriceTick() string {
+	if x != nil {
+		return x.PriceTick
+	}
+	return ""
+}
+
+func (x *HimalayaBudget) GetQuantityStep() string {
+	if x != nil {
+		return x.QuantityStep
+	}
+	return ""
 }
 
 // HimalayaIntent is persisted before dispatch. An ambiguous attempt cannot be
@@ -807,7 +839,7 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\aversion\x18\x05 \x01(\x03BY\x9a\x84\x9e\x03Tgorm:\"column:version;type:bigint;not null;uniqueIndex:uk_himalaya_migration_version\"R\aversion\x12Q\n" +
 	"\bchecksum\x18\x06 \x01(\tB5\x9a\x84\x9e\x030gorm:\"column:checksum;type:varchar(64);not null\"R\bchecksumB\f\n" +
 	"\n" +
-	"_delete_at\"\xbe\r\n" +
+	"_delete_at\"\xb5\x11\n" +
 	"\x0eHimalayaBudget\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -827,7 +859,12 @@ const file_deer_proto_model_v1_himalaya_proto_rawDesc = "" +
 	"\x16maximum_order_notional\x18\x0e \x01(\tBP\x9a\x84\x9e\x03Kgorm:\"column:maximum_order_notional;type:numeric(76,36);not null;default:0\"R\x14maximumOrderNotional\x12M\n" +
 	"\bleverage\x18\x0f \x01(\rB1\x9a\x84\x9e\x03,gorm:\"column:leverage;type:integer;not null\"R\bleverage\x12n\n" +
 	"\x0eworst_fee_rate\x18\x10 \x01(\tBH\x9a\x84\x9e\x03Cgorm:\"column:worst_fee_rate;type:numeric(76,36);not null;default:0\"R\fworstFeeRate\x12g\n" +
-	"\x11cutover_completed\x18\x11 \x01(\bB:\x9a\x84\x9e\x035gorm:\"column:cutover_completed;type:boolean;not null\"R\x10cutoverCompletedB\f\n" +
+	"\x11cutover_completed\x18\x11 \x01(\bB:\x9a\x84\x9e\x035gorm:\"column:cutover_completed;type:boolean;not null\"R\x10cutoverCompleted\x12\xa7\x01\n" +
+	"\x06symbol\x18\x12 \x01(\tB\x8e\x01\x9a\x84\x9e\x03\x88\x01gorm:\"column:symbol;type:varchar(32);not null;default:'';uniqueIndex:uk_himalaya_budget_symbol,where:symbol <> '' AND delete_at IS NULL\"R\x06symbol\x12x\n" +
+	"\x12market_data_source\x18\x13 \x01(\tBJ\x9a\x84\x9e\x03Egorm:\"column:market_data_source;type:varchar(32);not null;default:''\"R\x10marketDataSource\x12c\n" +
+	"\n" +
+	"price_tick\x18\x14 \x01(\tBD\x9a\x84\x9e\x03?gorm:\"column:price_tick;type:numeric(76,36);not null;default:0\"R\tpriceTick\x12l\n" +
+	"\rquantity_step\x18\x15 \x01(\tBG\x9a\x84\x9e\x03Bgorm:\"column:quantity_step;type:numeric(76,36);not null;default:0\"R\fquantityStepB\f\n" +
 	"\n" +
 	"_delete_at\"\xf6\x15\n" +
 	"\x0eHimalayaIntent\x12J\n" +

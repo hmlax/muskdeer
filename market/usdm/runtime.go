@@ -29,7 +29,7 @@ type Runtime struct {
 	himalayav1.UnimplementedMarketServer
 	db     *gorm.DB
 	owner  string
-	cfg    *configv1.BusinessRuntime
+	cfg    *native.RuntimeConfig
 	leases domain.LeaseRepository
 	mu     sync.RWMutex
 	books  map[string]*commonv1.HimalayaBook
@@ -38,7 +38,11 @@ type Runtime struct {
 }
 
 // NewRuntime borrows dependencies without starting sockets or tasks.
-func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, logger *logging.Logger) (*Runtime, error) {
+func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, logger *logging.Logger) (*Runtime, error) {
+	settings, err := native.LoadRuntime(ctx, db, cfg)
+	if err != nil {
+		return nil, err
+	}
 	leases, err := repository.NewLeases(db)
 	if err != nil {
 		return nil, err
@@ -46,7 +50,7 @@ func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, logger
 	return &Runtime{
 		db:     db,
 		owner:  owner,
-		cfg:    proto.CloneOf(cfg),
+		cfg:    settings,
 		leases: leases,
 		books:  make(map[string]*commonv1.HimalayaBook),
 		trades: make(map[string]*commonv1.HimalayaTrade),
@@ -111,7 +115,7 @@ func (r *Runtime) run(ctx context.Context, symbol string) error {
 }
 
 func (r *Runtime) session(ctx context.Context, symbol string) error {
-	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout.AsDuration())
+	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 	token, err := r.leases.Acquire(op, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: native.MarketKey(symbol),
@@ -126,7 +130,7 @@ func (r *Runtime) session(ctx context.Context, symbol string) error {
 	}
 	return feed.Run(ctx, func(work context.Context, book *commonv1.HimalayaBook) error {
 		if time.Until(token.ExpiresAt) < r.cfg.Himalaya.LeaseTtl.AsDuration()/2 {
-			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout.AsDuration())
+			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout)
 			defer cancel()
 			token, err = r.leases.Renew(bounded, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
 			if err != nil {

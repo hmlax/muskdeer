@@ -30,7 +30,7 @@ type aggregateDispatchState struct {
 	store     *himalaya.Store
 	execution domain.LeaseToken
 	source    domain.LeaseToken
-	cfg       *configv1.HimalayaRuntime
+	cfg       *commonv1.HimalayaPolicy
 	base      *commonv1.SyntheticTapePlan
 }
 

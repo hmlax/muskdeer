@@ -28,7 +28,7 @@ type syntheticTradeOutageCheck struct {
 	sdk     *nativeSDKFixture
 	db      *gorm.DB
 	factory *rpcclient.Factory
-	cfg     *configv1.HimalayaRuntime
+	cfg     *commonv1.HimalayaPolicy
 	owner   string
 }
 

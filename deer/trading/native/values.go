@@ -9,7 +9,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -64,6 +63,9 @@ func StrategyKey(user, fund int64) string { return "hs/" + ScopeKey(user, fund) 
 // MarketKey identifies one selected futures instrument publisher.
 func MarketKey(symbol string) string { return "hm/" + symbol }
 
+// PortfolioKey identifies the fund's rebuildable observation publisher.
+func PortfolioKey(user, fund int64) string { return "hp/" + ScopeKey(user, fund) }
+
 // Symbol accepts a bounded exchange symbol without URL or routing syntax.
 func Symbol(value string) bool {
 	if len(value) < 2 || len(value) > 24 {
@@ -79,7 +81,7 @@ func Symbol(value string) bool {
 }
 
 // Scope returns a fresh typed wire scope from an immutable profile.
-func Scope(profile *configv1.HimalayaProfile) *commonv1.HimalayaScope {
+func Scope(profile *commonv1.HimalayaProfilePolicy) *commonv1.HimalayaScope {
 	return &commonv1.HimalayaScope{
 		UserId: profile.UserId,
 		FundId: profile.FundId,
@@ -88,7 +90,7 @@ func Scope(profile *configv1.HimalayaProfile) *commonv1.HimalayaScope {
 }
 
 // Profile rejects partial matches rather than implicitly using another account.
-func Profile(cfg *configv1.HimalayaRuntime, scope *commonv1.HimalayaScope) (*configv1.HimalayaProfile, error) {
+func Profile(cfg *commonv1.HimalayaPolicy, scope *commonv1.HimalayaScope) (*commonv1.HimalayaProfilePolicy, error) {
 	for _, profile := range cfg.GetProfiles() {
 		if profile.UserId == scope.GetUserId() && profile.FundId == scope.GetFundId() && profile.Symbol == scope.GetSymbol() {
 			return profile, nil

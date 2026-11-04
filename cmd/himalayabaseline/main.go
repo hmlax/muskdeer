@@ -22,7 +22,6 @@ import (
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -46,7 +45,7 @@ type baselineRunner struct {
 	client *himalaya.Client
 	leases domain.LeaseRepository
 	owner  string
-	cfg    *configv1.HimalayaRuntime
+	cfg    *commonv1.HimalayaPolicy
 	apply  bool
 }
 
@@ -123,6 +122,10 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	if err := himalayamigrate.Check(ctx, db.GORM()); err != nil {
 		return err
 	}
+	settings, err := native.LoadRuntime(ctx, db.GORM(), cfg.Business)
+	if err != nil {
+		return err
+	}
 	store, err := himalaya.NewStore(db.GORM())
 	if err != nil {
 		return err
@@ -151,7 +154,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 		client: client,
 		leases: leases,
 		owner:  owner,
-		cfg:    cfg.Business.Himalaya,
+		cfg:    settings.Himalaya,
 		apply:  apply,
 	}
 	if historical {

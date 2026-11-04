@@ -46,7 +46,7 @@ func NewPortfolio(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.
 		if err != nil {
 			return nil, err
 		}
-		runtime, err := nativeportfolio.NewRuntime(db, incarnation, cfg.Business, factory, owner.Logger())
+		runtime, err := nativeportfolio.NewRuntime(ctx, db, incarnation, cfg.Business, factory, owner.Logger())
 		if err != nil {
 			return nil, err
 		}

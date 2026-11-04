@@ -64,9 +64,9 @@ func TestSyntheticConfigRejectsUnboundedOrNonDevelopmentRuns(t *testing.T) {
 	}
 }
 
-func syntheticFixture() (*configv1.HimalayaRuntime, *commonv1.HimalayaBook) {
-	return &configv1.HimalayaRuntime{
-		Profiles: []*configv1.HimalayaProfile{{
+func syntheticFixture() (*commonv1.HimalayaPolicy, *commonv1.HimalayaBook) {
+	return &commonv1.HimalayaPolicy{
+		Profiles: []*commonv1.HimalayaProfilePolicy{{
 			Symbol:       "BTCUSDT",
 			PriceTick:    "0.1",
 			QuantityStep: "0.001",

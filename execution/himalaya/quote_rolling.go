@@ -7,7 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -25,7 +24,7 @@ type rollingQuote struct {
 
 // Only a tenth of safe obsolete levels on each side enter cancellation at once.
 // Unsafe prices, oversized orders and legacy quotes still require cancellation.
-func retainRollingOrders(profile *configv1.HimalayaProfile, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
+func retainRollingOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
 	limit, err := native.Value(profile.MaximumOrderNotional, false, false)
 	if err != nil {
 		return err

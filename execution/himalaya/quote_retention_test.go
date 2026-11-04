@@ -6,14 +6,13 @@ import (
 	"github.com/shopspring/decimal"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
 func TestQuoteRefreshKeepsBothSidesUntilTheirReplacementsExist(t *testing.T) {
 	t.Parallel()
-	profile := &configv1.HimalayaProfile{
+	profile := &commonv1.HimalayaProfilePolicy{
 		Symbol:               "BTCUSDT",
 		MaximumOrderNotional: "500",
 	}
@@ -85,7 +84,7 @@ func TestQuoteRefreshDoesNotBridgeCrossingLegacyOrOversizedOrders(t *testing.T) 
 	for _, kind := range []string{"crossing", "legacy", "over_cap"} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
-			profile := &configv1.HimalayaProfile{
+			profile := &commonv1.HimalayaProfilePolicy{
 				Symbol:               "BTCUSDT",
 				MaximumOrderNotional: "500",
 			}

@@ -7,7 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	himalayav1 "github.com/hmlax/muskdeer/deer/proto/rpc/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -16,7 +15,7 @@ import (
 // quoteCycle is owned by one admitted reconcile call; all request pointers are
 // borrowed and immutable, while retention and result belong only to that call.
 type quoteCycle struct {
-	profile   *configv1.HimalayaProfile
+	profile   *commonv1.HimalayaProfilePolicy
 	lease     domain.LeaseToken
 	authority LiveAuthority
 	targets   []*commonv1.HimalayaTarget

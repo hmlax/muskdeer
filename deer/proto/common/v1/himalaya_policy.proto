@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package muskdeer.common.v1;
+
+import "google/protobuf/duration.proto";
+import "deer/proto/config/v1/service.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+
+// HimalayaPolicy is an immutable startup/audit snapshot, not a Nacos schema.
+// Wire numbers retain the prior synthetic policy digest across the DB move.
+message HimalayaPolicy {
+  string target = 1;
+  string token_env = 2;
+  repeated HimalayaProfilePolicy profiles = 3;
+  string quantity_fraction = 4;
+  uint32 depth = 5;
+  google.protobuf.Duration lease_ttl = 6;
+  muskdeer.config.v1.SyntheticTape synthetic_tape = 7;
+}
+
+// HimalayaProfilePolicy projects business fields from the generated budget
+// model. Dynamic balances, reservations and timestamps never enter its digest.
+message HimalayaProfilePolicy {
+  int64 user_id = 1;
+  int64 fund_id = 2;
+  string symbol = 3;
+  string maximum_notional = 4;
+  string maximum_order_notional = 5;
+  uint32 leverage = 6;
+  string market_data_source = 7;
+  string price_tick = 8;
+  string quantity_step = 9;
+}
+
+// HimalayaProfileImport is an explicit maintenance input, never service config.
+message HimalayaProfileImport {
+  repeated HimalayaProfilePolicy profiles = 1;
+}

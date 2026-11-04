@@ -54,7 +54,7 @@ func ValidateTrade(trade *commonv1.HimalayaTrade, symbol string, now time.Time) 
 
 // SyntheticTradeTarget scales source quantity within the existing single-event
 // cap and rounds down to a lot. Too-small quantities are not manufactured.
-func SyntheticTradeTarget(h *configv1.HimalayaRuntime, trade *commonv1.HimalayaTrade) (*commonv1.HimalayaTarget, error) {
+func SyntheticTradeTarget(h *commonv1.HimalayaPolicy, trade *commonv1.HimalayaTrade) (*commonv1.HimalayaTarget, error) {
 	profile := SyntheticProfile(h, trade.GetSymbol())
 	market := SyntheticMarket(h, trade.GetSymbol())
 	if profile == nil || market == nil || trade.GetSource() != Source || trade.GetSegment() != Segment {
@@ -91,7 +91,7 @@ func SyntheticTradeTarget(h *configv1.HimalayaRuntime, trade *commonv1.HimalayaT
 
 // SyntheticSourcePlan preserves book mode and requires an owned, fresh trade in
 // aggregate mode. Callers cannot silently downgrade the configured source.
-func SyntheticSourcePlan(h *configv1.HimalayaRuntime, input *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapePlan, error) {
+func SyntheticSourcePlan(h *commonv1.HimalayaPolicy, input *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapePlan, error) {
 	if h == nil || input == nil || input.GetRunId() != h.GetSyntheticTape().GetRunId() {
 		return nil, ErrInvalid
 	}

@@ -41,7 +41,7 @@ func NewMarket(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Dee
 		return nil, err
 	}
 	if cfg.Business.ExecutionVenue == native.Venue {
-		runtime, err := usdm.NewRuntime(db, incarnation, cfg.Business, owner.Logger())
+		runtime, err := usdm.NewRuntime(ctx, db, incarnation, cfg.Business, owner.Logger())
 		if err != nil {
 			return nil, err
 		}

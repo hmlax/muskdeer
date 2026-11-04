@@ -7,7 +7,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -20,7 +19,7 @@ type target struct {
 
 // BuildTargets preserves the requested fraction, clips finite per-order risk,
 // applies deterministic minimum lot/notional and merges identical native ticks.
-func BuildTargets(cfg *configv1.HimalayaRuntime, profile *configv1.HimalayaProfile, book *commonv1.HimalayaBook, snapshot *commonv1.HimalayaSnapshot) ([]*commonv1.HimalayaTarget, error) {
+func BuildTargets(cfg *commonv1.HimalayaPolicy, profile *commonv1.HimalayaProfilePolicy, book *commonv1.HimalayaBook, snapshot *commonv1.HimalayaSnapshot) ([]*commonv1.HimalayaTarget, error) {
 	if book.GetSource() != values.Source || book.GetSegment() != values.Segment || book.GetSymbol() != profile.Symbol ||
 		snapshot.GetScope().GetSymbol() != profile.Symbol || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId ||
 		profile.PriceTick != snapshot.GetMarket().GetPriceTick() || profile.QuantityStep != snapshot.Market.QuantityStep || profile.Leverage > snapshot.Market.MaximumLeverage {

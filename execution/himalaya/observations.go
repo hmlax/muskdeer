@@ -2,7 +2,6 @@ package himalaya
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"github.com/shopspring/decimal"
@@ -10,7 +9,6 @@ import (
 	"gorm.io/gorm/clause"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	modelv1 "github.com/hmlax/muskdeer/deer/proto/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -216,31 +214,5 @@ func (s *Store) CompleteCutover(ctx context.Context, lease domain.LeaseToken) er
 			return err
 		}
 		return tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", lease.Key.AccountID).Update("cutover_completed", true).Error
-	})
-}
-
-// InitializeBudget is an explicit maintenance operation, never a service startup action.
-func (s *Store) InitializeBudget(ctx context.Context, profile *configv1.HimalayaProfile, enabled bool) error {
-	return s.db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Transaction(func(tx *gorm.DB) error {
-		key := AccountID(profile.UserId, profile.FundId)
-		// A retained zero-epoch row bootstraps ownership without granting a lease.
-		if err := tx.WithContext(ctx).Model(&modelv1.ExecutionShardLease{}).Clauses(clause.OnConflict{DoNothing: true}).Create(&modelv1.ExecutionShardLease{AccountId: key}).Error; err != nil {
-			return err
-		}
-		var row modelv1.HimalayaBudget
-		err := tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", key).Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			return err
-		}
-		fresh := errors.Is(err, gorm.ErrRecordNotFound)
-		row.AccountId, row.UserId, row.FundId = key, profile.UserId, profile.FundId
-		row.MaximumNotional, row.MaximumOrderNotional = profile.MaximumNotional, profile.MaximumOrderNotional
-		row.Enabled, row.Leverage = enabled, profile.Leverage
-		if fresh {
-			row.ObservedNotional, row.ReservedNotional = "0", "0"
-			return tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Create(&row).Error
-		}
-		return tx.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("id = ?", row.Id).
-			Select("MaximumNotional", "MaximumOrderNotional", "Enabled", "Leverage").Updates(&row).Error
 	})
 }

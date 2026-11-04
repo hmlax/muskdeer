@@ -4,11 +4,10 @@ import (
 	"testing"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 )
 
 func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) {
-	profile := &configv1.HimalayaProfile{
+	profile := &commonv1.HimalayaProfilePolicy{
 		UserId:               1,
 		FundId:               1,
 		Symbol:               "BTCUSDT",
@@ -45,7 +44,7 @@ func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) 
 			MaximumLeverage: 10,
 		},
 	}
-	plan, err := BuildTargets(&configv1.HimalayaRuntime{
+	plan, err := BuildTargets(&commonv1.HimalayaPolicy{
 		Depth:            20,
 		QuantityFraction: "0.1",
 	}, profile, book, snapshot)
@@ -53,7 +52,7 @@ func TestTargetPlanRoundsAwayFromCrossingAndMergesSameNativePrice(t *testing.T) 
 		t.Fatalf("exact native target conversion failed: %v %v", plan, err)
 	}
 	snapshot.Market.QuantityStep = "0.01"
-	if _, err := BuildTargets(&configv1.HimalayaRuntime{
+	if _, err := BuildTargets(&commonv1.HimalayaPolicy{
 		Depth:            20,
 		QuantityFraction: "0.1",
 	}, profile, book, snapshot); err == nil {

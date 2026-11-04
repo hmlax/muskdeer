@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -33,7 +32,7 @@ type Runtime struct {
 	himalayav1.UnimplementedExecutionServer
 	db      *gorm.DB
 	owner   string
-	cfg     *configv1.BusinessRuntime
+	cfg     *native.RuntimeConfig
 	factory *rpcclient.Factory
 	logger  *logging.Logger
 	store   *Store
@@ -45,7 +44,11 @@ type Runtime struct {
 }
 
 // NewRuntime assembles borrowed resources; the worker creates the SDK connection.
-func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
+func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
+	settings, err := native.LoadRuntime(ctx, db, cfg)
+	if err != nil {
+		return nil, err
+	}
 	store, err := NewStore(db)
 	if err != nil {
 		return nil, err
@@ -56,14 +59,14 @@ func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factor
 	}
 	gates := make(map[string]chan struct{})
 	plans := make(map[string]*atomic.Int64)
-	for _, p := range cfg.Himalaya.Profiles {
+	for _, p := range settings.Himalaya.Profiles {
 		gates[AccountID(p.UserId, p.FundId)] = make(chan struct{}, 1)
 		plans[AccountID(p.UserId, p.FundId)] = &atomic.Int64{}
 	}
 	return &Runtime{
 		db:      db,
 		owner:   owner,
-		cfg:     proto.CloneOf(cfg),
+		cfg:     settings,
 		factory: factory,
 		logger:  logger,
 		store:   store,
@@ -92,7 +95,7 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 	client, err := NewClient(ctx, Config{
 		Target:  r.cfg.Himalaya.Target,
 		Token:   os.Getenv(r.cfg.Himalaya.TokenEnv),
-		Timeout: r.cfg.OperationTimeout.AsDuration(),
+		Timeout: r.cfg.OperationTimeout,
 	}, r.store)
 	if err != nil {
 		return err
@@ -144,7 +147,7 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 			gate := r.gates[AccountID(profile.UserId, profile.FundId)]
 			select {
 			case gate <- struct{}{}:
-				op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout.AsDuration())
+				op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 				err := r.protect(op, profile)
 				cancel()
 				<-gate
@@ -163,7 +166,7 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 	return ctx.Err()
 }
 
-func (r *Runtime) acquire(ctx context.Context, profile *configv1.HimalayaProfile) (domain.LeaseToken, error) {
+func (r *Runtime) acquire(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) (domain.LeaseToken, error) {
 	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: AccountID(profile.UserId, profile.FundId),
@@ -215,7 +218,7 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope
 	return snapshot, nil
 }
 
-func (r *Runtime) read(ctx context.Context, profile *configv1.HimalayaProfile) (*SDKSnapshot, *commonv1.HimalayaSnapshot, error) {
+func (r *Runtime) read(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) (*SDKSnapshot, *commonv1.HimalayaSnapshot, error) {
 	scope := Scope{
 		UserID: profile.UserId,
 		FundID: profile.FundId,
@@ -267,7 +270,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *himalayav1.QuotePlan) (*h
 	return result, nil
 }
 
-func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfile, plan *himalayav1.QuotePlan) (*himalayav1.QuoteResult, error) {
+func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, plan *himalayav1.QuotePlan) (*himalayav1.QuoteResult, error) {
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -372,7 +375,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *configv1.HimalayaProfi
 	return result, nil
 }
 
-func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile, lease domain.LeaseToken, book *commonv1.HimalayaBook) (*commonv1.HimalayaSnapshot, error) {
+func (r *Runtime) refresh(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, lease domain.LeaseToken, book *commonv1.HimalayaBook) (*commonv1.HimalayaSnapshot, error) {
 	raw, snapshot, err := r.read(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -473,7 +476,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *configv1.HimalayaProfile
 	return snapshot, recoveryErr
 }
 
-func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *configv1.HimalayaProfile, order *commonv1.HimalayaOrder) error {
+func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *commonv1.HimalayaProfilePolicy, order *commonv1.HimalayaOrder) error {
 	id, err := strconv.ParseUint(order.OrderId, 10, 64)
 	if err != nil {
 		return err
@@ -492,7 +495,7 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 	return r.client.Load().Cancel(ctx, admission)
 }
 
-func (r *Runtime) cancelObsolete(ctx context.Context, profile *configv1.HimalayaProfile, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, retained *quoteRetention, result *himalayav1.QuoteResult) error {
+func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.HimalayaProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.HimalayaSnapshot, retained *quoteRetention, result *himalayav1.QuoteResult) error {
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
 			continue

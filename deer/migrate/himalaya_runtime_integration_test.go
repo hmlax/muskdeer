@@ -69,9 +69,8 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 	db, store, executionLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	t.Cleanup(cancel)
-	maximumNotional := "1000"
 	if depth > 1 {
-		maximumNotional = "2000"
+		maximumNotional := "2000"
 		// This scenario needs forty old/new quote reservations in addition
 		// to the fixture's retained 900 obligation. Existing tests keep 1000.
 		if err := db.WithContext(ctx).Model(&modelv1.HimalayaBudget{}).Where("account_id = ?", executionLease.Key.AccountID).
@@ -80,6 +79,7 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 		}
 	}
 	authority := liveAuthorityFixture(ctx, t, db, executionLease, request.Symbol)
+	configureNativeProfileFixture(ctx, t, db, request)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
 	sdk.lostTerminalReply.Store(lostReply)
 	if reprice > 0 || scenario.resize {
@@ -153,23 +153,12 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 			Depth:            depth,
 			QuantityFraction: "0.1",
 			LeaseTtl:         durationpb.New(10 * time.Second),
-			Profiles: []*configv1.HimalayaProfile{{
-				UserId:               10001,
-				FundId:               10001,
-				Symbol:               "BTCUSDT",
-				Leverage:             10,
-				MarketDataSource:     native.Source,
-				PriceTick:            "0.1",
-				QuantityStep:         "0.001",
-				MaximumNotional:      maximumNotional,
-				MaximumOrderNotional: "1000",
-			}},
 		},
 	}
 	if depth > 1 {
 		cfg.OperationTimeout = durationpb.New(2 * time.Second)
 	}
-	execution, err := himalaya.NewRuntime(db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
+	execution, err := himalaya.NewRuntime(ctx, db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +167,7 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 		Service: rpcsecurity.ServiceExecution,
 		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceExecution, func(server *grpc.Server) { execution.RegisterGRPC(server) }),
 	}
-	portfolio, err := nativeportfolio.NewRuntime(db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServicePortfolio, discovery), logger)
+	portfolio, err := nativeportfolio.NewRuntime(ctx, db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServicePortfolio, discovery), logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +176,7 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 		Service: rpcsecurity.ServicePortfolio,
 		Address: nativeTLSServer(t, ca, rpcsecurity.ServicePortfolio, func(server *grpc.Server) { portfolio.RegisterGRPC(server) }),
 	}
-	strategy, err := nativestrategy.Workers(db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceStrategy, discovery), logger)
+	strategy, err := nativestrategy.Workers(ctx, db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceStrategy, discovery), logger)
 	if err != nil {
 		t.Fatal(err)
 	}

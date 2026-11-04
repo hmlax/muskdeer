@@ -32,14 +32,18 @@ type Runtime struct {
 	himalayav1.UnimplementedPortfolioServer
 	db      *gorm.DB
 	owner   string
-	cfg     *configv1.BusinessRuntime
+	cfg     *values.RuntimeConfig
 	factory *rpcclient.Factory
 	leases  domain.LeaseRepository
 	logger  *logging.Logger
 }
 
 // NewRuntime borrows the existing pool and RPC factory without starting tasks.
-func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
+func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
+	settings, err := values.LoadRuntime(ctx, db, cfg)
+	if err != nil {
+		return nil, err
+	}
 	leases, err := repository.NewLeases(db)
 	if err != nil {
 		return nil, err
@@ -47,7 +51,7 @@ func NewRuntime(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factor
 	return &Runtime{
 		db:      db,
 		owner:   owner,
-		cfg:     proto.CloneOf(cfg),
+		cfg:     settings,
 		factory: factory,
 		leases:  leases,
 		logger:  logger,
@@ -68,7 +72,7 @@ func (r *Runtime) Workers() []deer.Worker {
 			Run: func(ctx context.Context) error {
 				failed := false
 				for ctx.Err() == nil {
-					op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout.AsDuration())
+					op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 					err := r.poll(op, profile)
 					cancel()
 					if err != nil && !failed && ctx.Err() == nil {
@@ -88,10 +92,10 @@ func (r *Runtime) Workers() []deer.Worker {
 	return result
 }
 
-func (r *Runtime) poll(ctx context.Context, profile *configv1.HimalayaProfile) error {
+func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePolicy) error {
 	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
-		AccountID: "hp/" + values.ScopeKey(profile.UserId, profile.FundId),
+		AccountID: values.PortfolioKey(profile.UserId, profile.FundId),
 	}, r.owner, r.cfg.Himalaya.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
@@ -144,7 +148,7 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.HimalayaScope
 		return nil, status.Error(codes.Unavailable, values.MessageInvalid)
 	}
 	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, &commonv1.HimalayaAuthority{
-		AccountId: "hp/" + row.AccountId,
+		AccountId: values.PortfolioKey(scope.UserId, scope.FundId),
 		OwnerId:   row.PublisherOwnerId,
 		Epoch:     row.PublisherEpoch,
 	}) != nil {

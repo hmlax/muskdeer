@@ -11,7 +11,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-func TestNativeRuntimeRequiresExplicitScopesGridAndFinitePolicy(t *testing.T) {
+func TestNativeRuntimeRequiresExplicitTransportAndFiniteControls(t *testing.T) {
 	cfg := &configv1.ServiceConfig{
 		Name:            "execution",
 		ShutdownTimeout: durationpb.New(5 * time.Second),
@@ -31,17 +31,6 @@ func TestNativeRuntimeRequiresExplicitScopesGridAndFinitePolicy(t *testing.T) {
 				QuantityFraction: "0.1",
 				Depth:            20,
 				LeaseTtl:         durationpb.New(10 * time.Second),
-				Profiles: []*configv1.HimalayaProfile{{
-					UserId:               10001,
-					FundId:               10001,
-					Symbol:               "BTCUSDT",
-					MarketDataSource:     native.Source,
-					Leverage:             10,
-					MaximumNotional:      "1000000",
-					MaximumOrderNotional: "10000",
-					PriceTick:            "0.1",
-					QuantityStep:         "0.001",
-				}},
 			},
 		},
 	}
@@ -54,13 +43,8 @@ func TestNativeRuntimeRequiresExplicitScopesGridAndFinitePolicy(t *testing.T) {
 	}
 	for _, mutate := range []func(*configv1.ServiceConfig){
 		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Target = "public.example:8080" },
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Profiles[0].Leverage = 11 },
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Profiles[0].PriceTick = "0" },
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Profiles[0].MarketDataSource = "okx" },
-		func(c *configv1.ServiceConfig) {
-			c.Business.Himalaya.Profiles = append(c.Business.Himalaya.Profiles, proto.CloneOf(c.Business.Himalaya.Profiles[0]))
-		},
-		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Profiles[0].MaximumNotional = "0" },
+		func(c *configv1.ServiceConfig) { c.Business.Himalaya.QuantityFraction = "0" },
+		func(c *configv1.ServiceConfig) { c.Business.Himalaya.Depth = 0 },
 	} {
 		changed := proto.CloneOf(cfg)
 		mutate(changed)

@@ -18,7 +18,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
-func syntheticWorkers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger, leases domain.LeaseRepository) []deer.Worker {
+func syntheticWorkers(db *gorm.DB, owner string, cfg *values.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger, leases domain.LeaseRepository) []deer.Worker {
 	if !cfg.Himalaya.GetSyntheticTape().GetEnabled() {
 		return nil
 	}
@@ -28,7 +28,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, 
 			Name: values.SyntheticWorker + profile.Symbol,
 			Run: func(ctx context.Context) error {
 				for sequence := uint32(0); sequence < cfg.Himalaya.SyntheticTape.MaximumEvents && ctx.Err() == nil; {
-					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
+					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
 					err := syntheticTick(op, db, leases, factory, owner, cfg, profile.Symbol, sequence)
 					cancel()
 					if err == nil {
@@ -50,7 +50,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, 
 	return workers
 }
 
-func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *configv1.BusinessRuntime, symbol string, sequence uint32) error {
+func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *values.RuntimeConfig, symbol string, sequence uint32) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, symbol),

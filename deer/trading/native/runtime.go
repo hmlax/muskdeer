@@ -18,7 +18,7 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	b := cfg.GetBusiness()
 	h := b.GetHimalaya()
 	if h == nil || b.Market != nil || b.Strategy != nil || b.Simulator != nil || b.Risk != nil || b.ExecutionLeaseTtl != nil || b.PortfolioConsumer != "" ||
-		len(h.Profiles) == 0 || len(h.Profiles) > 8 || h.Depth == 0 || h.Depth > 20 || h.LeaseTtl.CheckValid() != nil ||
+		h.Depth == 0 || h.Depth > 20 || h.LeaseTtl.CheckValid() != nil ||
 		h.LeaseTtl.AsDuration() < 3*b.OperationTimeout.AsDuration() || h.LeaseTtl.AsDuration() > domain.MaxLeaseTTL {
 		return ErrInvalid
 	}
@@ -29,14 +29,7 @@ func ValidateConfig(cfg *configv1.ServiceConfig) error {
 	if err := validateNativeRole(cfg, h); err != nil {
 		return err
 	}
-	funds, symbols := make(map[string]bool), make(map[string]bool)
-	for _, profile := range h.Profiles {
-		if !validProfile(profile) || funds[ScopeKey(profile.UserId, profile.FundId)] || symbols[profile.Symbol] {
-			return ErrInvalid
-		}
-		funds[ScopeKey(profile.UserId, profile.FundId)], symbols[profile.Symbol] = true, true
-	}
-	return ValidateSyntheticConfig(h)
+	return ValidateSyntheticSettings(h)
 }
 
 func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.HimalayaRuntime) error {
@@ -60,7 +53,7 @@ func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.HimalayaRuntime
 	return nil
 }
 
-func validProfile(p *configv1.HimalayaProfile) bool {
+func validProfile(p *commonv1.HimalayaProfilePolicy) bool {
 	if p == nil || p.UserId <= 0 || p.FundId <= 0 || !Symbol(p.Symbol) || p.Leverage == 0 || p.Leverage > 10 || p.MarketDataSource != Source {
 		return false
 	}

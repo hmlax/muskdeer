@@ -52,7 +52,7 @@ func (r *Runtime) runTrades(ctx context.Context, symbol string) error {
 }
 
 func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
-	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout.AsDuration())
+	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
 	token, err := r.leases.Acquire(op, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: native.TradeKey(symbol),
@@ -67,7 +67,7 @@ func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
 	}
 	return feed.Run(ctx, func(work context.Context, trade *commonv1.HimalayaTrade) error {
 		if time.Until(token.ExpiresAt) < r.cfg.Himalaya.LeaseTtl.AsDuration()/2 {
-			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout.AsDuration())
+			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout)
 			defer cancel()
 			token, err = r.leases.Renew(bounded, token, r.cfg.Himalaya.LeaseTtl.AsDuration())
 			if err != nil {

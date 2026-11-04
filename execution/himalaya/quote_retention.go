@@ -6,7 +6,6 @@ import (
 	"github.com/shopspring/decimal"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -17,7 +16,7 @@ type quoteRetention struct {
 	pending bool
 }
 
-func retainQuoteOrders(profile *configv1.HimalayaProfile, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, cutover bool) (*quoteRetention, error) {
+func retainQuoteOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, cutover bool) (*quoteRetention, error) {
 	retained := &quoteRetention{
 		orders:  make(map[string]bool),
 		targets: make(map[string]bool),
@@ -67,7 +66,7 @@ func retainQuoteOrders(profile *configv1.HimalayaProfile, snapshot *commonv1.Him
 
 // Keep one existing, non-crossing quote on a missing side until a replacement
 // exists. Its original reservation remains held throughout cancellation proof.
-func retainBridgeOrders(profile *configv1.HimalayaProfile, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
+func retainBridgeOrders(profile *commonv1.HimalayaProfilePolicy, snapshot *commonv1.HimalayaSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
 	limit, err := native.Value(profile.MaximumOrderNotional, false, false)
 	if err != nil {
 		return err

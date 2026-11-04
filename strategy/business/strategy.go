@@ -42,7 +42,7 @@ func NewStrategy(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.D
 		if err != nil {
 			return nil, err
 		}
-		workers, err := nativestrategy.Workers(db, incarnation, cfg.Business, factory, owner.Logger())
+		workers, err := nativestrategy.Workers(ctx, db, incarnation, cfg.Business, factory, owner.Logger())
 		if err != nil {
 			return nil, err
 		}

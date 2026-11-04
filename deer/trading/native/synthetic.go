@@ -27,7 +27,37 @@ func SyntheticStrategyKey(run, symbol string) string {
 }
 
 // ValidateSyntheticConfig requires a finite, explicitly developmental run.
-func ValidateSyntheticConfig(h *configv1.HimalayaRuntime) error {
+func ValidateSyntheticConfig(h *commonv1.HimalayaPolicy) error {
+	if h == nil || ValidateSyntheticSettings(&configv1.HimalayaRuntime{
+		QuantityFraction: h.QuantityFraction,
+		SyntheticTape:    h.SyntheticTape,
+	}) != nil {
+		return ErrInvalid
+	}
+	s := h.GetSyntheticTape()
+	if s == nil {
+		return nil
+	}
+	if len(s.Profiles) > len(h.Profiles) {
+		return ErrInvalid
+	}
+	for _, p := range s.Profiles {
+		market := SyntheticMarket(h, p.GetSymbol())
+		quantity, e1 := Value(p.GetQuantity(), false, false)
+		step, e2 := Value(market.GetQuantityStep(), false, false)
+		if market == nil || e1 != nil || e2 != nil {
+			return ErrInvalid
+		}
+		if _, remainder := quantity.QuoRem(step, 0); !remainder.IsZero() {
+			return ErrInvalid
+		}
+	}
+	return nil
+}
+
+// ValidateSyntheticSettings validates Nacos controls before database access.
+// Source bindings and lot alignment are validated against the database later.
+func ValidateSyntheticSettings(h *configv1.HimalayaRuntime) error {
 	s := h.GetSyntheticTape()
 	if s == nil {
 		return nil
@@ -36,7 +66,7 @@ func ValidateSyntheticConfig(h *configv1.HimalayaRuntime) error {
 		return ErrInvalid
 	}
 	if !s.DevelopmentOnly || len(s.RunId) == 0 || len(s.RunId) > 20 || s.MaximumEvents == 0 || s.MaximumEvents > 1000 ||
-		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 || len(s.Profiles) > len(h.Profiles) {
+		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 || len(s.Profiles) > 8 {
 		return ErrInvalid
 	}
 	for _, c := range s.RunId {
@@ -47,14 +77,9 @@ func ValidateSyntheticConfig(h *configv1.HimalayaRuntime) error {
 	}
 	seen := make(map[string]bool)
 	for _, p := range s.Profiles {
-		market := SyntheticMarket(h, p.GetSymbol())
 		quantity, e1 := Value(p.GetQuantity(), false, false)
 		maximum, e2 := Value(p.GetMaximumNotional(), false, false)
-		step, e3 := Value(market.GetQuantityStep(), false, false)
-		if market == nil || seen[p.Symbol] || e1 != nil || e2 != nil || e3 != nil || maximum.IsZero() {
-			return ErrInvalid
-		}
-		if _, remainder := quantity.QuoRem(step, 0); !remainder.IsZero() {
+		if !Symbol(p.GetSymbol()) || seen[p.Symbol] || e1 != nil || e2 != nil || maximum.IsZero() || quantity.IsZero() {
 			return ErrInvalid
 		}
 		seen[p.Symbol] = true
@@ -75,7 +100,7 @@ func validSyntheticMode(h *configv1.HimalayaRuntime) bool {
 }
 
 // SyntheticMarket returns the immutable market grid selected for the symbol.
-func SyntheticMarket(h *configv1.HimalayaRuntime, symbol string) *configv1.HimalayaProfile {
+func SyntheticMarket(h *commonv1.HimalayaPolicy, symbol string) *commonv1.HimalayaProfilePolicy {
 	for _, profile := range h.GetProfiles() {
 		if profile.Symbol == symbol {
 			return profile
@@ -85,7 +110,7 @@ func SyntheticMarket(h *configv1.HimalayaRuntime, symbol string) *configv1.Himal
 }
 
 // SyntheticProfile selects explicit per-symbol market-data limits.
-func SyntheticProfile(h *configv1.HimalayaRuntime, symbol string) *configv1.SyntheticTapeProfile {
+func SyntheticProfile(h *commonv1.HimalayaPolicy, symbol string) *configv1.SyntheticTapeProfile {
 	for _, profile := range h.GetSyntheticTape().GetProfiles() {
 		if profile.Symbol == symbol {
 			return profile
@@ -95,7 +120,7 @@ func SyntheticProfile(h *configv1.HimalayaRuntime, symbol string) *configv1.Synt
 }
 
 // SyntheticPlan validates and prices a development slot from a fresh source.
-func SyntheticPlan(h *configv1.HimalayaRuntime, symbol string, sequence uint32, book *commonv1.HimalayaBook, strategy *commonv1.HimalayaAuthority) (*commonv1.SyntheticTapePlan, error) {
+func SyntheticPlan(h *commonv1.HimalayaPolicy, symbol string, sequence uint32, book *commonv1.HimalayaBook, strategy *commonv1.HimalayaAuthority) (*commonv1.SyntheticTapePlan, error) {
 	if h.GetSyntheticTape().GetMode() != configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK || ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || sequence >= h.SyntheticTape.MaximumEvents ||
 		book.GetSymbol() != symbol || book.GetSource() != Source || book.GetSegment() != Segment || book.GetValidUntilMs() <= time.Now().UnixMilli() ||
 		len(book.GetBids()) == 0 || len(book.GetAsks()) == 0 {

@@ -44,6 +44,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	ctx, cancel := context.WithTimeout(t.Context(), 12*time.Second)
 	t.Cleanup(cancel)
 	authority := liveAuthorityFixture(ctx, t, db, lease, request.Symbol)
+	configureNativeProfileFixture(ctx, t, db, request)
 	sdk := &nativeSDKFixture{orders: make(map[uint64]*pb.OrderRow)}
 	address := startNativeSDK(t, sdk)
 	ca := testcert.New(t)
@@ -95,15 +96,6 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 			Depth:            1,
 			QuantityFraction: "0.1",
 			LeaseTtl:         durationpb.New(10 * time.Second),
-			Profiles: []*configv1.HimalayaProfile{{
-				UserId:           request.UserID,
-				FundId:           request.FundID,
-				Symbol:           request.Symbol,
-				Leverage:         10,
-				MarketDataSource: native.Source,
-				PriceTick:        "0.1",
-				QuantityStep:     "0.001",
-			}},
 			SyntheticTape: &configv1.SyntheticTape{
 				Mode:            mode,
 				Enabled:         true,
@@ -119,7 +111,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 			},
 		},
 	}
-	execution, err := himalaya.NewRuntime(db, lease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
+	execution, err := himalaya.NewRuntime(ctx, db, lease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,7 +129,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 		t.Fatalf("PublishSynthetic(portfolio peer)=%v, want PermissionDenied", err)
 	}
 	strategyFactory := nativeFactory(ctx, t, ca, rpcsecurity.ServiceStrategy, discovery)
-	strategy, err := nativestrategy.Workers(db, lease.OwnerID, cfg, strategyFactory, logger)
+	strategy, err := nativestrategy.Workers(ctx, db, lease.OwnerID, cfg, strategyFactory, logger)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,12 +144,16 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	}
 	runNativeWorkers(ctx, t, append(execution.Workers(), selected...))
 	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
+		settings, err := native.LoadRuntime(ctx, db, cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
 		assertSyntheticTradeOutage(ctx, t, syntheticTradeOutageCheck{
 			market:  market,
 			sdk:     sdk,
 			db:      db,
 			factory: strategyFactory,
-			cfg:     cfg.Himalaya,
+			cfg:     settings.Himalaya,
 			owner:   lease.OwnerID,
 		})
 		market.tradeUnavailable.Store(false)
@@ -178,7 +174,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	}
 	// A new worker starts its local sequence at zero, but the persisted slots
 	// return the earlier results rather than issuing two more SDK publications.
-	restarted, err := nativestrategy.Workers(db, lease.OwnerID, cfg, strategyFactory, logger)
+	restarted, err := nativestrategy.Workers(ctx, db, lease.OwnerID, cfg, strategyFactory, logger)
 	if err != nil {
 		t.Fatal(err)
 	}

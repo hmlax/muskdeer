@@ -66,7 +66,9 @@ message BusinessRuntime {
 message HimalayaRuntime {
   string target = 1;
   string token_env = 2;
-  repeated HimalayaProfile profiles = 3;
+  // Account/product/risk policy is loaded from PostgreSQL, never Nacos.
+  reserved 3;
+  reserved "profiles";
   string quantity_fraction = 4;
   uint32 depth = 5;
   google.protobuf.Duration lease_ttl = 6;
@@ -92,18 +94,6 @@ message SyntheticTapeProfile {
   string quantity = 2;
   string maximum_notional = 3;
 }
-message HimalayaProfile {
-  int64 user_id = 1;
-  int64 fund_id = 2;
-  string symbol = 3;
-  string maximum_notional = 4;
-  string maximum_order_notional = 5;
-  uint32 leverage = 6;
-  string market_data_source = 7;
-  string price_tick = 8;
-  string quantity_step = 9;
-}
-
 // StrategyRuntime discovers existing instances only in explicitly owned accounts.
 message StrategyRuntime {
   repeated string account_ids = 1;
