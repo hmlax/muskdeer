@@ -10,8 +10,8 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )

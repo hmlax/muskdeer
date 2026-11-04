@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/pb/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/testprocess"
 )

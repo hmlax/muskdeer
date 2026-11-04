@@ -10,7 +10,7 @@ import (
 
 	"gorm.io/gorm"
 
-	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

@@ -6,7 +6,7 @@ import "deer/proto/common/v1/trading.proto";
 import "deer/proto/common/v1/events.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/execution/v1;executionv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/v1;executionv1";
 
 // Execution accepts durable intents; caller ownership is verified at the final
 // gateway boundary as well as at admission. RPC success is not a fill guarantee.

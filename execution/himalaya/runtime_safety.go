@@ -9,8 +9,8 @@ import (
 	"github.com/shopspring/decimal"
 	"google.golang.org/grpc/status"
 
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionhimalayav1 "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	executionhimalayav1 "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"

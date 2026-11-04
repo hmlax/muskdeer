@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm/schema"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 )
 
 const precisePrice = "12345678901234567890.123456789012345678"

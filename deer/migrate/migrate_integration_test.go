@@ -25,9 +25,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/gorm"
 
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
 )
 
 func TestMain(m *testing.M) { goleak.VerifyTestMain(m) }

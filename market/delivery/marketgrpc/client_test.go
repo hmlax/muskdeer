@@ -9,7 +9,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
-	marketv1 "github.com/hmlax/muskdeer/deer/proto/market/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/pb/market/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/market/marketview"
 )

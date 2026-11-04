@@ -4,7 +4,7 @@ package muskdeer.common.v1;
 
 import "deer/proto/common/v1/trading.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
 // ExecutionEvent is a versioned, typed transaction-outbox envelope.
 message ExecutionEvent {

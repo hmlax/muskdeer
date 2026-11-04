@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/gorm"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 )

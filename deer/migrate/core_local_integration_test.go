@@ -12,9 +12,9 @@ import (
 	natsjs "github.com/nats-io/nats.go/jetstream"
 
 	"github.com/hmlax/muskdeer/deer/corelocal"
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 )
 
 func TestCoreLocalSeedIsIdempotentAndNeverFundsOrEnablesTrading(t *testing.T) {

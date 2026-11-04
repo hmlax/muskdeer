@@ -20,7 +20,7 @@
 
 每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，配置从 Nacos 的 data.yaml/service.yaml 强类型 YAML 配对读取，配置更新后显式重启。
 
-Proto 按所属服务放在 `deer/proto/<service>`，RPC、模型分别在 `v1`、`model/v1`；所有配置统一定义在 `common/config/v1/config.proto`；共享合同、基础配置和公共模型在 `deer/proto/common`。详见 [Proto 目录](deer/proto/README.md)。仓库内维护的第三方源码、注解和许可证在 [deer/third_party](deer/third_party/README.md)。
+Proto 按所属服务放在 `deer/proto/<service>`，RPC、模型分别在 `v1`、`model/v1`；所有配置统一定义在 `common/config/v1/config.proto`；共享合同、基础配置和公共模型在 `deer/proto/common`。生成的消息、模型和 gRPC stub 单独位于 `deer/pb/<service>`，与源文件目录对应；Go 代码从 `deer/pb` 导入。详见 [Proto 目录](deer/proto/README.md)。仓库内维护的第三方源码、注解和许可证在 [deer/third_party](deer/third_party/README.md)。
 
 各项目的 `business` 拥有自身业务装配；执行、策略、持仓用例分别在各自 `usecase`。行情订单簿、接入、质量和工作器归 `market`；报价与策略适配归 `strategy`；订单适配、outbox 和模拟执行归 `execution`。公共交易领域与跨服务事务仓储位于 `deer/trading`，迁移位于 `deer/migrate`；单份共用，不复制资金、幂等与 fencing 逻辑。顶层不再保留 `internal`，各项目自己的 `internal/app` 继续负责生命周期和 Wire 装配。详见 [项目目录与依赖边界](docs/PROJECT_LAYOUT.md)。
 

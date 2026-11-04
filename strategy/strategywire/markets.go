@@ -3,8 +3,8 @@ package strategywire
 import (
 	"time"
 
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/pb/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

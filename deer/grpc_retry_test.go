@@ -17,8 +17,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	probev1 "github.com/hmlax/muskdeer/deer/proto/common/probe/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/pb/common/probe/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"

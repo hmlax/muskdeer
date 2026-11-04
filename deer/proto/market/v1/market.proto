@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package muskdeer.market.v1;
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/market/v1;marketv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/market/v1;marketv1";
 
 // MarketData reads the current fenced projection; no baseline or order command
 // is exposed. A reply can explicitly contain unavailable/unreliable quality.

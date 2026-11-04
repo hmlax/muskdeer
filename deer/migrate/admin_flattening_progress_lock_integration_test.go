@@ -11,8 +11,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 )
 
 func TestAdminFlatteningProgressWaitsForStrategyBeforeTakingLease(t *testing.T) {

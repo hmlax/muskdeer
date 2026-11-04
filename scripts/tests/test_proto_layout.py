@@ -13,7 +13,7 @@ class ProtoLayoutTest(unittest.TestCase):
     def make_source(self, root, relative, package=None, service=''):
         source = root / 'deer/proto' / relative
         source.parent.mkdir(parents=True, exist_ok=True)
-        package = package or 'github.com/hmlax/muskdeer/' + source.parent.relative_to(root).as_posix()
+        package = package or 'github.com/hmlax/muskdeer/deer/pb/' + Path(relative).parent.as_posix()
         source.write_text('syntax = "proto3";\npackage legacy.namespace;\n'
                           f'option go_package = "{package};v1";\n{service}')
 
@@ -36,7 +36,7 @@ class ProtoLayoutTest(unittest.TestCase):
     def test_go_package_must_follow_the_owning_directory(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            self.make_source(root, 'execution/v1/orders.proto', package='github.com/hmlax/muskdeer/deer/proto/common/v1')
+            self.make_source(root, 'execution/v1/orders.proto', package='github.com/hmlax/muskdeer/deer/pb/common/v1')
             with self.assertRaisesRegex(ValueError, 'go_package'):
                 validate_layout(root)
 
@@ -63,4 +63,29 @@ class ProtoLayoutTest(unittest.TestCase):
             path = root / 'deer/proto/common/v1/another.proto'
             path.write_text(path.read_text().replace('package legacy.namespace;', 'package muskdeer.config.v1;'))
             with self.assertRaisesRegex(ValueError, 'configuration definitions must share'):
+                validate_layout(root)
+
+    def test_go_package_cannot_point_back_to_proto_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_source(root, 'execution/v1/orders.proto',
+                             package='github.com/hmlax/muskdeer/deer/proto/execution/v1')
+            with self.assertRaisesRegex(ValueError, 'go_package'):
+                validate_layout(root)
+
+    def test_go_files_cannot_remain_beside_proto_sources(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_source(root, 'common/v1/events.proto')
+            (root / 'deer/proto/common/v1/events.pb.go').write_text('package commonv1\n')
+            with self.assertRaisesRegex(ValueError, 'Go files belong under deer/pb'):
+                validate_layout(root)
+
+    def test_proto_sources_cannot_be_generated_outputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = root / 'deer/pb/common/v1/events.proto'
+            path.parent.mkdir(parents=True)
+            path.write_text('syntax = "proto3";\n')
+            with self.assertRaisesRegex(ValueError, 'Proto sources belong under deer/proto'):
                 validate_layout(root)

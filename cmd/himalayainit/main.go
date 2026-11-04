@@ -16,8 +16,8 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
 	himalayamigrate "github.com/hmlax/muskdeer/deer/migrate/himalaya"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/execution/himalaya"
 )

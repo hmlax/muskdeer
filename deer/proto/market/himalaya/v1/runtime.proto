@@ -4,7 +4,7 @@ package muskdeer.himalaya.v1;
 
 import "deer/proto/common/v1/himalaya.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1;himalayav1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1;himalayav1";
 
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 service Market {

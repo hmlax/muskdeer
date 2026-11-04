@@ -1,6 +1,6 @@
 syntax = "proto3";
 package muskdeer.common.v1;
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
 // Native scope and all decimal values remain explicit at service boundaries.
 message HimalayaScope {

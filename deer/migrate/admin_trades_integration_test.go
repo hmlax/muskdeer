@@ -12,7 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )

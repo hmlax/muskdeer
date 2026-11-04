@@ -11,9 +11,9 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"

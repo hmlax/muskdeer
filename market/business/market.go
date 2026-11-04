@@ -11,9 +11,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 
-	marketv1 "github.com/hmlax/muskdeer/deer/proto/market/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/pb/market/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"

@@ -4,7 +4,7 @@ package muskdeer.config.v1;
 
 import "google/protobuf/duration.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/config/v1;configv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/config/v1;configv1";
 
 // Shared configuration definitions for all Muskdeer services.
 // Source documents remain separate data.yaml and service.yaml pairs.

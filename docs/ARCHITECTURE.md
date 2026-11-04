@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-04 用户进一步要求：Proto 源文件保留在 deer/proto，生成的 Go 消息、GORM 模型、gRPC stub 和 Hertz 注解统一放到 deer/pb，按原服务子目录对应；go_package 和 Go 导入路径同步更新。所有配置仍共用 common/config/v1/config.proto，协议全名、字段和 RPC 方法保持。Wire injector 继续由各服务 cmd 管理。
+
 2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
 
 2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。

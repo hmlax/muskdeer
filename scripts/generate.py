@@ -35,7 +35,7 @@ def generate(verify: bool) -> None:
         compiler = protoc()
         arguments = [str(compiler), '-I.', '-Ideer/third_party', '-I' + str(compiler.parent.parent / 'include')]
         files = [path.relative_to(ROOT).as_posix() for path in inputs] + ['hertz/api.proto']
-        mapping = 'Mhertz/api.proto=github.com/hmlax/muskdeer/deer/proto/common/hertz;api'
+        mapping = 'Mhertz/api.proto=github.com/hmlax/muskdeer/deer/pb/common/hertz;api'
         subprocess.run([
             *arguments, '--go_out=.', '--go_opt=module=github.com/hmlax/muskdeer', '--go_opt=' + mapping,
             *files,
@@ -54,9 +54,11 @@ def generate(verify: bool) -> None:
         if not generated:
             raise ValueError('generation produced no Go files')
         expected = {path.relative_to(stage) for path in generated}
+        if any(path.parts[:2] != ('deer', 'pb') for path in expected):
+            raise ValueError('all generated Proto Go files must be under deer/pb')
         existing = {
             path.relative_to(ROOT)
-            for base in ('deer/proto',)
+            for base in ('deer/pb', 'deer/proto')
             for path in (ROOT / base).rglob('*.pb.go')
         }
         stale = sorted(existing - expected)

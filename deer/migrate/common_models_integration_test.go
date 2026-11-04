@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
-	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
-	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/pb/market/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 )
 
 func TestEveryMigratedModelHasRequiredCommonDatabaseColumns(t *testing.T) {

@@ -4,7 +4,7 @@ package muskdeer.model.v1;
 
 import "tagger/tagger.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/model/v1;modelv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/model/v1;modelv1";
 
 // ExecutionShardLease grants account-scoped execution ownership independently.
 message ExecutionShardLease {

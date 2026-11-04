@@ -5,7 +5,7 @@ package muskdeer.common.v1;
 import "google/protobuf/duration.proto";
 import "deer/proto/common/config/v1/config.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
 // HimalayaPolicy is an immutable startup/audit snapshot, not a Nacos schema.
 // Wire numbers retain the prior synthetic policy digest across the DB move.

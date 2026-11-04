@@ -12,9 +12,9 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/pb/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )

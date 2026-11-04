@@ -20,8 +20,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )

@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/pb/execution/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/execution/simulator"
 )

@@ -7,7 +7,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

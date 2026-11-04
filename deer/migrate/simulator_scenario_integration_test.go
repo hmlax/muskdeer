@@ -11,9 +11,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/pb/execution/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"

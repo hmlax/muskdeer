@@ -14,8 +14,8 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 )
 
 type result struct {

@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 )
 
 type checkError struct{ cause error }

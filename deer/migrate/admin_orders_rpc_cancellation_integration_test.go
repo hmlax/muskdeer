@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	strategyv1 "github.com/hmlax/muskdeer/deer/pb/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"

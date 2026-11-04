@@ -1,5 +1,7 @@
 # Muskdeer — Codex 工作约定
 
+2026-11-04 用户进一步要求：Proto 源文件保留在 deer/proto，生成的 Go 消息、GORM 模型、gRPC stub 和 Hertz 注解统一放到 deer/pb，按原服务子目录对应；go_package 和 Go 导入路径同步更新。所有配置仍共用 common/config/v1/config.proto，协议全名、字段和 RPC 方法保持。Wire injector 继续由各服务 cmd 管理。
+
 2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
 
 ## 目标与优先级
@@ -19,7 +21,7 @@
 - 2026-11-03 用户进一步确认移除根 api/web 目录：删除管理 HTTP、前端及相关应用入口，必要 gRPC 协议迁入 deer/proto/rpc，保留四核心服务通信；此项替代此前仅保留管理源码但不部署的约定。历史验收、已存在的数据库迁移及用户未提交业务修改保留；核心服务保留 mTLS 身份认证、业务风控、幂等、状态机和 fencing，不启用管理 RPC。
 - PostgreSQL + GORM；Redis；可靠消息优先 NATS JetStream；Prometheus/Grafana；JSON 日志 + lumberjack 按大小轮转。
 - config Proto、持久化 model Proto 放 deer/proto；Proto 是持久化结构唯一来源，禁止手写重复 Model、手改生成代码。
-- gRPC 服务合同与生成代码位于 deer/proto/<service>/v1，SDK 内部 RPC 位于各服务 himalaya/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
+- gRPC 服务合同位于 deer/proto/<service>/v1，生成 Go 代码位于 deer/pb/<service>/v1，SDK 内部 RPC 位于各服务 himalaya/v1；根目录不再保留 api。迁移包路径不得修改 Proto package、字段编号或 RPC 方法名。
 - 2026-11-03 用户确认业务实现按项目下沉，公共领域、租约及跨服务事务仓储继续共用，不重划资金/幂等/fencing 事务边界。行情/策略/执行/持仓代码归所属项目，公共交易合同与事务仓储归 deer/trading，数据库迁移归 deer/migrate，进程与测试支撑归 deer；不再使用顶层 internal。继续单 go.mod，不复制共用交易实现，项目 internal 包遵守 Go 可见性限制。
 - 每个核心项目使用自身 business 包及对应 usecase；公共 runtimeconfig 只校验/借用资源，不装配业务。旧 deer/testbusiness、testentry、testservice 已删除；服务专属回归夹具位于各项目 testservice 与 strategy/testbusiness，公共 deer/testprocess 只接受 typed builder。核心生产依赖图不得包含回归夹具或其他项目的 business。协议客户端适配和公共交易合同可复用，目录说明见 docs/PROJECT_LAYOUT.md。
 - 仓库内维护的第三方源码、Proto 注解、OpenAPI schema 及许可证统一放 deer/third_party，继续共用根 go.mod；生成工具、Go 导入及镜像许可收集使用该路径。

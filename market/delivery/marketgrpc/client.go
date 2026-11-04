@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	marketv1 "github.com/hmlax/muskdeer/deer/proto/market/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/pb/market/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"

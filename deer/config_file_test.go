@@ -10,7 +10,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 )
 
 func TestLoadConfigResolvesPathsWithoutOpeningDependencies(t *testing.T) {

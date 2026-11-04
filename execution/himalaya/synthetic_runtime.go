@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/proto/market/himalaya/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"

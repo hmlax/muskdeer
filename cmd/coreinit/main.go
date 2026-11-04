@@ -12,9 +12,9 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/corelocal"
 	"github.com/hmlax/muskdeer/deer/migrate"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/processfailure"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

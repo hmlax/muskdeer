@@ -21,11 +21,15 @@ def validate_layout(root: Path):
         if is_config and relative.as_posix() != 'common/config/v1/config.proto':
             failures.append(f'{relative}: configuration definitions must share common/config/v1/config.proto')
         package = re.search(r'option\s+go_package\s*=\s*"([^";]+)(?:;[^"]+)?"', text)
-        expected = MODULE + source.parent.relative_to(root).as_posix()
+        expected = MODULE + 'deer/pb/' + relative.parent.as_posix()
         if package is None or package.group(1) != expected:
-            failures.append(f'{relative}: go_package must match its owner directory')
+            failures.append(f'{relative}: go_package must match its owner directory under deer/pb')
         if relative.parts[0] == 'common' and re.search(r'^service\s+', text, re.MULTILINE):
             if relative.parts[:2] != ('common', 'probe'):
                 failures.append(f'{relative}: business services require their own owner directory')
+    for source in sorted(proto_root.rglob('*.go')):
+        failures.append(f'{source.relative_to(root)}: Go files belong under deer/pb, not deer/proto')
+    for source in sorted((root / 'deer/pb').rglob('*.proto')):
+        failures.append(f'{source.relative_to(root)}: Proto sources belong under deer/proto')
     if failures:
         raise ValueError('\n'.join(failures))

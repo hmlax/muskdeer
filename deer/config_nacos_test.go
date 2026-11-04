@@ -12,7 +12,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 )
 
 const nacosConfigFixture = `{"name":"strategy","instance_id":"strategy-config-test","version":"test","startup_timeout":"5s","shutdown_timeout":"5s","grpc":{"address":"127.0.0.1:0","request_timeout":"1s"},"monitoring":{"address":"127.0.0.1:59103","request_timeout":"1s"},"business":{"strategy":{"account_ids":["account-from-nacos"]}}}`

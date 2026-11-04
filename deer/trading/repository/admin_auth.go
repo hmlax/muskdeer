@@ -13,7 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

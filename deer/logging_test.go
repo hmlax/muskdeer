@@ -12,7 +12,7 @@ import (
 	"testing"
 
 	"github.com/hmlax/muskdeer/deer/logging"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 )
 
 func TestDeerLoggerRollbackReleasesFileOwnership(t *testing.T) {

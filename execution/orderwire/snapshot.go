@@ -3,8 +3,8 @@ package orderwire
 import (
 	"strconv"
 
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/pb/execution/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

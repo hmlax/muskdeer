@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package muskdeer.common.v1;
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
 enum OrderSide {
   ORDER_SIDE_UNSPECIFIED = 0;

@@ -5,7 +5,7 @@ package muskdeer.himalaya.v1;
 import "deer/proto/common/v1/himalaya.proto";
 import "deer/proto/common/v1/synthetic.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/execution/himalaya/v1;himalayav1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1;himalayav1";
 
 service Execution {
   rpc GetSnapshot(muskdeer.common.v1.HimalayaScope) returns (muskdeer.common.v1.HimalayaSnapshot);

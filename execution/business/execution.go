@@ -10,8 +10,8 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/jetstream"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/pb/execution/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"

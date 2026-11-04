@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package muskdeer.strategy.v1;
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/strategy/v1;strategyv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/strategy/v1;strategyv1";
 
 import "deer/proto/strategy/v1/management.proto";
 

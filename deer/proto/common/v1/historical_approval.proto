@@ -1,6 +1,6 @@
 syntax = "proto3";
 package muskdeer.common.v1;
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 import "deer/proto/common/v1/himalaya.proto";
 
 // HistoricalIntentApproval is a bounded operator decision to retain historical

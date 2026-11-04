@@ -10,7 +10,7 @@ import (
 	"github.com/nats-io/nats.go"
 	natsjs "github.com/nats-io/nats.go/jetstream"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	outbox "github.com/hmlax/muskdeer/deer/trading/outboxcontract"
 )
 

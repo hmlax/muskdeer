@@ -13,7 +13,7 @@ import (
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/simulator"

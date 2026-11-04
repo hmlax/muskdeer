@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strconv"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 )
 
 // CheckReady probes one configured local listener without constructing a Deer.

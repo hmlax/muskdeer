@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 )
 
 // A committed core fill changes inventory before portfolio delivery. Close

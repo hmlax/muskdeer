@@ -6,7 +6,7 @@ import (
 	"errors"
 	"time"
 
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 )
 
 // Stable operation codes and transport subject suffix.

@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
 

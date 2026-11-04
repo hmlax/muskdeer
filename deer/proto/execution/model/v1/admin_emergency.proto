@@ -4,7 +4,7 @@ package muskdeer.model.v1;
 
 import "tagger/tagger.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/execution/model/v1;modelv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1";
 
 // AdminEmergencyCancellation is immutable acceptance, not execution progress.
 // It binds one strategy scope to a risk-block witness and a separate scope audit.

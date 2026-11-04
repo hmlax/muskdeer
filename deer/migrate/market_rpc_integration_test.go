@@ -20,9 +20,9 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
-	marketv1 "github.com/hmlax/muskdeer/deer/proto/market/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/pb/market/model/v1"
+	marketv1 "github.com/hmlax/muskdeer/deer/pb/market/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"

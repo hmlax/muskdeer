@@ -14,9 +14,9 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )

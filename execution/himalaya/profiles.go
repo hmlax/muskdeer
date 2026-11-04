@@ -10,8 +10,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )

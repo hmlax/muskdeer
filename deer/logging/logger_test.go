@@ -17,7 +17,7 @@ import (
 	"github.com/shopspring/decimal"
 	"go.uber.org/goleak"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 )
 
 type wireRecord struct {

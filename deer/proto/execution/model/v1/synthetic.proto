@@ -5,7 +5,7 @@ package muskdeer.model.v1;
 import "deer/proto/common/v1/synthetic.proto";
 import "tagger/tagger.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/execution/model/v1;modelv1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1";
 
 // SyntheticTapeIntent is a consumed send slot, independent of financial ledgers.
 message SyntheticTapeIntent {

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 )
 
 type workerStore struct {

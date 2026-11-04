@@ -38,7 +38,7 @@ import (
 
  "gorm.io/gorm"
 
- modelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+ modelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 )
 // Allowed binds a generated model; metadata inspection does not select a table.
 func Allowed(ctx context.Context, database *gorm.DB) error {

@@ -1743,3 +1743,12 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - DataConfig、ServiceSettings、ServiceConfig、全部业务运行设置与原字段保持；Nacos 继续提供 data.yaml/service.yaml 两份配对配置，原身份/版本/哈希及严格 YAML 校验不变。HimalayaAuthority 和数据库业务参数不改，不涉及数据库迁移或运行配置发布。
 - clean/user-overlay 两套迁移前后各 241 项完整描述符一致；712 个已有 Go 文件及原有 41 个未提交 Go 文件在归一化 Proto 包别名后业务语法树一致。原有 50 处未提交修改单独保留，未纳入配置整理提交。所有生成物由 protoc/gotag 重新生成，原手工生成代码没有补丁修改。
 - 隔离源码全包 race、41 项 Python、81 Proto 生成比较、五 Wire diff、合同/格式检查、lint/govet 0 issues、工作区全 integration 标签编译通过。五服务本地双 YAML 的 doctor 校验通过；实际 cron 独立命令从隔离 Nacos 双配置启动、提供健康 RPC 并正常退出的 integration/race 通过（2.60 秒）。完整工作区业务测试、全量 integration/e2e/soak 未运行，原有未提交 eventwire 断言失败不计入本次修复；未重启或部署交易服务。
+
+
+## 2026-11-04：P23 Proto 生成代码独立到 deer/pb
+
+- 按用户要求将全部 81 个项目 Proto 生成 Go 文件移至 deer/pb，保留 common/服务子目录；包文档一并迁移，deer/proto 只保存 60 份协议源文件及说明。go_package、所有 Go 消费者、Hertz 注解映射及工具夹具同步调整；五个 Wire injector 由固定版本工具重新生成，仍归各自 cmd。配置继续共用 common/config/v1/config.proto，data.yaml/service.yaml 不变。
+- 生成器隔离输出和比较覆盖 deer/pb，目录门禁拒绝源目录残留 Go 文件、生成目录混入 Proto 及旧 go_package。新增三项目录规范回归，44 项 Python 工具测试通过。SDK/第三方原始代码和全部数据库迁移保持，未复制模型或改变仓储事务边界。
+- clean/user-overlay 两套迁移前后各 65 份完整文件描述符除 go_package 外逐项一致，包括消息、字段、枚举、服务、RPC、注解和保留编号；两套各 46 个生成模型的 GORM 表名、列和元数据逐项一致。715 个已有手写 Go 文件仅更新导入路径和相应 gofmt；原有 50 处待提交业务修改按新路径独立保留，不纳入本次提交。
+- 隔离源码全包 race、81 Proto 生成比较、五 Wire diff、Hertz 确定性生成/共享 DTO 编译、doctor 双 YAML、合同/规范正反样例、格式、服务依赖图及 lint/govet（0 issues）通过；实际工作区含原有修改的全 integration 标签编译通过。五服务及维护命令构建通过，新构建 cron 独立进程从现有 Nacos 的隔离双 YAML 启动、健康 RPC 和正常退出的 integration/race 通过（1.29 秒）。
+- 初次 race/Hertz 编译因磁盘空间不足中断，保留失败记录；仅清理本项目可重建的 Go 编译缓存，恢复约 23 GiB 空间后复核通过，没有改动测试断言。完整工作区业务测试、全量 integration/e2e/soak 和镜像部署未运行；未重启交易服务、未发布业务配置或变更订单策略。本轮目录与兼容验收完成，提交及远程结果见本轮报告。

@@ -13,8 +13,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/ownerid"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	marketmodelv1 "github.com/hmlax/muskdeer/deer/proto/market/model/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	marketmodelv1 "github.com/hmlax/muskdeer/deer/pb/market/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/market/marketquality"

@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	probev1 "github.com/hmlax/muskdeer/deer/proto/common/probe/v1"
+	probev1 "github.com/hmlax/muskdeer/deer/pb/common/probe/v1"
 )
 
 const (

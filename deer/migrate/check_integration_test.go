@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 )
 
 func TestStartupSchemaCheckIsReadOnlyAndRequiresExactHistory(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/hmlax/muskdeer/deer/jetstream"
-	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
+	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/eventwire"
 )
 

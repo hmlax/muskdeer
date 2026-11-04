@@ -5,7 +5,7 @@ package muskdeer.probe.v1;
 import "hertz/api.proto";
 import "tagger/tagger.proto";
 
-option go_package = "github.com/hmlax/muskdeer/deer/proto/common/probe/v1;probev1";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/probe/v1;probev1";
 
 // ArithmeticProbe checks the transport/generator stack before business services.
 service ArithmeticProbe {

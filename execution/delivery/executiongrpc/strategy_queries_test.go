@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
+	executionv1 "github.com/hmlax/muskdeer/deer/pb/execution/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

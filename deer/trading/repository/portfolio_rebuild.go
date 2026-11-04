@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/proto/portfolio/model/v1"
+	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 

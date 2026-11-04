@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	strategymodelv1 "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/testprocess"
 	"google.golang.org/protobuf/encoding/protojson"
