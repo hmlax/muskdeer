@@ -14,7 +14,7 @@ import (
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestDevelopmentBaselineRechecksRetainedRiskAfterDispatchClaim(t *testing.T) {
@@ -24,7 +24,7 @@ func TestDevelopmentBaselineRechecksRetainedRiskAfterDispatchClaim(t *testing.T)
 	if err := store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
 		t.Fatal(err)
 	}
-	prepared, err := store.Prepare(ctx, lease, developmentSubmit(lease, himalaya.Scope{
+	prepared, err := store.Prepare(ctx, lease, developmentSubmit(lease, venueexecution.Scope{
 		UserID: request.Scope.UserId,
 		FundID: request.Scope.FundId,
 		Symbol: request.Scope.Symbol,
@@ -61,7 +61,7 @@ func TestDevelopmentBaselineRechecksRetainedRiskAfterDispatchClaim(t *testing.T)
 	if readErr != nil || parseErr != nil || !observed.Equal(decimal.NewFromInt(899)) {
 		t.Fatalf("fault did not change retained risk: observed=%s err=%v", budget.GetObservedNotional(), readErr)
 	}
-	if !injected || !errors.Is(err, himalaya.ErrRiskLimit) || calls != 0 {
+	if !injected || !errors.Is(err, venueexecution.ErrRiskLimit) || calls != 0 {
 		t.Fatalf("retained risk changed after claim: injected=%t calls=%d err=%v", injected, calls, err)
 	}
 }

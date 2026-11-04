@@ -10,16 +10,17 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	executionhimalayav1 "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
+	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
 
-func syntheticWorkers(db *gorm.DB, owner string, cfg *values.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger, leases domain.LeaseRepository) []deer.Worker {
+func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger, leases domain.LeaseRepository) []deer.Worker {
 	if !cfg.Himalaya.GetSyntheticTape().GetEnabled() {
 		return nil
 	}
@@ -51,7 +52,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *values.RuntimeConfig, fact
 	return workers
 }
 
-func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *values.RuntimeConfig, symbol string, sequence uint32) error {
+func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, symbol string, sequence uint32) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.SyntheticStrategyKey(cfg.Himalaya.SyntheticTape.RunId, symbol),
@@ -67,7 +68,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if err != nil {
 		return err
 	}
-	book, err := markethimalayav1.NewMarketClient(market).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: symbol})
+	book, err := marketvenuev1.NewMarketClient(market).GetBook(ctx, &marketvenuev1.BookRequest{Symbol: symbol})
 	if err != nil {
 		return err
 	}
@@ -79,7 +80,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 		Strategy: values.Authority(token),
 	}
 	if cfg.Himalaya.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
-		proposal.SourceTrade, err = markethimalayav1.NewMarketClient(market).GetTrade(ctx, &markethimalayav1.TradeRequest{Symbol: symbol})
+		proposal.SourceTrade, err = marketvenuev1.NewMarketClient(market).GetTrade(ctx, &marketvenuev1.TradeRequest{Symbol: symbol})
 		if err != nil {
 			return err
 		}
@@ -99,7 +100,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if err != nil {
 		return err
 	}
-	result, err := executionhimalayav1.NewExecutionClient(execution).PublishSynthetic(ctx, plan)
+	result, err := executionvenuev1.NewExecutionClient(execution).PublishSynthetic(ctx, plan)
 	if err != nil {
 		return err
 	}

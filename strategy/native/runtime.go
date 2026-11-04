@@ -12,19 +12,20 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	executionhimalayav1 "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
-	portfoliohimalayav1 "github.com/hmlax/muskdeer/deer/pb/portfolio/himalaya/v1"
+	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
+	portfoliovenuev1 "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
 
 // Workers describes one fenced, bounded maker actor per configured fund.
 func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
-	cfg, err := values.LoadRuntime(ctx, db, input)
+	cfg, err := venueconfig.LoadRuntime(ctx, db, input)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +60,7 @@ func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.Bus
 	return append(workers, syntheticWorkers(db, owner, cfg, factory, logger, leases)...), nil
 }
 
-func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *values.RuntimeConfig, profile *commonv1.HimalayaProfilePolicy) error {
+func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.HimalayaProfilePolicy) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.StrategyKey(profile.UserId, profile.FundId),
@@ -75,7 +76,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	book, err := markethimalayav1.NewMarketClient(market).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: profile.Symbol})
+	book, err := marketvenuev1.NewMarketClient(market).GetBook(ctx, &marketvenuev1.BookRequest{Symbol: profile.Symbol})
 	if err != nil {
 		return err
 	}
@@ -83,7 +84,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	snapshot, err := portfoliohimalayav1.NewPortfolioClient(portfolio).GetSnapshot(ctx, values.Scope(profile))
+	snapshot, err := portfoliovenuev1.NewPortfolioClient(portfolio).GetSnapshot(ctx, values.Scope(profile))
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	_, err = executionhimalayav1.NewExecutionClient(execution).Reconcile(ctx, &executionhimalayav1.QuotePlan{
+	_, err = executionvenuev1.NewExecutionClient(execution).Reconcile(ctx, &executionvenuev1.QuotePlan{
 		Scope:     values.Scope(profile),
 		Book:      book,
 		Strategy:  values.Authority(token),

@@ -12,18 +12,17 @@ import (
 	"time"
 
 	pb "gitlab.com/himalaya/lukla-go/pb"
-	"gorm.io/gorm"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
@@ -31,7 +30,8 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 	nativeportfolio "github.com/hmlax/muskdeer/portfolio/native"
 	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 )
@@ -103,8 +103,8 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 				Side:     pb.Side_SIDE_BUY,
 				Status:   native.StatusCanceled,
 			}
-			if _, err := store.PrepareCancel(ctx, executionLease, himalaya.CancelRequest{
-				Scope: himalaya.Scope{
+			if _, err := store.PrepareCancel(ctx, executionLease, venueexecution.CancelRequest{
+				Scope: venueexecution.Scope{
 					UserID: request.UserID,
 					FundID: request.FundID,
 					Symbol: request.Symbol,
@@ -140,7 +140,7 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 	discovery.entries[rpcsecurity.ServiceMarket] = nacos.Instance{
 		ID:      "market-test",
 		Service: rpcsecurity.ServiceMarket,
-		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { markethimalayav1.RegisterMarketServer(server, market) }),
+		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { marketvenuev1.RegisterMarketServer(server, market) }),
 	}
 	logger := nativeWorkerLogger(ctx, t, executionLease.OwnerID)
 	t.Setenv("NATIVE_TEST_TOKEN", "test-token")
@@ -160,7 +160,7 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 	if depth > 1 {
 		cfg.OperationTimeout = durationpb.New(2 * time.Second)
 	}
-	execution, err := himalaya.NewRuntime(ctx, db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
+	execution, err := venueexecution.NewRuntime(ctx, db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger, himalaya.Factory{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +229,7 @@ func assertLostReplyRecovery(t *testing.T, db *gorm.DB, sdk *nativeSDKFixture) {
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	var recovered []*executionmodelv1.VenueOrderIntent
-	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("state = ? AND order_id != ''", himalaya.IntentTerminal).Find(&recovered).Error; err != nil || len(recovered) != 1 || recovered[0].OrderId != "1" {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("state = ? AND order_id != ''", venueexecution.IntentTerminal).Find(&recovered).Error; err != nil || len(recovered) != 1 || recovered[0].OrderId != "1" {
 		t.Fatalf("lost reply native fact not recovered: %v, %v", recovered, err)
 	}
 	sdk.mu.Lock()

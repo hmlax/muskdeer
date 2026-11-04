@@ -14,7 +14,8 @@ import (
 
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestHimalayaFailedStreamCreationCannotLeaveUnknownOrder(t *testing.T) {
@@ -25,7 +26,7 @@ func TestHimalayaFailedStreamCreationCannotLeaveUnknownOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client, err := himalaya.NewClient(ctx, himalaya.Config{
+	client, err := himalaya.NewClient(ctx, venueexecution.Config{
 		Target:  "passthrough:///unreachable-sdk-fixture",
 		Token:   "test-token",
 		Timeout: time.Second,
@@ -51,7 +52,7 @@ func TestHimalayaFailedStreamCreationCannotLeaveUnknownOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	budget, err := store.Budget(ctx, lease.Key.AccountID)
-	if err != nil || row.State != himalaya.IntentTerminal || !decimal.RequireFromString(budget.GetReservedNotional()).IsZero() {
+	if err != nil || row.State != venueexecution.IntentTerminal || !decimal.RequireFromString(budget.GetReservedNotional()).IsZero() {
 		t.Fatalf("unsent stream failure state=%s reserved=%s err=%v, want terminal/zero", row.State, budget.GetReservedNotional(), err)
 	}
 }

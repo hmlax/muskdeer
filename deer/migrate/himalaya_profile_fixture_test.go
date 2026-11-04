@@ -10,10 +10,10 @@ import (
 
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
-func configureNativeProfileFixture(ctx context.Context, t *testing.T, db *gorm.DB, request himalaya.SubmitRequest) {
+func configureNativeProfileFixture(ctx context.Context, t *testing.T, db *gorm.DB, request venueexecution.SubmitRequest) {
 	t.Helper()
 	row := &commonmodelv1.TradingAccountPolicy{
 		Symbol:           request.Symbol,

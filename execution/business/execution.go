@@ -16,10 +16,11 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
 	"github.com/hmlax/muskdeer/execution/delivery/executiongrpc"
-	"github.com/hmlax/muskdeer/execution/himalaya"
 	"github.com/hmlax/muskdeer/execution/outbox"
 	"github.com/hmlax/muskdeer/execution/usecase"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 const workerExecutionOutbox = "execution.outbox"
@@ -28,7 +29,7 @@ const workerExecutionOutbox = "execution.outbox"
 type Execution struct {
 	handler *executiongrpc.Server
 	workers []deer.Worker
-	native  *himalaya.Runtime
+	native  *venueexecution.Runtime
 }
 
 // NewExecution assembles the execution service without starting tasks.
@@ -45,7 +46,7 @@ func NewExecution(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.
 		if err != nil {
 			return nil, err
 		}
-		runtime, err := himalaya.NewRuntime(ctx, db, incarnation, cfg.Business, factory, owner.Logger())
+		runtime, err := venueexecution.NewRuntime(ctx, db, incarnation, cfg.Business, factory, owner.Logger(), himalaya.Factory{})
 		if err != nil {
 			return nil, err
 		}

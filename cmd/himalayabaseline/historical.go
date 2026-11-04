@@ -9,7 +9,7 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 const messageHistoricalResult = "%s: historical_intents=%d risk_retained=true applied=%t\n"
@@ -27,7 +27,7 @@ func (r *baselineRunner) historical(ctx context.Context, batch *commonv1.Histori
 		if err != nil {
 			return err
 		}
-		snapshot, err := stableSnapshot(ctx, r.client, himalaya.Scope{
+		snapshot, err := stableSnapshot(ctx, r.client, venueexecution.Scope{
 			UserID: request.Scope.UserId,
 			FundID: request.Scope.FundId,
 			Symbol: request.Scope.Symbol,
@@ -36,7 +36,7 @@ func (r *baselineRunner) historical(ctx context.Context, batch *commonv1.Histori
 			return err
 		}
 		if snapshot.Market.PriceTick != profile.PriceTick || snapshot.Market.QuantityStep != profile.QuantityStep {
-			return himalaya.ErrInvalidSnapshot
+			return venueexecution.ErrInvalidSnapshot
 		}
 		if r.apply {
 			if err := r.store.ApproveHistoricalIntents(ctx, lease, request, snapshot); err != nil {
@@ -51,7 +51,7 @@ func (r *baselineRunner) historical(ctx context.Context, batch *commonv1.Histori
 			return err
 		}
 		if len(current) != len(request.IntentIds) {
-			return himalaya.ErrInvalidSubmit
+			return venueexecution.ErrInvalidSubmit
 		}
 		rows = append(rows, current...)
 		fmt.Printf(messageHistoricalResult, profile.Symbol, len(current), r.apply)

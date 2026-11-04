@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package muskdeer.himalaya.v1;
+
+import "deer/proto/common/v1/himalaya.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/market/venue/v1;venuev1";
+
+// These are internal Muskdeer contracts, independent of the upstream SDK wire.
+service Market {
+  rpc GetBook(BookRequest) returns (muskdeer.common.v1.HimalayaBook);
+  rpc GetTrade(TradeRequest) returns (muskdeer.common.v1.HimalayaTrade);
+}
+
+message BookRequest { string symbol = 1; }
+
+message TradeRequest { string symbol = 1; }

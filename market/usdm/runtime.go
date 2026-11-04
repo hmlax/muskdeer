@@ -17,19 +17,20 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
 
 // Runtime publishes only its selected, currently owned native futures books.
 type Runtime struct {
-	markethimalayav1.UnimplementedMarketServer
+	marketvenuev1.UnimplementedMarketServer
 	db     *gorm.DB
 	owner  string
-	cfg    *native.RuntimeConfig
+	cfg    *venueconfig.RuntimeConfig
 	leases domain.LeaseRepository
 	mu     sync.RWMutex
 	books  map[string]*commonv1.HimalayaBook
@@ -39,7 +40,7 @@ type Runtime struct {
 
 // NewRuntime borrows dependencies without starting sockets or tasks.
 func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, logger *logging.Logger) (*Runtime, error) {
-	settings, err := native.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 
 // RegisterGRPC exposes only native market reads.
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
-	markethimalayav1.RegisterMarketServer(registrar, r)
+	marketvenuev1.RegisterMarketServer(registrar, r)
 }
 
 // Workers has one independently owned session per configured instrument.
@@ -84,7 +85,7 @@ func (r *Runtime) Workers() []deer.Worker {
 }
 
 // GetBook verifies both publication freshness and retained database ownership.
-func (r *Runtime) GetBook(ctx context.Context, request *markethimalayav1.BookRequest) (*commonv1.HimalayaBook, error) {
+func (r *Runtime) GetBook(ctx context.Context, request *marketvenuev1.BookRequest) (*commonv1.HimalayaBook, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}

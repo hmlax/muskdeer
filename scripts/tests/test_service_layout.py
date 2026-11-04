@@ -34,3 +34,21 @@ class ServiceLayoutTest(unittest.TestCase):
 
     def test_process_requires_its_own_application_graph(self):
         self.assertTrue(LAYOUT.check_packages([{'ImportPath': M + 'market/cmd', 'Deps': []}]))
+
+    def test_venue_adapter_requires_transport_only_dependencies(self):
+        adapter = M + 'execution/adapters/himalaya'
+        self.assertEqual(LAYOUT.check_packages([
+            {'ImportPath': adapter, 'Deps': [M + 'execution/venue/gateway',
+                                            M + 'deer/trading/native', 'google.golang.org/grpc']},
+        ]), [])
+        for dependency in ('gorm.io/gorm', M + 'deer/pb/execution/model/v1',
+                           M + 'execution/venue', M + 'deer/trading/repository'):
+            with self.subTest(dependency=dependency):
+                self.assertTrue(LAYOUT.check_packages([
+                    {'ImportPath': adapter, 'Deps': [dependency]},
+                ]))
+
+    def test_business_cannot_import_upstream_sdk(self):
+        self.assertTrue(LAYOUT.check_packages([
+            {'ImportPath': M + 'execution/venue', 'Imports': ['gitlab.com/himalaya/lukla-go/pb']},
+        ]))

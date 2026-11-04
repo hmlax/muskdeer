@@ -17,7 +17,8 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func databaseProfileFixture() *commonv1.HimalayaProfilePolicy {
@@ -62,7 +63,7 @@ func TestHimalayaProfileBatchIsAtomicAndDoesNotResetOrEnableFunds(t *testing.T) 
 	}
 	first.PriceTick = "0.2"
 	second.MaximumNotional = "100"
-	if err := store.ImportProfiles(ctx, batch); !errors.Is(err, himalaya.ErrRiskLimit) {
+	if err := store.ImportProfiles(ctx, batch); !errors.Is(err, venueexecution.ErrRiskLimit) {
 		t.Fatalf("profile batch reduced limit below retained risk: %v", err)
 	}
 	var retained commonmodelv1.TradingAccountPolicy
@@ -141,7 +142,7 @@ func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 			LeaseTtl:         durationpb.New(10 * time.Second),
 		},
 	}
-	if _, err := native.LoadRuntime(ctx, db, cfg); !errors.Is(err, native.ErrInvalid) {
+	if _, err := venueconfig.LoadRuntime(ctx, db, cfg); !errors.Is(err, native.ErrInvalid) {
 		t.Fatalf("unconfigured legacy budget silently supplied a profile: %v", err)
 	}
 	configureNativeProfileFixture(ctx, t, db, request)
@@ -155,7 +156,7 @@ func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
-	settings, err := native.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
 	if err != nil || len(settings.Himalaya.Profiles) != 1 || settings.Himalaya.Profiles[0].MaximumNotional != "1000" || settings.Himalaya.Profiles[0].PriceTick != "0.1" {
 		t.Fatalf("database profile load: %v, %v", settings, err)
 	}
@@ -169,7 +170,7 @@ func TestHimalayaRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 	if settings.Himalaya.Profiles[0].PriceTick != "0.1" {
 		t.Fatal("database update silently hot-switched an active startup snapshot")
 	}
-	restarted, err := native.LoadRuntime(ctx, db, cfg)
+	restarted, err := venueconfig.LoadRuntime(ctx, db, cfg)
 	if err != nil || restarted.Himalaya.Profiles[0].PriceTick != "0.2" {
 		t.Fatalf("explicit restart did not reload database policy: %v", err)
 	}

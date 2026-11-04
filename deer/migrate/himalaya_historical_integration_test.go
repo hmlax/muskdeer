@@ -17,7 +17,7 @@ import (
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *testing.T) {
@@ -73,7 +73,7 @@ func TestHimalayaHistoricalApprovalPreservesUnknownRiskAndNewUnknownGate(t *test
 	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", old.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	if row.State != himalaya.IntentDispatched || row.OrderId != "" || !proto.Equal(row.HistoricalSnapshot, snapshot) {
+	if row.State != venueexecution.IntentDispatched || row.OrderId != "" || !proto.Equal(row.HistoricalSnapshot, snapshot) {
 		t.Fatalf("ApproveHistoricalIntents changed unknown fact or lost evidence: %v", &row)
 	}
 	order.ClientID += "-new"
@@ -150,7 +150,7 @@ func TestHimalayaHistoricalApprovalRejectsUnsafeRequestsAtomically(t *testing.T)
 				t.Fatalf("ApproveHistoricalIntents(%s) = nil, want rejection", changed)
 			}
 			var row executionmodelv1.VenueOrderIntent
-			if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil || row.HistoricalApprovalReference != "" || row.State != himalaya.IntentDispatched {
+			if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil || row.HistoricalApprovalReference != "" || row.State != venueexecution.IntentDispatched {
 				t.Fatalf("failed approval left a partial mutation: %v, %v", &row, err)
 			}
 		})
@@ -194,7 +194,7 @@ func TestHimalayaUnsentFinalGuardFailureDoesNotCreatePermanentUnknown(t *testing
 		t.Fatal(err)
 	}
 	budget, err := store.Budget(ctx, lease.Key.AccountID)
-	if err != nil || row.State != himalaya.IntentTerminal || !decimal.RequireFromString(budget.GetReservedNotional()).IsZero() {
+	if err != nil || row.State != venueexecution.IntentTerminal || !decimal.RequireFromString(budget.GetReservedNotional()).IsZero() {
 		t.Fatalf("unsent final guard failure state=%s reservation=%s err=%v, want terminal and zero", row.State, budget.GetReservedNotional(), err)
 	}
 }

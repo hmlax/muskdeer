@@ -12,7 +12,7 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestHimalayaLiveMarginAndExpiredUnsentIntentRemainSafe(t *testing.T) {
@@ -23,7 +23,7 @@ func TestHimalayaLiveMarginAndExpiredUnsentIntentRemainSafe(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("available_quote", "1").Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := store.PrepareLive(ctx, lease, request, authority); !errors.Is(err, himalaya.ErrRiskLimit) {
+	if _, err := store.PrepareLive(ctx, lease, request, authority); !errors.Is(err, venueexecution.ErrRiskLimit) {
 		t.Fatalf("margin shortage accepted: %v", err)
 	}
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", lease.Key.AccountID).UpdateColumn("available_quote", "1000").Error; err != nil {

@@ -1776,3 +1776,13 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 显式迁移模块归 deer/migrate/venue，历史六份 SQL 逐字节保持；新增 0007 原子升级既有表名，保留主键、数据和约束。新代码启动只读检查完整版本，升级只由维护命令显式调用。旧版升级回归额外写入 UNKNOWN 下单、未决撤单、持仓观察和恢复基线，逐项验证升级后完整消息一致；目的表冲突时验证 ledger/额度回滚，随后两次升级验证幂等。
 - clean/user-overlay 两套 integration 标签全包编译通过；clean 全包 race（复核采用 -p 1）、79 Proto 和五 Wire 比较、格式/合同/布局及 lint/govet 0 issues、44 项工具测试和全包构建通过。现有 PostgreSQL 的隔离库中相关 SDK 准入/金额/配置维护/历史升级、并发预留、未知不重发及合成成交额度/重放的 integration/race 通过。
 - 初次并行验证保留两处失败：Deer 短期限 RPC 用例在建连阶段 deadline 到期、尝试数为零；并发额度用例在核心迁移夹具处触发原 statement_timeout。未改期限或断言，顺序复核全包 race 和相关 PostgreSQL 组通过；本轮不宣称已修复长期负载稳定性。原有 50 处用户修改逐字节保持；未升级当前交易数据库或重启交易容器。P26.2 继续收敛适配层，提交与远程核验见当前工作记录。
+
+
+## 2026-11-04：P26.2 Himalaya 仅作为第三方适配器
+
+- SDK/gRPC 连接、认证、禁止透明重发、请求摘要、单位与响应转换集中到 execution/adapters/himalaya；通过 execution/venue/gateway 的强类型端口由 execution/business 显式注入。持久化、共享额度、最终 fencing、撤单/报价/UNKNOWN 恢复和 worker 生命周期归 execution/venue；Store 只依赖无网络 Codec。数据库业务策略读取迁至 deer/trading/venueconfig，共用 native 值解析/状态分类不再依赖 GORM 或持久化模型。真实 Go 依赖图验证适配器的直接及传递依赖无 ORM、生成模型、交易仓储或业务 runtime。
+- 三个服务的内部 RPC 源文件/生成文件目录从 himalaya/v1 改为 venue/v1；Proto package、字段、方法全名及旧配置键保持。HimalayaAuthority 按此前明确要求保留；这些兼容消息不作为 ORM 实体。新增门禁拒绝模型目录中的 Himalaya 命名实体，并禁止适配器外的生产代码直接导入上游 SDK；现有 16 份 SDK 源文件哈希保持。
+- 新增行为回归：下单和撤单摘要与拆分前持久化身份完全一致；行情/账户未就绪时拒绝新增风险观察，但仍可读取订单并受控撤单，实际 Place 调用为零；测试成交 BUY/SELL 显式映射、未知方向在进入 SDK 前拒绝。原准入、预算、所有权、恢复、滚动报价与有限测试成交断言保留。
+- 隔离本次提交源码的全包 race（-p 1）、integration 标签全包编译、全包构建及核心/维护/模块夹具构建通过。叠加原有用户修改后的 integration 标签全包编译通过；工作区格式、合同/布局、lint/govet 0 issues、规范正反样例、47 项 Python、79 Proto 与五个 Wire 生成比较通过。
+- 复用现有 infra-postgres 的隔离逻辑库，SDK/原生四服务/滚动报价/回复丢失/UNKNOWN/测试成交/业务策略和旧模型升级共 32 项 integration/race 中 31 项首次通过；一项在核心迁移夹具触发原 statement_timeout，保持期限及断言单独复核三个变体全部通过（5.799 秒）。首次工具检查误用系统 Python 缺少 PyYAML、规范负例与 lint 并发被工具锁拒绝，改用已有 Python 3.13 并顺序运行后通过；未更改测试合同或屏蔽错误，不宣称已修复基础设施长期负载稳定性。
+- 原有 50 处用户未提交文件逐字节保持，暂存内容与隔离提交源码逐项核对；未运行完整 integration/e2e/soak，未升级当前交易数据库、发布 Nacos 或重启交易容器。通道 0007 升级及新旧版本部署顺序已记录，实际运行环境保持原状。

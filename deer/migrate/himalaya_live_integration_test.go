@@ -17,7 +17,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestHimalayaLiveSourceAndStrategyEpochAreCheckedAtFinalSDKCall(t *testing.T) {
@@ -82,8 +82,8 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 	}); err != nil {
 		t.Fatal(err)
 	}
-	cancellation, err := store.PrepareCancel(ctx, lease, himalaya.CancelRequest{
-		Scope: himalaya.Scope{
+	cancellation, err := store.PrepareCancel(ctx, lease, venueexecution.CancelRequest{
+		Scope: venueexecution.Scope{
 			UserID: request.UserID,
 			FundID: request.FundID,
 			Symbol: request.Symbol,
@@ -127,7 +127,7 @@ func TestHimalayaCancelReplyDoesNotReleaseExposureBeforeTerminalObservation(t *t
 	}
 }
 
-func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execution domain.LeaseToken, symbol string) himalaya.LiveAuthority {
+func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execution domain.LeaseToken, symbol string) venueexecution.LiveAuthority {
 	t.Helper()
 	leases, err := repository.NewLeases(db)
 	if err != nil {
@@ -158,7 +158,7 @@ func liveAuthorityFixture(ctx context.Context, t *testing.T, db *gorm.DB, execut
 		}).Error; err != nil {
 		t.Fatal(err)
 	}
-	return himalaya.LiveAuthority{
+	return venueexecution.LiveAuthority{
 		Strategy: get(native.StrategyKey(10001, 10001)),
 		Book: &commonv1.HimalayaBook{
 			Symbol:       symbol,

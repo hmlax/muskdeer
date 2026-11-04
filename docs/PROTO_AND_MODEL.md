@@ -2,7 +2,7 @@
 
 ## 结构唯一来源
 model 目录只保留业务实体和业务运行必需的持久化记录；生成结构由 GORM 直接用于数据库读写。早期 StorageProbe 技术样例已移除，生成契约和数据库回归改用真实 Instrument/AccountBudget 模型。
-全部 config: deer/proto/common/config/v1/config.proto；数据库结构: deer/proto/<service>/model/v1，共享模型在 common/model/v1；公共枚举/错误: deer/proto/common/v1；gRPC 服务合同: deer/proto/<service>/v1，SDK 内部合同在所属服务 himalaya/v1。完整归属见 [Proto 目录](../deer/proto/README.md)。生成的 Go 消息、GORM 模型、gRPC stub统一位于 deer/pb，按源文件的 common/服务子目录对应；deer/proto 只保存协议源文件。go_package 指向 deer/pb，生成目录由工具配置固定，严禁手改；根 api 目录已移除，Proto package、字段编号和 RPC 方法名保持。
+全部 config: deer/proto/common/config/v1/config.proto；数据库结构: deer/proto/<service>/model/v1，共享模型在 common/model/v1；公共枚举/错误: deer/proto/common/v1；gRPC 服务合同: deer/proto/<service>/v1，通道内部合同在所属服务 venue/v1。完整归属见 [Proto 目录](../deer/proto/README.md)。生成的 Go 消息、GORM 模型、gRPC stub统一位于 deer/pb，按源文件的 common/服务子目录对应；deer/proto 只保存协议源文件。go_package 指向 deer/pb，生成目录由工具配置固定，严禁手改；根 api 目录已移除，Proto package、字段编号和 RPC 方法名保持。
 用户要求使用 GORM tag 自动生成 model，不再手工定义 model。默认优先验证“Proto 生成的结构直接带 GORM tag 并作为持久化类型”。若必须使用专用 .gorm.pb.go ORM 生成类型才能满足类型要求，提交技术验证结果和取舍，请用户决定，不能静默引入第二套结构。
 
 ## 每张表的必备字段（强制）
@@ -70,3 +70,5 @@ make generate：Proto 校验 → Go/gRPC 代码 → 经验证的 tag/ORM 生成 
 数据库迁移按版本执行，有校验和、执行记录及锁；不由所有服务启动时并发迁移。结构性破坏变更单独审查，生成器不会代替迁移设计。仓库必须包含从空库升级及已有库兼容测试。
 
 P03.2 已实现内嵌版本 SQL、生成的 SchemaMigration 记录、事务 advisory lock/回滚及显式 migrate -apply 工具，见 [迁移说明](MIGRATIONS.md)。当前业务实体仍按后续版本加入；此工具不执行启动 AutoMigrate，不改写不一致历史。
+
+Himalaya 仅提供 SDK/gRPC 适配，业务持久化由通用交易账户策略、通道订单/撤单、账户观察和恢复模型承担。适配层不导入 ORM/模型/仓储，业务层通过 gateway 接口接收显式类型映射后的值；旧消息全名、配置键、账户租约键和摘要保持兼容。

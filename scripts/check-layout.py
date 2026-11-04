@@ -20,6 +20,17 @@ def check_packages(packages):
     prefixes = tuple(MODULE + name + '/' for name in SERVICES)
     for package in packages:
         name = package['ImportPath']
+        imports = set(package.get('Imports', []))
+        dependencies = imports | set(package.get('Deps', []))
+        adapter = name.startswith(MODULE + 'execution/adapters/')
+        if adapter:
+            for dependency in sorted(dependencies):
+                if dependency.startswith('gorm.io/') or dependency.startswith(MODULE + 'deer/pb/') and '/model/' in dependency or dependency in (MODULE + 'execution/venue', MODULE + 'deer/trading/repository'):
+                    failures.append(f'{name} adapter depends on database/business persistence {dependency}')
+        if name.startswith(MODULE) and not adapter:
+            for imported in sorted(imports):
+                if imported == 'gitlab.com/himalaya/lukla-go' or imported.startswith('gitlab.com/himalaya/lukla-go/'):
+                    failures.append(f'{name} business imports upstream SDK {imported}')
         if name.startswith(MODULE + 'deer/') or name == MODULE + 'deer':
             for imported in package.get('Imports', []):
                 if imported.startswith(prefixes):

@@ -19,7 +19,9 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 const (
@@ -91,14 +93,14 @@ func run(ctx context.Context, enable bool, profiles *commonv1.HimalayaProfileImp
 	if !enable && profiles == nil {
 		return nil
 	}
-	store, err := himalaya.NewStore(database.GORM())
+	store, err := venueexecution.NewStore(database.GORM(), himalaya.Factory{})
 	if err != nil {
 		return err
 	}
 	if profiles != nil {
 		return store.ImportProfiles(ctx, profiles)
 	}
-	settings, err := native.LoadRuntime(ctx, database.GORM(), cfg.Business)
+	settings, err := venueconfig.LoadRuntime(ctx, database.GORM(), cfg.Business)
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	pb "gitlab.com/himalaya/lukla-go/pb"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -23,12 +22,14 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
+	gateway "github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
 type aggregateDispatchState struct {
 	db        *gorm.DB
-	store     *himalaya.Store
+	store     *venueexecution.Store
 	execution domain.LeaseToken
 	source    domain.LeaseToken
 	cfg       *commonv1.HimalayaPolicy
@@ -97,19 +98,19 @@ func TestSyntheticTradeUnknownAndConcurrentNextSlotsCannotReuseAnEvent(t *testin
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	var calls atomic.Int64
-	send := func(_ context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
+	send := func(_ context.Context, input *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
 		call := calls.Add(1)
-		if input.Side != int32(pb.Side_SIDE_SELL) || input.Price != "100.5" || input.Quantity != "0.007" {
+		if input.Side != domain.SideSell || input.Price != "100.5" || input.Quantity != "0.007" {
 			t.Errorf("aggregate SDK payload = %v, want source-derived SELL/100.5/0.007", input)
 		}
 		if call == 1 {
 			return nil, errors.New("injected aggregate reply loss")
 		}
-		return &pb.WashTradeResponse{
-			TradeId:     "aggregate-test-" + strconv.FormatInt(call, 10),
+		return &gateway.SyntheticResult{
+			TradeID:     "aggregate-test-" + strconv.FormatInt(call, 10),
 			Price:       input.Price,
 			Quantity:    input.Quantity,
-			TimestampMs: uint64(time.Now().UnixMilli()),
+			TimestampMS: uint64(time.Now().UnixMilli()),
 		}, nil
 	}
 	first, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 0, 42), send)
@@ -119,10 +120,10 @@ func TestSyntheticTradeUnknownAndConcurrentNextSlotsCannotReuseAnEvent(t *testin
 	if err := s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ?", s.base.RunId).UpdateColumn("create_at", time.Now().Add(-2*time.Second).UnixMilli()).Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 1, 42), send); !errors.Is(err, himalaya.ErrInvalidSubmit) || calls.Load() != 1 {
+	if _, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 1, 42), send); !errors.Is(err, venueexecution.ErrInvalidSubmit) || calls.Load() != 1 {
 		t.Fatalf("consumed event admitted a second slot: calls=%d err=%v", calls.Load(), err)
 	}
-	restarted, err := himalaya.NewStore(s.db)
+	restarted, err := venueexecution.NewStore(s.db, himalaya.Factory{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +166,7 @@ func TestSyntheticTradePublisherEpochAndFinalAuthorityLockRemainRequired(t *test
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	calls := 0
-	send := func(_ context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
+	send := func(_ context.Context, input *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
 		calls++
 		var held commonmodelv1.ExecutionShardLease
 		err := s.db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", s.source.Key.AccountID).Clauses(clause.Locking{
@@ -176,11 +177,11 @@ func TestSyntheticTradePublisherEpochAndFinalAuthorityLockRemainRequired(t *test
 		if !errors.As(err, &state) || state.SQLState() != "55P03" {
 			t.Errorf("aggregate source was not locked through SDK send: %v", err)
 		}
-		return &pb.WashTradeResponse{
-			TradeId:     "aggregate-lock-test",
+		return &gateway.SyntheticResult{
+			TradeID:     "aggregate-lock-test",
 			Price:       input.Price,
 			Quantity:    input.Quantity,
-			TimestampMs: uint64(time.Now().UnixMilli()),
+			TimestampMS: uint64(time.Now().UnixMilli()),
 		}, nil
 	}
 	if result, err := s.store.PublishSynthetic(ctx, s.execution, s.cfg, s.plan(t, 0, 42), send); err != nil || result.GetState() != native.SyntheticPublished {

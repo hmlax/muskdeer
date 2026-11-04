@@ -53,7 +53,8 @@ func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.HimalayaRuntime
 	return nil
 }
 
-func validProfile(p *commonv1.HimalayaProfilePolicy) bool {
+// ValidProfile validates immutable account trading policy values.
+func ValidProfile(p *commonv1.HimalayaProfilePolicy) bool {
 	if p == nil || p.UserId <= 0 || p.FundId <= 0 || !Symbol(p.Symbol) || p.Leverage == 0 || p.Leverage > 10 || p.MarketDataSource != Source {
 		return false
 	}

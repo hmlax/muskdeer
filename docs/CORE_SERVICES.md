@@ -65,3 +65,5 @@ make core-test
 market、strategy、execution、portfolio、cron 的 Deer 均自动注册标准 `grpc.health.v1.Health`：Check、List 和有界 Watch。service 参数可为空或本服务 `<name>.grpc`；未知名称 Check 返回 NotFound。健康检查复用监听的 mTLS 许可，生产调用方必须提供被许可的证书；不额外开放匿名监听。SERVING 表示生命周期和当前配置依赖/worker 检查通过，不构成交易风险或对账授权。
 
 cron 的独立入口为 `cron/cmd`，`make build` 生成 `.cache/bin/cron`，Docker target 为 `runtime-cron`。配置示例在 `configs/local/cron/{data.yaml,service.yaml}`，示例 gRPC 为 127.0.0.1:59006。将配对配置显式发布到自己的 Nacos 命名空间、提供同其他服务的 Nacos env 后，无参数启动 `.cache/bin/cron`；不从本地示例直接启动。当前 `business.enabled` 必须关闭，不部署占位的归档/报表任务。
+
+通道适配版本升级：新代码使用 deer/migrate/venue 的完整 0007 历史及通用业务表。当前运行中的旧版本和数据库不会由代码整理自动升级。部署前需显式停止本项目的交易写入进程、执行维护升级并核验保留的未决/额度记录，再启动配套新版本；应用在旧 schema 上拒绝就绪。旧二进制不应与升级后的 schema 混用，历史 SQL 仍保留供审计。

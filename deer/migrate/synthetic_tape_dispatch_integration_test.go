@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	pb "gitlab.com/himalaya/lukla-go/pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/gorm"
@@ -23,7 +22,9 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
+	gateway "github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
 func TestSyntheticTapeReplyLossAndConcurrentRetriesConsumeOneSlot(t *testing.T) {
@@ -31,13 +32,13 @@ func TestSyntheticTapeReplyLossAndConcurrentRetriesConsumeOneSlot(t *testing.T) 
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	var calls atomic.Int64
-	send := func(ctx context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
+	send := func(ctx context.Context, input *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
 		calls.Add(1)
 		var row executionmodelv1.SyntheticTapeIntent
 		if err := db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ?", plan.RunId).First(&row).Error; err != nil {
 			return nil, err
 		}
-		if row.Result.GetState() != native.SyntheticUnknown || input.Quantity != "0.01" || input.Side != int32(pb.Side_SIDE_BUY) {
+		if row.Result.GetState() != native.SyntheticUnknown || input.Quantity != "0.01" || input.Side != domain.SideBuy {
 			t.Error("synthetic effect preceded its durable slot or changed its SDK payload")
 		}
 		return nil, errors.New("injected synthetic reply loss")
@@ -78,7 +79,7 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
 	calls := 0
-	send := func(_ context.Context, input *pb.WashTradeRequest) (*pb.WashTradeResponse, error) {
+	send := func(_ context.Context, input *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
 		calls++
 		for _, account := range []string{lease.Key.AccountID, plan.Strategy.AccountId, plan.Book.Publisher.AccountId} {
 			var held commonmodelv1.ExecutionShardLease
@@ -92,18 +93,18 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 				t.Errorf("synthetic final authority lock = %v, want PostgreSQL lock_not_available", err)
 			}
 		}
-		return &pb.WashTradeResponse{
-			TradeId:     "synthetic-test-1",
+		return &gateway.SyntheticResult{
+			TradeID:     "synthetic-test-1",
 			Price:       input.Price,
 			Quantity:    input.Quantity,
-			TimestampMs: uint64(time.Now().UnixMilli()),
+			TimestampMS: uint64(time.Now().UnixMilli()),
 		}, nil
 	}
 	result, err := store.PublishSynthetic(ctx, lease, cfg, plan, send)
 	if err != nil || result.GetState() != native.SyntheticPublished {
 		t.Fatalf("PublishSynthetic(first) = %v, %v", result, err)
 	}
-	restarted, err := himalaya.NewStore(db)
+	restarted, err := venueexecution.NewStore(db, himalaya.Factory{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +142,7 @@ func TestSyntheticTapeQuotaIntervalPolicyAndEpochRemainEnforced(t *testing.T) {
 	}
 }
 
-func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseToken, *commonv1.HimalayaPolicy, *commonv1.SyntheticTapePlan) {
+func syntheticDispatchFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, *commonv1.HimalayaPolicy, *commonv1.SyntheticTapePlan) {
 	t.Helper()
 	db, store, fundLease, request := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)

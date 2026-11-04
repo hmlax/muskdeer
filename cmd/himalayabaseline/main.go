@@ -26,7 +26,9 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 const (
@@ -41,7 +43,7 @@ const (
 
 type baselineRunner struct {
 	db     *gorm.DB
-	store  *himalaya.Store
+	store  *venueexecution.Store
 	client *himalaya.Client
 	leases domain.LeaseRepository
 	owner  string
@@ -67,7 +69,7 @@ func command() int {
 	defer cancel()
 	if err := run(ctx, *manifest, *report, *apply, *historical); err != nil {
 		reason := reasonDependency
-		if errors.Is(err, himalaya.ErrRiskLimit) {
+		if errors.Is(err, venueexecution.ErrRiskLimit) {
 			reason = reasonRiskLimit
 		}
 		if errors.Is(err, domain.ErrOutcomeUnknown) {
@@ -88,7 +90,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 		return err
 	}
 	if len(bytes) > 1024*1024 {
-		return himalaya.ErrInvalidSubmit
+		return venueexecution.ErrInvalidSubmit
 	}
 	batch := &commonv1.DevelopmentBaselineBatch{}
 	history := &commonv1.HistoricalIntentApprovalBatch{}
@@ -97,14 +99,14 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 			return err
 		}
 		if len(history.Requests) == 0 || len(history.Requests) > 8 {
-			return himalaya.ErrInvalidSubmit
+			return venueexecution.ErrInvalidSubmit
 		}
 	} else {
 		if err := protojson.Unmarshal(bytes, batch); err != nil {
 			return err
 		}
 		if len(batch.Requests) == 0 || len(batch.Requests) > 8 {
-			return himalaya.ErrInvalidSubmit
+			return venueexecution.ErrInvalidSubmit
 		}
 	}
 	cfg, err := deer.LoadNacosConfig(ctx, "execution")
@@ -122,15 +124,15 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	if err := venuemigrate.Check(ctx, db.GORM()); err != nil {
 		return err
 	}
-	settings, err := native.LoadRuntime(ctx, db.GORM(), cfg.Business)
+	settings, err := venueconfig.LoadRuntime(ctx, db.GORM(), cfg.Business)
 	if err != nil {
 		return err
 	}
-	store, err := himalaya.NewStore(db.GORM())
+	store, err := venueexecution.NewStore(db.GORM(), himalaya.Factory{})
 	if err != nil {
 		return err
 	}
-	client, err := himalaya.NewClient(ctx, himalaya.Config{
+	client, err := himalaya.NewClient(ctx, venueexecution.Config{
 		Target:  cfg.Business.Himalaya.Target,
 		Token:   os.Getenv(cfg.Business.Himalaya.TokenEnv),
 		Timeout: cfg.Business.OperationTimeout.AsDuration(),
@@ -193,7 +195,7 @@ func (r *baselineRunner) assess(ctx context.Context, request *commonv1.Developme
 			return nil, err
 		}
 	}
-	snapshot, err := stableSnapshot(ctx, r.client, himalaya.Scope{
+	snapshot, err := stableSnapshot(ctx, r.client, venueexecution.Scope{
 		UserID: request.Scope.UserId,
 		FundID: request.Scope.FundId,
 		Symbol: request.Scope.Symbol,
@@ -202,7 +204,7 @@ func (r *baselineRunner) assess(ctx context.Context, request *commonv1.Developme
 		return nil, err
 	}
 	if snapshot.Market.PriceTick != profile.PriceTick || snapshot.Market.QuantityStep != profile.QuantityStep {
-		return nil, himalaya.ErrInvalidSnapshot
+		return nil, venueexecution.ErrInvalidSnapshot
 	}
 	row, err := r.store.AssessDevelopmentBaseline(ctx, request, snapshot)
 	if err != nil {
@@ -235,13 +237,13 @@ func (r *baselineRunner) acquire(ctx context.Context, scope *commonv1.HimalayaSc
 	return domain.LeaseToken{}, ctx.Err()
 }
 
-func stableSnapshot(ctx context.Context, client *himalaya.Client, scope himalaya.Scope) (*commonv1.HimalayaSnapshot, error) {
+func stableSnapshot(ctx context.Context, client *himalaya.Client, scope venueexecution.Scope) (*commonv1.HimalayaSnapshot, error) {
 	read := func() (*commonv1.HimalayaSnapshot, error) {
 		raw, err := client.Read(ctx, scope)
 		if err != nil {
 			return nil, err
 		}
-		return himalaya.Normalize(raw, scope)
+		return raw.Snapshot, nil
 	}
 	before, err := read()
 	if err != nil {
@@ -252,17 +254,17 @@ func stableSnapshot(ctx context.Context, client *himalaya.Client, scope himalaya
 		return nil, err
 	}
 	if len(before.Orders) != 0 || len(after.Orders) != 0 || len(before.Positions) != len(after.Positions) {
-		return nil, himalaya.ErrInvalidSnapshot
+		return nil, venueexecution.ErrInvalidSnapshot
 	}
 	for i, position := range before.Positions {
 		if !proto.Equal(position, after.Positions[i]) {
-			return nil, himalaya.ErrInvalidSnapshot
+			return nil, venueexecution.ErrInvalidSnapshot
 		}
 	}
 	first, e1 := native.Value(before.Available, false, true)
 	second, e2 := native.Value(after.Available, false, true)
 	if e1 != nil || e2 != nil || !first.Equal(second) {
-		return nil, himalaya.ErrInvalidSnapshot
+		return nil, venueexecution.ErrInvalidSnapshot
 	}
 	return after, nil
 }

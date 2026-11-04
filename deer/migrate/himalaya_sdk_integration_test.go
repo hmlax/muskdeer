@@ -26,7 +26,9 @@ import (
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
+	gateway "github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
 func TestHimalayaSDKDurableAdmissionReservesBudgetAndRejectsStaleEpoch(t *testing.T) {
@@ -38,7 +40,7 @@ func TestHimalayaSDKDurableAdmissionReservesBudgetAndRejectsStaleEpoch(t *testin
 		t.Fatal(err)
 	}
 	request.ClientID += "-second"
-	if _, err := store.Prepare(ctx, lease, request); !errors.Is(err, himalaya.ErrRiskLimit) {
+	if _, err := store.Prepare(ctx, lease, request); !errors.Is(err, venueexecution.ErrRiskLimit) {
 		t.Fatalf("shared account was over-reserved: %v", err)
 	}
 	if err := db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).
@@ -69,7 +71,7 @@ func TestHimalayaSDKClaimSurvivesReplyLossAndCannotBeDispatchedAgain(t *testing.
 		if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 			return err
 		}
-		if row.State != himalaya.IntentDispatched {
+		if row.State != venueexecution.IntentDispatched {
 			t.Errorf("intent was not durable before dispatch: %s", row.State)
 		}
 		return lost
@@ -110,7 +112,7 @@ func TestHimalayaSDKPersistedGuardStopsSecondActualSDKCall(t *testing.T) {
 		server.Stop()
 		<-done
 	})
-	client, err := himalaya.NewClient(ctx, himalaya.Config{
+	client, err := himalaya.NewClient(ctx, venueexecution.Config{
 		Target:  "passthrough:///sdk-durable-test",
 		Token:   "sdk-integration-test-token",
 		Timeout: time.Second,
@@ -204,9 +206,9 @@ func TestHimalayaSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) 
 	if err := store.WithSubmission(ctx, prepared.Admission, func(context.Context) error { return nil }); err != nil {
 		t.Fatal(err)
 	}
-	response := &pb.PlaceOrderResponse{
-		OrderId:  42,
-		ClientId: prepared.Request.ClientID,
+	response := &gateway.SubmitResult{
+		OrderID:  42,
+		ClientID: prepared.Request.ClientID,
 	}
 	for range 2 {
 		if err := store.Acknowledge(ctx, prepared.Admission, response); err != nil {
@@ -217,11 +219,11 @@ func TestHimalayaSDKAcknowledgementRetainsTheWholeRiskReservation(t *testing.T) 
 	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	if row.State != himalaya.IntentAcknowledged || row.OrderId != "42" {
+	if row.State != venueexecution.IntentAcknowledged || row.OrderId != "42" {
 		t.Fatal("known native identity was not persisted")
 	}
 	request.ClientID += "-next"
-	if _, err := store.Prepare(ctx, lease, request); !errors.Is(err, himalaya.ErrRiskLimit) {
+	if _, err := store.Prepare(ctx, lease, request); !errors.Is(err, venueexecution.ErrRiskLimit) {
 		t.Fatalf("acknowledgement released funds without terminal evidence: %v", err)
 	}
 }
@@ -250,7 +252,7 @@ func TestHimalayaSDKConcurrentPreparationsShareOneFundBudget(t *testing.T) {
 		switch {
 		case err == nil:
 			successes++
-		case errors.Is(err, himalaya.ErrRiskLimit):
+		case errors.Is(err, venueexecution.ErrRiskLimit):
 			rejected++
 		default:
 			t.Fatal(err)
@@ -265,7 +267,7 @@ func TestHimalayaSDKConcurrentPreparationsShareOneFundBudget(t *testing.T) {
 	}
 }
 
-func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseToken, himalaya.SubmitRequest) {
+func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, venueexecution.SubmitRequest) {
 	t.Helper()
 	db, _ := migrationDatabase(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
@@ -276,7 +278,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	if err := venuemigrate.Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
-	store, err := himalaya.NewStore(db)
+	store, err := venueexecution.NewStore(db, himalaya.Factory{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,7 +292,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	}
 	lease, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
-		AccountID: himalaya.AccountID(10001, 10001),
+		AccountID: venueexecution.AccountID(10001, 10001),
 	}, owner, 10*time.Second)
 	if err != nil {
 		t.Fatal(err)
@@ -308,7 +310,7 @@ func sdkAdmissionFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseT
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Create(budget).Error; err != nil {
 		t.Fatal(err)
 	}
-	return db, store, lease, himalaya.SubmitRequest{
+	return db, store, lease, venueexecution.SubmitRequest{
 		OwnerID:  lease.OwnerID,
 		Epoch:    uint64(lease.Epoch),
 		UserID:   10001,

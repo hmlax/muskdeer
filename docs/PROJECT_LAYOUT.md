@@ -48,3 +48,5 @@ Deer 的基础设施组件、Proto 和第三方源码继续留在 deer。coreloc
 2026-11-04：Proto 第一层改为服务名，共享定义归 common；旧 config/model/rpc/hertz 顶层已移除。各所有者的定义与共享字段划分见 [Proto 目录](../deer/proto/README.md)。只改变声明位置和 Go 导入，不改变共用仓储的事务边界。
 
 Proto 源文件集中于 deer/proto；生成 Go 代码及对应包文档集中于 deer/pb，按 common/服务子目录对应。所有业务引用 deer/pb 的生成类型；运行 make generate 更新。Wire injector 继续在各项目 cmd 下。
+
+交易通道边界：execution/adapters/himalaya 只实现第三方 SDK/gRPC 和字段/单位转换；execution/venue/gateway 定义消费接口及强类型值，execution/venue 持有持久化、额度、fencing、撤单与报价恢复，装配层注入具体 Factory。共享 native 值与校验无数据库依赖，数据库策略读取独立在 deer/trading/venueconfig。服务布局门禁检查适配器的完整依赖图，并限制 SDK 只出现在适配器和测试对端中。

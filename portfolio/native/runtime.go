@@ -18,22 +18,23 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	executionhimalayav1 "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1"
-	portfoliohimalayav1 "github.com/hmlax/muskdeer/deer/pb/portfolio/himalaya/v1"
+	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
 	portfoliomodelv1 "github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1"
+	portfoliovenuev1 "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
 
 // Runtime polls authoritative execution observations; it never simulates money.
 type Runtime struct {
-	portfoliohimalayav1.UnimplementedPortfolioServer
+	portfoliovenuev1.UnimplementedPortfolioServer
 	db      *gorm.DB
 	owner   string
-	cfg     *values.RuntimeConfig
+	cfg     *venueconfig.RuntimeConfig
 	factory *rpcclient.Factory
 	leases  domain.LeaseRepository
 	logger  *logging.Logger
@@ -41,7 +42,7 @@ type Runtime struct {
 
 // NewRuntime borrows the existing pool and RPC factory without starting tasks.
 func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
-	settings, err := values.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,7 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 
 // RegisterGRPC exposes current scoped observations only.
 func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
-	portfoliohimalayav1.RegisterPortfolioServer(registrar, r)
+	portfoliovenuev1.RegisterPortfolioServer(registrar, r)
 }
 
 // Workers owns one bounded projection loop per fund.
@@ -109,7 +110,7 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.HimalayaProfilePol
 	if err != nil {
 		return err
 	}
-	snapshot, err := executionhimalayav1.NewExecutionClient(connection).GetSnapshot(ctx, values.Scope(profile))
+	snapshot, err := executionvenuev1.NewExecutionClient(connection).GetSnapshot(ctx, values.Scope(profile))
 	if err != nil {
 		return err
 	}

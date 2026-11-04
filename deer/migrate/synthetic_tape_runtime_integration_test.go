@@ -19,16 +19,18 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	executionhimalayav1 "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
+	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
+	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 )
 
@@ -83,7 +85,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	discovery.entries[rpcsecurity.ServiceMarket] = nacos.Instance{
 		ID:      "market-test",
 		Service: rpcsecurity.ServiceMarket,
-		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { markethimalayav1.RegisterMarketServer(server, market) }),
+		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceMarket, func(server *grpc.Server) { marketvenuev1.RegisterMarketServer(server, market) }),
 	}
 	logger := nativeWorkerLogger(ctx, t, lease.OwnerID)
 	t.Setenv("SYNTHETIC_TEST_TOKEN", "test-token")
@@ -113,7 +115,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 			},
 		},
 	}
-	execution, err := himalaya.NewRuntime(ctx, db, lease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger)
+	execution, err := venueexecution.NewRuntime(ctx, db, lease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger, himalaya.Factory{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,7 +129,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := executionhimalayav1.NewExecutionClient(connection).PublishSynthetic(ctx, &commonv1.SyntheticTapePlan{}); status.Code(err) != codes.PermissionDenied {
+	if _, err := executionvenuev1.NewExecutionClient(connection).PublishSynthetic(ctx, &commonv1.SyntheticTapePlan{}); status.Code(err) != codes.PermissionDenied {
 		t.Fatalf("PublishSynthetic(portfolio peer)=%v, want PermissionDenied", err)
 	}
 	strategyFactory := nativeFactory(ctx, t, ca, rpcsecurity.ServiceStrategy, discovery)
@@ -146,7 +148,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	}
 	runNativeWorkers(ctx, t, append(execution.Workers(), selected...))
 	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
-		settings, err := native.LoadRuntime(ctx, db, cfg)
+		settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
 		if err != nil {
 			t.Fatal(err)
 		}

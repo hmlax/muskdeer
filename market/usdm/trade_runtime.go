@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -21,7 +21,7 @@ const tradeWorkerPrefix = "market.usdm.trade."
 
 // GetTrade returns the latest owned aggregate observation; it never falls back
 // to depth prices or another exchange when the trade stream is unavailable.
-func (r *Runtime) GetTrade(ctx context.Context, request *markethimalayav1.TradeRequest) (*commonv1.HimalayaTrade, error) {
+func (r *Runtime) GetTrade(ctx context.Context, request *marketvenuev1.TradeRequest) (*commonv1.HimalayaTrade, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}

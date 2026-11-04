@@ -89,3 +89,12 @@ class ProtoLayoutTest(unittest.TestCase):
             path.write_text('syntax = "proto3";\n')
             with self.assertRaisesRegex(ValueError, 'Proto sources belong under deer/proto'):
                 validate_layout(root)
+
+    def test_provider_specific_models_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_source(root, 'execution/model/v1/venue.proto')
+            source = root / 'deer/proto/execution/model/v1/venue.proto'
+            source.write_text(source.read_text() + 'message HimalayaIntent {}\n')
+            with self.assertRaisesRegex(ValueError, 'provider-specific models'):
+                validate_layout(root)

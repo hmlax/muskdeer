@@ -17,7 +17,7 @@ import (
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestDevelopmentBaselineKeepsUnknownAuditAndRiskAndIsOneTime(t *testing.T) {
@@ -47,7 +47,7 @@ func TestDevelopmentBaselineKeepsUnknownAuditAndRiskAndIsOneTime(t *testing.T) {
 		t.Fatal("second baseline on the same account was accepted")
 	}
 	var old executionmodelv1.VenueCancellation
-	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueCancellation{}).First(&old).Error; err != nil || old.State != himalaya.IntentDispatched {
+	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueCancellation{}).First(&old).Error; err != nil || old.State != venueexecution.IntentDispatched {
 		t.Fatalf("old unknown audit was rewritten: state=%s err=%v", old.State, err)
 	}
 	if pending, err := store.PendingIDs(ctx, lease.Key.AccountID); err != nil || len(pending) != 0 {
@@ -75,12 +75,12 @@ func TestDevelopmentBaselineNeverExcludesNewUnknownCancellations(t *testing.T) {
 	if err := store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
 		t.Fatal(err)
 	}
-	scope := himalaya.Scope{
+	scope := venueexecution.Scope{
 		UserID: request.Scope.UserId,
 		FundID: request.Scope.FundId,
 		Symbol: request.Scope.Symbol,
 	}
-	admission, err := store.PrepareCancel(ctx, lease, himalaya.CancelRequest{
+	admission, err := store.PrepareCancel(ctx, lease, venueexecution.CancelRequest{
 		Scope:   scope,
 		OrderID: 99,
 	})
@@ -111,7 +111,7 @@ func TestDevelopmentBaselineAllowsFreshIntentWithinRetainedBudget(t *testing.T) 
 	if err := store.ApplyDevelopmentBaseline(ctx, lease, request, snapshot); err != nil {
 		t.Fatal(err)
 	}
-	prepared, err := store.Prepare(ctx, lease, developmentSubmit(lease, himalaya.Scope{
+	prepared, err := store.Prepare(ctx, lease, developmentSubmit(lease, venueexecution.Scope{
 		UserID: request.Scope.UserId,
 		FundID: request.Scope.FundId,
 		Symbol: request.Scope.Symbol,
@@ -142,7 +142,7 @@ func TestDevelopmentBaselineRejectsUnsafeOrStaleApproval(t *testing.T) {
 			case "foreign_prefix":
 				request.OriginalOrders[0].ClientId = native.ClientPrefix + request.Scope.Symbol + "_foreign"
 			case "unknown_submit":
-				prepared, err := store.Prepare(ctx, lease, developmentSubmit(lease, himalaya.Scope{
+				prepared, err := store.Prepare(ctx, lease, developmentSubmit(lease, venueexecution.Scope{
 					UserID: request.Scope.UserId,
 					FundID: request.Scope.FundId,
 					Symbol: request.Scope.Symbol,
@@ -150,7 +150,7 @@ func TestDevelopmentBaselineRejectsUnsafeOrStaleApproval(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("state", himalaya.IntentDispatched).Error; err != nil {
+				if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).UpdateColumn("state", venueexecution.IntentDispatched).Error; err != nil {
 					t.Fatal(err)
 				}
 			case "stale_owner":
@@ -184,17 +184,17 @@ func TestDevelopmentBaselineFailsClosedIfRetainedRiskIsReduced(t *testing.T) {
 	}
 }
 
-func developmentBaselineFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain.LeaseToken, *commonv1.DevelopmentBaselineRequest, *commonv1.HimalayaSnapshot) {
+func developmentBaselineFixture(t *testing.T) (*gorm.DB, *venueexecution.Store, domain.LeaseToken, *commonv1.DevelopmentBaselineRequest, *commonv1.HimalayaSnapshot) {
 	t.Helper()
 	db, store, lease, order := sdkAdmissionFixture(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 	defer cancel()
-	scope := himalaya.Scope{
+	scope := venueexecution.Scope{
 		UserID: order.UserID,
 		FundID: order.FundID,
 		Symbol: order.Symbol,
 	}
-	admission, err := store.PrepareCancel(ctx, lease, himalaya.CancelRequest{
+	admission, err := store.PrepareCancel(ctx, lease, venueexecution.CancelRequest{
 		Scope:   scope,
 		OrderID: 42,
 	})
@@ -243,8 +243,8 @@ func developmentBaselineFixture(t *testing.T) (*gorm.DB, *himalaya.Store, domain
 	return db, store, lease, request, snapshot
 }
 
-func developmentSubmit(lease domain.LeaseToken, scope himalaya.Scope) himalaya.SubmitRequest {
-	return himalaya.SubmitRequest{
+func developmentSubmit(lease domain.LeaseToken, scope venueexecution.Scope) venueexecution.SubmitRequest {
+	return venueexecution.SubmitRequest{
 		OwnerID:  lease.OwnerID,
 		Epoch:    uint64(lease.Epoch),
 		UserID:   scope.UserID,

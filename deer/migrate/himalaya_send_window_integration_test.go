@@ -10,7 +10,7 @@ import (
 
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
-	"github.com/hmlax/muskdeer/execution/himalaya"
+	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
 
 func TestHimalayaLiveDispatchRequiresEnoughTimeBeforeEnteringSDK(t *testing.T) {
@@ -33,7 +33,7 @@ func TestHimalayaLiveDispatchRequiresEnoughTimeBeforeEnteringSDK(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", prepared.Request.IntentID).First(&row).Error; err != nil {
 		t.Fatal(err)
 	}
-	if row.State == himalaya.IntentDispatched {
+	if row.State == venueexecution.IntentDispatched {
 		t.Fatalf("near-expiry request became unknown without SDK entry: %v", &row)
 	}
 }

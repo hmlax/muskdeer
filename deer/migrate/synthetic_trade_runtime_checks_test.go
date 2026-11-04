@@ -14,9 +14,9 @@ import (
 
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	executionhimalayav1 "github.com/hmlax/muskdeer/deer/pb/execution/himalaya/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
-	markethimalayav1 "github.com/hmlax/muskdeer/deer/pb/market/himalaya/v1"
+	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
+	marketvenuev1 "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -47,7 +47,7 @@ func assertSyntheticTradeOutage(ctx context.Context, t *testing.T, check synthet
 	if err != nil {
 		t.Fatal(err)
 	}
-	book, err := markethimalayav1.NewMarketClient(connection).GetBook(ctx, &markethimalayav1.BookRequest{Symbol: "BTCUSDT"})
+	book, err := marketvenuev1.NewMarketClient(connection).GetBook(ctx, &marketvenuev1.BookRequest{Symbol: "BTCUSDT"})
 	if err != nil || len(book.GetBids()) == 0 || len(book.GetAsks()) == 0 {
 		t.Fatalf("trade outage disturbed independent depth source: %v", err)
 	}
@@ -68,7 +68,7 @@ func assertSyntheticTradeOutage(ctx context.Context, t *testing.T, check synthet
 			Epoch:     1,
 		},
 	}
-	if _, err := executionhimalayav1.NewExecutionClient(connection).PublishSynthetic(ctx, legacy); status.Code(err) != codes.InvalidArgument || check.sdk.syntheticCount() != 0 {
+	if _, err := executionvenuev1.NewExecutionClient(connection).PublishSynthetic(ctx, legacy); status.Code(err) != codes.InvalidArgument || check.sdk.syntheticCount() != 0 {
 		t.Fatalf("legacy wire in aggregate mode: err=%v effects=%d, want InvalidArgument/0", err, check.sdk.syntheticCount())
 	}
 }
