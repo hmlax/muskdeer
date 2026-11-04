@@ -17,6 +17,9 @@ def validate_layout(root: Path):
             failures.append(f'{relative}: first directory must be a service or common')
             continue
         text = source.read_text()
+        is_config = 'config' in relative.parts or re.search(r'^package\s+muskdeer\.config\.v1\s*;', text, re.MULTILINE)
+        if is_config and relative.as_posix() != 'common/config/v1/config.proto':
+            failures.append(f'{relative}: configuration definitions must share common/config/v1/config.proto')
         package = re.search(r'option\s+go_package\s*=\s*"([^";]+)(?:;[^"]+)?"', text)
         expected = MODULE + source.parent.relative_to(root).as_posix()
         if package is None or package.group(1) != expected:

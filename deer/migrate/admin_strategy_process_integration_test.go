@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
@@ -40,7 +40,7 @@ func TestManagementStrategyProcessServesRealViewerWithoutTradingWorkers(t *testi
 		}
 	})
 	cfg := businessProcessConfig(t, ca, postgres, nil, naming, "strategy")
-	cfg.Business.Strategy = &strategyconfigv1.StrategyRuntime{ManagementEnabled: true}
+	cfg.Business.Strategy = &configv1.StrategyRuntime{ManagementEnabled: true}
 	pid := startBusinessProcess(ctx, t, cfg, observer)
 	if pid <= 0 || pid == os.Getpid() {
 		t.Fatal("management did not start an independent strategy process")

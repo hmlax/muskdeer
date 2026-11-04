@@ -1,5 +1,7 @@
 # Muskdeer — Codex 工作约定
 
+2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
+
 ## 目标与优先级
 开发连接既有交易所的自营做市与策略交易 MVP。先阅读 README.md、docs/PRD.md、docs/ARCHITECTURE.md、docs/IMPLEMENTATION_PLAN.md、docs/PROGRESS.md。用户最新明确指令优先；既有仓库指令与本文件冲突时先记录并解决，不静默覆盖。
 

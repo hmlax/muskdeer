@@ -16,7 +16,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	marketconfigv1 "github.com/hmlax/muskdeer/deer/proto/market/config/v1"
+
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -114,9 +114,9 @@ func marketProcessConfig(t *testing.T, ca *testcert.Authority, postgres *configv
 	cfg := businessProcessConfig(t, ca, postgres, nil, naming, "market")
 	cfg.InstanceId = "business-market-" + instance
 	cfg.Business.OperationTimeout = durationpb.New(time.Second)
-	cfg.Business.Market = &marketconfigv1.MarketRuntime{
+	cfg.Business.Market = &configv1.MarketRuntime{
 		LeaseTtl: durationpb.New(3 * time.Second),
-		Feeds: []*marketconfigv1.MarketFeedRuntime{{
+		Feeds: []*configv1.MarketFeedRuntime{{
 			FeedId:         feedID,
 			ReplayBid:      bid,
 			ReplayAsk:      ask,

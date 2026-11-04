@@ -4,11 +4,10 @@ import (
 	"testing"
 	"time"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	marketconfigv1 "github.com/hmlax/muskdeer/deer/proto/market/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
@@ -25,9 +24,9 @@ func TestMarketBusinessRequiresExplicitFeedsAndModesWithoutUnusedBroker(t *testi
 			ExecutionVenue:   domain.ExecutionVenueSimulator,
 			PollInterval:     durationpb.New(20 * time.Millisecond),
 			OperationTimeout: durationpb.New(200 * time.Millisecond),
-			Market: &marketconfigv1.MarketRuntime{
+			Market: &configv1.MarketRuntime{
 				LeaseTtl: durationpb.New(3 * time.Second),
-				Feeds: []*marketconfigv1.MarketFeedRuntime{{
+				Feeds: []*configv1.MarketFeedRuntime{{
 					FeedId:         1,
 					ReplayBid:      "99.99",
 					ReplayAsk:      "100.01",
@@ -59,7 +58,7 @@ func TestMarketBusinessRequiresExplicitFeedsAndModesWithoutUnusedBroker(t *testi
 		}
 	}
 	live := proto.CloneOf(fixture)
-	live.Business.Market.Feeds[0] = &marketconfigv1.MarketFeedRuntime{FeedId: 1}
+	live.Business.Market.Feeds[0] = &configv1.MarketFeedRuntime{FeedId: 1}
 	if err := ValidateConfig(live); err != nil {
 		t.Fatalf("live binding selection without replay fields rejected: %v", err)
 	}

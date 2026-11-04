@@ -1,5 +1,11 @@
 # Codex 实施任务
 
+## P22：配置共用一个 Proto
+
+状态：单文件配置定义及兼容验收完成；实际检查范围见 P22 进度。
+
+统一所有配置定义至 common/config/v1/config.proto，合并 Go 包引用并重新生成；保留 DataConfig/ServiceSettings/ServiceConfig 及全部字段的既有协议身份，运行时仍使用 data.yaml/service.yaml 两份配置。验收覆盖描述符一致、配置往返/Nacos 启动、生成/Wire、格式、静态与相关测试；用户原有未提交业务修改继续独立保留。
+
 ## P21：Proto 按服务归属整理
 
 状态：目录与协议兼容验收完成；验证范围与首次失败记录见 P21 进度。

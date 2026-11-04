@@ -14,8 +14,8 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -55,7 +55,7 @@ func TestExecutionProcessRefreshesRiskAndClosesOnSelectedMarketLoss(t *testing.T
 	// target. The separate forced-lock case verifies the short native deadline.
 	executionCfg.Business.OperationTimeout = durationpb.New(time.Second)
 	executionCfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	executionCfg.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	executionCfg.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
 	executionPID := startBusinessProcess(ctx, t, executionCfg, observer)
 	if marketPID == executionPID || executionPID == os.Getpid() || marketPID == os.Getpid() {
 		t.Fatal("risk and market did not run in independent processes")

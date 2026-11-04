@@ -13,16 +13,15 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/types/known/durationpb"
-	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
-
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/testprocess"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing.T) {
@@ -38,7 +37,7 @@ func TestRiskProcessDeadlineExitsWithoutOpeningGrantUnderDatabaseLock(t *testing
 	cfg := businessProcessConfig(t, testcert.New(t), postgres, businessStream(ctx, t), businessNaming(), "execution")
 	cfg.Business.OperationTimeout = durationpb.New(200 * time.Millisecond)
 	cfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	cfg.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	cfg.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
 	data, err := protojson.Marshal(cfg)
 	if err != nil {
 		t.Fatal(err)

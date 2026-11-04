@@ -1,5 +1,7 @@
 # MVP 需求规格 v0.1
 
+2026-11-04 用户进一步确认：所有服务的配置消息统一定义在 deer/proto/common/config/v1/config.proto，不再按服务拆配置 Proto。data.yaml/service.yaml 仍是两份运行配置，保留原消息全名、字段编号与 YAML/JSON 格式；其他业务 Proto 继续按服务归属。
+
 2026-11-04 最新 Proto 目录约定：deer/proto 第一层按 common、market、strategy、execution、portfolio、cron 组织，移除顶层 config/model/rpc/hertz 分类。服务 RPC、模型和专属配置分别位于所属服务的 v1、model/v1、config/v1；共享配置、模型及框架注解归 common。保持 Proto package、字段号、RPC 方法与数据库结构不变，HimalayaAuthority 不改。
 
 2026-11-04 最新目录边界：market、strategy、execution、portfolio、cron 各自拥有入口和服务实现，Deer 只保留公共依赖、交易合同、跨服务事务仓储和 Proto。operator、API 入口及 DeerApi 封装直接删除，替代此前保留通用 API 封装/组合回归入口的约定。五个服务均要求标准 gRPC 健康接口；cron 当前只提供独立生命周期与健康能力，没有已实现的定期业务，不加入默认四核心 Compose。历史数据库迁移和用户未提交业务修改保留。

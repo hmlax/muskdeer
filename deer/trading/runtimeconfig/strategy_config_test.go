@@ -4,12 +4,10 @@ import (
 	"testing"
 	"time"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
-	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
@@ -30,7 +28,7 @@ func TestStrategyRuntimeNeedsExplicitAccountsLeaseAndBothReaders(t *testing.T) {
 			ExecutionVenue:   domain.ExecutionVenueSimulator,
 			PollInterval:     durationpb.New(100 * time.Millisecond),
 			OperationTimeout: durationpb.New(time.Second),
-			Strategy: &strategyconfigv1.StrategyRuntime{
+			Strategy: &configv1.StrategyRuntime{
 				AccountIds: []string{"strategy-account"},
 				LeaseTtl:   durationpb.New(3 * time.Second),
 			},
@@ -52,8 +50,8 @@ func TestStrategyRuntimeNeedsExplicitAccountsLeaseAndBothReaders(t *testing.T) {
 		func(v *configv1.ServiceConfig) { v.Business.Strategy.LeaseTtl = durationpb.New(2 * time.Second) },
 		func(v *configv1.ServiceConfig) { v.GrpcClients = nil },
 		func(v *configv1.ServiceConfig) { v.GrpcClients.AllowedServices = []string{rpcsecurity.ServiceMarket} },
-		func(v *configv1.ServiceConfig) { v.Business.Risk = &executionconfigv1.RiskRuntime{} },
-		func(v *configv1.ServiceConfig) { v.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{} },
+		func(v *configv1.ServiceConfig) { v.Business.Risk = &configv1.RiskRuntime{} },
+		func(v *configv1.ServiceConfig) { v.Business.Simulator = &configv1.SimulatorScenarioRuntime{} },
 		func(v *configv1.ServiceConfig) {
 			v.Name = "execution"
 			v.Jetstream = &configv1.JetStream{}
@@ -83,7 +81,7 @@ func TestManagementOnlyStrategyRequiresExplicitOptInWithoutTradingBindings(t *te
 			ExecutionVenue:   domain.ExecutionVenueSimulator,
 			PollInterval:     durationpb.New(100 * time.Millisecond),
 			OperationTimeout: durationpb.New(time.Second),
-			Strategy:         &strategyconfigv1.StrategyRuntime{ManagementEnabled: true},
+			Strategy:         &configv1.StrategyRuntime{ManagementEnabled: true},
 		},
 	}
 	if err := ValidateConfig(cfg); err != nil {

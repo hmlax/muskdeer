@@ -3,7 +3,7 @@ syntax = "proto3";
 package muskdeer.common.v1;
 
 import "google/protobuf/duration.proto";
-import "deer/proto/common/config/v1/data.proto";
+import "deer/proto/common/config/v1/config.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/proto/common/v1;commonv1";
 

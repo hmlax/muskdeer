@@ -46,3 +46,21 @@ class ProtoLayoutTest(unittest.TestCase):
             self.make_source(root, 'common/v1/orders.proto', service='service Execution {}')
             with self.assertRaisesRegex(ValueError, 'business services'):
                 validate_layout(root)
+
+    def test_configuration_uses_one_shared_proto(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_source(root, 'common/config/v1/config.proto')
+            validate_layout(root)
+            self.make_source(root, 'market/config/v1/market.proto')
+            with self.assertRaisesRegex(ValueError, 'configuration definitions must share'):
+                validate_layout(root)
+
+    def test_configuration_namespace_cannot_escape_into_another_directory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.make_source(root, 'common/v1/another.proto')
+            path = root / 'deer/proto/common/v1/another.proto'
+            path.write_text(path.read_text().replace('package legacy.namespace;', 'package muskdeer.config.v1;'))
+            with self.assertRaisesRegex(ValueError, 'configuration definitions must share'):
+                validate_layout(root)

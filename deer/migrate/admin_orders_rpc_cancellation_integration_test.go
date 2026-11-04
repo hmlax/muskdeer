@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -43,7 +43,7 @@ func TestAdminOrderRPCDoesNotReleaseFundsWhenCoreCancellationPrecedesOMS(t *test
 		}
 	})
 	strategy := businessProcessConfig(t, ca, postgres, nil, naming, "strategy")
-	strategy.Business.Strategy = &strategyconfigv1.StrategyRuntime{ManagementEnabled: true}
+	strategy.Business.Strategy = &configv1.StrategyRuntime{ManagementEnabled: true}
 	startBusinessProcess(ctx, t, strategy, discovery)
 	reader := strategyv1.NewStrategyOrderQueryClient(adminStrategyProcessConnection(ctx, t, ca, discovery, rpcsecurity.ServiceAPI))
 	request := &strategyv1.GetStrategyOrderRequest{

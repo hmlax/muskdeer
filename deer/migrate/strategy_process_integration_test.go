@@ -15,9 +15,9 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
+
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -49,8 +49,8 @@ func TestStrategyCommandsDiscoverTakeOverQuoteAndCompleteStop(t *testing.T) {
 	execution := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), naming, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}
@@ -133,7 +133,7 @@ func strategyProcessConfig(t *testing.T, ca *testcert.Authority, postgres *confi
 	cfg.InstanceId = "business-strategy." + instance
 	cfg.Business.OperationTimeout = durationpb.New(time.Second)
 	cfg.Business.PollInterval = durationpb.New(100 * time.Millisecond)
-	cfg.Business.Strategy = &strategyconfigv1.StrategyRuntime{
+	cfg.Business.Strategy = &configv1.StrategyRuntime{
 		AccountIds: []string{account},
 		LeaseTtl:   durationpb.New(3 * time.Second),
 	}

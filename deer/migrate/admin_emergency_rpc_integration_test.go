@@ -12,8 +12,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
@@ -36,7 +36,7 @@ func TestAdminEmergencyRPCProcessConfirmsScopeAndQueriesWithoutAdvancingExecutio
 	before := publicationInstance(ctx, t, db, submit.Input.Authority.StrategyID)
 	ca, discovery := emergencyProcessDiscovery(ctx, t)
 	config := businessProcessConfig(t, ca, postgres, nil, discovery.Config, "strategy")
-	config.Business.Strategy = &strategyconfigv1.StrategyRuntime{
+	config.Business.Strategy = &configv1.StrategyRuntime{
 		ManagementEnabled: true,
 		ControlEnabled:    true,
 	}
@@ -136,7 +136,7 @@ func TestAdminEmergencyRPCQueryOnlyProcessDoesNotRegisterControl(t *testing.T) {
 	}
 	ca, discovery := emergencyProcessDiscovery(ctx, t)
 	config := businessProcessConfig(t, ca, postgres, nil, discovery.Config, "strategy")
-	config.Business.Strategy = &strategyconfigv1.StrategyRuntime{ManagementEnabled: true}
+	config.Business.Strategy = &configv1.StrategyRuntime{ManagementEnabled: true}
 	startBusinessProcess(ctx, t, config, discovery.Client)
 	connection := adminStrategyProcessConnection(ctx, t, ca, discovery.Client, rpcsecurity.ServiceAPI)
 	if _, err := strategyv1.NewStrategyEmergencyCancellationControlClient(connection).RequestEmergencyCancellation(ctx, &strategyv1.RequestEmergencyCancellationRequest{}); status.Code(err) != codes.Unimplemented {

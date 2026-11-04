@@ -16,7 +16,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -182,8 +182,8 @@ func startStrategySoakProcesses(ctx context.Context, t *testing.T, db *gorm.DB, 
 	market.Business.Market.LeaseTtl = durationpb.New(10 * time.Second)
 	execution := businessProcessConfig(t, ca, postgres, stream, naming, "execution")
 	execution.Business.ExecutionLeaseTtl = durationpb.New(10 * time.Second)
-	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}

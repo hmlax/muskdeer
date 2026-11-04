@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
@@ -30,7 +29,7 @@ func TestRiskRuntimeRequiresExplicitBoundedAccountScopeAndLease(t *testing.T) {
 			PollInterval:      durationpb.New(20 * time.Millisecond),
 			OperationTimeout:  durationpb.New(200 * time.Millisecond),
 			ExecutionLeaseTtl: durationpb.New(3 * time.Second),
-			Risk:              &executionconfigv1.RiskRuntime{AccountIds: []string{"account-one"}},
+			Risk:              &configv1.RiskRuntime{AccountIds: []string{"account-one"}},
 		},
 	}
 	if err := runtimeconfig.ValidateConfig(cfg); err != nil {

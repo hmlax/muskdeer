@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -73,8 +73,8 @@ func strategySourceProcessScenario(t *testing.T, lost domain.MarketSource) {
 	execution := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), naming, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &executionconfigv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
-	execution.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
+	execution.Business.Risk = &configv1.RiskRuntime{AccountIds: []string{submit.Input.AccountID}}
+	execution.Business.Simulator = &configv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(100 * time.Millisecond),
 	}

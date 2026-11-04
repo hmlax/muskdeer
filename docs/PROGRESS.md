@@ -1735,3 +1735,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 在独立的 clean/user-overlay 两套源码中迁移并重新运行 protoc/gotag/Wire，没有手改生成字段。两套迁移前后各 241 项完整消息/枚举/服务描述逐项一致，46 个生成模型的 GORM 表名/列/原始标签/主键元数据逐项一致；710 个既有 Go 文件及原有 41 个待提交 Go 文件在归一化 Proto 包别名后语法树一致，排除本轮有意更新的规范门禁。原有五十处未提交修改按新路径保留，独立于目录整理的索引版本，原 0038 迁移和未完成业务不纳入本轮提交。
 - clean 源码全包单元与 race、39 项 Python 工具、85 Proto/五 Wire 生成比较、Hertz 确定性生成及编译、合同和规范正反样例、格式、lint/govet 0 issues、五服务及维护/回归夹具构建通过；实际工作区含原业务修改的全 integration 标签代码也编译通过，生成比较与 lint 通过。生成模型 PostgreSQL 读写/NULL/精确小数、迁移账本、CoreLocal 幂等不注资、outbox claim/fencing 集成/race 通过。跨进程发布/消费/对账首轮在新风险准入处拒绝，保留证据；同用例按原 25 秒 context 单独复核通过（2.60 秒），没有扩大期限、降低断言或改变交易逻辑。cron 实际独立命令从隔离 Nacos 双 YAML 启动并提供健康 RPC 的 integration/race 通过（2.83 秒）。
 - 本轮仅代码/协议目录调整；没有重建或重启现有交易容器，没有发布 Nacos、改写资金策略或处置未知订单。原有未提交 eventwire 测试失败不计作本轮修复，完整工作区业务验收、全量 integration/e2e/soak 和候选镜像部署未运行；数据库迁移文件字节保持。目录与协议兼容验收完成，提交及远程结果见本轮报告。
+
+
+## 2026-11-04：P22 所有配置共用一个 Proto
+
+- 按用户进一步要求，将原公共 data/service 与 market/strategy/execution 的五份配置定义统一到 deer/proto/common/config/v1/config.proto，生成同一 configv1 包；移除独立服务 config 目录和旧分散生成物，更新 26 个配置使用方的导入/包限定符及相关文档。目录门禁同时约束 config 路径和 muskdeer.config.v1 命名空间只能使用该文件。
+- DataConfig、ServiceSettings、ServiceConfig、全部业务运行设置与原字段保持；Nacos 继续提供 data.yaml/service.yaml 两份配对配置，原身份/版本/哈希及严格 YAML 校验不变。HimalayaAuthority 和数据库业务参数不改，不涉及数据库迁移或运行配置发布。
+- clean/user-overlay 两套迁移前后各 241 项完整描述符一致；712 个已有 Go 文件及原有 41 个未提交 Go 文件在归一化 Proto 包别名后业务语法树一致。原有 50 处未提交修改单独保留，未纳入配置整理提交。所有生成物由 protoc/gotag 重新生成，原手工生成代码没有补丁修改。
+- 隔离源码全包 race、41 项 Python、81 Proto 生成比较、五 Wire diff、合同/格式检查、lint/govet 0 issues、工作区全 integration 标签编译通过。五服务本地双 YAML 的 doctor 校验通过；实际 cron 独立命令从隔离 Nacos 双配置启动、提供健康 RPC 并正常退出的 integration/race 通过（2.60 秒）。完整工作区业务测试、全量 integration/e2e/soak 未运行，原有未提交 eventwire 断言失败不计入本次修复；未重启或部署交易服务。

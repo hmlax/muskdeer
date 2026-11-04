@@ -16,7 +16,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/proto/common/model/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -124,7 +124,7 @@ func TestExecutionRoutingFollowsOwnerAcrossIndependentProcesses(t *testing.T) {
 	for _, cfg := range []*configv1.ServiceConfig{first, second} {
 		cfg.Business.OperationTimeout = durationpb.New(time.Second)
 		cfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-		cfg.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
+		cfg.Business.Simulator = &configv1.SimulatorScenarioRuntime{
 			AccountIds:  []string{submit.Input.AccountID},
 			CancelDelay: durationpb.New(time.Second),
 		}

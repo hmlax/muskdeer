@@ -1,2 +1,2 @@
-// Package configv1 contains shared service envelopes and infrastructure settings.
+// Package configv1 contains shared configuration definitions for all services.
 package configv1

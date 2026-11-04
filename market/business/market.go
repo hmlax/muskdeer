@@ -12,7 +12,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	marketconfigv1 "github.com/hmlax/muskdeer/deer/proto/market/config/v1"
+
 	marketv1 "github.com/hmlax/muskdeer/deer/proto/market/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -123,7 +123,7 @@ func Assemble(ctx context.Context, db *gorm.DB, incarnation string, cfg *configv
 	}, nil
 }
 
-func marketFactory(feed domain.MarketFeedDefinition, cfg *marketconfigv1.MarketFeedRuntime, timeout time.Duration) (marketworker.Factory, error) {
+func marketFactory(feed domain.MarketFeedDefinition, cfg *configv1.MarketFeedRuntime, timeout time.Duration) (marketworker.Factory, error) {
 	switch feed.Mode {
 	case domain.MarketModeLive:
 		if runtimeconfig.HasReplay(cfg) {

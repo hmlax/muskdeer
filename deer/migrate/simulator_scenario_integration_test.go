@@ -11,8 +11,8 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/proto/common/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
 	executionv1 "github.com/hmlax/muskdeer/deer/proto/execution/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
@@ -117,7 +117,7 @@ func TestExecutionProcessConfirmsExplicitSimulatorCancellation(t *testing.T) {
 	cfg := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), naming, "execution")
 	cfg.Business.OperationTimeout = durationpb.New(200 * time.Millisecond)
 	cfg.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	cfg.Business.Simulator = &executionconfigv1.SimulatorScenarioRuntime{
+	cfg.Business.Simulator = &configv1.SimulatorScenarioRuntime{
 		AccountIds:  []string{submit.Input.AccountID},
 		CancelDelay: durationpb.New(time.Millisecond),
 	}

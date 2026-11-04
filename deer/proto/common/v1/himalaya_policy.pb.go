@@ -276,7 +276,7 @@ var File_deer_proto_common_v1_himalaya_policy_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_himalaya_policy_proto_rawDesc = "" +
 	"\n" +
-	"*deer/proto/common/v1/himalaya_policy.proto\x12\x12muskdeer.common.v1\x1a\x1egoogle/protobuf/duration.proto\x1a&deer/proto/common/config/v1/data.proto\"\xd1\x02\n" +
+	"*deer/proto/common/v1/himalaya_policy.proto\x12\x12muskdeer.common.v1\x1a\x1egoogle/protobuf/duration.proto\x1a(deer/proto/common/config/v1/config.proto\"\xd1\x02\n" +
 	"\x0eHimalayaPolicy\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
 	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\x12E\n" +

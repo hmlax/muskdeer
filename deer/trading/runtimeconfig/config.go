@@ -5,10 +5,9 @@ import (
 	"errors"
 	"time"
 
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	marketconfigv1 "github.com/hmlax/muskdeer/deer/proto/market/config/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -94,12 +93,12 @@ func validateMarketConfig(cfg *configv1.BusinessRuntime) error {
 }
 
 // HasReplay reports whether a feed declares explicit replay input.
-func HasReplay(cfg *marketconfigv1.MarketFeedRuntime) bool {
+func HasReplay(cfg *configv1.MarketFeedRuntime) bool {
 	return cfg.ReplayBid != "" || cfg.ReplayAsk != "" || cfg.ReplayQuantity != "" || cfg.ReplayInterval != nil
 }
 
 // ReplaySettings validates exact decimal inputs and bounded replay timing.
-func ReplaySettings(cfg *marketconfigv1.MarketFeedRuntime, timeout time.Duration) (domain.MarketReplayConfig, error) {
+func ReplaySettings(cfg *configv1.MarketFeedRuntime, timeout time.Duration) (domain.MarketReplayConfig, error) {
 	if !boundedDuration(cfg.ReplayInterval, 10*time.Millisecond, time.Second) {
 		return domain.MarketReplayConfig{}, ErrInvalidConfig
 	}

@@ -15,7 +15,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/nacos"
 	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
-	executionconfigv1 "github.com/hmlax/muskdeer/deer/proto/execution/config/v1"
+
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/testcert"
@@ -64,7 +64,7 @@ func TestAdminEmergencyProcessesEnrollCancelAndFinishAcrossOwnerTakeover(t *test
 	execution := businessProcessConfig(t, ca, postgres, businessStream(ctx, t), discovery.Config, "execution")
 	execution.Business.OperationTimeout = durationpb.New(time.Second)
 	execution.Business.ExecutionLeaseTtl = durationpb.New(3 * time.Second)
-	execution.Business.Risk = &executionconfigv1.RiskRuntime{
+	execution.Business.Risk = &configv1.RiskRuntime{
 		AccountIds: []string{submit.Input.AccountID},
 	}
 	executionPID := startBusinessProcess(ctx, t, execution, discovery.Client)

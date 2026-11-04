@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/hmlax/muskdeer/deer/nacos"
+	configv1 "github.com/hmlax/muskdeer/deer/proto/common/config/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/proto/execution/model/v1"
-	strategyconfigv1 "github.com/hmlax/muskdeer/deer/proto/strategy/config/v1"
 	strategymodelv1 "github.com/hmlax/muskdeer/deer/proto/strategy/model/v1"
 	strategyv1 "github.com/hmlax/muskdeer/deer/proto/strategy/v1"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
@@ -40,7 +40,7 @@ func TestAdminControlProcessesRevalidateAuthorityAndProjectOneDurableResult(t *t
 	for _, suffix := range []string{"first", "second"} {
 		cfg := businessProcessConfig(t, ca, postgres, nil, naming, "strategy")
 		cfg.InstanceId += "." + suffix
-		cfg.Business.Strategy = &strategyconfigv1.StrategyRuntime{
+		cfg.Business.Strategy = &configv1.StrategyRuntime{
 			ManagementEnabled: true,
 			ControlEnabled:    true,
 		}
