@@ -1,0 +1,28 @@
+syntax = "proto3";
+package muskdeer.model.v1;
+import "tagger/tagger.proto";
+import "deer/proto/common/config/v1/config.proto";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/model/v1;modelv1";
+
+// ServiceRuntimePolicy is the authoritative immutable startup input for one core service.
+message ServiceRuntimePolicy {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string service_name = 5 [(tagger.tags) = "gorm:\"column:service_name;type:varchar(32);not null;uniqueIndex:uk_service_runtime_policy_service\""];
+  int64 revision = 6 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  int64 parameters_schema_version = 7 [(tagger.tags) = "gorm:\"column:parameters_schema_version;type:bigint;not null\""];
+  muskdeer.config.v1.BusinessRuntime parameters = 8 [(tagger.tags) = "gorm:\"column:parameters;type:jsonb;not null;serializer:json\""];
+  string parameters_digest = 9 [(tagger.tags) = "gorm:\"column:parameters_digest;type:varchar(64);not null\""];
+}
+
+// RuntimePolicyMigration records explicit business-configuration schema upgrades.
+message RuntimePolicyMigration {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 version = 5 [(tagger.tags) = "gorm:\"column:version;type:bigint;not null;uniqueIndex:uk_runtime_policy_migration_version\""];
+  string checksum = 6 [(tagger.tags) = "gorm:\"column:checksum;type:varchar(64);not null\""];
+}

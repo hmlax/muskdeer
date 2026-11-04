@@ -72,3 +72,5 @@ make generate：Proto 校验 → Go/gRPC 代码 → 经验证的 tag/ORM 生成 
 P03.2 已实现内嵌版本 SQL、生成的 SchemaMigration 记录、事务 advisory lock/回滚及显式 migrate -apply 工具，见 [迁移说明](MIGRATIONS.md)。当前业务实体仍按后续版本加入；此工具不执行启动 AutoMigrate，不改写不一致历史。
 
 Himalaya 仅提供 SDK/gRPC 适配，业务持久化由通用交易账户策略、通道订单/撤单、账户观察和恢复模型承担。适配层不导入 ORM/模型/仓储，业务层通过 gateway 接口接收显式类型映射后的值；通道消息、RPC 与配置均使用新的业务名称，旧入口不注册；数据库记录身份和实际 SDK 请求摘要属于持久化/第三方合同，不通过协议改名清空或改写。
+
+服务级业务执行参数的持久化实体为 common/model/v1/runtime_policy.proto 的 ServiceRuntimePolicy：按服务保存强类型 BusinessRuntime、参数 schema 版本、递增 revision 和确定性摘要；网格/通用做市的每实例参数仍由 StrategyConfigVersion 保存，不复制到另一份配置。RuntimePolicyMigration 仅记录显式配置结构升级。离线导入要求交易节点停止，现有活跃租约拒绝写入；版本校验及整批事务防止并发覆盖和部分生效，不提供在线热切换保证。
