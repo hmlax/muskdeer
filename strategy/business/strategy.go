@@ -157,9 +157,6 @@ func strategyAccountTick(ctx context.Context, timeout time.Duration, account str
 	if err != nil {
 		return false, err
 	}
-	if len(ids) > domain.MaxAccountStrategyInstances {
-		return false, domain.ErrRiskDenied
-	}
 	seen := make(map[int64]struct{}, len(ids))
 	for _, id := range ids {
 		if ctx.Err() != nil {

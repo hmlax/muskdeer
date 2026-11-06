@@ -31,7 +31,7 @@ func (s *Store) InitializeBudget(ctx context.Context, profile *commonv1.VenuePro
 }
 
 func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.VenueProfilePolicy, enabled *bool) error {
-	if !validStoreContext(ctx) || len(input) == 0 || len(input) > native.MaxProfiles {
+	if !validStoreContext(ctx) || len(input) == 0 {
 		return ErrInvalidSubmit
 	}
 	profiles := make([]*commonv1.VenueProfilePolicy, 0, len(input))

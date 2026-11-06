@@ -1,9 +1,7 @@
 package runtimeconfig
 
-const maxRuntimeAccounts = 16
-
 func runtimeAccountsValid(accounts []string) bool {
-	if len(accounts) == 0 || len(accounts) > maxRuntimeAccounts {
+	if len(accounts) == 0 {
 		return false
 	}
 	seen := make(map[string]struct{}, len(accounts))

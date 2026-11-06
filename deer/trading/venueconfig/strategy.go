@@ -43,10 +43,10 @@ func LoadBusiness(ctx context.Context, db *gorm.DB) (*configv1.BusinessRuntime, 
 	var result *configv1.BusinessRuntime
 	err := db.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var instances []*strategymodelv1.StrategyInstance
-		if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("instance_key LIKE ? AND desired_running = ? AND delete_at IS NULL", venueStrategyPrefix+"%", true).Order("id").Limit(native.MaxProfiles + 1).Find(&instances).Error; err != nil {
+		if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Where("instance_key LIKE ? AND desired_running = ? AND delete_at IS NULL", venueStrategyPrefix+"%", true).Order("id").Find(&instances).Error; err != nil {
 			return err
 		}
-		if len(instances) == 0 || len(instances) > native.MaxProfiles {
+		if len(instances) == 0 {
 			return native.ErrInvalid
 		}
 		for _, instance := range instances {
@@ -77,7 +77,7 @@ func LoadBusiness(ctx context.Context, db *gorm.DB) (*configv1.BusinessRuntime, 
 // ImportStrategies appends immutable versions during explicit offline maintenance.
 // It never funds accounts, submits orders or changes an existing startup snapshot.
 func ImportStrategies(ctx context.Context, db *gorm.DB, input *commonv1.VenueStrategyImport) error {
-	if !policyContextValid(ctx) || db == nil || len(input.GetStrategies()) == 0 || len(input.Strategies) > native.MaxProfiles {
+	if !policyContextValid(ctx) || db == nil || len(input.GetStrategies()) == 0 {
 		return native.ErrInvalid
 	}
 	db = db.Session(&gorm.Session{NewDB: true})

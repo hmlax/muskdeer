@@ -4,7 +4,6 @@ package migrate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -18,7 +17,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
-func TestStrategyCandidatesUseExactAccountIncludeStopsAndRejectOverflow(t *testing.T) {
+func TestStrategyCandidatesDiscoverAllInstancesWithoutCrossingAccounts(t *testing.T) {
 	db, _ := migrationDatabase(t)
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
@@ -35,12 +34,33 @@ func TestStrategyCandidatesUseExactAccountIncludeStopsAndRejectOverflow(t *testi
 	}
 	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyLease{}, 1)
 	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
-	for index := 0; index < domain.MaxAccountStrategyInstances-1; index++ {
-		insertCandidateMetadata(ctx, t, db, submit.Input.InstrumentID, fmt.Sprintf("candidate-overflow-%d", index), submit.Input.AccountID)
+	additional := make([]*strategymodelv1.StrategyInstance, 0, 255)
+	for index := range 255 {
+		row := identityInstance(submit.Input.InstrumentID, fmt.Sprintf("candidate-many-%d", index), domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
+		row.AccountId, row.State, row.DesiredRunning = submit.Input.AccountID, string(domain.StrategyStateStopped), false
+		additional = append(additional, row)
 	}
-	if _, err := reader.ForAccount(ctx, submit.Input.AccountID); !errors.Is(err, domain.ErrRiskDenied) {
-		t.Fatalf("overflow was silently truncated into an incomplete cycle: %v", err)
+	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(&additional).Error; err != nil {
+			return err
+		}
+		versions := make([]*strategymodelv1.StrategyConfigVersion, 0, len(additional))
+		for _, row := range additional {
+			parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
+			parameters.InstanceId = row.Id
+			versions = append(versions, parameters)
+		}
+		return tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(&versions).Error
+	}); err != nil {
+		t.Fatal(err)
 	}
+	all, err := reader.ForAccount(ctx, submit.Input.AccountID)
+	if err != nil || len(all) != 257 || !slices.Equal(all[:2], ids) {
+		t.Fatalf("ForAccount(257 instances) = %d IDs, %v, want all instances in stable order", len(all), err)
+	}
+	assertPortfolioRowCount(ctx, t, db, &strategymodelv1.StrategyLease{}, 1)
+	assertPortfolioRowCount(ctx, t, db, &executionmodelv1.OrderIntent{}, 0)
+
 }
 
 func insertCandidateMetadata(ctx context.Context, t *testing.T, db *gorm.DB, instrumentID int64, key, account string) int64 {
@@ -48,12 +68,12 @@ func insertCandidateMetadata(ctx context.Context, t *testing.T, db *gorm.DB, ins
 	row := identityInstance(instrumentID, key, domain.StrategyTemplateMarketMaker, domain.MarketSourceBinance)
 	row.AccountId, row.State, row.DesiredRunning = account, string(domain.StrategyStateStopped), false
 	if err := db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Transaction(func(tx *gorm.DB) error {
-		if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(row).Error; err != nil {
+		if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Create(row).Error; err != nil {
 			return err
 		}
 		parameters := storedParameterFixture(domain.StrategyTemplateMarketMaker)
 		parameters.InstanceId = row.Id
-		return tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
+		return tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Create(parameters).Error
 	}); err != nil {
 		t.Fatal(err)
 	}

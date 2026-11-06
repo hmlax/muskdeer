@@ -11,9 +11,9 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 )
 
-func TestReadProfilesSupportsBoundedMultiMarketImports(t *testing.T) {
+func TestReadProfilesLoadsEveryConfiguredMarket(t *testing.T) {
 	t.Parallel()
-	for _, count := range []int{19, 32, 33} {
+	for _, count := range []int{19, 33, 257} {
 		t.Run(fmt.Sprintf("%d markets", count), func(t *testing.T) {
 			t.Parallel()
 			input := &commonv1.VenueProfileImport{}
@@ -33,12 +33,10 @@ func TestReadProfilesSupportsBoundedMultiMarketImports(t *testing.T) {
 				t.Fatal(err)
 			}
 			got, err := readProfiles(path)
-			if count <= 32 && (err != nil || len(got.GetProfiles()) != count) {
+			if err != nil || len(got.GetProfiles()) != count {
 				t.Fatalf("readProfiles(%d markets) = %d profiles, %v, want complete import", count, len(got.GetProfiles()), err)
 			}
-			if count > 32 && err == nil {
-				t.Fatalf("readProfiles(%d markets) = nil error, want capacity rejection", count)
-			}
+
 		})
 	}
 }

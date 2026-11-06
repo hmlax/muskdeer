@@ -7,14 +7,13 @@ import (
 	"gorm.io/gorm"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
 
 // InitializeStrategies atomically maintains reviewed fund policies, immutable
 // strategy versions and enablement. It never calls the SDK or changes money.
 func (s *Store) InitializeStrategies(ctx context.Context, input *commonv1.VenueStrategyImport) error {
-	if !validStoreContext(ctx) || len(input.GetStrategies()) == 0 || len(input.Strategies) > native.MaxProfiles {
+	if !validStoreContext(ctx) || len(input.GetStrategies()) == 0 {
 		return ErrInvalidSubmit
 	}
 	writes := proto.CloneOf(input)

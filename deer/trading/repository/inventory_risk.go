@@ -54,10 +54,10 @@ func validateInventoryAtLimit(ctx context.Context, tx *gorm.DB, accountID string
 func strictestInventoryLimit(ctx context.Context, tx *gorm.DB, accountID string, instrumentID int64) (decimal.Decimal, error) {
 	active := tx.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Select("id, active_config_version").Where("account_id = ? AND instrument_id = ? AND active_config_version IS NOT NULL AND delete_at IS NULL", accountID, instrumentID)
 	var versions []*strategymodelv1.StrategyConfigVersion
-	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("(instance_id, version) IN (?) AND delete_at IS NULL", active).Limit(domain.MaxAccountInventoryPolicies + 1).Find(&versions).Error; err != nil {
+	if err := tx.WithContext(ctx).Model(&strategymodelv1.StrategyConfigVersion{}).Where("(instance_id, version) IN (?) AND delete_at IS NULL", active).Find(&versions).Error; err != nil {
 		return decimal.Zero, err
 	}
-	if len(versions) == 0 || len(versions) > domain.MaxAccountInventoryPolicies {
+	if len(versions) == 0 {
 		return decimal.Zero, domain.ErrRiskDenied
 	}
 	limit := decimal.Zero

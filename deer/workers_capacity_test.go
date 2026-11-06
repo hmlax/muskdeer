@@ -9,7 +9,7 @@ import (
 )
 
 func TestWorkerCapacityOwnsAndJoinsNativeSymbolLanes(t *testing.T) {
-	for _, count := range []int{34, 64, 65} {
+	for _, count := range []int{34, 65, 257} {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			t.Parallel()
 			var stopped, released atomic.Int64
@@ -31,12 +31,6 @@ func TestWorkerCapacityOwnsAndJoinsNativeSymbolLanes(t *testing.T) {
 					return workers, nil
 				},
 			})
-			if count > 64 {
-				if err == nil || service != nil || cleanup != nil || stopped.Load() != 0 || released.Load() != 1 {
-					t.Fatalf("NewDeer(%d workers) = service %v, cleanup present %v, error %v, stopped %d, released %d; want atomic capacity rejection", count, service != nil, cleanup != nil, err, stopped.Load(), released.Load())
-				}
-				return
-			}
 			if err != nil {
 				t.Fatalf("NewDeer(%d workers) = %v, want success", count, err)
 			}

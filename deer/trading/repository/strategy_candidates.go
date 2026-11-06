@@ -28,11 +28,8 @@ func (s *strategyCandidates) ForAccount(ctx context.Context, accountID string) (
 	}
 	var rows []*strategymodelv1.StrategyInstance
 	if err := s.db.WithContext(ctx).Model(&strategymodelv1.StrategyInstance{}).Select("Id").
-		Where("account_id = ? AND delete_at IS NULL", accountID).Order("id ASC").Limit(domain.MaxAccountStrategyInstances + 1).Find(&rows).Error; err != nil {
+		Where("account_id = ? AND delete_at IS NULL", accountID).Order("id ASC").Find(&rows).Error; err != nil {
 		return nil, coreFailure(ctx, err)
-	}
-	if len(rows) > domain.MaxAccountStrategyInstances {
-		return nil, domain.ErrRiskDenied
 	}
 	ids := make([]int64, 0, len(rows))
 	for _, row := range rows {

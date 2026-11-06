@@ -36,15 +36,12 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	var rows []*commonmodelv1.TradingAccountPolicy
 	query := db.WithContext(op).Model(&commonmodelv1.TradingAccountPolicy{}).Where("delete_at IS NULL")
 	if symbols := cfg.Venue.Symbols; len(symbols) != 0 {
-		if len(symbols) > native.MaxProfiles {
-			return nil, native.ErrInvalid
-		}
 		query = query.Where("symbol IN ?", symbols)
 	}
-	if err := query.Order("id").Limit(native.MaxProfiles + 1).Find(&rows).Error; err != nil {
+	if err := query.Order("id").Find(&rows).Error; err != nil {
 		return nil, err
 	}
-	if len(rows) == 0 || len(rows) > native.MaxProfiles {
+	if len(rows) == 0 {
 		return nil, native.ErrInvalid
 	}
 	if len(cfg.Venue.Symbols) != 0 && len(rows) != len(cfg.Venue.Symbols) {

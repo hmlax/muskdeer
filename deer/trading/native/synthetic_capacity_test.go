@@ -7,9 +7,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestSyntheticConfigSupportsBoundedMultiMarketRuns(t *testing.T) {
+func TestSyntheticConfigLoadsEveryConfiguredMarket(t *testing.T) {
 	t.Parallel()
-	for _, count := range []int{19, 32, 33} {
+	for _, count := range []int{19, 33, 257} {
 		t.Run(fmt.Sprintf("%d markets", count), func(t *testing.T) {
 			t.Parallel()
 			policy, _ := syntheticFixture()
@@ -25,12 +25,10 @@ func TestSyntheticConfigSupportsBoundedMultiMarketRuns(t *testing.T) {
 				policy.SyntheticTape.Profiles = append(policy.SyntheticTape.Profiles, publication)
 			}
 			err := ValidateSyntheticConfig(policy)
-			if count <= 32 && err != nil {
+			if err != nil {
 				t.Fatalf("ValidateSyntheticConfig(%d markets) = %v, want success", count, err)
 			}
-			if count > 32 && err == nil {
-				t.Fatalf("ValidateSyntheticConfig(%d markets) = nil, want capacity rejection", count)
-			}
+
 		})
 	}
 }

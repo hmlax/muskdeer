@@ -8,7 +8,7 @@
 
 ServiceSpec.Resources 声明公共依赖就绪后初始化的进程资源；Workers 同步描述阻塞工作计划，RegisterGRPC 同步注册本服务协议。回调不得启动无所有者 goroutine、创建第二份连接池或保留 registrar 延迟修改。各服务通过所属 business 包装配，公共运行层不按服务名选择业务。
 
-每进程最多 64 个工作器，支持 32 品种各自独立的盘口与聚合成交通道。超限在启动任何工作器前整批拒绝，已打开的资源仍按原清理合同回收；正常关闭必须等待所有工作器退出。
+进程按实际配置的策略实例和数据依赖装配工作器，不设置策略数、账户数或工作器总数的固定上限，不截断数据库记录。资源并发和连接池只负责调度；正常关闭仍必须等待所有已装配工作器退出并释放依赖。
 
 Deer 默认按配置创建并拥有 PostgreSQL、Redis、JetStream、Nacos、RPC 客户端和日志。WithDB、WithRedis、WithJetStream、WithDiscovery、WithGRPCClients、WithLogger 注入的对象为借用，不重复创建或关闭；调用方在 Deer 完成后关闭。初始化、启动和运行 readiness 均检查配置/注入依赖。
 

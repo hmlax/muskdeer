@@ -60,12 +60,6 @@ const (
 	RiskScopeInstrument RiskScope = "INSTRUMENT"
 )
 
-// MaxAccountInventoryPolicies bounds account-wide configuration work.
-const MaxAccountInventoryPolicies = 128
-
-// MaxRunningRiskCandidates bounds one account evaluation cycle.
-const MaxRunningRiskCandidates = 16
-
 // RiskCandidates reads currently desired instances within an explicit account.
 type RiskCandidates interface {
 	DesiredForAccount(ctx context.Context, accountID string) ([]int64, error)

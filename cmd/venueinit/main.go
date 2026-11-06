@@ -58,7 +58,7 @@ func command() int {
 			return 2
 		}
 		strategies = &commonv1.VenueStrategyImport{}
-		if protojson.Unmarshal(data, strategies) != nil || len(strategies.Strategies) == 0 || len(strategies.Strategies) > native.MaxProfiles {
+		if protojson.Unmarshal(data, strategies) != nil || len(strategies.Strategies) == 0 {
 			fmt.Fprintln(os.Stderr, messageInvalidProfileImport)
 			return 2
 		}
@@ -154,7 +154,7 @@ func readProfiles(path string) (*commonv1.VenueProfileImport, error) {
 		return nil, native.ErrInvalid
 	}
 	var input commonv1.VenueProfileImport
-	if protojson.Unmarshal(data, &input) != nil || len(input.Profiles) == 0 || len(input.Profiles) > native.MaxProfiles {
+	if protojson.Unmarshal(data, &input) != nil || len(input.Profiles) == 0 {
 		return nil, native.ErrInvalid
 	}
 	return &input, nil

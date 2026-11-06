@@ -74,7 +74,7 @@ func validateBusinessRole(cfg *configv1.ServiceConfig) error {
 }
 
 func validateMarketConfig(cfg *configv1.BusinessRuntime) error {
-	if cfg.Market == nil || len(cfg.Market.Feeds) == 0 || len(cfg.Market.Feeds) > 16 ||
+	if cfg.Market == nil || len(cfg.Market.Feeds) == 0 ||
 		!boundedDuration(cfg.Market.LeaseTtl, domain.MinLeaseTTL, domain.MaxLeaseTTL) || cfg.Market.LeaseTtl.AsDuration() <= 2*cfg.OperationTimeout.AsDuration() {
 		return ErrInvalidConfig
 	}

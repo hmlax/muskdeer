@@ -15,7 +15,6 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
-	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
 )
@@ -45,7 +44,7 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 			},
 		},
 	}
-	for i := range 32 {
+	for i := range 257 {
 		profile := databaseProfileFixture()
 		profile.UserId += int64(i)
 		profile.FundId += int64(i)
@@ -60,7 +59,7 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 		})
 	}
 	if err := store.ImportProfiles(ctx, batch); err != nil {
-		t.Fatalf("ImportProfiles(32 markets) = %v, want success", err)
+		t.Fatalf("ImportProfiles(257 markets) = %v, want success", err)
 	}
 	var before []*commonmodelv1.TradingAccountPolicy
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Order("id").Find(&before).Error; err != nil {
@@ -68,10 +67,10 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 	}
 	settings, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 	if err != nil {
-		t.Fatalf("LoadRuntime(32 markets) = %v, want success", err)
+		t.Fatalf("LoadRuntime(257 markets) = %v, want success", err)
 	}
 	if len(settings.Venue.Profiles) != len(batch.Profiles) {
-		t.Fatalf("LoadRuntime(32 markets) = %d profiles, want 32", len(settings.Venue.Profiles))
+		t.Fatalf("LoadRuntime(257 markets) = %d profiles, want 257", len(settings.Venue.Profiles))
 	}
 	for i, profile := range settings.Venue.Profiles {
 		if !proto.Equal(profile, batch.Profiles[i]) {
@@ -81,12 +80,11 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 			t.Errorf("ImportProfiles(new market %s) enabled its budget, want disabled", profile.Symbol)
 		}
 	}
-	overflow := proto.CloneOf(batch.Profiles[0])
-	overflow.UserId, overflow.FundId, overflow.Symbol = 20001, 20001, "OVERFLOWUSDT"
-	batch.Profiles = append(batch.Profiles, overflow)
-	batch.Profiles[0].PriceTick = "0.2"
-	if err := store.ImportProfiles(ctx, batch); !errors.Is(err, venueexecution.ErrInvalidSubmit) {
-		t.Fatalf("ImportProfiles(33 markets) = %v, want ErrInvalidSubmit", err)
+	invalid := proto.CloneOf(batch)
+	invalid.Profiles[0].PriceTick = "0.2"
+	invalid.Profiles[len(invalid.Profiles)-1].QuantityStep = "0"
+	if err := store.ImportProfiles(ctx, invalid); !errors.Is(err, venueexecution.ErrInvalidSubmit) {
+		t.Fatalf("ImportProfiles(invalid final market) = %v, want ErrInvalidSubmit", err)
 	}
 	var after []*commonmodelv1.TradingAccountPolicy
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Order("id").Find(&after).Error; err != nil {
@@ -100,10 +98,18 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 			t.Errorf("startup/rejected import changed policy %d", before[i].Id)
 		}
 	}
-	if err := store.ImportProfiles(ctx, &commonv1.VenueProfileImport{Profiles: []*commonv1.VenueProfilePolicy{overflow}}); err != nil {
+	extra := proto.CloneOf(batch.Profiles[0])
+	extra.UserId, extra.FundId, extra.Symbol = 20001, 20001, "EXTRAUSDT"
+	if err := store.ImportProfiles(ctx, &commonv1.VenueProfileImport{Profiles: []*commonv1.VenueProfilePolicy{extra}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := venueconfig.LoadRuntime(ctx, db, cfg, nil); !errors.Is(err, native.ErrInvalid) {
-		t.Fatalf("LoadRuntime(33 stored markets) = %v, want rejection without truncation", err)
+	cfg.Venue.SyntheticTape.Profiles = append(cfg.Venue.SyntheticTape.Profiles, &configv1.SyntheticTapeProfile{
+		Symbol:          extra.Symbol,
+		Quantity:        "0.01",
+		MaximumNotional: "100",
+	})
+	loaded, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
+	if err != nil || len(loaded.Venue.Profiles) != 258 {
+		t.Fatalf("LoadRuntime(258 stored markets) = %v, want every profile without truncation", err)
 	}
 }

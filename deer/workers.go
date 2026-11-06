@@ -9,10 +9,6 @@ import (
 	"github.com/go-kratos/kratos/v2/transport"
 )
 
-// A native symbol can own both a book lane and an aggregate-trade lane.
-// Keep process work bounded while allowing all 32 configured symbols.
-const maxServiceWorkers = 64
-
 // Worker is a process-owned blocking task. Run must honor cancellation and
 // return after joining any child work; it cannot retain a constructor context.
 // Check is optional, read-only and must honor its readiness context.
@@ -54,9 +50,6 @@ func (d *Deer) addWorkers(ctx context.Context, configure func(context.Context, *
 	plan, err := configure(ctx, d)
 	if err != nil {
 		return fmt.Errorf("configure workers: %w", err)
-	}
-	if len(plan) > maxServiceWorkers {
-		return fmt.Errorf("service allows at most %d workers", maxServiceWorkers)
 	}
 	names := make(map[string]struct{}, len(plan))
 	for _, worker := range plan {
