@@ -25,6 +25,19 @@ func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv
 		return err
 	}
 	levels, best := quoteTargetDepths(wanted)
+	depth := make(map[domain.Side]int)
+	seen := make(map[string]bool)
+	for _, order := range snapshot.Orders {
+		if !retained.orders[order.OrderId] {
+			continue
+		}
+		key, _, err := orderKey(order)
+		if err != nil {
+			return err
+		}
+		seen[key] = true
+		depth[domain.Side(order.Side)]++
+	}
 	var candidates []rollingQuote
 	for _, order := range snapshot.Orders {
 		if retained.orders[order.OrderId] || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
@@ -38,6 +51,12 @@ func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv
 		if err != nil {
 			return err
 		}
+		if seen[key] {
+			retained.pending = true
+			continue // Duplicate orders do not provide another price level.
+		}
+		seen[key] = true
+		depth[domain.Side(order.Side)]++
 		candidates = append(candidates, rollingQuote{
 			order: order,
 			key:   key,
@@ -50,7 +69,11 @@ func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv
 	retiring := make(map[domain.Side]int)
 	for _, candidate := range candidates {
 		side := domain.Side(candidate.order.Side)
-		allowance := max(1, int(decimal.NewFromInt(int64(levels[side])).Mul(replacement).Ceil().IntPart()))
+		batch := max(1, int(decimal.NewFromInt(int64(levels[side])).Mul(replacement).Ceil().IntPart()))
+		// A shallow side must accumulate depth before spending it on refreshes.
+		// Unsafe and duplicate quotes were excluded and still get cancelled.
+		floor := max(1, levels[side]-batch)
+		allowance := min(batch, max(0, depth[side]-floor))
 		if retiring[side] < allowance {
 			retiring[side]++
 			continue
