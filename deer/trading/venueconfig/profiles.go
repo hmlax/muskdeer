@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/shopspring/decimal"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
@@ -17,30 +18,46 @@ import (
 // RuntimeConfig contains a private startup snapshot of database business policy.
 // Nacos still supplies transport and worker timing; loading never writes data.
 type RuntimeConfig struct {
-	PollInterval     time.Duration
-	OperationTimeout time.Duration
-	Venue            *commonv1.VenuePolicy
+	PollInterval        time.Duration
+	OperationTimeout    time.Duration
+	Venue               *commonv1.VenuePolicy
+	ReplacementFraction decimal.Decimal
+	BridgeSlots         uint32
 }
 
 // LoadRuntime borrows the existing pool and rejects missing or invalid profiles.
 // Disabled budgets remain visible for observation and controlled cancellation.
-func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime) (*RuntimeConfig, error) {
+func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime, connection *configv1.VenueConnection) (*RuntimeConfig, error) {
 	if ctx == nil || db == nil || cfg.GetVenue() == nil || cfg.GetOperationTimeout().CheckValid() != nil || cfg.OperationTimeout.AsDuration() <= 0 {
 		return nil, native.ErrInvalid
 	}
 	op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
 	defer cancel()
 	var rows []*commonmodelv1.TradingAccountPolicy
-	if err := db.WithContext(op).Model(&commonmodelv1.TradingAccountPolicy{}).Where("delete_at IS NULL").Order("id").Limit(native.MaxProfiles + 1).Find(&rows).Error; err != nil {
+	query := db.WithContext(op).Model(&commonmodelv1.TradingAccountPolicy{}).Where("delete_at IS NULL")
+	if symbols := cfg.Venue.Symbols; len(symbols) != 0 {
+		if len(symbols) > native.MaxProfiles {
+			return nil, native.ErrInvalid
+		}
+		query = query.Where("symbol IN ?", symbols)
+	}
+	if err := query.Order("id").Limit(native.MaxProfiles + 1).Find(&rows).Error; err != nil {
 		return nil, err
 	}
 	if len(rows) == 0 || len(rows) > native.MaxProfiles {
 		return nil, native.ErrInvalid
 	}
+	if len(cfg.Venue.Symbols) != 0 && len(rows) != len(cfg.Venue.Symbols) {
+		return nil, native.ErrInvalid
+	}
 	h := cfg.Venue
+	replacement, err := native.Value(h.ReplacementFraction, false, false)
+	if err != nil || replacement.GreaterThan(decimal.NewFromInt(1)) || h.BridgeSlots > h.Depth {
+		return nil, native.ErrInvalid
+	}
 	policy := &commonv1.VenuePolicy{
-		Target:           h.Target,
-		TokenEnv:         h.TokenEnv,
+		Target:           connection.GetTarget(),
+		TokenEnv:         connection.GetTokenEnv(),
 		QuantityFraction: h.QuantityFraction,
 		Depth:            h.Depth,
 		LeaseTtl:         proto.CloneOf(h.LeaseTtl),
@@ -59,9 +76,11 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 		return nil, err
 	}
 	return &RuntimeConfig{
-		PollInterval:     cfg.PollInterval.AsDuration(),
-		OperationTimeout: cfg.OperationTimeout.AsDuration(),
-		Venue:            policy,
+		PollInterval:        cfg.PollInterval.AsDuration(),
+		OperationTimeout:    cfg.OperationTimeout.AsDuration(),
+		Venue:               policy,
+		ReplacementFraction: replacement,
+		BridgeSlots:         h.BridgeSlots,
 	}, nil
 }
 

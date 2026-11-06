@@ -2,9 +2,9 @@
 
 此路径只使用现有 `lukla-go` SDK，不改撮合、订单服务、SDK 或目标协议。仅用于已确认的开发测试账户；不代表生产或严格多节点接管验收。
 
-四个核心服务继续各自拥有 Wire、Deer、入口与工作循环：market 提供 Binance USDm 完整二十档；strategy 根据选定来源产生目标订单；execution 持久化意图、预留资金并通过 SDK 执行/撤单；portfolio 从执行服务拉取权威观察并保存可重建 typed 投影。服务间使用 Nacos 发现及 mTLS gRPC，配置仍从 Nacos Proto JSON 读取。
+四个核心服务继续各自拥有 Wire、Deer、入口与工作循环：market 提供 Binance USDm 完整二十档；strategy 根据选定来源产生目标订单；execution 持久化意图、预留资金并通过 SDK 执行/撤单；portfolio 从执行服务拉取权威观察并保存可重建 typed 投影。服务间使用 Nacos 发现及 mTLS gRPC，基础连接/服务配置从 Nacos YAML 配对读取，全部业务执行参数从 PostgreSQL 读取。
 
-`business.execution_venue=gateway` 显式选择此路径。账户、基金、产品、杠杆、额度、行情源及预期 tick/lot 由数据库的生成 Model `TradingAccountPolicy` 保存，定义见 `deer/proto/common/model/v1/trading_account.proto`；Nacos 的 `business.venue` 不再包含 profiles，仅维护 SDK 连接、二十档/数量比例、租约和有限测试运行控制。四核心启动时读取数据库，缺失或无效即失败，不回退 Nacos 或自动创建。SDK 原生元数据改变时拒绝交易；所选来源失效不切源。当前开发启动选择 Binance USDm，原有 Binance/OKX 现货适配继续保留。行情连接依据 [官方 USDm 连接说明](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)，使用 public 路由。
+数据库 `StrategyConfigVersion.maker_parameters.venue_runtime.execution_venue=gateway` 显式选择此路径。账户、基金、产品、杠杆、额度、行情源及预期 tick/lot 由数据库的生成 Model `TradingAccountPolicy` 保存，定义见 `deer/proto/common/model/v1/trading_account.proto`；档数、数量比例、滚动替换比例、额外交接档数、租约、频率和有限测试控制由 `StrategyConfigVersion.maker_parameters.venue_runtime.venue` 保存。Nacos 不接受 `business`，四核心的 `data.yaml` 中配置 `venue_connection.target/token_env`。字段和显式维护见[数据库业务执行参数](DATABASE_PARAMETERS.md)。四核心启动时读取数据库，缺失或无效即失败，不回退 Nacos 或自动创建。SDK 原生元数据改变时拒绝交易；所选来源失效不切源。当前开发启动选择 Binance USDm，原有 Binance/OKX 现货适配继续保留。行情连接依据 [官方 USDm 连接说明](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)，使用 public 路由。
 
 首次准备时，使用 `/venueinit -profiles /path/to/reviewed-profiles.json` 显式升级独立 SDK 扩展并导入已审查的业务数据；这是维护输入，不是服务启动配置。输入为 `VenueProfileImport` 的严格 Proto JSON：`{"profiles":[{"user_id":"101","fund_id":"201","symbol":"BTCUSDT","maximum_notional":"1000","maximum_order_notional":"100","leverage":10,"market_data_source":"binance","price_tick":"0.1","quantity_step":"0.001"}]}`，以上全部为示例。新预算默认禁用；已有预算的启用状态、余额观察、风险预留、历史审计和身份保持。整批原子导入，拒绝有效的执行/策略/行情/持仓租约、已删除记录及低于保留风险的额度缩减。调整前停止相关四核心并等待租约到期，修改后显式重启。
 
@@ -12,9 +12,9 @@
 
 目标数量按外部盘口比例计算，再按原生 tick/lot、最小数量/金额和固定单笔额度约束；同一原生价格合并。最低数量采用稳定的最小合规数量，做市本身不生成测试成交；另见用户新增确认的[开发测试成交策略](SYNTHETIC_TAPE.md)。初次接管只处理已确认的旧 `mm_<SYMBOL>_` 报价；完成接管后若再出现旧生产者报价，拒绝新增风险，不与它争抢。未知来源订单不作为本项目订单擅自撤销。
 
-重报价以二十档目标为准，参考 Himalaya `tools/market-maker/src/reconcile.rs` 的滚动撤补。每侧每轮最多撤补向上取整十分之一的安全待改档位，二十档即两档；其余安全旧单保留完整预留。同价数量尚待更新时仍占据该价位，避免重复补单；缺少的价格优先于数量刷新，买卖新档交替提交。穿越新对侧目标、超过单笔额度及 legacy 的订单继续受控撤除，不适用这项保留额度。
+重报价按数据库 `depth` 目标，参考 Himalaya `tools/market-maker/src/reconcile.rs` 的滚动撤补。每侧每轮安全待改档位的替换上限为 `ceil(目标档数 × replacement_fraction)`，至少一档；例如二十档、比例 `"0.1"` 时为两档。其余安全旧单保留完整预留。同价数量尚待更新时仍占据该价位，避免重复补单；缺少的价格优先于数量刷新，买卖新档交替提交。穿越新对侧目标、超过单笔额度及 legacy 的订单继续受控撤除，不适用这项保留额度。
 
-补单同时检查当前原生对侧挂单和本轮已提交报价，禁止交叉，并限制每侧最多比目标多一笔用于交接。前一批撤单没有正向终态时不继续抽走下一批报价，也不续订旧计划的保护期限；行情或计划过期仍受控撤掉全部受管挂单。存在延后更新的档位时返回 RECOVERING，全部目标完成后才返回 RUNNING，不把维持旧深度当作目标已收敛。
+补单同时检查当前原生对侧挂单和本轮已提交报价，禁止交叉，并按数据库 `bridge_slots` 限制每侧超出目标的额外交接容量；零表示没有额外容量。前一批撤单没有正向终态时不继续抽走下一批报价，也不续订旧计划的保护期限；行情或计划过期仍受控撤掉全部受管挂单。存在延后更新的档位时返回 RECOVERING，全部目标完成后才返回 RUNNING，不把维持旧深度当作目标已收敛。
 
 当前没有未决撤单、账户预算和最终授权允许时，缺失方向可先补一笔不会穿越当前原生对侧挂单的新报价，再撤失效旧单。这样在参考价跳出原有窄价带时，先建立能安全接续的一侧；预补与普通下单共用持久化意图、预留、发送窗口及最终 SDK 检查，不跳过未知门禁，也不重复提交已预补的目标。
 
@@ -31,3 +31,5 @@ SDK 观察由多个查询组成，并非原子账本快照。当前采用保守�
 本轮用户明确批准的旧历史缺失处置见[一次性开发账本基线](DEVELOPMENT_BASELINE.md)；它不重写原撤单证明，也不解除新未知订单的限制。
 
 内部服务仅提供新的 Venue* 消息和各服务的 venue.v1 RPC，不兼容旧接口；维护入口仅为 venueinit/venuebaseline。运行配置与调用端须配套更新，历史数据和 SDK 代码不因内部接口改名而删除。
+
+通过 `/venueinit -strategies FILE` 在同一离线事务中维护选定品种的资金策略、不可变参数版本及预算启用；不注资，不操作原生订单或仓位。每个品种一个实例，四核心共读同一组请求版本，缺失/非法参数拒绝启动。通道迁移 0008 只扩展已有 maker_parameters 的 schema=2 形状并保护历史不可改写、不可删除，不增加第二套策略参数表。

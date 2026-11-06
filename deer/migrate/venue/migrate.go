@@ -35,6 +35,21 @@ var databaseProfilesDefinition string
 //go:embed sql/0007_venue_business_models.sql
 var venueModelsDefinition string
 
+//go:embed sql/0008_versioned_strategy_parameters.sql
+var strategyParametersDefinition string
+
+// Historical checksum definitions only. New installations never execute the
+// stateless DROP migration; this branch is selected only after it is recorded.
+//
+//go:embed legacy/0007_stateless_orders.sql
+var legacyStatelessDefinition string
+
+//go:embed legacy/0008_plan_grace.sql
+var legacyPlanGraceDefinition string
+
+//go:embed sql/0009_stateless_business_audits.sql
+var statelessBusinessDefinition string
+
 // Both legacy and current installers retain the same advisory lock. A ledger
 // rename and all business table changes commit in one bounded transaction.
 const bootstrapLedger = `DO $$
@@ -75,8 +90,9 @@ func Apply(ctx context.Context, db *gorm.DB) error {
 				return ErrHistory
 			}
 		}
-		for index := len(applied); index < len(definitions()); index++ {
-			current := definitions()[index]
+		path := definitionsFor(applied)
+		for index := len(applied); index < len(path); index++ {
+			current := path[index]
 			if err := tx.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Exec(current).Error; err != nil {
 				return err
 			}
@@ -109,11 +125,12 @@ func Check(ctx context.Context, db *gorm.DB) error {
 }
 
 func validate(rows []*commonmodelv1.VenueSchemaMigration, complete bool) error {
-	if len(rows) > len(definitions()) || complete && len(rows) != len(definitions()) {
+	path := definitionsFor(rows)
+	if len(rows) > len(path) || complete && len(rows) != len(path) {
 		return ErrHistory
 	}
 	for index, row := range rows {
-		if row.Version != int64(index+1) || row.Checksum != checksum(definitions()[index]) || row.DeleteAt != nil {
+		if row.Version != int64(index+1) || row.Checksum != checksum(path[index]) || row.DeleteAt != nil {
 			return ErrHistory
 		}
 	}
@@ -121,7 +138,16 @@ func validate(rows []*commonmodelv1.VenueSchemaMigration, complete bool) error {
 }
 
 func definitions() []string {
-	return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition, historicalIntentDefinition, databaseProfilesDefinition, venueModelsDefinition}
+	return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition, historicalIntentDefinition, databaseProfilesDefinition, venueModelsDefinition, strategyParametersDefinition}
+}
+
+func definitionsFor(rows []*commonmodelv1.VenueSchemaMigration) []string {
+	if len(rows) >= 7 && rows[6].Checksum == checksum(legacyStatelessDefinition) {
+		// At least seven versions already exist, so the loop can never execute
+		// legacyStatelessDefinition. Retain its identity and append safe upgrades.
+		return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition, historicalIntentDefinition, databaseProfilesDefinition, legacyStatelessDefinition, legacyPlanGraceDefinition, statelessBusinessDefinition, strategyParametersDefinition}
+	}
+	return definitions()
 }
 
 func checksum(value string) string { return fmt.Sprintf("%x", sha256.Sum256([]byte(value))) }

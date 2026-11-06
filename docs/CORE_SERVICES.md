@@ -11,7 +11,7 @@
 
 每个进程使用一个 Deer/Kratos 生命周期和自己的 mTLS 身份，Nacos group 为 MUSKDEER_CORE、namespace 为 muskdeer-local。gRPC 是认证的内部接口；strategy/portfolio 当前主要提供后台工作循环及标准健康 RPC，不把管理接口当核心接口重新开启。
 
-核心服务现在**无命令行参数**：直接运行 market/strategy/execution/portfolio。Nacos 连接从 env 获取，基础连接及业务运行控制从 `<service>.data.yaml`、监听及生命周期从 `<service>.service.yaml` 配对读取；不使用本地 JSON 或 flags。具体字段和维护流程见 [Nacos 配置](NACOS_CONFIG.md)。
+核心服务现在**无命令行参数**：直接运行 market/strategy/execution/portfolio。Nacos 连接从 env 获取，基础连接从 `<service>.data.yaml`、监听及生命周期从 `<service>.service.yaml` 配对读取，全部业务执行参数从 PostgreSQL 读取；不使用本地 JSON 或 flags。具体字段和维护流程见 [Nacos 配置](NACOS_CONFIG.md)。
 
 ## 独立装配位置
 
@@ -41,7 +41,7 @@ docker compose ps
 
 准备脚本复用既有基础服务，只创建独立逻辑资源：有本工作区所有权标记的 muskdeer_local PostgreSQL 数据库/角色、muskdeer-local Nacos 命名空间、本地服务证书。Nacos 凭据从忽略的 `.cache/infra/nacos-credentials.json`（username/password）读取，Redis 从既有容器读取本地认证配置。独立持久 NATS 用户 muskdeer-local 的凭据放 `.cache/infra/nats-local-credentials.json`；该账户必须已配置在现有 infra-nats，不能使用会被测试清理的 muskdeer-test。所有凭据/密钥仅存在忽略缓存，权限 0600；每个容器仅挂载自己的证书/私钥，不挂载 CA 私钥。
 
-启动前显式用同源码镜像中的 `/migrate -apply` 迁移，再由 `/coreinit` 创建 16 MiB 有界持久流 MUSKDEER_LOCAL、portfolio_local durable、两个回放绑定和一个**禁用且未注资**的模拟账户。两工具默认也读取 Nacos；维护容器使用 tools profile，仅连接 infra 网络，不占核心静态 IP。主题前缀为 muskdeer.local.core。重复准备不覆盖既有数据库、预算、broker 合同或已有 Nacos 配置；遇到不兼容资源直接拒绝。服务本身不迁移、创建消息资源、开户或注资。资源 ID 在 `.cache/compose/resources.json`，业务配置在 Nacos，`.cache/compose/nacos-drafts` 仅为首次发布的本地草稿，不挂载到服务。
+启动前显式用同源码镜像中的 `/migrate -apply` 迁移，再由 `/coreinit` 初始化数据库中缺失的四服务模拟参数，保留已有参数及关闭状态，并创建 16 MiB 有界持久流 MUSKDEER_LOCAL、portfolio_local durable、两个回放绑定和一个**禁用且未注资**的模拟账户。两工具默认也读取 Nacos；维护容器使用 tools profile，仅连接 infra 网络，不占核心静态 IP。主题前缀为 muskdeer.local.core。重复准备不覆盖既有数据库、预算、broker 合同或已有 Nacos 配置；遇到不兼容资源直接拒绝。服务本身不迁移、创建消息资源、开户或注资。资源 ID 在 `.cache/compose/resources.json`，业务参数在 PostgreSQL 的 ServiceRuntimePolicy/StrategyConfigVersion/TradingAccountPolicy，基础连接与服务配置在 Nacos，`.cache/compose/nacos-drafts` 仅为首次发布的本地草稿，不挂载到服务。
 
 当前回放价格为 99.99/100.01，只是本地模拟输入，不代表 Binance/OKX 当前市价或实连。策略服务扫描专属未注资账户，初始没有策略实例和订单；账户与预算均 disabled，不允许新增风险。持仓服务已经绑定真实 infra JetStream consumer，等待本环境成交事件。
 
@@ -64,8 +64,8 @@ make core-test
 
 market、strategy、execution、portfolio、cron 的 Deer 均自动注册标准 `grpc.health.v1.Health`：Check、List 和有界 Watch。service 参数可为空或本服务 `<name>.grpc`；未知名称 Check 返回 NotFound。健康检查复用监听的 mTLS 许可，生产调用方必须提供被许可的证书；不额外开放匿名监听。SERVING 表示生命周期和当前配置依赖/worker 检查通过，不构成交易风险或对账授权。
 
-cron 的独立入口为 `cron/cmd`，`make build` 生成 `.cache/bin/cron`，Docker target 为 `runtime-cron`。配置示例在 `configs/local/cron/{data.yaml,service.yaml}`，示例 gRPC 为 127.0.0.1:59006。将配对配置显式发布到自己的 Nacos 命名空间、提供同其他服务的 Nacos env 后，无参数启动 `.cache/bin/cron`；不从本地示例直接启动。当前 `business.enabled` 必须关闭，不部署占位的归档/报表任务。
+cron 的独立入口为 `cron/cmd`，`make build` 生成 `.cache/bin/cron`，Docker target 为 `runtime-cron`。配置示例在 `configs/local/cron/{data.yaml,service.yaml}`，示例 gRPC 为 127.0.0.1:59006。将配对配置显式发布到自己的 Nacos 命名空间、提供同其他服务的 Nacos env 后，无参数启动 `.cache/bin/cron`；不从本地示例直接启动。cron 不接受业务运行参数、不读取交易参数表，不部署占位的归档/报表任务。
 
 通道适配版本升级：新代码使用 deer/migrate/venue 的完整 0007 历史及通用业务表。当前运行中的旧版本和数据库不会由代码整理自动升级。部署前需显式停止本项目的交易写入进程、执行维护升级并核验保留的未决/额度记录，再启动配套新版本；应用在旧 schema 上拒绝就绪。旧二进制不应与升级后的 schema 混用，历史 SQL 仍保留供审计。
 
-通道接口改名需要 market/strategy/execution/portfolio 与 Nacos 配置配套更新：business.venue、execution_venue=gateway；维护命令仅 venueinit/venuebaseline。旧 RPC 全名和 himalaya 配置键不接受，不存在滚动混用旧客户端的兼容入口。
+通道接口与数据库参数切换需要四核心配套更新：通道的 StrategyConfigVersion.maker_parameters.venue_runtime 使用 venue、execution_venue=gateway，Nacos 仅保留 venue_connection；维护命令为 policyinit、venueinit、venuebaseline。详见[数据库业务执行参数](DATABASE_PARAMETERS.md)。旧 RPC 全名和 himalaya 配置键不接受，不存在滚动混用旧客户端的兼容入口。

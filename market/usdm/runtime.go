@@ -40,7 +40,7 @@ type Runtime struct {
 
 // NewRuntime borrows dependencies without starting sockets or tasks.
 func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, logger *logging.Logger) (*Runtime, error) {
-	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 	if err != nil {
 		return nil, err
 	}

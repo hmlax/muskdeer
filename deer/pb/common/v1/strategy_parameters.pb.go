@@ -7,6 +7,7 @@
 package commonv1
 
 import (
+	v1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -128,8 +129,10 @@ type MakerParameters struct {
 	HedgeMaxWaitMs       int64  `protobuf:"varint,15,opt,name=hedge_max_wait_ms,json=hedgeMaxWaitMs,proto3" json:"hedge_max_wait_ms,omitempty"`
 	// Base quantity outstanding in external hedge work.
 	MaxHedgeBacklog string `protobuf:"bytes,16,opt,name=max_hedge_backlog,json=maxHedgeBacklog,proto3" json:"max_hedge_backlog,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Schema two uses only this explicit gateway parameter variant.
+	VenueRuntime  *v1.BusinessRuntime `protobuf:"bytes,17,opt,name=venue_runtime,json=venueRuntime,proto3" json:"venue_runtime,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MakerParameters) Reset() {
@@ -274,6 +277,13 @@ func (x *MakerParameters) GetMaxHedgeBacklog() string {
 	return ""
 }
 
+func (x *MakerParameters) GetVenueRuntime() *v1.BusinessRuntime {
+	if x != nil {
+		return x.VenueRuntime
+	}
+	return nil
+}
+
 // GridParameters uses quote/base prices, quote budgets and a base inventory cap.
 // All decimal values use at most 20+18 digits. Market age is whole milliseconds.
 type GridParameters struct {
@@ -372,12 +382,12 @@ var File_deer_proto_common_v1_strategy_parameters_proto protoreflect.FileDescrip
 
 const file_deer_proto_common_v1_strategy_parameters_proto_rawDesc = "" +
 	"\n" +
-	".deer/proto/common/v1/strategy_parameters.proto\x12\x12muskdeer.common.v1\"\xa4\x01\n" +
+	".deer/proto/common/v1/strategy_parameters.proto\x12\x12muskdeer.common.v1\x1a(deer/proto/common/config/v1/config.proto\"\xa4\x01\n" +
 	"\x12StrategyParameters\x12H\n" +
 	"\fmarket_maker\x18\x01 \x01(\v2#.muskdeer.common.v1.MakerParametersH\x00R\vmarketMaker\x128\n" +
 	"\x04grid\x18\x02 \x01(\v2\".muskdeer.common.v1.GridParametersH\x00R\x04gridB\n" +
 	"\n" +
-	"\btemplate\"\xb0\x05\n" +
+	"\btemplate\"\xfa\x05\n" +
 	"\x0fMakerParameters\x12!\n" +
 	"\fquote_levels\x18\x01 \x01(\x05R\vquoteLevels\x12*\n" +
 	"\x11level_spacing_bps\x18\x02 \x01(\tR\x0flevelSpacingBps\x12&\n" +
@@ -397,7 +407,8 @@ const file_deer_proto_common_v1_strategy_parameters_proto_rawDesc = "" +
 	"\rhedge_enabled\x18\r \x01(\bR\fhedgeEnabled\x12'\n" +
 	"\x0fhedge_threshold\x18\x0e \x01(\tR\x0ehedgeThreshold\x12)\n" +
 	"\x11hedge_max_wait_ms\x18\x0f \x01(\x03R\x0ehedgeMaxWaitMs\x12*\n" +
-	"\x11max_hedge_backlog\x18\x10 \x01(\tR\x0fmaxHedgeBacklog\"\x96\x02\n" +
+	"\x11max_hedge_backlog\x18\x10 \x01(\tR\x0fmaxHedgeBacklog\x12H\n" +
+	"\rvenue_runtime\x18\x11 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\fvenueRuntime\"\x96\x02\n" +
 	"\x0eGridParameters\x12\x1f\n" +
 	"\vlower_price\x18\x01 \x01(\tR\n" +
 	"lowerPrice\x12\x1f\n" +
@@ -427,15 +438,17 @@ var file_deer_proto_common_v1_strategy_parameters_proto_goTypes = []any{
 	(*StrategyParameters)(nil), // 0: muskdeer.common.v1.StrategyParameters
 	(*MakerParameters)(nil),    // 1: muskdeer.common.v1.MakerParameters
 	(*GridParameters)(nil),     // 2: muskdeer.common.v1.GridParameters
+	(*v1.BusinessRuntime)(nil), // 3: muskdeer.config.v1.BusinessRuntime
 }
 var file_deer_proto_common_v1_strategy_parameters_proto_depIdxs = []int32{
 	1, // 0: muskdeer.common.v1.StrategyParameters.market_maker:type_name -> muskdeer.common.v1.MakerParameters
 	2, // 1: muskdeer.common.v1.StrategyParameters.grid:type_name -> muskdeer.common.v1.GridParameters
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	3, // 2: muskdeer.common.v1.MakerParameters.venue_runtime:type_name -> muskdeer.config.v1.BusinessRuntime
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_strategy_parameters_proto_init() }

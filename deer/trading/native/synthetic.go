@@ -55,7 +55,7 @@ func ValidateSyntheticConfig(h *commonv1.VenuePolicy) error {
 	return nil
 }
 
-// ValidateSyntheticSettings validates Nacos controls before database access.
+// ValidateSyntheticSettings validates database-owned execution controls.
 // Source bindings and lot alignment are validated against the database later.
 func ValidateSyntheticSettings(h *configv1.VenueRuntime) error {
 	s := h.GetSyntheticTape()

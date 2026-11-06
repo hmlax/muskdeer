@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package muskdeer.common.v1;
 
+import "deer/proto/common/config/v1/config.proto";
+
 option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 
 // StrategyParameters is an explicit typed union for the two initial templates.
@@ -35,6 +37,8 @@ message MakerParameters {
   int64 hedge_max_wait_ms = 15;
   // Base quantity outstanding in external hedge work.
   string max_hedge_backlog = 16;
+  // Schema two uses only this explicit gateway parameter variant.
+  muskdeer.config.v1.BusinessRuntime venue_runtime = 17;
 }
 
 // GridParameters uses quote/base prices, quote budgets and a base inventory cap.

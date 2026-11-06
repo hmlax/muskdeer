@@ -27,14 +27,17 @@ func Command(ctx context.Context, name, path string) (*exec.Cmd, func() error, e
 	binary := name
 	if name != "cron" && os.Getenv("MUSKDEER_CORE_TEST_BINARIES") != "1" {
 		binary = "module-" + name
-	}
-	if name != "cron" && os.Getenv("MUSKDEER_CORE_TEST_BINARIES") != "1" {
 		return exec.CommandContext(ctx, filepath.Join("..", "..", ".cache", "bin", binary), "-config", path), func() error { return nil }, nil
 	}
 	cfg, err := deer.LoadConfig(ctx, path)
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := prepareFixturePolicy(ctx, cfg); err != nil {
+		return nil, nil, err
+	}
+	cfg.Business = nil
+
 	source, err := nacos.NewConfigClient(ctx, cfg.Nacos)
 	if err != nil {
 		return nil, nil, err
@@ -86,7 +89,8 @@ type configReader interface {
 }
 
 // A publish acknowledgement precedes Nacos's asynchronous read-cache update.
-// Wait only for a missing new key; other failures and unexpected content fail.
+// Wait for missing/conflicted reads of our new keys. Other failures and
+// unexpected content fail without publishing again or replaying business calls.
 func waitPublishedConfig(ctx context.Context, source configReader, dataID string, expected []byte) error {
 	ticks := time.NewTicker(10 * time.Millisecond)
 	defer ticks.Stop()
@@ -102,7 +106,7 @@ func waitPublishedConfig(ctx context.Context, source configReader, dataID string
 			return nil
 		}
 		var apiError *nacos.APIError
-		if !errors.As(err, &apiError) || apiError.HTTPStatus != http.StatusNotFound {
+		if !errors.As(err, &apiError) || apiError.HTTPStatus != http.StatusNotFound && apiError.HTTPStatus != http.StatusConflict {
 			return err
 		}
 		select {

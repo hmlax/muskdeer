@@ -40,3 +40,19 @@ func Data(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*
 	}
 	return db, incarnation, nil
 }
+
+// ResolveDatabasePolicy borrows the initialized pool and resolves only parameters.
+// The owning application remains responsible for typed business assembly.
+func ResolveDatabasePolicy(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*configv1.ServiceConfig, error) {
+	if ctx == nil || cfg == nil || owner == nil {
+		return nil, ErrInvalidConfig
+	}
+	db, err := owner.DB()
+	if err != nil {
+		return nil, err
+	}
+	if err := migrate.CheckCurrent(ctx, db); err != nil {
+		return nil, err
+	}
+	return LoadDatabasePolicy(ctx, db, cfg)
+}

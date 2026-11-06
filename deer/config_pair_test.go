@@ -8,7 +8,7 @@ import (
 )
 
 func TestNacosLoadsSeparateDataAndServiceYAML(t *testing.T) {
-	data := []byte("name: strategy\nversion: test\nbusiness:\n  strategy:\n    account_ids: [account-from-data]\n")
+	data := []byte("name: strategy\nversion: test\nvenue_connection:\n  target: 127.0.0.1:8080\n  token_env: TEST_GATEWAY_TOKEN\n")
 	service := fmt.Sprintf("name: strategy\ninstance_id: split-config-test\nversion: test\nstartup_timeout: 5s\nshutdown_timeout: 5s\ngrpc:\n  address: '127.0.0.1:0'\n  request_timeout: 1s\ndata_sha256: '%x'\n", sha256.Sum256(data))
 	server := configServer(t, func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Query().Get("dataId") {
@@ -28,7 +28,7 @@ func TestNacosLoadsSeparateDataAndServiceYAML(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.InstanceId != "split-config-test" || cfg.Business.Strategy.AccountIds[0] != "account-from-data" {
-		t.Fatal("split configuration lost service or business values")
+	if cfg.InstanceId != "split-config-test" || cfg.Business != nil || cfg.GetVenueConnection().GetTarget() != "127.0.0.1:8080" {
+		t.Fatal("split configuration lost service or infrastructure values")
 	}
 }

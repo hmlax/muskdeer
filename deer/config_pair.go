@@ -12,19 +12,24 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// EncodeConfigPair creates two typed YAML documents for explicit provisioning.
+const messageDatabasePolicyInNacos = "business execution parameters belong in the database, not Nacos"
+
+// EncodeConfigPair creates two infrastructure-only YAML documents for explicit provisioning.
 // Nacos bootstrap connection fields are never included in either document.
 func EncodeConfigPair(cfg *configv1.ServiceConfig) ([]byte, []byte, error) {
 	if cfg == nil {
 		return nil, nil, errors.New("configuration is required")
 	}
+	if cfg.Business != nil {
+		return nil, nil, errors.New(messageDatabasePolicyInNacos)
+	}
 	data, err := encodeYAML(&configv1.DataConfig{
-		Name:      cfg.Name,
-		Version:   cfg.Version,
-		Postgres:  proto.CloneOf(cfg.Postgres),
-		Redis:     proto.CloneOf(cfg.Redis),
-		Jetstream: proto.CloneOf(cfg.Jetstream),
-		Business:  proto.CloneOf(cfg.Business),
+		Name:            cfg.Name,
+		Version:         cfg.Version,
+		Postgres:        proto.CloneOf(cfg.Postgres),
+		Redis:           proto.CloneOf(cfg.Redis),
+		Jetstream:       proto.CloneOf(cfg.Jetstream),
+		VenueConnection: proto.CloneOf(cfg.VenueConnection),
 	})
 	if err != nil {
 		return nil, nil, err
@@ -75,7 +80,7 @@ func decodeConfigPair(ctx context.Context, data, service []byte) (*configv1.Serv
 		Postgres:        d.Postgres,
 		Redis:           d.Redis,
 		Jetstream:       d.Jetstream,
-		Business:        d.Business,
+		VenueConnection: d.VenueConnection,
 		GrpcSecurity:    s.GrpcSecurity,
 		GrpcClients:     s.GrpcClients,
 		Monitoring:      s.Monitoring,

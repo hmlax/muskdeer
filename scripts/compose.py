@@ -180,13 +180,6 @@ def config(role, snapshots, credential, nats, resources=None):
     peers = {'market': ['strategy.grpc'], 'strategy': ['strategy.grpc'],
              'execution': ['strategy.grpc', 'portfolio.grpc'], 'portfolio': ['execution.grpc']}
     result['grpc_security'] = {'mtls': tls, 'allowed_peer_services': peers[role]}
-    result['business'] = {'enabled': True, 'execution_venue': 'simulator',
-                          'poll_interval': '0.5s', 'operation_timeout': '1s'}
-    if role == 'market':
-        result['business']['market'] = {'lease_ttl': '5s', 'feeds': [
-            {'feed_id': resources[key], 'replay_bid': '99.99', 'replay_ask': '100.01',
-             'replay_quantity': '1', 'replay_interval': '0.1s'}
-            for key in ('binance_feed_id', 'okx_feed_id') if key in resources]}
     if role in ('execution', 'portfolio'):
         result['jetstream'] = {
             'address': snapshots['nats'][0] + ':4222', 'username': nats['username'],
@@ -200,13 +193,6 @@ def config(role, snapshots, credential, nats, resources=None):
                                   'max_request_bytes': 1048576, 'max_response_bytes': 1048576}
     if role == 'strategy':
         result['grpc_clients']['allowed_services'].append('market.grpc')
-        result['business']['strategy'] = {'account_ids': [ACCOUNT], 'lease_ttl': '5s'}
-    if role == 'execution':
-        result['business']['execution_lease_ttl'] = '5s'
-        result['business']['risk'] = {'account_ids': [ACCOUNT]}
-        result['business']['simulator'] = {'account_ids': [ACCOUNT], 'cancel_delay': '0.1s'}
-    if role == 'portfolio':
-        result['business']['portfolio_consumer'] = 'portfolio_local'
     return result
 
 
@@ -247,8 +233,7 @@ def prepare(source):
         data, service = split(desired)
         write(DIRECTORY / 'nacos-drafts' / role / 'data.yaml', data)
         write(DIRECTORY / 'nacos-drafts' / role / 'service.yaml', service)
-        if role != 'market' or resources is not None:
-            store.publish_pair(role, desired)
+        store.publish_pair(role, desired)
         for name in ('ca.pem', role + '.pem', role + '.key'):
             write(own_config / 'certs' / name, (DIRECTORY / 'config/certs' / name).read_text())
     environment = {'MUSKDEER_POSTGRES_PASSWORD': state['database_password'],

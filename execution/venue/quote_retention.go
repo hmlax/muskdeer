@@ -16,7 +16,7 @@ type quoteRetention struct {
 	pending bool
 }
 
-func retainQuoteOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, cutover bool) (*quoteRetention, error) {
+func retainQuoteOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, cutover bool, replacement decimal.Decimal) (*quoteRetention, error) {
 	retained := &quoteRetention{
 		orders:  make(map[string]bool),
 		targets: make(map[string]bool),
@@ -40,7 +40,7 @@ func retainQuoteOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.
 	if err := retainBridgeOrders(profile, snapshot, wanted, retained); err != nil {
 		return nil, err
 	}
-	if err := retainRollingOrders(profile, snapshot, wanted, retained); err != nil {
+	if err := retainRollingOrders(profile, snapshot, wanted, retained, replacement); err != nil {
 		return nil, err
 	}
 	occupied := make(map[string]bool)

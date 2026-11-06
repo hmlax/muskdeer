@@ -53,9 +53,11 @@ func policyConfiguration(name string, fraction string) *configv1.ServiceConfig {
 			PollInterval:     durationpb.New(200 * time.Millisecond),
 			OperationTimeout: durationpb.New(time.Second),
 			Venue: &configv1.VenueRuntime{
-				QuantityFraction: fraction,
-				Depth:            20,
-				LeaseTtl:         durationpb.New(10 * time.Second),
+				ReplacementFraction: "0.1",
+				BridgeSlots:         1,
+				QuantityFraction:    fraction,
+				Depth:               20,
+				LeaseTtl:            durationpb.New(10 * time.Second),
 			},
 		},
 	}
@@ -76,7 +78,7 @@ func TestRuntimePolicyAuthoritativeSnapshotAndIdempotentImport(t *testing.T) {
 	if _, err := runtimeconfig.LoadDatabasePolicy(ctx, db, input); !errors.Is(err, runtimeconfig.ErrPolicyMissing) {
 		t.Fatalf("missing row fell back to supplied policy: %v", err)
 	}
-	rows, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: input}})
+	rows, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(input, 0)})
 	if err != nil || len(rows) != 1 {
 		t.Fatalf("import: %v", err)
 	}
@@ -84,7 +86,7 @@ func TestRuntimePolicyAuthoritativeSnapshotAndIdempotentImport(t *testing.T) {
 	if before.Id <= 0 || before.CreateAt <= 0 || before.UpdateAt <= 0 || before.DeleteAt != nil || before.Revision != 1 {
 		t.Fatal("generated model lost identity/timestamp/revision semantics")
 	}
-	rows, err = runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: input}})
+	rows, err = runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(input, 0)})
 	if err != nil || len(rows) != 1 || !proto.Equal(before, rows[0]) {
 		t.Fatalf("idempotent import wrote a new revision: %v", err)
 	}
@@ -109,7 +111,7 @@ func TestRuntimePolicyAuthoritativeSnapshotAndIdempotentImport(t *testing.T) {
 func TestRuntimePolicyConcurrentRevisionAndAtomicBatchRollback(t *testing.T) {
 	db, ctx := policyDatabase(t)
 	a, b := policyConfiguration("market", "0.1"), policyConfiguration("strategy", "0.1")
-	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: a}, {Config: b}}); err != nil {
+	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(a, 0), policyWrite(b, 0)}); err != nil {
 		t.Fatal(err)
 	}
 	start := make(chan struct{})
@@ -120,7 +122,7 @@ func TestRuntimePolicyConcurrentRevisionAndAtomicBatchRollback(t *testing.T) {
 		changed.Business.Venue.QuantityFraction = fraction
 		group.Go(func() {
 			<-start
-			_, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: changed, ExpectedRevision: 1}})
+			_, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(changed, 1)})
 			outcomes <- err
 		})
 	}
@@ -144,9 +146,9 @@ func TestRuntimePolicyConcurrentRevisionAndAtomicBatchRollback(t *testing.T) {
 	beforeA, beforeB := readPolicy(ctx, t, db, "market"), readPolicy(ctx, t, db, "strategy")
 	a.Business.Venue.Depth = 5
 	b.Business.Venue.Depth = 5
-	_, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{
-		{Config: a, ExpectedRevision: 2},
-		{Config: b, ExpectedRevision: 99},
+	_, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{
+		policyWrite(a, 2),
+		policyWrite(b, 99),
 	})
 	if !errors.Is(err, runtimeconfig.ErrPolicyConflict) {
 		t.Fatalf("stale batch = %v", err)
@@ -161,7 +163,7 @@ func TestRuntimePolicyRejectsActiveOwnershipAndInvalidInput(t *testing.T) {
 	input := policyConfiguration("strategy", "0.1")
 	invalid := proto.CloneOf(input)
 	invalid.Business.ExecutionVenue = "unsupported"
-	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: invalid}}); err == nil {
+	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(invalid, 0)}); err == nil {
 		t.Fatal("unsupported route imported")
 	}
 	if err := db.WithContext(ctx).Model(&model.ExecutionShardLease{}).Create(&model.ExecutionShardLease{
@@ -172,7 +174,7 @@ func TestRuntimePolicyRejectsActiveOwnershipAndInvalidInput(t *testing.T) {
 	}).Error; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: input}}); !errors.Is(err, domain.ErrLeaseHeld) {
+	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(input, 0)}); !errors.Is(err, domain.ErrLeaseHeld) {
 		t.Fatalf("active owner was not protected: %v", err)
 	}
 	var count int64
@@ -238,11 +240,11 @@ func TestRuntimePolicyEnablementAndDeletionAreExplicit(t *testing.T) {
 	input.GrpcSecurity = &configv1.GRPCServerSecurity{Mtls: &configv1.MutualTLS{}}
 	input.Nacos = &configv1.Nacos{Registration: &configv1.NacosRegistration{}}
 	input.Business.Enabled = true
-	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: input}}); err != nil {
+	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(input, 0)}); err != nil {
 		t.Fatal(err)
 	}
 	input.Business.Enabled = false
-	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: input, ExpectedRevision: 1}}); err != nil {
+	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(input, 1)}); err != nil {
 		t.Fatal(err)
 	}
 	supplied := proto.CloneOf(input)
@@ -257,7 +259,7 @@ func TestRuntimePolicyEnablementAndDeletionAreExplicit(t *testing.T) {
 	if _, err := runtimeconfig.LoadDatabasePolicy(ctx, db, supplied); !errors.Is(err, runtimeconfig.ErrPolicyMissing) {
 		t.Fatalf("deleted policy fell back: %v", err)
 	}
-	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []runtimeconfig.PolicyWrite{{Config: input, ExpectedRevision: 2}}); err == nil {
+	if _, err := runtimeconfig.ImportDatabasePolicies(ctx, db, []*configv1.RuntimePolicyInput{policyWrite(input, 2)}); err == nil {
 		t.Fatal("deleted policy silently recreated")
 	}
 }
@@ -286,5 +288,13 @@ func TestRuntimePolicyMigrationConflictRollsBackWholeSchema(t *testing.T) {
 	}
 	if err := policymigrate.Check(ctx, db); !errors.Is(err, policymigrate.ErrHistory) {
 		t.Fatalf("changed migration accepted: %v", err)
+	}
+}
+
+func policyWrite(cfg *configv1.ServiceConfig, expected int64) *configv1.RuntimePolicyInput {
+	return &configv1.RuntimePolicyInput{
+		ServiceName:      cfg.Name,
+		Parameters:       proto.CloneOf(cfg.Business),
+		ExpectedRevision: expected,
 	}
 }

@@ -8,7 +8,7 @@ market 使用独立的 `aggTrade` 连接、缓存与数据库发布租约，通�
 
 ## 有限运行配置
 
-默认不配置此字段，策略不会启动。以下仅为 Nacos Proto JSON 示例，在 strategy 和 execution 的 `business.venue` 中加入同一段配置；账户/交易对、来源和网格必须已在数据库 TradingAccountPolicy 中显式维护，不能再通过 `venue.profiles` 配置：
+默认不配置此字段，策略不会启动。以下为数据库参数片段，在各品种的 `StrategyConfigVersion.maker_parameters.venue_runtime.venue` 中维护；四核心读取同一组版本，通过 `venueinit -strategies FILE` 离线导入并显式重启，不能发布到 Nacos。账户/交易对、来源和 tick/lot 必须已在数据库 TradingAccountPolicy 中显式维护。完整格式见[数据库业务执行参数](DATABASE_PARAMETERS.md)：
 
 ```json
 "synthetic_tape": {
@@ -43,7 +43,7 @@ AGG_TRADE 模式额外保存完整来源观察到计划与回执的 `source_trad
 ## 启用与停止
 
 1. 重建四核心服务镜像。部署前使用新镜像的维护命令显式升级 SDK 扩展：`docker compose --profile tools run --rm --no-deps --entrypoint /venueinit tools -schema-only`。此模式不启用或改变基金预算，不修改原生资金/订单；没有自动启动迁移。
-2. 在 Nacos 为 market/strategy/execution 写入审核后的相同合成运行控制，将 `enabled` 设为 `true`，显式更新这三个核心进程的合同版本；market 需要新模式配置才能启动成交流。AGG_TRADE 来源审计本身沿用已有 typed JSON；后续数据库业务配置需要扩展 0006，并在停止四核心后完成显式市场绑定导入，见 [Himalaya 开发做市](HIMALAYA.md)。相同参数映射保留旧合成轮次的指纹，不重置计数或未知槽。配置不热切换；仅 execution 环境含 SDK token。现有开发目标校验仍拒绝公网 SDK 地址。
-3. 停止时在 strategy/execution 设 `enabled=false` 并显式重启相关进程。原生已经接收的事件不能撤回；本轮计数及 UNKNOWN 审计保留。
+2. 停止四核心并等待租约到期，使用 `/venueinit -schema-only` 显式升级通道 0008，再用 `/venueinit -strategies FILE` 为选定品种导入审核后的版本化合成运行控制，将 `synthetic_tape.enabled` 设为 `true`，再显式重启；market 需要新模式参数才能启动成交流。AGG_TRADE 来源审计本身沿用已有 typed JSON；后续数据库业务配置需要扩展 0006，并在停止四核心后完成显式市场绑定导入，见 [Himalaya 开发做市](HIMALAYA.md)。相同参数映射保留旧合成轮次的指纹，不重置计数或未知槽。配置不热切换；仅 execution 环境含 SDK token。现有开发目标校验仍拒绝公网 SDK 地址。
+3. 停止本轮发送时，暂停服务组、在数据库中将相关 `synthetic_tape.enabled=false` 并显式重启。原生已经接收的事件不能撤回；本轮计数及 UNKNOWN 审计保留。
 
 新配置仍默认关闭；实际开发运行的有限轮次、成功与未知回执，以及行情消费核验分别记录在 [开发进度](PROGRESS.md) 的 P17.3 及后续启动步骤。数据库、mTLS、原 SDK 与测试对端的组合回归不替代真实开发环境行情消费验收。

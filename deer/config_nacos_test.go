@@ -15,7 +15,7 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 )
 
-const nacosConfigFixture = `{"name":"strategy","instance_id":"strategy-config-test","version":"test","startup_timeout":"5s","shutdown_timeout":"5s","grpc":{"address":"127.0.0.1:0","request_timeout":"1s"},"monitoring":{"address":"127.0.0.1:59103","request_timeout":"1s"},"business":{"strategy":{"account_ids":["account-from-nacos"]}}}`
+const nacosConfigFixture = `{"name":"strategy","instance_id":"strategy-config-test","version":"test","startup_timeout":"5s","shutdown_timeout":"5s","grpc":{"address":"127.0.0.1:0","request_timeout":"1s"},"monitoring":{"address":"127.0.0.1:59103","request_timeout":"1s"},"venue_connection":{"target":"127.0.0.1:8080","token_env":"NACOS_UNIT_GATEWAY_TOKEN"}}`
 
 func TestNacosConfigurationUsesEnvironmentScopeAndTypedContent(t *testing.T) {
 	var original configv1.ServiceConfig
@@ -43,9 +43,9 @@ func TestNacosConfigurationUsesEnvironmentScopeAndTypedContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Name != "strategy" || cfg.Business.Strategy.AccountIds[0] != "account-from-nacos" ||
+	if cfg.Name != "strategy" || cfg.Business != nil || cfg.GetVenueConnection().GetTarget() != "127.0.0.1:8080" ||
 		cfg.Nacos.Address != strings.TrimPrefix(server.URL, "http://") || cfg.Nacos.PasswordEnv != "NACOS_PASSWORD" {
-		t.Fatal("configuration did not use Nacos business content and environment connection")
+		t.Fatal("configuration did not preserve infrastructure content and environment connection")
 	}
 }
 
@@ -54,7 +54,7 @@ func TestNacosConfigurationFailsClosedOnMissingScopeOrInvalidContent(t *testing.
 		"",
 		`{"name":"strategy","unknown_business_secret":"never-log-this"}`,
 		strings.Replace(nacosConfigFixture, `"name":"strategy"`, `"name":"execution"`, 1),
-		strings.Replace(nacosConfigFixture, `"business":`, `"nacos":{"address":"remote-override:8848"},"business":`, 1),
+		strings.Replace(nacosConfigFixture, `"venue_connection":`, `"nacos":{"address":"remote-override:8848"},"venue_connection":`, 1),
 	} {
 		t.Run("reject", func(t *testing.T) {
 			server := configServer(t, func(w http.ResponseWriter, _ *http.Request) { writeConfig(t, w, content) })

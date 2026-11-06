@@ -55,30 +55,30 @@ func TestConfigPairRejectsMixedDocumentsAndUnsafeYAML(t *testing.T) {
 	}
 }
 
-func TestConfigYAMLKeepsDecimalStringsAndTypedRoundtrip(t *testing.T) {
-	data := "name: strategy\nversion: test\nbusiness:\n  venue:\n    quantity_fraction: '0.123456789012345678'\n"
-	cfg, err := decodeConfigPair(t.Context(), []byte(data), []byte(yamlService(data)))
-	if err != nil || cfg.GetBusiness().GetVenue().GetQuantityFraction() != "0.123456789012345678" {
+func TestTypedYAMLKeepsExactDatabaseParameterValues(t *testing.T) {
+	data := "venue:\n  quantity_fraction: '0.123456789012345678'\n"
+	var parameters configv1.BusinessRuntime
+	if err := decodeYAML(t.Context(), []byte(data), &parameters); err != nil || parameters.GetVenue().GetQuantityFraction() != "0.123456789012345678" {
 		t.Fatalf("exact decimal changed: %v", err)
 	}
-	d, s, err := EncodeConfigPair(cfg)
+	encoded, err := encodeYAML(&parameters)
 	if err != nil {
 		t.Fatal(err)
 	}
-	roundtrip, err := decodeConfigPair(t.Context(), d, s)
-	if err != nil || !proto.Equal(cfg, roundtrip) {
-		t.Fatalf("typed pair roundtrip changed settings: %v", err)
+	var other configv1.BusinessRuntime
+	if err := decodeYAML(t.Context(), encoded, &other); err != nil || !proto.Equal(&parameters, &other) {
+		t.Fatalf("typed YAML changed database parameters: %v", err)
 	}
 	var fromJSON configv1.ServiceConfig
 	if err := protojson.Unmarshal([]byte(nacosConfigFixture), &fromJSON); err != nil {
 		t.Fatal(err)
 	}
-	d, s, err = EncodeConfigPair(&fromJSON)
+	d, s, err := EncodeConfigPair(&fromJSON)
 	if err != nil {
 		t.Fatal(err)
 	}
-	roundtrip, err = decodeConfigPair(t.Context(), d, s)
+	roundtrip, err := decodeConfigPair(t.Context(), d, s)
 	if err != nil || !proto.Equal(&fromJSON, roundtrip) {
-		t.Fatalf("split changed process settings: %v", err)
+		t.Fatalf("split changed infrastructure settings: %v", err)
 	}
 }

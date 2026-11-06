@@ -29,7 +29,7 @@ Deer 的基础设施组件、Proto 和第三方源码继续留在 deer。coreloc
 
 ## 依赖约束
 
-各 WorkPlan 直接调用本项目 business.NewMarket/NewStrategy/NewExecution/NewPortfolio；这些构造借用唯一 Deer 的资源。共享 runtimeconfig.Data 只校验配置、检查迁移账本并借出资源，不根据服务名选择或装配业务。provider 不启动 goroutine，启动、关闭和清理错误合同保持。
+各 WorkPlan 先在唯一 Deer 的数据库池就绪后通过 runtimeconfig.ResolveDatabasePolicy 读取自身参数，关闭状态仅提供健康能力；启用时直接调用本项目 business.NewMarket/NewStrategy/NewExecution/NewPortfolio；这些构造借用唯一 Deer 的资源。共享 runtimeconfig.Data 只校验配置、检查迁移账本并借出资源，不根据服务名选择或装配业务。provider 不启动 goroutine，启动、关闭和清理错误合同保持。
 
 业务/适配子包保留必要的 Go 导出接口，供本项目装配、跨项目协议客户端和现有集成/历史夹具复用；不复制一套实现来绕过 internal 限制。各项目 internal/app 仍仅允许所属项目导入。核心进程之间仍通过认证 gRPC、消息和已有持久化合同协作，历史组合夹具不是新的默认运行入口。
 

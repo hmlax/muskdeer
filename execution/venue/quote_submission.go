@@ -15,14 +15,15 @@ import (
 // quoteCycle is owned by one admitted reconcile call; all request pointers are
 // borrowed and immutable, while retention and result belong only to that call.
 type quoteCycle struct {
-	profile   *commonv1.VenueProfilePolicy
-	lease     domain.LeaseToken
-	authority LiveAuthority
-	targets   []*commonv1.VenueTarget
-	snapshot  *commonv1.VenueSnapshot
-	retained  *quoteRetention
-	result    *executionvenuev1.QuoteResult
-	admitted  []*commonv1.VenueTarget
+	profile     *commonv1.VenueProfilePolicy
+	bridgeSlots uint32
+	lease       domain.LeaseToken
+	authority   LiveAuthority
+	targets     []*commonv1.VenueTarget
+	snapshot    *commonv1.VenueSnapshot
+	retained    *quoteRetention
+	result      *executionvenuev1.QuoteResult
+	admitted    []*commonv1.VenueTarget
 }
 
 func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *commonv1.VenueTarget) error {

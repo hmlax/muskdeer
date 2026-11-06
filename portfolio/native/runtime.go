@@ -42,7 +42,7 @@ type Runtime struct {
 
 // NewRuntime borrows the existing pool and RPC factory without starting tasks.
 func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
-	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -25,7 +25,7 @@ import (
 
 // Workers describes one fenced, bounded maker actor per configured fund.
 func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
-	cfg, err := venueconfig.LoadRuntime(ctx, db, input)
+	cfg, err := venueconfig.LoadRuntime(ctx, db, input, nil)
 	if err != nil {
 		return nil, err
 	}

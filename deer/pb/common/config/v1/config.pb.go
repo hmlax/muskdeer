@@ -68,17 +68,17 @@ func (SyntheticTapeMode) EnumDescriptor() ([]byte, []int) {
 	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{0}
 }
 
-// DataConfig is data.yaml: connections and business runtime controls.
+// DataConfig is data.yaml: infrastructure and venue transport connections only.
 type DataConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
-	Postgres      *Postgres              `protobuf:"bytes,9,opt,name=postgres,proto3" json:"postgres,omitempty"`
-	Redis         *Redis                 `protobuf:"bytes,10,opt,name=redis,proto3" json:"redis,omitempty"`
-	Jetstream     *JetStream             `protobuf:"bytes,11,opt,name=jetstream,proto3" json:"jetstream,omitempty"`
-	Business      *BusinessRuntime       `protobuf:"bytes,16,opt,name=business,proto3" json:"business,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version         string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
+	Postgres        *Postgres              `protobuf:"bytes,9,opt,name=postgres,proto3" json:"postgres,omitempty"`
+	Redis           *Redis                 `protobuf:"bytes,10,opt,name=redis,proto3" json:"redis,omitempty"`
+	Jetstream       *JetStream             `protobuf:"bytes,11,opt,name=jetstream,proto3" json:"jetstream,omitempty"`
+	VenueConnection *VenueConnection       `protobuf:"bytes,18,opt,name=venue_connection,json=venueConnection,proto3" json:"venue_connection,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *DataConfig) Reset() {
@@ -146,15 +146,15 @@ func (x *DataConfig) GetJetstream() *JetStream {
 	return nil
 }
 
-func (x *DataConfig) GetBusiness() *BusinessRuntime {
+func (x *DataConfig) GetVenueConnection() *VenueConnection {
 	if x != nil {
-		return x.Business
+		return x.VenueConnection
 	}
 	return nil
 }
 
-// BusinessRuntime configures owned business work without migrating
-// schemas, provisioning broker resources, seeding money or authorizing risk.
+// BusinessRuntime is loaded from the database after infrastructure is ready.
+// It is not part of either Nacos document and never provisions resources.
 type BusinessRuntime struct {
 	state             protoimpl.MessageState    `protogen:"open.v1"`
 	Enabled           bool                      `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
@@ -279,18 +279,19 @@ func (x *BusinessRuntime) GetVenue() *VenueRuntime {
 	return nil
 }
 
-// VenueRuntime opts into the existing SDK on the development environment.
-// Secrets are resolved from env only by the execution worker lifecycle.
+// VenueRuntime contains database-owned strategy execution controls.
+// Gateway transport is configured separately in VenueConnection.
 type VenueRuntime struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Target           string                 `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
-	TokenEnv         string                 `protobuf:"bytes,2,opt,name=token_env,json=tokenEnv,proto3" json:"token_env,omitempty"`
-	QuantityFraction string                 `protobuf:"bytes,4,opt,name=quantity_fraction,json=quantityFraction,proto3" json:"quantity_fraction,omitempty"`
-	Depth            uint32                 `protobuf:"varint,5,opt,name=depth,proto3" json:"depth,omitempty"`
-	LeaseTtl         *durationpb.Duration   `protobuf:"bytes,6,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
-	SyntheticTape    *SyntheticTape         `protobuf:"bytes,7,opt,name=synthetic_tape,json=syntheticTape,proto3" json:"synthetic_tape,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	QuantityFraction    string                 `protobuf:"bytes,4,opt,name=quantity_fraction,json=quantityFraction,proto3" json:"quantity_fraction,omitempty"`
+	Depth               uint32                 `protobuf:"varint,5,opt,name=depth,proto3" json:"depth,omitempty"`
+	LeaseTtl            *durationpb.Duration   `protobuf:"bytes,6,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
+	SyntheticTape       *SyntheticTape         `protobuf:"bytes,7,opt,name=synthetic_tape,json=syntheticTape,proto3" json:"synthetic_tape,omitempty"`
+	ReplacementFraction string                 `protobuf:"bytes,8,opt,name=replacement_fraction,json=replacementFraction,proto3" json:"replacement_fraction,omitempty"`
+	BridgeSlots         uint32                 `protobuf:"varint,9,opt,name=bridge_slots,json=bridgeSlots,proto3" json:"bridge_slots,omitempty"`
+	Symbols             []string               `protobuf:"bytes,10,rep,name=symbols,proto3" json:"symbols,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *VenueRuntime) Reset() {
@@ -323,20 +324,6 @@ func (*VenueRuntime) Descriptor() ([]byte, []int) {
 	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *VenueRuntime) GetTarget() string {
-	if x != nil {
-		return x.Target
-	}
-	return ""
-}
-
-func (x *VenueRuntime) GetTokenEnv() string {
-	if x != nil {
-		return x.TokenEnv
-	}
-	return ""
-}
-
 func (x *VenueRuntime) GetQuantityFraction() string {
 	if x != nil {
 		return x.QuantityFraction
@@ -361,6 +348,27 @@ func (x *VenueRuntime) GetLeaseTtl() *durationpb.Duration {
 func (x *VenueRuntime) GetSyntheticTape() *SyntheticTape {
 	if x != nil {
 		return x.SyntheticTape
+	}
+	return nil
+}
+
+func (x *VenueRuntime) GetReplacementFraction() string {
+	if x != nil {
+		return x.ReplacementFraction
+	}
+	return ""
+}
+
+func (x *VenueRuntime) GetBridgeSlots() uint32 {
+	if x != nil {
+		return x.BridgeSlots
+	}
+	return 0
+}
+
+func (x *VenueRuntime) GetSymbols() []string {
+	if x != nil {
+		return x.Symbols
 	}
 	return nil
 }
@@ -1114,12 +1122,13 @@ type ServiceConfig struct {
 	GrpcClients     *GRPCClients           `protobuf:"bytes,14,opt,name=grpc_clients,json=grpcClients,proto3" json:"grpc_clients,omitempty"`
 	// Monitoring is a separate, loopback-only Hertz listener for local probes.
 	Monitoring *Listener `protobuf:"bytes,15,opt,name=monitoring,proto3" json:"monitoring,omitempty"`
-	// Explicit L1 business opt-in; omitted configurations remain infrastructure probes.
+	// Internal database-resolved snapshot; never published to Nacos.
 	Business *BusinessRuntime `protobuf:"bytes,16,opt,name=business,proto3" json:"business,omitempty"`
 	// Explicit management HTTP opt-in. No identity is provisioned at startup.
-	AdminHttp     *AdminHTTP `protobuf:"bytes,17,opt,name=admin_http,json=adminHttp,proto3" json:"admin_http,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	AdminHttp       *AdminHTTP       `protobuf:"bytes,17,opt,name=admin_http,json=adminHttp,proto3" json:"admin_http,omitempty"`
+	VenueConnection *VenueConnection `protobuf:"bytes,18,opt,name=venue_connection,json=venueConnection,proto3" json:"venue_connection,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ServiceConfig) Reset() {
@@ -1267,6 +1276,13 @@ func (x *ServiceConfig) GetBusiness() *BusinessRuntime {
 func (x *ServiceConfig) GetAdminHttp() *AdminHTTP {
 	if x != nil {
 		return x.AdminHttp
+	}
+	return nil
+}
+
+func (x *ServiceConfig) GetVenueConnection() *VenueConnection {
+	if x != nil {
+		return x.VenueConnection
 	}
 	return nil
 }
@@ -2246,11 +2262,169 @@ func (x *RiskRuntime) GetAccountIds() []string {
 	return nil
 }
 
+// VenueConnection contains transport setup only. Credentials remain in env.
+type VenueConnection struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Target        string                 `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
+	TokenEnv      string                 `protobuf:"bytes,2,opt,name=token_env,json=tokenEnv,proto3" json:"token_env,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VenueConnection) Reset() {
+	*x = VenueConnection{}
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VenueConnection) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VenueConnection) ProtoMessage() {}
+
+func (x *VenueConnection) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VenueConnection.ProtoReflect.Descriptor instead.
+func (*VenueConnection) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *VenueConnection) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *VenueConnection) GetTokenEnv() string {
+	if x != nil {
+		return x.TokenEnv
+	}
+	return ""
+}
+
+// RuntimePolicyImport is explicit maintenance input, never a Nacos document.
+type RuntimePolicyImport struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Policies      []*RuntimePolicyInput  `protobuf:"bytes,1,rep,name=policies,proto3" json:"policies,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RuntimePolicyImport) Reset() {
+	*x = RuntimePolicyImport{}
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RuntimePolicyImport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RuntimePolicyImport) ProtoMessage() {}
+
+func (x *RuntimePolicyImport) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RuntimePolicyImport.ProtoReflect.Descriptor instead.
+func (*RuntimePolicyImport) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *RuntimePolicyImport) GetPolicies() []*RuntimePolicyInput {
+	if x != nil {
+		return x.Policies
+	}
+	return nil
+}
+
+type RuntimePolicyInput struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	ServiceName      string                 `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
+	ExpectedRevision int64                  `protobuf:"varint,2,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	Parameters       *BusinessRuntime       `protobuf:"bytes,3,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *RuntimePolicyInput) Reset() {
+	*x = RuntimePolicyInput{}
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RuntimePolicyInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RuntimePolicyInput) ProtoMessage() {}
+
+func (x *RuntimePolicyInput) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RuntimePolicyInput.ProtoReflect.Descriptor instead.
+func (*RuntimePolicyInput) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *RuntimePolicyInput) GetServiceName() string {
+	if x != nil {
+		return x.ServiceName
+	}
+	return ""
+}
+
+func (x *RuntimePolicyInput) GetExpectedRevision() int64 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
+}
+
+func (x *RuntimePolicyInput) GetParameters() *BusinessRuntime {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
 var File_deer_proto_common_config_v1_config_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\n" +
-	"(deer/proto/common/config/v1/config.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xa3\x02\n" +
+	"(deer/proto/common/config/v1/config.proto\x12\x12muskdeer.config.v1\x1a\x1egoogle/protobuf/duration.proto\"\xc2\x02\n" +
 	"\n" +
 	"DataConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
@@ -2258,8 +2432,8 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\bpostgres\x18\t \x01(\v2\x1c.muskdeer.config.v1.PostgresR\bpostgres\x12/\n" +
 	"\x05redis\x18\n" +
 	" \x01(\v2\x19.muskdeer.config.v1.RedisR\x05redis\x12;\n" +
-	"\tjetstream\x18\v \x01(\v2\x1d.muskdeer.config.v1.JetStreamR\tjetstream\x12?\n" +
-	"\bbusiness\x18\x10 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\bbusiness\"\x8b\x05\n" +
+	"\tjetstream\x18\v \x01(\v2\x1d.muskdeer.config.v1.JetStreamR\tjetstream\x12N\n" +
+	"\x10venue_connection\x18\x12 \x01(\v2#.muskdeer.config.v1.VenueConnectionR\x0fvenueConnectionJ\x04\b\x10\x10\x11R\bbusiness\"\x8b\x05\n" +
 	"\x0fBusinessRuntime\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12'\n" +
 	"\x0fexecution_venue\x18\x02 \x01(\tR\x0eexecutionVenue\x12>\n" +
@@ -2272,14 +2446,16 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\tsimulator\x18\t \x01(\v2,.muskdeer.config.v1.SimulatorScenarioRuntimeR\tsimulator\x12?\n" +
 	"\bstrategy\x18\n" +
 	" \x01(\v2#.muskdeer.config.v1.StrategyRuntimeR\bstrategy\x126\n" +
-	"\x05venue\x18\v \x01(\v2 .muskdeer.config.v1.VenueRuntimeR\x05venue\"\x98\x02\n" +
-	"\fVenueRuntime\x12\x16\n" +
-	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
-	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\x12+\n" +
+	"\x05venue\x18\v \x01(\v2 .muskdeer.config.v1.VenueRuntimeR\x05venue\"\xf2\x02\n" +
+	"\fVenueRuntime\x12+\n" +
 	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
 	"\x05depth\x18\x05 \x01(\rR\x05depth\x126\n" +
 	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12H\n" +
-	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTapeJ\x04\b\x03\x10\x04R\bprofiles\"\xca\x02\n" +
+	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTape\x121\n" +
+	"\x14replacement_fraction\x18\b \x01(\tR\x13replacementFraction\x12!\n" +
+	"\fbridge_slots\x18\t \x01(\rR\vbridgeSlots\x12\x18\n" +
+	"\asymbols\x18\n" +
+	" \x03(\tR\asymbolsJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04R\x06targetR\ttoken_envR\bprofiles\"\xca\x02\n" +
 	"\rSyntheticTape\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12)\n" +
 	"\x10development_only\x18\x02 \x01(\bR\x0fdevelopmentOnly\x12\x15\n" +
@@ -2361,7 +2537,7 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\x12\x1f\n" +
 	"\vdata_sha256\x18\x12 \x01(\tR\n" +
-	"dataSha256\"\xaa\a\n" +
+	"dataSha256\"\xfa\a\n" +
 	"\rServiceConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -2384,7 +2560,8 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"monitoring\x12?\n" +
 	"\bbusiness\x18\x10 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\bbusiness\x12<\n" +
 	"\n" +
-	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\"\xb2\x02\n" +
+	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\x12N\n" +
+	"\x10venue_connection\x18\x12 \x01(\v2#.muskdeer.config.v1.VenueConnectionR\x0fvenueConnection\"\xb2\x02\n" +
 	"\tAdminHTTP\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12#\n" +
 	"\rpublic_origin\x18\x02 \x01(\tR\fpublicOrigin\x126\n" +
@@ -2464,7 +2641,18 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\fcancel_delay\x18\x02 \x01(\v2\x19.google.protobuf.DurationR\vcancelDelay\".\n" +
 	"\vRiskRuntime\x12\x1f\n" +
 	"\vaccount_ids\x18\x01 \x03(\tR\n" +
-	"accountIds*T\n" +
+	"accountIds\"F\n" +
+	"\x0fVenueConnection\x12\x16\n" +
+	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
+	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\"Y\n" +
+	"\x13RuntimePolicyImport\x12B\n" +
+	"\bpolicies\x18\x01 \x03(\v2&.muskdeer.config.v1.RuntimePolicyInputR\bpolicies\"\xa9\x01\n" +
+	"\x12RuntimePolicyInput\x12!\n" +
+	"\fservice_name\x18\x01 \x01(\tR\vserviceName\x12+\n" +
+	"\x11expected_revision\x18\x02 \x01(\x03R\x10expectedRevision\x12C\n" +
+	"\n" +
+	"parameters\x18\x03 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\n" +
+	"parameters*T\n" +
 	"\x11SyntheticTapeMode\x12\x1c\n" +
 	"\x18SYNTHETIC_TAPE_MODE_BOOK\x10\x00\x12!\n" +
 	"\x1dSYNTHETIC_TAPE_MODE_AGG_TRADE\x10\x01B=Z;github.com/hmlax/muskdeer/deer/pb/common/config/v1;configv1b\x06proto3"
@@ -2482,7 +2670,7 @@ func file_deer_proto_common_config_v1_config_proto_rawDescGZIP() []byte {
 }
 
 var file_deer_proto_common_config_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_deer_proto_common_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 24)
+var file_deer_proto_common_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_deer_proto_common_config_v1_config_proto_goTypes = []any{
 	(SyntheticTapeMode)(0),           // 0: muskdeer.config.v1.SyntheticTapeMode
 	(*DataConfig)(nil),               // 1: muskdeer.config.v1.DataConfig
@@ -2509,39 +2697,42 @@ var file_deer_proto_common_config_v1_config_proto_goTypes = []any{
 	(*StrategyRuntime)(nil),          // 22: muskdeer.config.v1.StrategyRuntime
 	(*SimulatorScenarioRuntime)(nil), // 23: muskdeer.config.v1.SimulatorScenarioRuntime
 	(*RiskRuntime)(nil),              // 24: muskdeer.config.v1.RiskRuntime
-	(*durationpb.Duration)(nil),      // 25: google.protobuf.Duration
+	(*VenueConnection)(nil),          // 25: muskdeer.config.v1.VenueConnection
+	(*RuntimePolicyImport)(nil),      // 26: muskdeer.config.v1.RuntimePolicyImport
+	(*RuntimePolicyInput)(nil),       // 27: muskdeer.config.v1.RuntimePolicyInput
+	(*durationpb.Duration)(nil),      // 28: google.protobuf.Duration
 }
 var file_deer_proto_common_config_v1_config_proto_depIdxs = []int32{
 	8,  // 0: muskdeer.config.v1.DataConfig.postgres:type_name -> muskdeer.config.v1.Postgres
 	7,  // 1: muskdeer.config.v1.DataConfig.redis:type_name -> muskdeer.config.v1.Redis
 	6,  // 2: muskdeer.config.v1.DataConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
-	2,  // 3: muskdeer.config.v1.DataConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
-	25, // 4: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
-	25, // 5: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
+	25, // 3: muskdeer.config.v1.DataConfig.venue_connection:type_name -> muskdeer.config.v1.VenueConnection
+	28, // 4: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
+	28, // 5: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
 	20, // 6: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
 	24, // 7: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
-	25, // 8: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
+	28, // 8: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
 	23, // 9: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
 	22, // 10: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
 	3,  // 11: muskdeer.config.v1.BusinessRuntime.venue:type_name -> muskdeer.config.v1.VenueRuntime
-	25, // 12: muskdeer.config.v1.VenueRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	28, // 12: muskdeer.config.v1.VenueRuntime.lease_ttl:type_name -> google.protobuf.Duration
 	4,  // 13: muskdeer.config.v1.VenueRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
-	25, // 14: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
+	28, // 14: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
 	5,  // 15: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
 	0,  // 16: muskdeer.config.v1.SyntheticTape.mode:type_name -> muskdeer.config.v1.SyntheticTapeMode
-	25, // 17: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
-	25, // 18: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
-	25, // 19: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
-	25, // 20: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
-	25, // 21: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
-	25, // 22: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
-	25, // 23: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
-	25, // 24: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
-	25, // 25: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
-	25, // 26: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
-	25, // 27: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
-	25, // 28: muskdeer.config.v1.ServiceSettings.startup_timeout:type_name -> google.protobuf.Duration
-	25, // 29: muskdeer.config.v1.ServiceSettings.shutdown_timeout:type_name -> google.protobuf.Duration
+	28, // 17: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
+	28, // 18: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
+	28, // 19: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
+	28, // 20: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
+	28, // 21: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
+	28, // 22: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
+	28, // 23: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
+	28, // 24: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
+	28, // 25: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
+	28, // 26: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
+	28, // 27: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
+	28, // 28: muskdeer.config.v1.ServiceSettings.startup_timeout:type_name -> google.protobuf.Duration
+	28, // 29: muskdeer.config.v1.ServiceSettings.shutdown_timeout:type_name -> google.protobuf.Duration
 	19, // 30: muskdeer.config.v1.ServiceSettings.grpc:type_name -> muskdeer.config.v1.Listener
 	19, // 31: muskdeer.config.v1.ServiceSettings.http:type_name -> muskdeer.config.v1.Listener
 	17, // 32: muskdeer.config.v1.ServiceSettings.logging:type_name -> muskdeer.config.v1.Logging
@@ -2550,8 +2741,8 @@ var file_deer_proto_common_config_v1_config_proto_depIdxs = []int32{
 	12, // 35: muskdeer.config.v1.ServiceSettings.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
 	19, // 36: muskdeer.config.v1.ServiceSettings.monitoring:type_name -> muskdeer.config.v1.Listener
 	11, // 37: muskdeer.config.v1.ServiceSettings.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	25, // 38: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	25, // 39: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	28, // 38: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	28, // 39: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
 	19, // 40: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
 	19, // 41: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
 	17, // 42: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
@@ -2564,26 +2755,29 @@ var file_deer_proto_common_config_v1_config_proto_depIdxs = []int32{
 	19, // 49: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
 	2,  // 50: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
 	11, // 51: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	13, // 52: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	25, // 53: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
-	25, // 54: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
-	13, // 55: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	25, // 56: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
-	25, // 57: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
-	16, // 58: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
-	25, // 59: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
-	18, // 60: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	25, // 61: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	21, // 62: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
-	25, // 63: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	25, // 64: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
-	25, // 65: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	25, // 66: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
-	67, // [67:67] is the sub-list for method output_type
-	67, // [67:67] is the sub-list for method input_type
-	67, // [67:67] is the sub-list for extension type_name
-	67, // [67:67] is the sub-list for extension extendee
-	0,  // [0:67] is the sub-list for field type_name
+	25, // 52: muskdeer.config.v1.ServiceConfig.venue_connection:type_name -> muskdeer.config.v1.VenueConnection
+	13, // 53: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	28, // 54: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
+	28, // 55: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
+	13, // 56: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	28, // 57: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
+	28, // 58: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
+	16, // 59: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	28, // 60: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
+	18, // 61: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	28, // 62: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	21, // 63: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
+	28, // 64: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	28, // 65: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
+	28, // 66: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	28, // 67: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
+	27, // 68: muskdeer.config.v1.RuntimePolicyImport.policies:type_name -> muskdeer.config.v1.RuntimePolicyInput
+	2,  // 69: muskdeer.config.v1.RuntimePolicyInput.parameters:type_name -> muskdeer.config.v1.BusinessRuntime
+	70, // [70:70] is the sub-list for method output_type
+	70, // [70:70] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_config_v1_config_proto_init() }
@@ -2600,7 +2794,7 @@ func file_deer_proto_common_config_v1_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_config_v1_config_proto_rawDesc), len(file_deer_proto_common_config_v1_config_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   24,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

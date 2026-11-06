@@ -47,7 +47,7 @@ func (s *Store) configureProfiles(ctx context.Context, input []*commonv1.VenuePr
 	slices.SortFunc(profiles, func(a, b *commonv1.VenueProfilePolicy) int {
 		return strings.Compare(native.ScopeKey(a.UserId, a.FundId), native.ScopeKey(b.UserId, b.FundId))
 	})
-	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
+	return s.db.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, profile := range profiles {
 			if err := configureProfile(ctx, tx, profile, enabled); err != nil {
 				return err
@@ -78,19 +78,19 @@ func budgetProfile(p *commonv1.VenueProfilePolicy) *commonmodelv1.TradingAccount
 
 func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.VenueProfilePolicy, enabled *bool) error {
 	input := budgetProfile(p)
-	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Clauses(clause.OnConflict{DoNothing: true}).Create(&commonmodelv1.ExecutionShardLease{AccountId: input.AccountId}).Error; err != nil {
+	if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Clauses(clause.OnConflict{DoNothing: true}).Create(&commonmodelv1.ExecutionShardLease{AccountId: input.AccountId}).Error; err != nil {
 		return err
 	}
 	if err := lockProfileMaintenance(ctx, tx, input.AccountId, p); err != nil {
 		return err
 	}
 	var current commonmodelv1.TradingAccountPolicy
-	err := tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", input.AccountId).Clauses(clause.Locking{Strength: "UPDATE"}).First(&current).Error
+	err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("account_id = ?", input.AccountId).Clauses(clause.Locking{Strength: "UPDATE"}).First(&current).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		if enabled != nil {
 			input.Enabled = *enabled
 		}
-		return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Create(input).Error
+		return tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Create(input).Error
 	}
 	if err != nil {
 		return err
@@ -109,18 +109,18 @@ func configureProfile(ctx context.Context, tx *gorm.DB, p *commonv1.VenueProfile
 	if enabled != nil {
 		input.Enabled = *enabled
 	}
-	return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", current.Id).
+	return tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", current.Id).
 		Select("MaximumNotional", "MaximumOrderNotional", "Leverage", "Symbol", "MarketDataSource", "PriceTick", "QuantityStep", "Enabled").Updates(input).Error
 }
 
 func lockProfileMaintenance(ctx context.Context, tx *gorm.DB, account string, p *commonv1.VenueProfilePolicy) error {
 	keys := []string{account, native.StrategyKey(p.UserId, p.FundId), native.PortfolioKey(p.UserId, p.FundId), native.MarketKey(p.Symbol), native.TradeKey(p.Symbol)}
 	var owners []*commonmodelv1.ExecutionShardLease
-	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id IN ?", keys).Order("account_id").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&owners).Error; err != nil {
+	if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id IN ?", keys).Order("account_id").Clauses(clause.Locking{Strength: "UPDATE"}).Find(&owners).Error; err != nil {
 		return err
 	}
 	var clock struct{ NowMS int64 }
-	if err := tx.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", account).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
+	if err := tx.Session(&gorm.Session{NewDB: true}).WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("account_id = ?", account).Select("floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint AS now_ms").Take(&clock).Error; err != nil {
 		return err
 	}
 	for _, owner := range owners {

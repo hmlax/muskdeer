@@ -46,7 +46,14 @@ func NewExecution(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.
 		if err != nil {
 			return nil, err
 		}
-		runtime, err := venueexecution.NewRuntime(ctx, db, incarnation, cfg.Business, factory, owner.Logger(), himalaya.Factory{})
+		runtime, err := venueexecution.NewRuntime(ctx, cfg.Business, venueexecution.Dependencies{
+			DB:         db,
+			OwnerID:    incarnation,
+			RPC:        factory,
+			Logger:     owner.Logger(),
+			Gateway:    himalaya.Factory{},
+			Connection: cfg.VenueConnection,
+		})
 		if err != nil {
 			return nil, err
 		}

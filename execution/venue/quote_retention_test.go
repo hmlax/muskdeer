@@ -35,7 +35,7 @@ func TestQuoteRefreshKeepsBothSidesUntilTheirReplacementsExist(t *testing.T) {
 		if replaced {
 			snapshot.Orders = append(snapshot.Orders, retentionOrder("3", domain.SideBuy, "100.1"), retentionOrder("4", domain.SideSell, "100.5"))
 		}
-		kept, err := retainQuoteOrders(profile, snapshot, wanted, true)
+		kept, err := retainQuoteOrders(profile, snapshot, wanted, true, decimal.RequireFromString("0.1"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -111,7 +111,7 @@ func TestQuoteRefreshDoesNotBridgeCrossingLegacyOrOversizedOrders(t *testing.T) 
 					Quantity: decimal.NewFromInt(1),
 				},
 			}
-			kept, err := retainQuoteOrders(profile, &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{buy, sell}}, wanted, false)
+			kept, err := retainQuoteOrders(profile, &commonv1.VenueSnapshot{Orders: []*commonv1.VenueOrder{buy, sell}}, wanted, false, decimal.RequireFromString("0.1"))
 			if err != nil || len(kept.orders) != 0 {
 				t.Fatalf("retainQuoteOrders(%s) = %v, %v, want no unsafe bridges", kind, kept, err)
 			}

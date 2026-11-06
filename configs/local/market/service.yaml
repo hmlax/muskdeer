@@ -12,4 +12,4 @@ logging:
 monitoring:
   address: 127.0.0.1:59101
   request_timeout: 1s
-data_sha256: ca0bab89669f3485b70abbe3609586781e9f6fd09afc6a91bde83eec4feb921d
+data_sha256: b1200fee009db5e00145c662caf876b250b4894fce90693eb07b002d5fb5e7ae

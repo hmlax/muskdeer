@@ -11,7 +11,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-func TestQuoteSizeRefreshKeepsNinetyPercentOfEachSide(t *testing.T) {
+func TestQuoteSizeRefreshUsesConfiguredReplacementFraction(t *testing.T) {
 	t.Parallel()
 	profile := &commonv1.VenueProfilePolicy{
 		Symbol:               "BTCUSDT",
@@ -35,21 +35,48 @@ func TestQuoteSizeRefreshKeepsNinetyPercentOfEachSide(t *testing.T) {
 			}
 		}
 	}
-	retained, err := retainQuoteOrders(profile, snapshot, wanted, true)
-	if err != nil {
-		t.Fatal(err)
+	for fraction, want := range map[string]int{"0.1": 18, "0.25": 15, "0.000001": 19, "1": 1} {
+		t.Run(fraction, func(t *testing.T) {
+			retained, err := retainQuoteOrders(profile, snapshot, wanted, true, decimal.RequireFromString(fraction))
+			if err != nil {
+				t.Fatal(err)
+			}
+			counts := make(map[string]int)
+			for _, order := range snapshot.Orders {
+				if retained.orders[order.OrderId] {
+					counts[order.Side]++
+				}
+			}
+			if counts[string(domain.SideBuy)] != want || counts[string(domain.SideSell)] != want || !retained.pending || len(retained.targets) != 2*want {
+				t.Fatalf("fraction %s: kept buys=%d sells=%d occupied=%d, want %d per side", fraction, counts[string(domain.SideBuy)], counts[string(domain.SideSell)], len(retained.targets), want)
+			}
+		})
 	}
-	counts := make(map[string]int)
-	for _, order := range snapshot.Orders {
-		if retained.orders[order.OrderId] {
-			counts[order.Side]++
-		}
+}
+
+func TestQuotePlacementUsesConfiguredBridgeCapacity(t *testing.T) {
+	t.Parallel()
+	target := &commonv1.VenueTarget{
+		Side:  string(domain.SideBuy),
+		Price: "100",
 	}
-	if counts[string(domain.SideBuy)] != 18 || counts[string(domain.SideSell)] != 18 {
-		t.Fatalf("retainQuoteOrders(size refresh) kept buys=%d sells=%d, want 18/18 while two replacements await proof", counts[string(domain.SideBuy)], counts[string(domain.SideSell)])
+	cycle := &quoteCycle{
+		targets: []*commonv1.VenueTarget{target},
+		snapshot: &commonv1.VenueSnapshot{
+			Orders: []*commonv1.VenueOrder{retentionOrder("1", domain.SideBuy, "99")},
+		},
 	}
-	if !retained.pending || len(retained.targets) != 36 {
-		t.Fatalf("retainQuoteOrders(size refresh) pending=%t occupied=%d, want pending and 36 occupied target prices", retained.pending, len(retained.targets))
+	if cycle.canPlace(target) {
+		t.Fatal("zero extra slots admitted a bridge order")
+	}
+	cycle.bridgeSlots = 2
+	cycle.admitted = []*commonv1.VenueTarget{target}
+	if !cycle.canPlace(target) {
+		t.Fatal("configured second slot was ignored")
+	}
+	cycle.admitted = append(cycle.admitted, target)
+	if cycle.canPlace(target) {
+		t.Fatal("configured bridge capacity exceeded")
 	}
 }
 
@@ -64,8 +91,9 @@ func TestRollingQuotePlacementUsesLiveOppositePricesAndBoundedCapacity(t *testin
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
 			cycle := &quoteCycle{
-				targets:  []*commonv1.VenueTarget{target},
-				snapshot: &commonv1.VenueSnapshot{},
+				bridgeSlots: 1,
+				targets:     []*commonv1.VenueTarget{target},
+				snapshot:    &commonv1.VenueSnapshot{},
 			}
 			want := true
 			switch kind {
@@ -125,7 +153,7 @@ func TestRollingDuplicateQuotesRemainPendingUntilCleanupCompletes(t *testing.T) 
 			Quantity: decimal.NewFromInt(1),
 		},
 	}
-	retained, err := retainQuoteOrders(profile, snapshot, wanted, true)
+	retained, err := retainQuoteOrders(profile, snapshot, wanted, true, decimal.RequireFromString("0.1"))
 	if err != nil {
 		t.Fatal(err)
 	}

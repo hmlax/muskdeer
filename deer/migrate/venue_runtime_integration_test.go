@@ -150,17 +150,27 @@ func testNativeWorkers(t *testing.T, scenario nativeWorkerScenario) {
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
 		Venue: &configv1.VenueRuntime{
-			Target:           sdkAddress,
-			TokenEnv:         "NATIVE_TEST_TOKEN",
-			Depth:            depth,
-			QuantityFraction: "0.1",
-			LeaseTtl:         durationpb.New(10 * time.Second),
+			ReplacementFraction: "0.1",
+			BridgeSlots:         1,
+			Depth:               depth,
+			QuantityFraction:    "0.1",
+			LeaseTtl:            durationpb.New(10 * time.Second),
 		},
 	}
 	if depth > 1 {
 		cfg.OperationTimeout = durationpb.New(2 * time.Second)
 	}
-	execution, err := venueexecution.NewRuntime(ctx, db, executionLease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger, himalaya.Factory{})
+	execution, err := venueexecution.NewRuntime(ctx, cfg, venueexecution.Dependencies{
+		DB:      db,
+		OwnerID: executionLease.OwnerID,
+		RPC:     nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery),
+		Logger:  logger,
+		Gateway: himalaya.Factory{},
+		Connection: &configv1.VenueConnection{
+			Target:   sdkAddress,
+			TokenEnv: "NATIVE_TEST_TOKEN",
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

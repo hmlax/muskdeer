@@ -18,11 +18,11 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     for name in market strategy execution portfolio cron; do \
       go build -mod=readonly -trimpath -o /out/$name ./$name/cmd || exit $?; \
     done && \
-    for name in migrate coreinit readycheck venueinit venuebaseline; do \
+    for name in migrate coreinit policyinit readycheck venueinit venuebaseline; do \
       go build -mod=readonly -trimpath -o /out/$name ./cmd/$name || exit $?; \
     done
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
-    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cron/cmd ./cmd/migrate ./cmd/coreinit ./cmd/readycheck ./cmd/venuebaseline > /tmp/module-dirs && \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cron/cmd ./cmd/migrate ./cmd/coreinit ./cmd/policyinit ./cmd/readycheck ./cmd/venuebaseline > /tmp/module-dirs && \
     mkdir -p /out/licenses/go /out/licenses/lumberjack && \
     cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
     cp deer/third_party/lumberjack/LICENSE /out/licenses/lumberjack/LICENSE && \
@@ -40,6 +40,7 @@ COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certifica
 COPY --from=build /out/licenses /licenses
 COPY --from=build /out/migrate /migrate
 COPY --from=build /out/coreinit /coreinit
+COPY --from=build /out/policyinit /policyinit
 COPY --from=build /out/readycheck /readycheck
 COPY --from=build /out/venueinit /venueinit
 COPY --from=build /out/venuebaseline /venuebaseline

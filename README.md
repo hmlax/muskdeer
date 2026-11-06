@@ -18,7 +18,7 @@
 
 五个进程均提供 `grpc.health.v1.Health/Check`、`Watch`、`List`，服务名为空或 `<service>.grpc`。cron 可独立构建，默认 Compose 仍只启动四个交易核心。
 
-每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，配置从 Nacos 的 data.yaml/service.yaml 强类型 YAML 配对读取，配置更新后显式重启。
+每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，基础连接与服务配置从 Nacos 的 data.yaml/service.yaml 配对读取，铺单、网格、WashTrade 等全部业务执行参数从数据库读取。更新后显式重启，字段与维护说明见[数据库业务执行参数](docs/DATABASE_PARAMETERS.md)。
 
 `model` 下的 Proto 是本项目数据库实体的唯一结构定义，用于生成带 GORM 标签的 Go 模型，保存订单、策略、额度、持仓等业务记录；技术样例模型已移除。
 
@@ -76,4 +76,4 @@ Go 命令统一通过 `python3 scripts/go.py` 使用固定工具链；例如 `py
 - [实施计划](docs/IMPLEMENTATION_PLAN.md)
 - [开发进度与实际验证](docs/PROGRESS.md)
 
-Himalaya SDK/gRPC 接入集中在 `execution/adapters/himalaya`，通过 `execution/venue/gateway` 的强类型接口接入业务。`execution/venue` 持有持久化、额度、撤单和恢复循环，`deer/trading/venueconfig` 加载数据库业务策略；适配器不依赖数据库、ORM 模型或仓储。内部通道 RPC 归 `deer/proto/<service>/venue/v1`，消息使用 Venue*，RPC 全名按服务归属，不保留旧路由或消息别名。配置只接受 business.venue 和 execution_venue=gateway，维护命令为 venueinit/venuebaseline；服务与调用端需配套更新。存量数据库需显式执行已验证的通道 0007 升级，再部署新版本；应用启动只校验版本。
+Himalaya SDK/gRPC 接入集中在 `execution/adapters/himalaya`，通过 `execution/venue/gateway` 的强类型接口接入业务。`execution/venue` 持有持久化、额度、撤单和恢复循环，`deer/trading/venueconfig` 加载数据库业务策略；适配器不依赖数据库、ORM 模型或仓储。内部通道 RPC 归 `deer/proto/<service>/venue/v1`，消息使用 Venue*，RPC 全名按服务归属，不保留旧路由或消息别名。数据库参数使用 venue 和 execution_venue=gateway，纯连接在 Nacos 的 venue_connection 中；维护命令为 policyinit、venueinit、venuebaseline；服务与调用端需配套更新。存量数据库需显式执行匹配历史的通道升级（标准路径 0008；已知无审计旧分支追加至 0010），再部署新版本；应用启动只校验版本。

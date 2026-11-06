@@ -57,6 +57,7 @@ build:
 	mkdir -p .cache/bin
 	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
 	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
+	python3 scripts/go.py build -o .cache/bin/policyinit ./cmd/policyinit
 	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
 	python3 scripts/go.py build -o .cache/bin/venueinit ./cmd/venueinit
 	python3 scripts/go.py build -o .cache/bin/venuebaseline ./cmd/venuebaseline

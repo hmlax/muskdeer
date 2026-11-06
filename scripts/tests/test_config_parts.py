@@ -8,8 +8,8 @@ from config_parts import split,combine,loads
 
 
 class ConfigPartsTest(unittest.TestCase):
-    def test_bound_split_preserves_decimal_strings_and_separates_fields(self):
-        cfg={'name':'strategy','version':'test','instance_id':'one','grpc':{'address':'127.0.0.1:1234'},'postgres':{'port':5432},'business':{'himalaya':{'quantity_fraction':'0.123456789012345678'}}}
+    def test_bound_split_preserves_connections_and_separates_fields(self):
+        cfg={'name':'strategy','version':'test','instance_id':'one','grpc':{'address':'127.0.0.1:1234'},'postgres':{'port':5432},'venue_connection':{'target':'127.0.0.1:8080','token_env':'TEST_GATEWAY_TOKEN'}}
         data,service=split(cfg)
         self.assertEqual(combine(data,service),cfg)
         self.assertNotIn('grpc',loads(data))
@@ -20,3 +20,8 @@ class ConfigPartsTest(unittest.TestCase):
     def test_yaml_rejects_duplicate_keys_aliases_and_unquoted_decimals(self):
         for body in ['name: a\nname: b\n','x: &a [1]\ny: *a\n','quantity: 0.123456789012345678\n','port: 0xFF\n']:
             with self.assertRaises(ValueError):loads(body)
+
+    def test_business_parameters_cannot_be_published_to_nacos(self):
+        for business in ({}, {'enabled': False}, {'venue': {'depth': 20}}, {'strategy': {'account_ids': ['test-account']}}):
+            with self.subTest(business=business), self.assertRaisesRegex(ValueError, 'unknown runtime configuration fields'):
+                split({'name': 'strategy', 'version': 'test', 'business': business})

@@ -32,9 +32,10 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
 		Venue: &configv1.VenueRuntime{
-			QuantityFraction: "0.1",
-			Depth:            20,
-			LeaseTtl:         durationpb.New(10 * time.Second),
+			QuantityFraction:    "0.1",
+			ReplacementFraction: "0.1",
+			Depth:               20,
+			LeaseTtl:            durationpb.New(10 * time.Second),
 			SyntheticTape: &configv1.SyntheticTape{
 				Enabled:         true,
 				DevelopmentOnly: true,
@@ -65,7 +66,7 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Order("id").Find(&before).Error; err != nil {
 		t.Fatal(err)
 	}
-	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 	if err != nil {
 		t.Fatalf("LoadRuntime(32 markets) = %v, want success", err)
 	}
@@ -102,7 +103,7 @@ func TestVenueMultiMarketImportAndStartupPreserveEveryProfile(t *testing.T) {
 	if err := store.ImportProfiles(ctx, &commonv1.VenueProfileImport{Profiles: []*commonv1.VenueProfilePolicy{overflow}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := venueconfig.LoadRuntime(ctx, db, cfg); !errors.Is(err, native.ErrInvalid) {
+	if _, err := venueconfig.LoadRuntime(ctx, db, cfg, nil); !errors.Is(err, native.ErrInvalid) {
 		t.Fatalf("LoadRuntime(33 stored markets) = %v, want rejection without truncation", err)
 	}
 }

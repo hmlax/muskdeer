@@ -11,20 +11,15 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-const (
-	quoteReplacementDivisor = 10
-	quoteBridgeSlots        = 1
-)
-
 type rollingQuote struct {
 	order *commonv1.VenueOrder
 	key   string
 	price decimal.Decimal
 }
 
-// Only a tenth of safe obsolete levels on each side enter cancellation at once.
+// The database policy bounds the fraction of safe obsolete levels retired per side.
 // Unsafe prices, oversized orders and legacy quotes still require cancellation.
-func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention) error {
+func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.VenueSnapshot, wanted map[string]*SubmitRequest, retained *quoteRetention, replacement decimal.Decimal) error {
 	limit, err := native.Value(profile.MaximumOrderNotional, false, false)
 	if err != nil {
 		return err
@@ -55,7 +50,7 @@ func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv
 	retiring := make(map[domain.Side]int)
 	for _, candidate := range candidates {
 		side := domain.Side(candidate.order.Side)
-		allowance := max(1, (levels[side]+quoteReplacementDivisor-1)/quoteReplacementDivisor)
+		allowance := max(1, int(decimal.NewFromInt(int64(levels[side])).Mul(replacement).Ceil().IntPart()))
 		if retiring[side] < allowance {
 			retiring[side]++
 			continue
@@ -120,7 +115,7 @@ func (cycle *quoteCycle) canPlace(target *commonv1.VenueTarget) bool {
 	if err != nil || side != domain.SideBuy && side != domain.SideSell {
 		return false
 	}
-	capacity := quoteBridgeSlots
+	capacity := int(cycle.bridgeSlots)
 	for _, proposal := range cycle.targets {
 		if proposal.Side == target.Side {
 			capacity++

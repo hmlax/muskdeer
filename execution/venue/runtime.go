@@ -47,9 +47,23 @@ type Runtime struct {
 	plans   map[string]*atomic.Int64
 }
 
+// Dependencies are borrowed once; the worker owns only the adapter connection it dials.
+type Dependencies struct {
+	DB         *gorm.DB
+	OwnerID    string
+	RPC        *rpcclient.Factory
+	Logger     *logging.Logger
+	Gateway    gateway.Factory
+	Connection *configv1.VenueConnection
+}
+
 // NewRuntime assembles borrowed resources; the worker creates the SDK connection.
-func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.BusinessRuntime, factory *rpcclient.Factory, logger *logging.Logger, factoryGateway gateway.Factory) (*Runtime, error) {
-	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
+func NewRuntime(ctx context.Context, cfg *configv1.BusinessRuntime, deps Dependencies) (*Runtime, error) {
+	db, owner, factory, logger, factoryGateway := deps.DB, deps.OwnerID, deps.RPC, deps.Logger, deps.Gateway
+	if deps.Connection == nil {
+		return nil, ErrInvalidConfig
+	}
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg, deps.Connection)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +320,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	if err != nil {
 		return nil, err
 	}
-	retained, err := retainQuoteOrders(profile, snapshot, wanted, budget.CutoverCompleted)
+	retained, err := retainQuoteOrders(profile, snapshot, wanted, budget.CutoverCompleted, r.cfg.ReplacementFraction)
 	if err != nil {
 		return nil, err
 	}
@@ -314,8 +328,9 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	// while cancellation proofs settle; it does not authorize new submissions.
 	r.plans[lease.Key.AccountID].Store(book.ValidUntilMs)
 	cycle := &quoteCycle{
-		profile: profile,
-		lease:   lease,
+		profile:     profile,
+		bridgeSlots: r.cfg.BridgeSlots,
+		lease:       lease,
 		authority: LiveAuthority{
 			Strategy: plan.Strategy,
 			Book:     book,

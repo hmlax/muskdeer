@@ -272,6 +272,135 @@ func (x *VenueProfileImport) GetProfiles() []*VenueProfilePolicy {
 	return nil
 }
 
+// VenueStrategyImport is explicit offline maintenance input, never Nacos data.
+type VenueStrategyImport struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Strategies    []*VenueStrategyInput  `protobuf:"bytes,1,rep,name=strategies,proto3" json:"strategies,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VenueStrategyImport) Reset() {
+	*x = VenueStrategyImport{}
+	mi := &file_deer_proto_common_v1_venue_policy_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VenueStrategyImport) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VenueStrategyImport) ProtoMessage() {}
+
+func (x *VenueStrategyImport) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_venue_policy_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VenueStrategyImport.ProtoReflect.Descriptor instead.
+func (*VenueStrategyImport) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_venue_policy_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *VenueStrategyImport) GetStrategies() []*VenueStrategyInput {
+	if x != nil {
+		return x.Strategies
+	}
+	return nil
+}
+
+type VenueStrategyInput struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Profile          *VenueProfilePolicy    `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
+	Parameters       *v1.BusinessRuntime    `protobuf:"bytes,2,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	BaseAsset        string                 `protobuf:"bytes,3,opt,name=base_asset,json=baseAsset,proto3" json:"base_asset,omitempty"`
+	QuoteAsset       string                 `protobuf:"bytes,4,opt,name=quote_asset,json=quoteAsset,proto3" json:"quote_asset,omitempty"`
+	MinimumNotional  string                 `protobuf:"bytes,5,opt,name=minimum_notional,json=minimumNotional,proto3" json:"minimum_notional,omitempty"`
+	ExpectedRevision int64                  `protobuf:"varint,6,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *VenueStrategyInput) Reset() {
+	*x = VenueStrategyInput{}
+	mi := &file_deer_proto_common_v1_venue_policy_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VenueStrategyInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VenueStrategyInput) ProtoMessage() {}
+
+func (x *VenueStrategyInput) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_venue_policy_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VenueStrategyInput.ProtoReflect.Descriptor instead.
+func (*VenueStrategyInput) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_venue_policy_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *VenueStrategyInput) GetProfile() *VenueProfilePolicy {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+func (x *VenueStrategyInput) GetParameters() *v1.BusinessRuntime {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
+func (x *VenueStrategyInput) GetBaseAsset() string {
+	if x != nil {
+		return x.BaseAsset
+	}
+	return ""
+}
+
+func (x *VenueStrategyInput) GetQuoteAsset() string {
+	if x != nil {
+		return x.QuoteAsset
+	}
+	return ""
+}
+
+func (x *VenueStrategyInput) GetMinimumNotional() string {
+	if x != nil {
+		return x.MinimumNotional
+	}
+	return ""
+}
+
+func (x *VenueStrategyInput) GetExpectedRevision() int64 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
+}
+
 var File_deer_proto_common_v1_venue_policy_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_venue_policy_proto_rawDesc = "" +
@@ -297,7 +426,22 @@ const file_deer_proto_common_v1_venue_policy_proto_rawDesc = "" +
 	"price_tick\x18\b \x01(\tR\tpriceTick\x12#\n" +
 	"\rquantity_step\x18\t \x01(\tR\fquantityStep\"X\n" +
 	"\x12VenueProfileImport\x12B\n" +
-	"\bprofiles\x18\x01 \x03(\v2&.muskdeer.common.v1.VenueProfilePolicyR\bprofilesB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
+	"\bprofiles\x18\x01 \x03(\v2&.muskdeer.common.v1.VenueProfilePolicyR\bprofiles\"]\n" +
+	"\x13VenueStrategyImport\x12F\n" +
+	"\n" +
+	"strategies\x18\x01 \x03(\v2&.muskdeer.common.v1.VenueStrategyInputR\n" +
+	"strategies\"\xb3\x02\n" +
+	"\x12VenueStrategyInput\x12@\n" +
+	"\aprofile\x18\x01 \x01(\v2&.muskdeer.common.v1.VenueProfilePolicyR\aprofile\x12C\n" +
+	"\n" +
+	"parameters\x18\x02 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\n" +
+	"parameters\x12\x1d\n" +
+	"\n" +
+	"base_asset\x18\x03 \x01(\tR\tbaseAsset\x12\x1f\n" +
+	"\vquote_asset\x18\x04 \x01(\tR\n" +
+	"quoteAsset\x12)\n" +
+	"\x10minimum_notional\x18\x05 \x01(\tR\x0fminimumNotional\x12+\n" +
+	"\x11expected_revision\x18\x06 \x01(\x03R\x10expectedRevisionB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
 
 var (
 	file_deer_proto_common_v1_venue_policy_proto_rawDescOnce sync.Once
@@ -311,24 +455,30 @@ func file_deer_proto_common_v1_venue_policy_proto_rawDescGZIP() []byte {
 	return file_deer_proto_common_v1_venue_policy_proto_rawDescData
 }
 
-var file_deer_proto_common_v1_venue_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deer_proto_common_v1_venue_policy_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_deer_proto_common_v1_venue_policy_proto_goTypes = []any{
 	(*VenuePolicy)(nil),         // 0: muskdeer.common.v1.VenuePolicy
 	(*VenueProfilePolicy)(nil),  // 1: muskdeer.common.v1.VenueProfilePolicy
 	(*VenueProfileImport)(nil),  // 2: muskdeer.common.v1.VenueProfileImport
-	(*durationpb.Duration)(nil), // 3: google.protobuf.Duration
-	(*v1.SyntheticTape)(nil),    // 4: muskdeer.config.v1.SyntheticTape
+	(*VenueStrategyImport)(nil), // 3: muskdeer.common.v1.VenueStrategyImport
+	(*VenueStrategyInput)(nil),  // 4: muskdeer.common.v1.VenueStrategyInput
+	(*durationpb.Duration)(nil), // 5: google.protobuf.Duration
+	(*v1.SyntheticTape)(nil),    // 6: muskdeer.config.v1.SyntheticTape
+	(*v1.BusinessRuntime)(nil),  // 7: muskdeer.config.v1.BusinessRuntime
 }
 var file_deer_proto_common_v1_venue_policy_proto_depIdxs = []int32{
 	1, // 0: muskdeer.common.v1.VenuePolicy.profiles:type_name -> muskdeer.common.v1.VenueProfilePolicy
-	3, // 1: muskdeer.common.v1.VenuePolicy.lease_ttl:type_name -> google.protobuf.Duration
-	4, // 2: muskdeer.common.v1.VenuePolicy.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
+	5, // 1: muskdeer.common.v1.VenuePolicy.lease_ttl:type_name -> google.protobuf.Duration
+	6, // 2: muskdeer.common.v1.VenuePolicy.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
 	1, // 3: muskdeer.common.v1.VenueProfileImport.profiles:type_name -> muskdeer.common.v1.VenueProfilePolicy
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 4: muskdeer.common.v1.VenueStrategyImport.strategies:type_name -> muskdeer.common.v1.VenueStrategyInput
+	1, // 5: muskdeer.common.v1.VenueStrategyInput.profile:type_name -> muskdeer.common.v1.VenueProfilePolicy
+	7, // 6: muskdeer.common.v1.VenueStrategyInput.parameters:type_name -> muskdeer.config.v1.BusinessRuntime
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_venue_policy_proto_init() }
@@ -342,7 +492,7 @@ func file_deer_proto_common_v1_venue_policy_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_v1_venue_policy_proto_rawDesc), len(file_deer_proto_common_v1_venue_policy_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

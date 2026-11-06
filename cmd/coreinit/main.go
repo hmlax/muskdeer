@@ -12,10 +12,12 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/corelocal"
 	"github.com/hmlax/muskdeer/deer/migrate"
+	policymigrate "github.com/hmlax/muskdeer/deer/migrate/runtimepolicy"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/processfailure"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 )
 
 func main() {
@@ -44,7 +46,7 @@ func run(ctx context.Context) (result error) {
 		return err
 	}
 	if cfg.Name != "execution" || cfg.GetPostgres().GetDatabase() != "muskdeer_local" ||
-		cfg.GetPostgres().GetSchema() != "public" || cfg.GetBusiness().GetExecutionVenue() != domain.ExecutionVenueSimulator ||
+		cfg.GetPostgres().GetSchema() != "public" || cfg.VenueConnection != nil ||
 		cfg.GetJetstream().GetUsername() != "muskdeer-local" {
 		return corelocal.ErrResources
 	}
@@ -56,11 +58,28 @@ func run(ctx context.Context) (result error) {
 	if err := migrate.CheckCurrent(ctx, db.GORM()); err != nil {
 		return err
 	}
+	if err := policymigrate.Apply(ctx, db.GORM()); err != nil {
+		return err
+	}
+	existing, err := runtimeconfig.LoadDatabasePolicy(ctx, db.GORM(), cfg)
+	if err != nil && !errors.Is(err, runtimeconfig.ErrPolicyMissing) {
+		return err
+	}
+	if existing != nil && existing.Business.ExecutionVenue != "" && existing.Business.ExecutionVenue != domain.ExecutionVenueSimulator {
+		return corelocal.ErrResources
+	}
 	if err := corelocal.PrepareBroker(ctx, cfg.Jetstream, "portfolio_local"); err != nil {
 		return err
 	}
 	resources, err := corelocal.Seed(ctx, db.GORM())
 	if err != nil {
+		return err
+	}
+	policies, err := corelocal.Policies(resources)
+	if err != nil {
+		return err
+	}
+	if err := runtimeconfig.SeedDatabasePolicies(ctx, db.GORM(), policies); err != nil {
 		return err
 	}
 	return json.NewEncoder(os.Stdout).Encode(resources)

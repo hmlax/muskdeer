@@ -137,12 +137,14 @@ func TestVenueRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
 		Venue: &configv1.VenueRuntime{
-			QuantityFraction: "0.1",
-			Depth:            20,
-			LeaseTtl:         durationpb.New(10 * time.Second),
+			ReplacementFraction: "0.1",
+			BridgeSlots:         1,
+			QuantityFraction:    "0.1",
+			Depth:               20,
+			LeaseTtl:            durationpb.New(10 * time.Second),
 		},
 	}
-	if _, err := venueconfig.LoadRuntime(ctx, db, cfg); !errors.Is(err, native.ErrInvalid) {
+	if _, err := venueconfig.LoadRuntime(ctx, db, cfg, nil); !errors.Is(err, native.ErrInvalid) {
 		t.Fatalf("unconfigured legacy budget silently supplied a profile: %v", err)
 	}
 	configureNativeProfileFixture(ctx, t, db, request)
@@ -156,7 +158,7 @@ func TestVenueRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 	if err := db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).First(&before).Error; err != nil {
 		t.Fatal(err)
 	}
-	settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
+	settings, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 	if err != nil || len(settings.Venue.Profiles) != 1 || settings.Venue.Profiles[0].MaximumNotional != "1000" || settings.Venue.Profiles[0].PriceTick != "0.1" {
 		t.Fatalf("database profile load: %v, %v", settings, err)
 	}
@@ -170,7 +172,7 @@ func TestVenueRuntimeLoadsDatabasePolicyWithoutStartupWrites(t *testing.T) {
 	if settings.Venue.Profiles[0].PriceTick != "0.1" {
 		t.Fatal("database update silently hot-switched an active startup snapshot")
 	}
-	restarted, err := venueconfig.LoadRuntime(ctx, db, cfg)
+	restarted, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 	if err != nil || restarted.Venue.Profiles[0].PriceTick != "0.2" {
 		t.Fatalf("explicit restart did not reload database policy: %v", err)
 	}

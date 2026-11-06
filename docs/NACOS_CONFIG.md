@@ -21,11 +21,13 @@
 
 ## 配置内容
 
-每个服务发布两份严格 YAML：`data.yaml` 对应 [DataConfig](../deer/proto/common/config/v1/config.proto)，定义 PostgreSQL/Redis/JetStream 连接、密码环境变量名以及业务运行控制；`service.yaml` 对应 [ServiceSettings](../deer/proto/common/config/v1/config.proto)，定义身份、版本、启动/关闭期限、gRPC/HTTP/监控监听、TLS、日志、RPC 客户端和注册参数。示例见 [market/data.yaml](../configs/local/market/data.yaml) 与 [market/service.yaml](../configs/local/market/service.yaml)，其他服务各有独立目录。示例默认只是基础探针，不授权交易。
+每个服务发布两份严格 YAML：`data.yaml` 对应 [DataConfig](../deer/proto/common/config/v1/config.proto)，只定义 PostgreSQL/Redis/JetStream 及 `venue_connection` 的连接、凭据环境变量名；`service.yaml` 对应 [ServiceSettings](../deer/proto/common/config/v1/config.proto)，定义身份、版本、启动/关闭期限、gRPC/HTTP/监控监听、TLS、日志、RPC 客户端和注册参数。示例见 [market/data.yaml](../configs/local/market/data.yaml) 与 [market/service.yaml](../configs/local/market/service.yaml)，其他服务各有独立目录。示例默认只是基础探针，不授权交易。
 
 两份文档的 name/version 必须一致，service.yaml 的 data_sha256 必须等于 data.yaml **原始字节**的 SHA-256（包含注释和换行）。准备/发布工具自动计算并先发布 data、最后发布 service；手工编辑时可用 `shasum -a 256 data.yaml` 取得绑定值。配对中途启动会失败，已有进程保持原不可变快照。ServiceConfig 仅为内部装配结果，不是第三份配置源。
 
-未知字段、错误分区（例如 service 中的 postgres 或 data 中的 grpc）、空配置、错误身份/版本、指纹不符、重复键、多文档、YAML anchor/alias/merge 均拒绝。所有小数必须是**带引号的字符串**，不接受浮点节点，金额/价格/数量不经过浮点转换。密码仍使用 password_env 引用，不发布真实密码。Himalaya 账户/产品/额度/网格参数继续保存在数据库，不能放回 data.yaml。
+未知字段、错误分区（例如 service 中的 postgres 或 data 中的 grpc）、空配置、错误身份/版本、指纹不符、重复键、多文档、YAML anchor/alias/merge 均拒绝。`business` 已从 Nacos 合同移除，即使为空或关闭也拒绝；编码器也拒绝把数据库已解析的业务快照发布回 Nacos。密码使用 password_env/token_env 引用，不发布真实密码。
+
+铺单、网格、WashTrade 的具体参数、扫描范围、频率、操作期限及租约均在 PostgreSQL。模拟服务的调度参数使用 ServiceRuntimePolicy，通道铺单/WashTrade、网格和通用做市实例均使用 StrategyConfigVersion，账户/产品/额度继续使用 TradingAccountPolicy。字段归属、显式迁移和带版本导入见[数据库业务执行参数](DATABASE_PARAMETERS.md)。
 
 Nacos 连接和认证始终来自 env，不能写进任一文档；service.yaml 的 registration 只提供 advertise_ip/heartbeat_interval。远程覆盖 bootstrap 字段直接拒绝。证书/密钥路径指向独立挂载的文件，不携带私钥内容。
 
@@ -45,6 +47,6 @@ docker compose --env-file .cache/compose/compose.env ps
 docker compose --env-file .cache/compose/compose.env exec -T strategy /readycheck
 ```
 
-显式迁移和 coreinit 默认同样读取 Nacos。`migrate -apply` 仍保留防误执行开关；历史测试使用的维护工具 `-config` 仅作兼容，不存在于核心服务入口。tools profile 的一次性维护容器只连接 infra 网络，避免与正在运行的核心容器争用固定 IP。
+显式迁移、coreinit 和 policyinit 默认同样从 Nacos 读取连接。`migrate -apply` 保留防误执行开关；`policyinit -schema-only` 显式升级参数结构，`policyinit -policies FILE` 离线导入审核后的业务参数，核心启动只读数据库。历史测试使用的维护工具 `-config` 不存在于核心服务入口。tools profile 的一次性维护容器只连接 infra 网络，避免与正在运行的核心容器争用固定 IP。
 
-`make core-test` 为每个真实进程发布独立临时 YAML 配对，再无参数启动核心二进制；停止后删除两项，测试命名空间与持久配置隔离。镜像测试同样使用真实 Nacos 双文档，没有本地配置挂载或启动参数，不部署额外基础服务。历史测试/维护的显式统一 JSON 输入仍只用于旧入口兼容，核心启动没有此回退。
+`make core-test` 在隔离测试数据库准备参数，为每个真实进程发布不含业务参数的临时 YAML 配对，再无参数启动核心二进制；停止后删除两项，测试命名空间与持久配置隔离。镜像测试同样使用真实 Nacos 双文档，没有本地配置挂载或启动参数，不部署额外基础服务。历史模块夹具仍使用显式统一 JSON，核心启动没有此回退。

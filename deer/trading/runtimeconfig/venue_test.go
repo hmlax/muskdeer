@@ -14,6 +14,7 @@ import (
 func TestNativeRuntimeRequiresExplicitTransportAndFiniteControls(t *testing.T) {
 	cfg := &configv1.ServiceConfig{
 		Name:            "execution",
+		VenueConnection: &configv1.VenueConnection{Target: "127.0.0.1:8080", TokenEnv: "TEST_NATIVE_TOKEN"},
 		ShutdownTimeout: durationpb.New(5 * time.Second),
 		Postgres:        &configv1.Postgres{},
 		Grpc:            &configv1.Listener{},
@@ -26,11 +27,11 @@ func TestNativeRuntimeRequiresExplicitTransportAndFiniteControls(t *testing.T) {
 			PollInterval:     durationpb.New(200 * time.Millisecond),
 			OperationTimeout: durationpb.New(time.Second),
 			Venue: &configv1.VenueRuntime{
-				Target:           "127.0.0.1:8080",
-				TokenEnv:         "TEST_NATIVE_TOKEN",
-				QuantityFraction: "0.1",
-				Depth:            20,
-				LeaseTtl:         durationpb.New(10 * time.Second),
+				ReplacementFraction: "0.1",
+				BridgeSlots:         1,
+				QuantityFraction:    "0.1",
+				Depth:               20,
+				LeaseTtl:            durationpb.New(10 * time.Second),
 			},
 		},
 	}
@@ -50,7 +51,7 @@ func TestNativeRuntimeRequiresExplicitTransportAndFiniteControls(t *testing.T) {
 		}
 	}
 	for _, mutate := range []func(*configv1.ServiceConfig){
-		func(c *configv1.ServiceConfig) { c.Business.Venue.Target = "public.example:8080" },
+		func(c *configv1.ServiceConfig) { c.VenueConnection.Target = "public.example:8080" },
 		func(c *configv1.ServiceConfig) { c.Business.Venue.QuantityFraction = "0" },
 		func(c *configv1.ServiceConfig) { c.Business.Venue.Depth = 0 },
 	} {

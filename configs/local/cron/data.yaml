@@ -1,7 +1,6 @@
-# Infrastructure probes only. Preparation fills environment-specific connections and business controls.
+# Infrastructure probes only. Preparation fills environment-specific infrastructure connections.
 name: cron
 version: local
 postgres: null
 redis: null
 jetstream: null
-business: null

@@ -26,6 +26,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 	himalaya "github.com/hmlax/muskdeer/execution/adapters/himalaya"
 	venueexecution "github.com/hmlax/muskdeer/execution/venue"
@@ -110,7 +111,7 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 		}
 	}
 	cfg, err := deer.LoadNacosConfig(ctx, "execution")
-	if err != nil || cfg.GetBusiness().GetExecutionVenue() != native.Venue || native.ValidateConfig(cfg) != nil {
+	if err != nil || cfg.GetName() != "execution" {
 		return native.ErrInvalid
 	}
 	db, err := postgres.New(ctx, cfg.Postgres, "development-baseline")
@@ -124,7 +125,14 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 	if err := venuemigrate.Check(ctx, db.GORM()); err != nil {
 		return err
 	}
-	settings, err := venueconfig.LoadRuntime(ctx, db.GORM(), cfg.Business)
+	cfg, err = runtimeconfig.LoadDatabasePolicy(ctx, db.GORM(), cfg)
+	if err != nil {
+		return err
+	}
+	if cfg.Business.ExecutionVenue != native.Venue {
+		return native.ErrInvalid
+	}
+	settings, err := venueconfig.LoadRuntime(ctx, db.GORM(), cfg.Business, cfg.VenueConnection)
 	if err != nil {
 		return err
 	}
@@ -133,8 +141,8 @@ func run(ctx context.Context, manifest, report string, apply, historical bool) (
 		return err
 	}
 	client, err := himalaya.NewClient(ctx, venueexecution.Config{
-		Target:  cfg.Business.Venue.Target,
-		Token:   os.Getenv(cfg.Business.Venue.TokenEnv),
+		Target:  cfg.GetVenueConnection().GetTarget(),
+		Token:   os.Getenv(cfg.GetVenueConnection().GetTokenEnv()),
 		Timeout: cfg.Business.OperationTimeout.AsDuration(),
 	}, nil)
 	if err != nil {

@@ -15,24 +15,27 @@ import (
 
 // ValidateConfig explicitly selects the SDK development route and its resources.
 func ValidateConfig(cfg *configv1.ServiceConfig) error {
-	b := cfg.GetBusiness()
+	if err := ValidateParameters(cfg.GetBusiness()); err != nil {
+		return err
+	}
+	return validateNativeRole(cfg)
+}
+
+// ValidateParameters checks database-owned business values without transport dependencies.
+func ValidateParameters(b *configv1.BusinessRuntime) error {
 	h := b.GetVenue()
-	if h == nil || b.Market != nil || b.Strategy != nil || b.Simulator != nil || b.Risk != nil || b.ExecutionLeaseTtl != nil || b.PortfolioConsumer != "" ||
-		h.Depth == 0 || h.Depth > 20 || h.LeaseTtl.CheckValid() != nil ||
-		h.LeaseTtl.AsDuration() < 3*b.OperationTimeout.AsDuration() || h.LeaseTtl.AsDuration() > domain.MaxLeaseTTL {
+	if h == nil || b.Market != nil || b.Strategy != nil || b.Simulator != nil || b.Risk != nil || b.ExecutionLeaseTtl != nil || b.PortfolioConsumer != "" || h.Depth == 0 || h.Depth > 20 || h.LeaseTtl.CheckValid() != nil || h.LeaseTtl.AsDuration() < 3*b.OperationTimeout.AsDuration() || h.LeaseTtl.AsDuration() > domain.MaxLeaseTTL {
 		return ErrInvalid
 	}
 	fraction, err := Value(h.QuantityFraction, false, false)
-	if err != nil || fraction.GreaterThan(decimal.NewFromInt(1)) {
+	replacement, e2 := Value(h.ReplacementFraction, false, false)
+	if err != nil || e2 != nil || fraction.GreaterThan(decimal.NewFromInt(1)) || replacement.GreaterThan(decimal.NewFromInt(1)) || h.BridgeSlots > h.Depth {
 		return ErrInvalid
-	}
-	if err := validateNativeRole(cfg, h); err != nil {
-		return err
 	}
 	return ValidateSyntheticSettings(h)
 }
 
-func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.VenueRuntime) error {
+func validateNativeRole(cfg *configv1.ServiceConfig) error {
 	switch cfg.Name {
 	case "market":
 		return nil
@@ -41,10 +44,10 @@ func validateNativeRole(cfg *configv1.ServiceConfig, h *configv1.VenueRuntime) e
 			return ErrInvalid
 		}
 	case "execution":
-		host, port, err := net.SplitHostPort(h.Target)
+		host, port, err := net.SplitHostPort(cfg.GetVenueConnection().GetTarget())
 		number, e2 := strconv.ParseUint(port, 10, 16)
 		local := host == "127.0.0.1" || host == "localhost" || host == "orderbook-order-service-1" || host == "order-service"
-		if err != nil || e2 != nil || number == 0 || !local || !environmentName(h.TokenEnv) || cfg.GrpcClients == nil {
+		if err != nil || e2 != nil || number == 0 || !local || !environmentName(cfg.GetVenueConnection().GetTokenEnv()) || cfg.GrpcClients == nil {
 			return ErrInvalid
 		}
 	default:

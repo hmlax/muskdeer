@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-DATA_FIELDS = ('postgres', 'redis', 'jetstream', 'business')
+DATA_FIELDS = ('postgres', 'redis', 'jetstream', 'venue_connection')
 SERVICE_FIELDS = ('name', 'instance_id', 'version', 'startup_timeout', 'shutdown_timeout',
                   'grpc', 'http', 'logging', 'grpc_security', 'grpc_clients', 'monitoring', 'admin_http')
 

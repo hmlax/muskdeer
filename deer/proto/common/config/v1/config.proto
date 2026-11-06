@@ -9,18 +9,20 @@ option go_package = "github.com/hmlax/muskdeer/deer/pb/common/config/v1;configv1
 // Shared configuration definitions for all Muskdeer services.
 // Source documents remain separate data.yaml and service.yaml pairs.
 
-// DataConfig is data.yaml: connections and business runtime controls.
+// DataConfig is data.yaml: infrastructure and venue transport connections only.
 message DataConfig {
  string name = 1;
  string version = 2;
  Postgres postgres = 9;
  Redis redis = 10;
  JetStream jetstream = 11;
- BusinessRuntime business = 16;
+ reserved 16;
+ reserved "business";
+ VenueConnection venue_connection = 18;
 }
 
-// BusinessRuntime configures owned business work without migrating
-// schemas, provisioning broker resources, seeding money or authorizing risk.
+// BusinessRuntime is loaded from the database after infrastructure is ready.
+// It is not part of either Nacos document and never provisions resources.
 message BusinessRuntime {
   bool enabled = 1;
   string execution_venue = 2;
@@ -35,11 +37,11 @@ message BusinessRuntime {
   VenueRuntime venue = 11;
 }
 
-// VenueRuntime opts into the existing SDK on the development environment.
-// Secrets are resolved from env only by the execution worker lifecycle.
+// VenueRuntime contains database-owned strategy execution controls.
+// Gateway transport is configured separately in VenueConnection.
 message VenueRuntime {
-  string target = 1;
-  string token_env = 2;
+  reserved 1, 2;
+  reserved "target", "token_env";
   // Account/product/risk policy is loaded from PostgreSQL, never Nacos.
   reserved 3;
   reserved "profiles";
@@ -47,6 +49,9 @@ message VenueRuntime {
   uint32 depth = 5;
   google.protobuf.Duration lease_ttl = 6;
   SyntheticTape synthetic_tape = 7;
+  string replacement_fraction = 8;
+  uint32 bridge_slots = 9;
+  repeated string symbols = 10;
 }
 
 // SyntheticTape is an opt-in, finite market-data test run; it never places orders.
@@ -163,10 +168,11 @@ message ServiceConfig {
   GRPCClients grpc_clients = 14;
   // Monitoring is a separate, loopback-only Hertz listener for local probes.
   Listener monitoring = 15;
-  // Explicit L1 business opt-in; omitted configurations remain infrastructure probes.
+  // Internal database-resolved snapshot; never published to Nacos.
   BusinessRuntime business = 16;
   // Explicit management HTTP opt-in. No identity is provisioned at startup.
   AdminHTTP admin_http = 17;
+  VenueConnection venue_connection = 18;
 }
 
 // AdminHTTP pins the browser origin independently of request/proxy headers.
@@ -288,4 +294,18 @@ message SimulatorScenarioRuntime {
 // RiskRuntime grants no resources; it limits evaluation to existing accounts.
 message RiskRuntime {
   repeated string account_ids = 1;
+}
+
+// VenueConnection contains transport setup only. Credentials remain in env.
+message VenueConnection {
+  string target = 1;
+  string token_env = 2;
+}
+
+// RuntimePolicyImport is explicit maintenance input, never a Nacos document.
+message RuntimePolicyImport { repeated RuntimePolicyInput policies = 1; }
+message RuntimePolicyInput {
+  string service_name = 1;
+  int64 expected_revision = 2;
+  BusinessRuntime parameters = 3;
 }

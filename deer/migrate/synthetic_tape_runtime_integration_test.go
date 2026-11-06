@@ -95,11 +95,11 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 		PollInterval:     durationpb.New(100 * time.Millisecond),
 		OperationTimeout: durationpb.New(time.Second),
 		Venue: &configv1.VenueRuntime{
-			Target:           address,
-			TokenEnv:         "SYNTHETIC_TEST_TOKEN",
-			Depth:            1,
-			QuantityFraction: "0.1",
-			LeaseTtl:         durationpb.New(10 * time.Second),
+			ReplacementFraction: "0.1",
+			BridgeSlots:         1,
+			Depth:               1,
+			QuantityFraction:    "0.1",
+			LeaseTtl:            durationpb.New(10 * time.Second),
 			SyntheticTape: &configv1.SyntheticTape{
 				Mode:            mode,
 				Enabled:         true,
@@ -115,7 +115,17 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 			},
 		},
 	}
-	execution, err := venueexecution.NewRuntime(ctx, db, lease.OwnerID, cfg, nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery), logger, himalaya.Factory{})
+	execution, err := venueexecution.NewRuntime(ctx, cfg, venueexecution.Dependencies{
+		DB:      db,
+		OwnerID: lease.OwnerID,
+		RPC:     nativeFactory(ctx, t, ca, rpcsecurity.ServiceExecution, discovery),
+		Logger:  logger,
+		Gateway: himalaya.Factory{},
+		Connection: &configv1.VenueConnection{
+			Target:   address,
+			TokenEnv: "SYNTHETIC_TEST_TOKEN",
+		},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +158,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	}
 	runNativeWorkers(ctx, t, append(execution.Workers(), selected...))
 	if mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
-		settings, err := venueconfig.LoadRuntime(ctx, db, cfg)
+		settings, err := venueconfig.LoadRuntime(ctx, db, cfg, nil)
 		if err != nil {
 			t.Fatal(err)
 		}

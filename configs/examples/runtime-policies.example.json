@@ -1,0 +1,24 @@
+{
+  "policies": [
+    {
+      "service_name": "market",
+      "expected_revision": "0",
+      "parameters": {"enabled": false}
+    },
+    {
+      "service_name": "strategy",
+      "expected_revision": "0",
+      "parameters": {"enabled": false}
+    },
+    {
+      "service_name": "execution",
+      "expected_revision": "0",
+      "parameters": {"enabled": false}
+    },
+    {
+      "service_name": "portfolio",
+      "expected_revision": "0",
+      "parameters": {"enabled": false}
+    }
+  ]
+}

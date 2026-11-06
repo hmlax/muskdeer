@@ -35,15 +35,18 @@ func TestPublishedConfigWaitsForVisibilityWithoutChangingContent(t *testing.T) {
 			t.Fatalf("read data ID = %q; want test.json", dataID)
 		}
 		calls++
-		if calls <= 2 {
+		if calls == 1 {
 			return nil, &nacos.APIError{HTTPStatus: 404}
+		}
+		if calls == 2 {
+			return nil, &nacos.APIError{HTTPStatus: 409}
 		}
 		return expected, nil
 	})
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	if err := waitPublishedConfig(ctx, read, "test.json", expected); err != nil || calls != 3 {
-		t.Fatalf("config visibility = %v after %d reads; want success after two missing reads", err, calls)
+		t.Fatalf("config visibility = %v after %d reads; want success after missing/conflicted reads", err, calls)
 	}
 }
 
