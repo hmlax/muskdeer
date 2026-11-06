@@ -1805,3 +1805,11 @@ P01–P06公共运行层、模拟交易/OMS/投影、双行情、做市及实际
 - 新增五项真实 PostgreSQL integration/race：精确十进制/持久化元数据/副本隔离与幂等、并发版本竞争及批量回滚、活跃所有权和非法输入、true→false 写回与软删除拒绝、DDL 冲突整批回滚及校验和篡改拒绝。复用既有 infra-postgres 的隔离逻辑库，5.589 秒通过，资源按夹具清理；新模块纳入 make integration。
 - 定向 runtimeconfig race、80 Proto 与五 Wire 比较、格式/布局/合同、lint/govet 0 issues、规范正反样例、49 项 Python、全包构建及 integration 标签全包编译通过。初始外部测试包依赖安排及三处 lint 风格问题已修正；未降低断言或放宽现有交易门禁。
 - 本步仅完成数据库基础 API，尚未切换核心启动及删除 Nacos business 合同，继续 P28.2；不将部分基础设施完成宣称为整项完成。原有 50 处未提交业务修改保持，未修改当前运行数据库、Nacos 或交易容器。本步不重复运行完整全包 race/integration/e2e/soak。
+
+## 2026-11-06：新增十七品种启动准备——有界多品种容量
+
+- 用户要求启动 SOL、1000PEPE、ADA、AAVE、BNB、DOT、ARB、AVAX、DOGE、ETC、ETHFI、HYPE、OP、ONDO、SUI、SUN、WLD 的开发铺单及合成行情，并指定参考 Himalaya 的 `scripts/market_makers.py`（实际文件使用下划线）。只读 SDK 核验十七个 USDT 交易对均已注册、交易状态开放且当次健康正常；运行数据库目前仅配置 BTC/ETH，现有运行镜像仍是旧配置合同，尚未向新币发单。
+- 将离线导入、数据库启动读取和有限合成运行的容量统一为 `native.MaxProfiles=32`，覆盖现有双币加十七币；启动最多读取三十三条以检测超限，超过上限拒绝而不截断。此常量是工作器容量边界，不替代数据库里的账户、额度、数量、频率及轮次参数。
+- 新增 19/32/33 品种的 CLI 与合成合同回归；真实 PostgreSQL 验证三十二项整批导入、每项完整加载、新预算禁用、启动无写入、超限整批不写入及数据库超限拒绝。修改前 CLI/合成及实际导入均先失败；修改后四个相关包 race 通过，四项 PostgreSQL integration/race 通过（包 5.915 秒）。
+- 八十份 Proto 和五个 Wire 比较、合同、格式、布局、lint/govet 0 issues，以及四核心和 venueinit 构建通过。隔离归档的格式脚本因无 Git 文件清单拒绝，随后在工作区运行原格式/静态检查通过；没有降低门禁。原有五十五份未提交文件哈希保持。
+- 本步只交付容量基础；运行数据库、Nacos、原 SDK、账户资金及交易容器均未变。继续按参考工具读取账户和运行参数、完成数据库策略装配与配套部署，再记录真实挂单和合成发布；未运行完整 integration/e2e/soak，不将容量测试视为十七品种已启动。

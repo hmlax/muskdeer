@@ -31,10 +31,10 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout.AsDuration())
 	defer cancel()
 	var rows []*commonmodelv1.TradingAccountPolicy
-	if err := db.WithContext(op).Model(&commonmodelv1.TradingAccountPolicy{}).Where("delete_at IS NULL").Order("id").Limit(9).Find(&rows).Error; err != nil {
+	if err := db.WithContext(op).Model(&commonmodelv1.TradingAccountPolicy{}).Where("delete_at IS NULL").Order("id").Limit(native.MaxProfiles + 1).Find(&rows).Error; err != nil {
 		return nil, err
 	}
-	if len(rows) == 0 || len(rows) > 8 {
+	if len(rows) == 0 || len(rows) > native.MaxProfiles {
 		return nil, native.ErrInvalid
 	}
 	h := cfg.Venue

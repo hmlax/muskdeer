@@ -66,7 +66,7 @@ func ValidateSyntheticSettings(h *configv1.VenueRuntime) error {
 		return ErrInvalid
 	}
 	if !s.DevelopmentOnly || len(s.RunId) == 0 || len(s.RunId) > 20 || s.MaximumEvents == 0 || s.MaximumEvents > 1000 ||
-		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 || len(s.Profiles) > 8 {
+		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 || len(s.Profiles) > MaxProfiles {
 		return ErrInvalid
 	}
 	for _, c := range s.RunId {

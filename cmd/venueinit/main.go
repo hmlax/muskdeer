@@ -118,7 +118,7 @@ func readProfiles(path string) (*commonv1.VenueProfileImport, error) {
 		return nil, native.ErrInvalid
 	}
 	var input commonv1.VenueProfileImport
-	if protojson.Unmarshal(data, &input) != nil || len(input.Profiles) == 0 || len(input.Profiles) > 8 {
+	if protojson.Unmarshal(data, &input) != nil || len(input.Profiles) == 0 || len(input.Profiles) > native.MaxProfiles {
 		return nil, native.ErrInvalid
 	}
 	return &input, nil
