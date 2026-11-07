@@ -136,14 +136,54 @@ func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePol
 	if err != nil {
 		return err
 	}
+	_, snapshot, readErr := r.read(ctx, profile)
 	book, bookErr := r.book(ctx, profile.Symbol)
-	_, _, readErr := r.read(ctx, profile)
+	if bookErr != nil || readErr != nil {
+		return r.cancelManaged(ctx, profile)
+	}
+	return r.protectObserved(ctx, profile, quoteObservation{
+		lease:    lease,
+		book:     book,
+		snapshot: snapshot,
+	})
+}
+
+func (r *Runtime) protectObserved(ctx context.Context, profile *commonv1.VenueProfilePolicy, observation quoteObservation) error {
+	lease, book, snapshot := observation.lease, observation.book, observation.snapshot
 	budget, err := r.store.Budget(ctx, lease.Key.AccountID)
 	if err != nil {
 		return err
 	}
-	if bookErr != nil || readErr != nil || !budget.Enabled || r.plans[lease.Key.AccountID].Load() <= time.Now().UnixMilli() {
+	if !budget.Enabled || !r.currentQuotePlan(ctx, book, lease.Key.AccountID) {
 		return r.cancelManaged(ctx, profile)
+	}
+	if r.cfg.InstanceID > 0 {
+		if err := r.store.Observe(ctx, lease, snapshot); err != nil {
+			return err
+		}
+		if err := r.syncSnapshotBudget(ctx, lease, snapshot, book); err != nil {
+			return err
+		}
+		retained := &quoteRetention{orders: make(map[string]bool)}
+		bid, e1 := native.Value(book.Bids[0].Price, false, false)
+		ask, e2 := native.Value(book.Asks[0].Price, false, false)
+		if e1 != nil || e2 != nil || !bid.LessThan(ask) {
+			return r.cancelManaged(ctx, profile)
+		}
+		best := map[domain.Side]decimal.Decimal{
+			domain.SideBuy:  bid,
+			domain.SideSell: ask,
+		}
+		limit, err := native.Value(profile.MaximumOrderNotional, false, false)
+		if err != nil {
+			return err
+		}
+		for _, order := range snapshot.Orders {
+			if _, safe := bridgePrice(order, best, limit); safe {
+				retained.orders[order.OrderId] = true
+			}
+		}
+		return r.cancelObsolete(ctx, profile, lease, snapshot, retained, &executionvenuev1.QuoteResult{}, budget.CutoverCompleted)
 	}
 	_, err = r.refresh(ctx, profile, lease, book)
 	return err

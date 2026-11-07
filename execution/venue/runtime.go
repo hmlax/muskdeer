@@ -33,18 +33,19 @@ import (
 // Runtime owns the only SDK writer, with bounded local admission and durable fencing.
 type Runtime struct {
 	executionvenuev1.UnimplementedExecutionServer
-	db      *gorm.DB
-	owner   string
-	cfg     *venueconfig.RuntimeConfig
-	factory *rpcclient.Factory
-	logger  *logging.Logger
-	gateway gateway.Factory
-	store   *Store
-	leases  domain.LeaseRepository
-	client  *atomic.Pointer[gatewaySession]
-	closing *atomic.Bool
-	gates   map[string]chan struct{}
-	plans   map[string]*atomic.Int64
+	db        *gorm.DB
+	owner     string
+	cfg       *venueconfig.RuntimeConfig
+	factory   *rpcclient.Factory
+	logger    *logging.Logger
+	gateway   gateway.Factory
+	store     *Store
+	leases    domain.LeaseRepository
+	client    *atomic.Pointer[gatewaySession]
+	closing   *atomic.Bool
+	gates     map[string]chan struct{}
+	plans     map[string]*atomic.Int64
+	quotePlan atomic.Pointer[quotePlanAuthority]
 }
 
 // Dependencies are borrowed once; the worker owns only the adapter connection it dials.
@@ -328,7 +329,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	}
 	// A current validated plan protects retained, non-crossing bridge quotes
 	// while cancellation proofs settle; it does not authorize new submissions.
-	r.plans[lease.Key.AccountID].Store(book.ValidUntilMs)
+	r.rememberQuotePlan(profile, plan, book)
 	cycle := &quoteCycle{
 		profile:     profile,
 		bridgeSlots: r.cfg.BridgeSlots,
@@ -343,6 +344,9 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 		snapshot: snapshot,
 		retained: retained,
 		result:   result,
+	}
+	if r.cfg.InstanceID > 0 {
+		return r.maintainCurrentDepth(ctx, cycle, wanted, budget.CutoverCompleted)
 	}
 	var seedErr error
 	if budget.CutoverCompleted {

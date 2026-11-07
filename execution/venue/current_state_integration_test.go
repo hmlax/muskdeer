@@ -38,11 +38,81 @@ import (
 // The embedded interface deliberately fails if quotation tries a history RPC.
 type currentStateClient struct {
 	gateway.Client
-	snapshot *common.VenueSnapshot
+	snapshot      *common.VenueSnapshot
+	store         *Store
+	cancellations atomic.Int64
+	submissions   atomic.Uint64
+	minimumDepth  int
 }
 
 func (c *currentStateClient) Read(context.Context, gateway.Scope) (*gateway.Observation, error) {
-	return &gateway.Observation{Snapshot: proto.CloneOf(c.snapshot)}, nil
+	snapshot := proto.CloneOf(c.snapshot)
+	snapshot.StartedAtMs = time.Now().UnixMilli()
+	snapshot.ObservedAtMs = snapshot.StartedAtMs
+	snapshot.ValidUntilMs = snapshot.StartedAtMs + native.SnapshotAge.Milliseconds()
+	return &gateway.Observation{Snapshot: snapshot}, nil
+}
+
+func (c *currentStateClient) ReadOrders(context.Context, gateway.Scope) ([]*common.VenueOrder, error) {
+	return proto.CloneOf(c.snapshot).Orders, nil
+}
+
+func (c *currentStateClient) Cancel(ctx context.Context, admission gateway.CancelAdmission) error {
+	return c.store.WithCancellation(ctx, admission, func(context.Context) error {
+		c.cancellations.Add(1)
+		for _, order := range c.snapshot.Orders {
+			if order.OrderId == strconv.FormatUint(admission.Request.OrderID, 10) {
+				order.Status = native.StatusCanceled
+			}
+		}
+		if c.minimumDepth > 0 {
+			for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
+				levels := make(map[string]bool)
+				for _, order := range c.snapshot.Orders {
+					if order.Side == string(side) && native.Active(order.Status) {
+						levels[order.Price] = true
+					}
+				}
+				if len(levels) < c.minimumDepth {
+					return errors.New("replacement removed a live price level before another existed")
+				}
+			}
+		}
+		return nil
+	})
+}
+
+func (c *currentStateClient) Submit(ctx context.Context, request gateway.SubmitRequest) (*gateway.SubmitResult, error) {
+	digest, err := c.store.gateway.RequestDigest(request)
+	if err != nil {
+		return nil, err
+	}
+	var id uint64
+	err = c.store.WithSubmission(ctx, gateway.Admission{
+		IntentID: request.IntentID,
+		OwnerID:  request.OwnerID,
+		Epoch:    request.Epoch,
+		UserID:   request.UserID,
+		FundID:   request.FundID,
+		ClientID: request.ClientID,
+		Digest:   digest,
+	}, func(context.Context) error {
+		id = 5000 + c.submissions.Add(1)
+		c.snapshot.Orders = append(c.snapshot.Orders, &common.VenueOrder{
+			OrderId:          strconv.FormatUint(id, 10),
+			ClientId:         request.ClientID,
+			Side:             string(request.Side),
+			Price:            request.Price.String(),
+			Quantity:         request.Quantity.String(),
+			ExecutedQuantity: "0",
+			Status:           native.StatusOpen,
+		})
+		return nil
+	})
+	return &gateway.SubmitResult{
+		OrderID:  id,
+		ClientID: request.ClientID,
+	}, err
 }
 
 type currentStateTest struct {
@@ -270,10 +340,16 @@ func newCurrentStateTest(ctx context.Context, t *testing.T) *currentStateTest {
 		ObservedAtMs: now,
 		ValidUntilMs: now + native.SnapshotAge.Milliseconds(),
 	}
-	client := &currentStateClient{snapshot: snapshot}
+	client := &currentStateClient{
+		snapshot: snapshot,
+		store:    store,
+	}
 	runtime := &Runtime{
-		db:    db,
-		store: store,
+		db:     db,
+		store:  store,
+		owner:  owner,
+		leases: leases,
+		plans:  map[string]*atomic.Int64{account: {}},
 		cfg: &venueconfig.RuntimeConfig{
 			InstanceID: instance.Id,
 			Revision:   instance.Revision,
@@ -404,4 +480,5 @@ func TestCurrentStateQuotesWithoutHistoricalProofAndKeepsUnknownAudit(t *testing
 	if _, err := store.PrepareLive(ctx, lease, request, authority); !errors.Is(err, ErrRiskLimit) {
 		t.Fatalf("PrepareLive(expired current snapshot) = %v, want risk limit", err)
 	}
+	assertCurrentQuoteContinuity(ctx, t, setup)
 }
