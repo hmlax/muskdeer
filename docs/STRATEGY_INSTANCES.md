@@ -24,6 +24,8 @@
 
 `venueinit -instances FILE` 接受 `StrategyInstanceImport` 的 Proto JSON。每项完整指定 `template_id`、`template_revision`、`instance_key`、`market_data_source`、`account_id`、`instrument_id`、`desired_running`、`parameters` 和 `expected_revision`。策略类型和实现标识从明确选择的模板取得；如输入同时携带这两项则必须一致。先停止所有交易节点；有有效租约拒绝维护。相同输入不追加版本，冲突和任一非法尾项使整批回滚。已有账户/产品/算法身份不可变，参数更新追加不可变历史；变更已消耗的 WashTrade 运行参数必须使用新的显式运行身份，不能清零旧配额。
 
+已有合成槽的恢复校验使用执行器发布时相同的策略参数和 `venue_connection` 连接身份。四服务启动和实例维护命令均显式传入该基础连接，确保发布过数据后仍能按原槽号重启；不从连接配置补充业务参数，不改写旧摘要或重置批次。连接身份或运行参数与已消耗槽不一致时仍拒绝，不跳过摘要检查。
+
 `instancemigrate` 从 execution 的 Nacos 基础连接读取源库，以 `MUSKDEER_INSTANCE_TARGET_DATABASE` 指定同一 PostgreSQL 上的空目标库。命令没有核心进程参数，也不自动创建库。操作顺序为：停止生产者、受控撤单、停止四核心、等待租约过期、保存完整备份、运行迁移、核验目标、修改四服务基础连接、重启。
 
 新工作库只安装 13 张有用表：

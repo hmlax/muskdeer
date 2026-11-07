@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
@@ -36,9 +37,21 @@ type Instance struct {
 
 // Load reads every requested instance from one repeatable-read startup snapshot.
 // Missing current parameters never fall back to strategy_config_versions.
-func Load(ctx context.Context, db *gorm.DB) ([]*Instance, error) {
+// A supplied connection binds consumed tape identity to the same transport
+// fields that execution attaches before publication. It supplies no parameters.
+func Load(ctx context.Context, db *gorm.DB, connections ...*configv1.VenueConnection) ([]*Instance, error) {
 	if err := validContext(ctx); err != nil || db == nil {
 		return nil, ErrInvalid
+	}
+	if len(connections) > 1 {
+		return nil, ErrInvalid
+	}
+	var connection *configv1.VenueConnection
+	if len(connections) == 1 {
+		if connections[0].GetTarget() == "" || connections[0].GetTokenEnv() == "" {
+			return nil, ErrInvalid
+		}
+		connection = proto.CloneOf(connections[0])
 	}
 	var result []*Instance
 	err := fresh(ctx, db).Transaction(func(tx *gorm.DB) error {
@@ -69,7 +82,7 @@ func Load(ctx context.Context, db *gorm.DB) ([]*Instance, error) {
 					return ErrInvalid
 				}
 				runs[key] = true
-				if err := resumeTape(ctx, tx, instance); err != nil {
+				if err := resumeTape(ctx, tx, instance, connection); err != nil {
 					return err
 				}
 			}
@@ -154,7 +167,7 @@ func fromRow(row *strategymodelv1.StrategyInstance, template *strategymodelv1.St
 	}, nil
 }
 
-func resumeTape(ctx context.Context, db *gorm.DB, instance *Instance) error {
+func resumeTape(ctx context.Context, db *gorm.DB, instance *Instance, connection *configv1.VenueConnection) error {
 	p := instance.Parameters.WashTrade
 	var state struct {
 		Count    int64
@@ -174,6 +187,9 @@ func resumeTape(ctx context.Context, db *gorm.DB, instance *Instance) error {
 		settings, err := instance.Settings()
 		if err != nil {
 			return err
+		}
+		if connection != nil {
+			settings.Venue.Target, settings.Venue.TokenEnv = connection.Target, connection.TokenEnv
 		}
 		digest, err := native.SyntheticPolicyDigest(settings.Venue)
 		if err != nil || state.Digest != digest {

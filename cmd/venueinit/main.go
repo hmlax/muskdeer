@@ -198,5 +198,5 @@ func runInstances(ctx context.Context, path string) (result error) {
 		return err
 	}
 	defer func() { result = errors.Join(result, db.Close()) }()
-	return instanceconfig.Import(ctx, db.GORM(), &input)
+	return instanceconfig.Import(ctx, db.GORM(), &input, cfg.VenueConnection)
 }

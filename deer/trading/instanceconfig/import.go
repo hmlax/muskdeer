@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm/clause"
 
 	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
+	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodel "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	model "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
@@ -26,7 +27,7 @@ const (
 
 // Import applies a complete offline batch atomically. It neither enables funds
 // nor resets tape quotas, changes another running snapshot, or sends SDK calls.
-func Import(ctx context.Context, db *gorm.DB, input *common.StrategyInstanceImport) error {
+func Import(ctx context.Context, db *gorm.DB, input *common.StrategyInstanceImport, connections ...*configv1.VenueConnection) error {
 	if validContext(ctx) != nil || db == nil || len(input.GetInstances()) == 0 {
 		return ErrInvalid
 	}
@@ -63,7 +64,7 @@ func Import(ctx context.Context, db *gorm.DB, input *common.StrategyInstanceImpo
 				return err
 			}
 		}
-		_, err = Load(ctx, tx)
+		_, err = Load(ctx, tx, connections...)
 		return err
 	})
 }
