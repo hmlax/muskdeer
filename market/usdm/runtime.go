@@ -28,14 +28,15 @@ import (
 // Runtime publishes only its selected, currently owned native futures books.
 type Runtime struct {
 	marketvenuev1.UnimplementedMarketServer
-	db     *gorm.DB
-	owner  string
-	cfg    *venueconfig.RuntimeConfig
-	leases domain.LeaseRepository
-	mu     sync.RWMutex
-	books  map[string]*commonv1.VenueBook
-	trades map[string]*commonv1.VenueTrade
-	logger *logging.Logger
+	children map[string]*Runtime
+	db       *gorm.DB
+	owner    string
+	cfg      *venueconfig.RuntimeConfig
+	leases   domain.LeaseRepository
+	mu       sync.RWMutex
+	books    map[string]*commonv1.VenueBook
+	trades   map[string]*commonv1.VenueTrade
+	logger   *logging.Logger
 }
 
 // NewRuntime borrows dependencies without starting sockets or tasks.
@@ -66,6 +67,13 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
 
 // Workers has one independently owned session per configured instrument.
 func (r *Runtime) Workers() []deer.Worker {
+	if r.children != nil {
+		var workers []deer.Worker
+		for _, key := range sortedDependencyKeys(r.children) {
+			workers = append(workers, r.children[key].Workers()...)
+		}
+		return workers
+	}
 	var result []deer.Worker
 	for _, profile := range r.cfg.Venue.Profiles {
 		result = append(result, deer.Worker{
@@ -86,6 +94,12 @@ func (r *Runtime) Workers() []deer.Worker {
 
 // GetBook verifies both publication freshness and retained database ownership.
 func (r *Runtime) GetBook(ctx context.Context, request *marketvenuev1.BookRequest) (*commonv1.VenueBook, error) {
+	if r.children != nil {
+		if child := r.children[request.GetSymbol()]; child != nil {
+			return child.GetBook(ctx, request)
+		}
+		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
+	}
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}

@@ -31,6 +31,9 @@ type Strategy struct{ workers []deer.Worker }
 
 // NewStrategy assembles independent strategy workers without management delivery.
 func NewStrategy(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Strategy, error) {
+	if cfg.GetVenueConnection() != nil {
+		return NewInstances(ctx, cfg, owner)
+	}
 	if cfg.GetName() != "strategy" || cfg.GetBusiness().GetStrategy().GetManagementEnabled() || cfg.GetBusiness().GetStrategy().GetControlEnabled() {
 		return nil, runtimeconfig.ErrInvalidConfig
 	}
@@ -65,7 +68,10 @@ func AssembleWorkers(ctx context.Context, db *gorm.DB, owner *deer.Deer, incarna
 	if len(accounts) == 0 {
 		return nil, nil
 	}
-	for _, entity := range []any{&executionmodelv1.SimulatorAccount{}, &commonmodelv1.AccountBudget{}} {
+	for _, entity := range []any{
+		&executionmodelv1.SimulatorAccount{},
+		&commonmodelv1.AccountBudget{},
+	} {
 		var count int64
 		if err := db.WithContext(ctx).Model(entity).Where("account_id IN ? AND delete_at IS NULL", accounts).Count(&count).Error; err != nil {
 			return nil, err

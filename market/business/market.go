@@ -34,6 +34,9 @@ type Market struct {
 
 // NewMarket assembles the market service without starting tasks.
 func NewMarket(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Market, error) {
+	if cfg.GetVenueConnection() != nil {
+		return NewInstances(ctx, cfg, owner)
+	}
 	if cfg.GetName() != "market" {
 		return nil, runtimeconfig.ErrInvalidConfig
 	}

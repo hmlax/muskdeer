@@ -23,6 +23,11 @@ type RuntimeConfig struct {
 	Venue               *commonv1.VenuePolicy
 	ReplacementFraction decimal.Decimal
 	BridgeSlots         uint32
+	InstanceID          int64
+	Revision            int64
+	Template            domain.StrategyTemplate
+	ResumeSequence      uint32
+	Grid                *commonv1.GridParameters
 }
 
 // LoadRuntime borrows the existing pool and rejects missing or invalid profiles.

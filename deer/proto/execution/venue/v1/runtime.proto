@@ -19,6 +19,8 @@ message QuotePlan {
   muskdeer.common.v1.VenueAuthority strategy = 3;
   repeated muskdeer.common.v1.VenueTarget targets = 4;
   string request_id = 5;
+  int64 strategy_instance_id = 6;
+  int64 strategy_revision = 7;
 }
 
 message QuoteResult {

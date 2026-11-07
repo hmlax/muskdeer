@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package muskdeer.common.v1;
+
+import "deer/proto/common/v1/strategy_parameters.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
+
+// StrategyInstanceParameters is the complete current JSONB configuration of
+// one strategy_instances row. Exactly one algorithm is selected by validation.
+// Concrete fields keep GORM JSON serialization typed, including on reads.
+message StrategyInstanceParameters {
+  uint32 schema_version = 1;
+  StrategyExecutionParameters execution = 2;
+  DepthMakerParameters market_maker = 3;
+  GridParameters grid = 4;
+  WashTradeParameters wash_trade = 5;
+}
+
+message StrategyExecutionParameters {
+  int64 poll_interval_ms = 1;
+  int64 operation_timeout_ms = 2;
+  int64 lease_ttl_ms = 3;
+  uint32 leverage = 4;
+}
+
+message DepthMakerParameters {
+  uint32 depth = 1;
+  string quantity_fraction = 2;
+  string replacement_fraction = 3;
+  uint32 bridge_slots = 4;
+}
+
+enum WashTradeMode {
+  WASH_TRADE_MODE_UNSPECIFIED = 0;
+  WASH_TRADE_MODE_BOOK = 1;
+  WASH_TRADE_MODE_AGG_TRADE = 2;
+}
+
+// WashTrade publishes finite development market data, without financial fills.
+message WashTradeParameters {
+  bool development_only = 1;
+  WashTradeMode mode = 2;
+  string run_id = 3;
+  int64 interval_ms = 4;
+  uint32 maximum_events = 5;
+  string quantity = 6;
+  string maximum_notional = 7;
+  string quantity_fraction = 8;
+}
+
+// StrategyInstanceImport is explicit offline maintenance, not runtime config.
+message StrategyInstanceImport {
+  repeated StrategyInstanceInput instances = 1;
+}
+
+message StrategyInstanceInput {
+  string instance_key = 1;
+  string strategy_type = 2;
+  string implementation = 3;
+  string market_data_source = 4;
+  string account_id = 5;
+  int64 instrument_id = 6;
+  bool desired_running = 7;
+  StrategyInstanceParameters parameters = 8;
+  int64 expected_revision = 9;
+  int64 template_id = 10;
+  int64 template_revision = 11;
+}
+
+// StrategyTemplateInputs declares actual data dependencies. Aggregate trades
+// are required only for the indicated WashTrade mode, without source fallback.
+message StrategyTemplateInputs {
+  bool order_book = 1;
+  bool account = 2;
+  WashTradeMode trades_when_wash_mode = 3;
+}
+
+// StrategyTemplateContract identifies concrete Proto fields used by a template.
+// Instance parameters are complete values, not an implicit defaults overlay.
+message StrategyTemplateContract {
+  uint32 schema_version = 1;
+  string execution_message = 2;
+  string algorithm_message = 3;
+  repeated string execution_fields = 4;
+  repeated string algorithm_fields = 5;
+}

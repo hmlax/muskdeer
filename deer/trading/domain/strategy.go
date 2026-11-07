@@ -1,12 +1,13 @@
 package domain
 
-// StrategyTemplate identifies the two initial, explicitly configured algorithms.
+// StrategyTemplate identifies an explicitly configured strategy algorithm.
 type StrategyTemplate string
 
 // Supported strategy template identifiers.
 const (
 	StrategyTemplateMarketMaker StrategyTemplate = "market_maker"
 	StrategyTemplateGrid        StrategyTemplate = "grid"
+	StrategyTemplateWashTrade   StrategyTemplate = "wash_trade"
 )
 
 // StrategyState is persisted independently of the user's desired running flag.

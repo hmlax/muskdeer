@@ -62,7 +62,7 @@ def run() -> int:
     from infra import Infra
     with Infra() as infra:
         environment = infra.environment
-        for package in ['./deer/persistenceprobe', './deer/infrastructureprobe', './deer/migrate/runtimepolicy']:
+        for package in ['./deer/persistenceprobe', './deer/infrastructureprobe', './deer/migrate/runtimepolicy', './deer/migrate/instancemove']:
             result = subprocess.run([
                 sys.executable, str(ROOT / 'scripts/go.py'), 'test', '-tags=integration',
                 '-race', '-count=1', '-v', package,

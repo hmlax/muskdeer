@@ -34,6 +34,9 @@ type Portfolio struct {
 
 // NewPortfolio assembles the projection service without starting tasks.
 func NewPortfolio(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Portfolio, error) {
+	if cfg.GetVenueConnection() != nil {
+		return NewInstances(ctx, cfg, owner)
+	}
 	if cfg.GetName() != "portfolio" {
 		return nil, runtimeconfig.ErrInvalidConfig
 	}

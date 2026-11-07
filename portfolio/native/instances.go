@@ -1,0 +1,62 @@
+package native
+
+import (
+	"context"
+	"maps"
+	"slices"
+
+	"github.com/hmlax/muskdeer/deer/logging"
+	"github.com/hmlax/muskdeer/deer/rpcclient"
+	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
+	"github.com/hmlax/muskdeer/deer/trading/native"
+	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"gorm.io/gorm"
+)
+
+func sortedDependencyKeys[V any](values map[string]V) []string {
+	return slices.Sorted(maps.Keys(values))
+}
+
+// NewInstances describes only the account observations needed by algorithms.
+func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*instanceconfig.Instance, factory *rpcclient.Factory, logger *logging.Logger) (*Runtime, error) {
+	if ctx == nil {
+		return nil, instanceconfig.ErrInvalid
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	leases, err := repository.NewLeases(db)
+	if err != nil {
+		return nil, err
+	}
+	parent := &Runtime{children: make(map[string]*Runtime)}
+	for _, instance := range instances {
+		if !instance.Requirements().Account {
+			continue
+		}
+		settings, err := instance.Settings()
+		if err != nil {
+			return nil, err
+		}
+		key := native.ScopeKey(instance.Profile.UserId, instance.Profile.FundId)
+		if child := parent.children[key]; child != nil {
+			if child.cfg.Venue.Profiles[0].Symbol != instance.Profile.Symbol {
+				return nil, instanceconfig.ErrInvalid
+			}
+			child.cfg.OperationTimeout = max(child.cfg.OperationTimeout, settings.OperationTimeout)
+			if settings.Venue.LeaseTtl.AsDuration() > child.cfg.Venue.LeaseTtl.AsDuration() {
+				child.cfg.Venue.LeaseTtl = settings.Venue.LeaseTtl
+			}
+			continue
+		}
+		parent.children[key] = &Runtime{
+			db:      db,
+			owner:   owner,
+			cfg:     settings,
+			factory: factory,
+			leases:  leases,
+			logger:  logger,
+		}
+	}
+	return parent, nil
+}

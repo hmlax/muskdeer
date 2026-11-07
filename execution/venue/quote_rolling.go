@@ -40,7 +40,7 @@ func retainRollingOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv
 	}
 	var candidates []rollingQuote
 	for _, order := range snapshot.Orders {
-		if retained.orders[order.OrderId] || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
+		if retained.orders[order.OrderId] || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(profile)) {
 			continue
 		}
 		price, safe := bridgePrice(order, best, limit)

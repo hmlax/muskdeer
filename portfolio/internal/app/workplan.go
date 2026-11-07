@@ -32,12 +32,16 @@ func (p *WorkPlan) register(_ context.Context, _ *deer.Deer, registrar grpc.Serv
 func NewWorkPlan(cfg *Config) *WorkPlan { return &WorkPlan{config: cfg} }
 
 func (p *WorkPlan) configure(ctx context.Context, owner *deer.Deer) ([]deer.Worker, error) {
-	cfg, err := runtimeconfig.ResolveDatabasePolicy(ctx, p.config.service, owner)
-	if err != nil {
-		return nil, err
+	cfg := p.config.service
+	if cfg.VenueConnection == nil {
+		var err error
+		cfg, err = runtimeconfig.ResolveDatabasePolicy(ctx, cfg, owner)
+		if err != nil {
+			return nil, err
+		}
 	}
 	p.configured = true
-	if !cfg.GetBusiness().GetEnabled() {
+	if cfg.VenueConnection == nil && !cfg.GetBusiness().GetEnabled() {
 		return nil, nil
 	}
 	runtime, err := business.NewPortfolio(ctx, cfg, owner)

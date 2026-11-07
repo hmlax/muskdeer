@@ -4,7 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"log/slog"
+	"strconv"
 	"strings"
+
+	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 
 	"gorm.io/gorm"
 
@@ -29,12 +32,39 @@ func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.Bus
 	if err != nil {
 		return nil, err
 	}
+	return configuredWorkers(db, owner, cfg, factory, logger)
+}
+
+// InstanceWorkers dispatches independent immutable instance parameters.
+func InstanceWorkers(db *gorm.DB, owner string, instances []*instanceconfig.Instance, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
+	var result []deer.Worker
+	for _, instance := range instances {
+		settings, err := instance.Settings()
+		if err != nil {
+			return nil, err
+		}
+		workers, err := configuredWorkers(db, owner, settings, factory, logger)
+		if err != nil {
+			return nil, err
+		}
+		for _, worker := range workers {
+			worker.Name += "." + strconv.FormatInt(instance.ID, 10)
+			result = append(result, worker)
+		}
+	}
+	return result, nil
+}
+
+func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
 	leases, err := repository.NewLeases(db)
 	if err != nil {
 		return nil, err
 	}
 	var workers []deer.Worker
 	for _, profile := range cfg.Venue.Profiles {
+		if cfg.Template == domain.StrategyTemplateWashTrade {
+			continue
+		}
 		workers = append(workers, deer.Worker{
 			Name: "strategy.native." + strings.ToLower(profile.Symbol),
 			Run: func(ctx context.Context) error {
@@ -88,7 +118,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	targets, err := BuildTargets(cfg.Venue, profile, book, snapshot)
+	targets, err := instanceTargets(cfg, profile, book, snapshot)
 	if err != nil {
 		return err
 	}
@@ -104,11 +134,13 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 		return err
 	}
 	_, err = executionvenuev1.NewExecutionClient(execution).Reconcile(ctx, &executionvenuev1.QuotePlan{
-		Scope:     values.Scope(profile),
-		Book:      book,
-		Strategy:  values.Authority(token),
-		Targets:   targets,
-		RequestId: rand.Text(),
+		Scope:              values.Scope(profile),
+		Book:               book,
+		Strategy:           values.Authority(token),
+		Targets:            targets,
+		RequestId:          rand.Text(),
+		StrategyInstanceId: cfg.InstanceID,
+		StrategyRevision:   cfg.Revision,
 	})
 	return err
 }

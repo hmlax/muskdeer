@@ -39,6 +39,8 @@ message VenueOrderIntent {
   int64 source_until = 27 [(tagger.tags) = "gorm:\"column:source_until;type:bigint;not null\""];
   string historical_approval_reference = 28 [(tagger.tags) = "gorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\""];
   muskdeer.common.v1.VenueSnapshot historical_snapshot = 29 [(tagger.tags) = "gorm:\"column:historical_snapshot;type:jsonb;serializer:json\""];
+  optional int64 strategy_instance_id = 30 [(tagger.tags) = "gorm:\"column:strategy_instance_id;type:bigint;default:(-)\""];
+  optional int64 strategy_revision = 31 [(tagger.tags) = "gorm:\"column:strategy_revision;type:bigint;default:(-)\""];
 }
 
 // VenueCancellation separates a cancel acknowledgement from terminal proof.

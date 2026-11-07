@@ -10,10 +10,10 @@ import (
 )
 
 // MessageGridOutsideRange is a safe protection reason without market payloads.
-const MessageGridOutsideRange = "selected reference is outside configured grid range"
+const MessageGridOutsideRange = domain.MessageGridReferenceOutside
 
 // ErrGridOutsideRange requires protection until the selected reference returns.
-var ErrGridOutsideRange = errors.New(MessageGridOutsideRange)
+var ErrGridOutsideRange = domain.ErrGridReferenceOutside
 
 // GridInput describes a funded spot grid using one explicit market reference.
 type GridInput struct {
@@ -55,11 +55,12 @@ func Grid(input GridInput) ([]Target, error) {
 	}
 	remaining := p.TotalBudget
 	result := make([]Target, 0, int(p.GridCount))
-	for level := range int(p.GridCount) {
-		price, side := gridLevel(input, level)
-		if price.IsZero() {
-			continue
-		}
+	prices, err := domain.GridPrices(p, input.Instrument.PriceTick, mid, input.LocalBid, input.LocalAsk)
+	if err != nil {
+		return nil, err
+	}
+	for _, level := range prices {
+		price, side := level.Price, level.Side
 		quantity := allocateAt(common, price, side, decimal.Min(p.PerOrderNotional, remaining), &funds)
 		if quantity.IsZero() {
 			continue
@@ -67,7 +68,7 @@ func Grid(input GridInput) ([]Target, error) {
 		remaining = remaining.Sub(price.Mul(quantity))
 		result = append(result, Target{
 			Side:        side,
-			Level:       level,
+			Level:       level.Level,
 			Price:       price,
 			Quantity:    quantity,
 			TimeInForce: domain.TimeInForcePostOnly,
@@ -78,7 +79,13 @@ func Grid(input GridInput) ([]Target, error) {
 
 func validateGrid(input GridInput, common Input) error {
 	p := input.Parameters
-	for _, value := range []decimal.Decimal{p.LowerPrice, p.UpperPrice, p.TotalBudget, p.PerOrderNotional, p.InventoryLimit} {
+	for _, value := range []decimal.Decimal{
+		p.LowerPrice,
+		p.UpperPrice,
+		p.TotalBudget,
+		p.PerOrderNotional,
+		p.InventoryLimit,
+	} {
 		if !domain.FixedDecimal(value, 20, 18, false) {
 			return ErrInvalidInput
 		}
@@ -110,29 +117,4 @@ func gridMarketInput(input GridInput) Input {
 		LocalAsk:       input.LocalAsk,
 		Now:            input.Now,
 	}
-}
-
-func gridLevel(input GridInput, level int) (decimal.Decimal, domain.Side) {
-	p := input.Parameters
-	divisor := decimal.NewFromInt(int64(p.GridCount - 1))
-	numerator := p.LowerPrice.Mul(divisor).Add(p.UpperPrice.Sub(p.LowerPrice).Mul(decimal.NewFromInt(int64(level))))
-	side := domain.SideBuy
-	comparison := numerator.Cmp(input.Market.Reading.Mid.Mul(divisor))
-	if comparison == 0 {
-		return decimal.Zero, side
-	}
-	if comparison > 0 {
-		side = domain.SideSell
-	}
-	lots, remainder := numerator.QuoRem(divisor.Mul(input.Instrument.PriceTick), 0)
-	if side == domain.SideSell && !remainder.IsZero() {
-		lots = lots.Add(decimal.NewFromInt(1))
-	}
-	price := lots.Mul(input.Instrument.PriceTick)
-	if price.LessThan(p.LowerPrice) || price.GreaterThan(p.UpperPrice) || !domain.FixedDecimal(price, 20, 18, false) ||
-		side == domain.SideBuy && input.LocalAsk.IsPositive() && !price.LessThan(input.LocalAsk) ||
-		side == domain.SideSell && input.LocalBid.IsPositive() && !price.GreaterThan(input.LocalBid) {
-		return decimal.Zero, side
-	}
-	return price, side
 }

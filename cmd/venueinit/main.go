@@ -16,9 +16,11 @@ import (
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
 	policymigrate "github.com/hmlax/muskdeer/deer/migrate/runtimepolicy"
+	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
 	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
+	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
@@ -35,19 +37,26 @@ const (
 func main() { os.Exit(command()) }
 
 func command() int {
+	instancesFile := flag.String("instances", "", "import complete independent strategy instances while all trading services are stopped")
 	enable := flag.Bool("enable", false, "explicitly enable reviewed development SDK budgets")
 	schemaOnly := flag.Bool("schema-only", false, "migrate the SDK extension without changing fund budgets")
 	strategiesFile := flag.String("strategies", "", "import reviewed versioned venue strategies while all trading services are stopped")
 	profilesFile := flag.String("profiles", "", "explicitly import reviewed database business profiles while services are stopped")
 	flag.Parse()
 	modes := 0
-	for _, selected := range []bool{*enable, *schemaOnly, *profilesFile != "", *strategiesFile != ""} {
+	for _, selected := range []bool{
+		*instancesFile != "",
+		*enable,
+		*schemaOnly,
+		*profilesFile != "",
+		*strategiesFile != "",
+	} {
 		if selected {
 			modes++
 		}
 	}
 	if modes != 1 || flag.NArg() != 0 {
-		fmt.Fprintln(os.Stderr, "venueinit requires exactly one of -enable, -schema-only, -profiles FILE or -strategies FILE")
+		fmt.Fprintln(os.Stderr, "venueinit requires exactly one of -enable, -schema-only, -profiles FILE -strategies FILE or -instances FILE")
 		return 2
 	}
 	var strategies *commonv1.VenueStrategyImport
@@ -76,6 +85,14 @@ func command() int {
 	defer stop()
 	ctx, cancel := context.WithTimeout(signals, 30*time.Second)
 	defer cancel()
+	if *instancesFile != "" {
+		if err := runInstances(ctx, *instancesFile); err != nil {
+			fmt.Fprintln(os.Stderr, "strategy instance import failed")
+			return 1
+		}
+		fmt.Println("Independent strategy instances imported; restart services to apply")
+		return 0
+	}
 	if err := run(ctx, *enable, profiles, strategies); err != nil {
 		fmt.Fprintln(os.Stderr, "SDK initialization failed")
 		return 1
@@ -105,6 +122,9 @@ func run(ctx context.Context, enable bool, profiles *commonv1.VenueProfileImport
 	defer func() { result = errors.Join(result, database.Close()) }()
 	if err := migrate.CheckCurrent(ctx, database.GORM()); err != nil {
 		return err
+	}
+	if schemaformat.Check(ctx, database.GORM()) == nil {
+		return native.ErrInvalid
 	}
 	if err := policymigrate.Apply(ctx, database.GORM()); err != nil {
 		return err
@@ -158,4 +178,25 @@ func readProfiles(path string) (*commonv1.VenueProfileImport, error) {
 		return nil, native.ErrInvalid
 	}
 	return &input, nil
+}
+
+func runInstances(ctx context.Context, path string) (result error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var input commonv1.StrategyInstanceImport
+	if err := protojson.Unmarshal(data, &input); err != nil {
+		return err
+	}
+	cfg, err := deer.LoadNacosConfig(ctx, "execution")
+	if err != nil {
+		return err
+	}
+	db, err := postgres.New(ctx, cfg.Postgres, "instance-maintenance")
+	if err != nil {
+		return err
+	}
+	defer func() { result = errors.Join(result, db.Close()) }()
+	return instanceconfig.Import(ctx, db.GORM(), &input)
 }

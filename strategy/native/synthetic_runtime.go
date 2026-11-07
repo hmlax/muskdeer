@@ -29,7 +29,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 		workers = append(workers, deer.Worker{
 			Name: values.SyntheticWorker + profile.Symbol,
 			Run: func(ctx context.Context) error {
-				for sequence := uint32(0); sequence < cfg.Venue.SyntheticTape.MaximumEvents && ctx.Err() == nil; {
+				for sequence := cfg.ResumeSequence; sequence < cfg.Venue.SyntheticTape.MaximumEvents && ctx.Err() == nil; {
 					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
 					err := syntheticTick(op, db, leases, factory, owner, cfg, profile.Symbol, sequence)
 					cancel()
@@ -73,11 +73,13 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 		return err
 	}
 	proposal := &commonv1.SyntheticTapePlan{
-		RunId:    cfg.Venue.SyntheticTape.RunId,
-		Symbol:   symbol,
-		Sequence: sequence,
-		Book:     book,
-		Strategy: values.Authority(token),
+		RunId:              cfg.Venue.SyntheticTape.RunId,
+		Symbol:             symbol,
+		Sequence:           sequence,
+		StrategyInstanceId: cfg.InstanceID,
+		StrategyRevision:   cfg.Revision,
+		Book:               book,
+		Strategy:           values.Authority(token),
 	}
 	if cfg.Venue.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
 		proposal.SourceTrade, err = marketvenuev1.NewMarketClient(market).GetTrade(ctx, &marketvenuev1.TradeRequest{Symbol: symbol})

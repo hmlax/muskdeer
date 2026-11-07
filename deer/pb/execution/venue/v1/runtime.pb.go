@@ -23,14 +23,16 @@ const (
 )
 
 type QuotePlan struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Scope         *v1.VenueScope         `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
-	Book          *v1.VenueBook          `protobuf:"bytes,2,opt,name=book,proto3" json:"book,omitempty"`
-	Strategy      *v1.VenueAuthority     `protobuf:"bytes,3,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Targets       []*v1.VenueTarget      `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
-	RequestId     string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Scope              *v1.VenueScope         `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
+	Book               *v1.VenueBook          `protobuf:"bytes,2,opt,name=book,proto3" json:"book,omitempty"`
+	Strategy           *v1.VenueAuthority     `protobuf:"bytes,3,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	Targets            []*v1.VenueTarget      `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
+	RequestId          string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	StrategyInstanceId int64                  `protobuf:"varint,6,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
+	StrategyRevision   int64                  `protobuf:"varint,7,opt,name=strategy_revision,json=strategyRevision,proto3" json:"strategy_revision,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *QuotePlan) Reset() {
@@ -96,6 +98,20 @@ func (x *QuotePlan) GetRequestId() string {
 		return x.RequestId
 	}
 	return ""
+}
+
+func (x *QuotePlan) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *QuotePlan) GetStrategyRevision() int64 {
+	if x != nil {
+		return x.StrategyRevision
+	}
+	return 0
 }
 
 type QuoteResult struct {
@@ -170,14 +186,16 @@ var File_deer_proto_execution_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a$deer/proto/common/v1/synthetic.proto\"\x8e\x02\n" +
+	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a$deer/proto/common/v1/synthetic.proto\"\xed\x02\n" +
 	"\tQuotePlan\x124\n" +
 	"\x05scope\x18\x01 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x121\n" +
 	"\x04book\x18\x02 \x01(\v2\x1d.muskdeer.common.v1.VenueBookR\x04book\x12>\n" +
 	"\bstrategy\x18\x03 \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\bstrategy\x129\n" +
 	"\atargets\x18\x04 \x03(\v2\x1f.muskdeer.common.v1.VenueTargetR\atargets\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x05 \x01(\tR\trequestId\"u\n" +
+	"request_id\x18\x05 \x01(\tR\trequestId\x120\n" +
+	"\x14strategy_instance_id\x18\x06 \x01(\x03R\x12strategyInstanceId\x12+\n" +
+	"\x11strategy_revision\x18\a \x01(\x03R\x10strategyRevision\"u\n" +
 	"\vQuoteResult\x12\x16\n" +
 	"\x06placed\x18\x01 \x01(\rR\x06placed\x12\x1c\n" +
 	"\tcancelled\x18\x02 \x01(\rR\tcancelled\x12\x1a\n" +

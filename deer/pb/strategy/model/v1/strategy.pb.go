@@ -46,9 +46,17 @@ type StrategyInstance struct {
 	RuntimeOwnerId         string                 `protobuf:"bytes,18,opt,name=runtime_owner_id,json=runtimeOwnerId,proto3" json:"runtime_owner_id,omitempty" gorm:"column:runtime_owner_id;type:varchar(128);not null;default:''"`
 	RuntimeOwnerEpoch      int64                  `protobuf:"varint,19,opt,name=runtime_owner_epoch,json=runtimeOwnerEpoch,proto3" json:"runtime_owner_epoch,omitempty" gorm:"column:runtime_owner_epoch;type:bigint;not null;default:0"`
 	// Durable requested target, independent of runtime recovery/ownership.
-	DesiredState  string `protobuf:"bytes,20,opt,name=desired_state,json=desiredState,proto3" json:"desired_state,omitempty" gorm:"column:desired_state;type:varchar(16);not null;default:''"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	DesiredState string `protobuf:"bytes,20,opt,name=desired_state,json=desiredState,proto3" json:"desired_state,omitempty" gorm:"column:desired_state;type:varchar(16);not null;default:''"`
+	// Current configuration is authoritative here. Legacy version rows are audit.
+	Parameters     *v1.StrategyInstanceParameters `protobuf:"bytes,21,opt,name=parameters,proto3" json:"parameters,omitempty" gorm:"column:parameters;type:jsonb;serializer:json;default:(-)"`
+	Implementation string                         `protobuf:"bytes,22,opt,name=implementation,proto3" json:"implementation,omitempty" gorm:"column:implementation;type:varchar(64);default:(-)"`
+	// Preserves an existing finite tape run's policy identity across migration.
+	TapePolicyDigest     string `protobuf:"bytes,23,opt,name=tape_policy_digest,json=tapePolicyDigest,proto3" json:"tape_policy_digest,omitempty" gorm:"column:tape_policy_digest;type:varchar(64);default:(-)"`
+	TapeParametersDigest string `protobuf:"bytes,24,opt,name=tape_parameters_digest,json=tapeParametersDigest,proto3" json:"tape_parameters_digest,omitempty" gorm:"column:tape_parameters_digest;type:varchar(64);default:(-)"`
+	TemplateId           int64  `protobuf:"varint,25,opt,name=template_id,json=templateId,proto3" json:"template_id,omitempty" gorm:"column:template_id;type:bigint;default:(-);index:idx_strategy_template_instance"`
+	TemplateRevision     int64  `protobuf:"varint,26,opt,name=template_revision,json=templateRevision,proto3" json:"template_revision,omitempty" gorm:"column:template_revision;type:bigint;default:(-)"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *StrategyInstance) Reset() {
@@ -221,24 +229,69 @@ func (x *StrategyInstance) GetDesiredState() string {
 	return ""
 }
 
+func (x *StrategyInstance) GetParameters() *v1.StrategyInstanceParameters {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
+func (x *StrategyInstance) GetImplementation() string {
+	if x != nil {
+		return x.Implementation
+	}
+	return ""
+}
+
+func (x *StrategyInstance) GetTapePolicyDigest() string {
+	if x != nil {
+		return x.TapePolicyDigest
+	}
+	return ""
+}
+
+func (x *StrategyInstance) GetTapeParametersDigest() string {
+	if x != nil {
+		return x.TapeParametersDigest
+	}
+	return ""
+}
+
+func (x *StrategyInstance) GetTemplateId() int64 {
+	if x != nil {
+		return x.TemplateId
+	}
+	return 0
+}
+
+func (x *StrategyInstance) GetTemplateRevision() int64 {
+	if x != nil {
+		return x.TemplateRevision
+	}
+	return 0
+}
+
 // StrategyConfigVersion stores immutable version/source identity and typed
 // template parameters. JSONB is a concrete storage boundary, never an untyped
 // payload. Schema zero identifies legacy metadata-only versions, not runnable.
 type StrategyConfigVersion struct {
-	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Id                      int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
-	CreateAt                int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
-	UpdateAt                int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
-	DeleteAt                *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
-	InstanceId              int64                  `protobuf:"varint,5,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty" gorm:"column:instance_id;type:bigint;not null;uniqueIndex:uk_strategy_config_instance_version"`
-	Version                 int64                  `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version;type:bigint;not null;uniqueIndex:uk_strategy_config_instance_version"`
-	MarketDataSource        string                 `protobuf:"bytes,7,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty" gorm:"column:market_data_source;type:varchar(32);not null"`
-	CodeVersion             string                 `protobuf:"bytes,8,opt,name=code_version,json=codeVersion,proto3" json:"code_version,omitempty" gorm:"column:code_version;type:varchar(64);not null"`
-	CreatedBy               string                 `protobuf:"bytes,9,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty" gorm:"column:created_by;type:varchar(64);not null"`
-	ParametersSchemaVersion int64                  `protobuf:"varint,10,opt,name=parameters_schema_version,json=parametersSchemaVersion,proto3" json:"parameters_schema_version,omitempty" gorm:"column:parameters_schema_version;type:bigint;not null"`
-	Template                *string                `protobuf:"bytes,11,opt,name=template,proto3,oneof" json:"template,omitempty" gorm:"column:template;type:varchar(32)"`
-	MakerParameters         *v1.MakerParameters    `protobuf:"bytes,12,opt,name=maker_parameters,json=makerParameters,proto3" json:"maker_parameters,omitempty" gorm:"column:maker_parameters;type:jsonb;serializer:json"`
-	GridParameters          *v1.GridParameters     `protobuf:"bytes,13,opt,name=grid_parameters,json=gridParameters,proto3" json:"grid_parameters,omitempty" gorm:"column:grid_parameters;type:jsonb;serializer:json"`
+	state                   protoimpl.MessageState         `protogen:"open.v1"`
+	Id                      int64                          `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty" gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
+	CreateAt                int64                          `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
+	UpdateAt                int64                          `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
+	DeleteAt                *int64                         `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
+	InstanceId              int64                          `protobuf:"varint,5,opt,name=instance_id,json=instanceId,proto3" json:"instance_id,omitempty" gorm:"column:instance_id;type:bigint;not null;uniqueIndex:uk_strategy_config_instance_version"`
+	Version                 int64                          `protobuf:"varint,6,opt,name=version,proto3" json:"version,omitempty" gorm:"column:version;type:bigint;not null;uniqueIndex:uk_strategy_config_instance_version"`
+	MarketDataSource        string                         `protobuf:"bytes,7,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty" gorm:"column:market_data_source;type:varchar(32);not null"`
+	CodeVersion             string                         `protobuf:"bytes,8,opt,name=code_version,json=codeVersion,proto3" json:"code_version,omitempty" gorm:"column:code_version;type:varchar(64);not null"`
+	CreatedBy               string                         `protobuf:"bytes,9,opt,name=created_by,json=createdBy,proto3" json:"created_by,omitempty" gorm:"column:created_by;type:varchar(64);not null"`
+	ParametersSchemaVersion int64                          `protobuf:"varint,10,opt,name=parameters_schema_version,json=parametersSchemaVersion,proto3" json:"parameters_schema_version,omitempty" gorm:"column:parameters_schema_version;type:bigint;not null"`
+	Template                *string                        `protobuf:"bytes,11,opt,name=template,proto3,oneof" json:"template,omitempty" gorm:"column:template;type:varchar(32)"`
+	MakerParameters         *v1.MakerParameters            `protobuf:"bytes,12,opt,name=maker_parameters,json=makerParameters,proto3" json:"maker_parameters,omitempty" gorm:"column:maker_parameters;type:jsonb;serializer:json"`
+	GridParameters          *v1.GridParameters             `protobuf:"bytes,13,opt,name=grid_parameters,json=gridParameters,proto3" json:"grid_parameters,omitempty" gorm:"column:grid_parameters;type:jsonb;serializer:json"`
+	Parameters              *v1.StrategyInstanceParameters `protobuf:"bytes,14,opt,name=parameters,proto3" json:"parameters,omitempty" gorm:"column:parameters;type:jsonb;serializer:json;default:(-)"`
+	TemplateId              *int64                         `protobuf:"varint,15,opt,name=template_id,json=templateId,proto3,oneof" json:"template_id,omitempty" gorm:"column:template_id;type:bigint;default:(-)"`
+	TemplateRevision        *int64                         `protobuf:"varint,16,opt,name=template_revision,json=templateRevision,proto3,oneof" json:"template_revision,omitempty" gorm:"column:template_revision;type:bigint;default:(-)"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -364,11 +417,32 @@ func (x *StrategyConfigVersion) GetGridParameters() *v1.GridParameters {
 	return nil
 }
 
+func (x *StrategyConfigVersion) GetParameters() *v1.StrategyInstanceParameters {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
+func (x *StrategyConfigVersion) GetTemplateId() int64 {
+	if x != nil && x.TemplateId != nil {
+		return *x.TemplateId
+	}
+	return 0
+}
+
+func (x *StrategyConfigVersion) GetTemplateRevision() int64 {
+	if x != nil && x.TemplateRevision != nil {
+		return *x.TemplateRevision
+	}
+	return 0
+}
+
 var File_deer_proto_strategy_model_v1_strategy_proto protoreflect.FileDescriptor
 
 const file_deer_proto_strategy_model_v1_strategy_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/strategy/model/v1/strategy.proto\x12\x11muskdeer.model.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\x1a\x13tagger/tagger.proto\"\x85\x11\n" +
+	"+deer/proto/strategy/model/v1/strategy.proto\x12\x11muskdeer.model.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\x1a,deer/proto/common/v1/strategy_instance.proto\x1a\x13tagger/tagger.proto\"\xdd\x16\n" +
 	"\x10StrategyInstance\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -392,11 +466,20 @@ const file_deer_proto_strategy_model_v1_strategy_proto_rawDesc = "" +
 	"marketMode\x12s\n" +
 	"\x10runtime_owner_id\x18\x12 \x01(\tBI\x9a\x84\x9e\x03Dgorm:\"column:runtime_owner_id;type:varchar(128);not null;default:''\"R\x0eruntimeOwnerId\x12u\n" +
 	"\x13runtime_owner_epoch\x18\x13 \x01(\x03BE\x9a\x84\x9e\x03@gorm:\"column:runtime_owner_epoch;type:bigint;not null;default:0\"R\x11runtimeOwnerEpoch\x12j\n" +
-	"\rdesired_state\x18\x14 \x01(\tBE\x9a\x84\x9e\x03@gorm:\"column:desired_state;type:varchar(16);not null;default:''\"R\fdesiredStateB\f\n" +
+	"\rdesired_state\x18\x14 \x01(\tBE\x9a\x84\x9e\x03@gorm:\"column:desired_state;type:varchar(16);not null;default:''\"R\fdesiredState\x12\x94\x01\n" +
+	"\n" +
+	"parameters\x18\x15 \x01(\v2..muskdeer.common.v1.StrategyInstanceParametersBD\x9a\x84\x9e\x03?gorm:\"column:parameters;type:jsonb;serializer:json;default:(-)\"R\n" +
+	"parameters\x12f\n" +
+	"\x0eimplementation\x18\x16 \x01(\tB>\x9a\x84\x9e\x039gorm:\"column:implementation;type:varchar(64);default:(-)\"R\x0eimplementation\x12p\n" +
+	"\x12tape_policy_digest\x18\x17 \x01(\tBB\x9a\x84\x9e\x03=gorm:\"column:tape_policy_digest;type:varchar(64);default:(-)\"R\x10tapePolicyDigest\x12|\n" +
+	"\x16tape_parameters_digest\x18\x18 \x01(\tBF\x9a\x84\x9e\x03Agorm:\"column:tape_parameters_digest;type:varchar(64);default:(-)\"R\x14tapeParametersDigest\x12|\n" +
+	"\vtemplate_id\x18\x19 \x01(\x03B[\x9a\x84\x9e\x03Vgorm:\"column:template_id;type:bigint;default:(-);index:idx_strategy_template_instance\"R\n" +
+	"templateId\x12i\n" +
+	"\x11template_revision\x18\x1a \x01(\x03B<\x9a\x84\x9e\x037gorm:\"column:template_revision;type:bigint;default:(-)\"R\x10templateRevisionB\f\n" +
 	"\n" +
 	"_delete_atB\x18\n" +
 	"\x16_active_config_versionB\x1c\n" +
-	"\x1a_active_market_data_source\"\xa7\v\n" +
+	"\x1a_active_market_data_source\"\xb2\x0e\n" +
 	"\x15StrategyConfigVersion\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -413,10 +496,18 @@ const file_deer_proto_strategy_model_v1_strategy_proto_rawDesc = "" +
 	" \x01(\x03BA\x9a\x84\x9e\x03<gorm:\"column:parameters_schema_version;type:bigint;not null\"R\x17parametersSchemaVersion\x12M\n" +
 	"\btemplate\x18\v \x01(\tB,\x9a\x84\x9e\x03'gorm:\"column:template;type:varchar(32)\"H\x01R\btemplate\x88\x01\x01\x12\x8e\x01\n" +
 	"\x10maker_parameters\x18\f \x01(\v2#.muskdeer.common.v1.MakerParametersB>\x9a\x84\x9e\x039gorm:\"column:maker_parameters;type:jsonb;serializer:json\"R\x0fmakerParameters\x12\x8a\x01\n" +
-	"\x0fgrid_parameters\x18\r \x01(\v2\".muskdeer.common.v1.GridParametersB=\x9a\x84\x9e\x038gorm:\"column:grid_parameters;type:jsonb;serializer:json\"R\x0egridParametersB\f\n" +
+	"\x0fgrid_parameters\x18\r \x01(\v2\".muskdeer.common.v1.GridParametersB=\x9a\x84\x9e\x038gorm:\"column:grid_parameters;type:jsonb;serializer:json\"R\x0egridParameters\x12\x94\x01\n" +
+	"\n" +
+	"parameters\x18\x0e \x01(\v2..muskdeer.common.v1.StrategyInstanceParametersBD\x9a\x84\x9e\x03?gorm:\"column:parameters;type:jsonb;serializer:json;default:(-)\"R\n" +
+	"parameters\x12\\\n" +
+	"\vtemplate_id\x18\x0f \x01(\x03B6\x9a\x84\x9e\x031gorm:\"column:template_id;type:bigint;default:(-)\"H\x02R\n" +
+	"templateId\x88\x01\x01\x12n\n" +
+	"\x11template_revision\x18\x10 \x01(\x03B<\x9a\x84\x9e\x037gorm:\"column:template_revision;type:bigint;default:(-)\"H\x03R\x10templateRevision\x88\x01\x01B\f\n" +
 	"\n" +
 	"_delete_atB\v\n" +
-	"\t_templateB=Z;github.com/hmlax/muskdeer/deer/pb/strategy/model/v1;modelv1b\x06proto3"
+	"\t_templateB\x0e\n" +
+	"\f_template_idB\x14\n" +
+	"\x12_template_revisionB=Z;github.com/hmlax/muskdeer/deer/pb/strategy/model/v1;modelv1b\x06proto3"
 
 var (
 	file_deer_proto_strategy_model_v1_strategy_proto_rawDescOnce sync.Once
@@ -432,19 +523,22 @@ func file_deer_proto_strategy_model_v1_strategy_proto_rawDescGZIP() []byte {
 
 var file_deer_proto_strategy_model_v1_strategy_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_deer_proto_strategy_model_v1_strategy_proto_goTypes = []any{
-	(*StrategyInstance)(nil),      // 0: muskdeer.model.v1.StrategyInstance
-	(*StrategyConfigVersion)(nil), // 1: muskdeer.model.v1.StrategyConfigVersion
-	(*v1.MakerParameters)(nil),    // 2: muskdeer.common.v1.MakerParameters
-	(*v1.GridParameters)(nil),     // 3: muskdeer.common.v1.GridParameters
+	(*StrategyInstance)(nil),              // 0: muskdeer.model.v1.StrategyInstance
+	(*StrategyConfigVersion)(nil),         // 1: muskdeer.model.v1.StrategyConfigVersion
+	(*v1.StrategyInstanceParameters)(nil), // 2: muskdeer.common.v1.StrategyInstanceParameters
+	(*v1.MakerParameters)(nil),            // 3: muskdeer.common.v1.MakerParameters
+	(*v1.GridParameters)(nil),             // 4: muskdeer.common.v1.GridParameters
 }
 var file_deer_proto_strategy_model_v1_strategy_proto_depIdxs = []int32{
-	2, // 0: muskdeer.model.v1.StrategyConfigVersion.maker_parameters:type_name -> muskdeer.common.v1.MakerParameters
-	3, // 1: muskdeer.model.v1.StrategyConfigVersion.grid_parameters:type_name -> muskdeer.common.v1.GridParameters
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 0: muskdeer.model.v1.StrategyInstance.parameters:type_name -> muskdeer.common.v1.StrategyInstanceParameters
+	3, // 1: muskdeer.model.v1.StrategyConfigVersion.maker_parameters:type_name -> muskdeer.common.v1.MakerParameters
+	4, // 2: muskdeer.model.v1.StrategyConfigVersion.grid_parameters:type_name -> muskdeer.common.v1.GridParameters
+	2, // 3: muskdeer.model.v1.StrategyConfigVersion.parameters:type_name -> muskdeer.common.v1.StrategyInstanceParameters
+	4, // [4:4] is the sub-list for method output_type
+	4, // [4:4] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_strategy_model_v1_strategy_proto_init() }

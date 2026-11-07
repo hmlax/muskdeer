@@ -24,18 +24,20 @@ const (
 // SyntheticTapePlan identifies one slot of a finite development market-data run.
 // The same run/symbol/sequence never emits again, even if a reply is lost.
 type SyntheticTapePlan struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	RunId         string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Symbol        string                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Sequence      uint32                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	Side          string                 `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`
-	Price         string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`
-	Quantity      string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	Strategy      *VenueAuthority        `protobuf:"bytes,7,opt,name=strategy,proto3" json:"strategy,omitempty"`
-	Book          *VenueBook             `protobuf:"bytes,8,opt,name=book,proto3" json:"book,omitempty"`
-	SourceTrade   *VenueTrade            `protobuf:"bytes,9,opt,name=source_trade,json=sourceTrade,proto3" json:"source_trade,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	RunId              string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Symbol             string                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Sequence           uint32                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Side               string                 `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`
+	Price              string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`
+	Quantity           string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Strategy           *VenueAuthority        `protobuf:"bytes,7,opt,name=strategy,proto3" json:"strategy,omitempty"`
+	Book               *VenueBook             `protobuf:"bytes,8,opt,name=book,proto3" json:"book,omitempty"`
+	SourceTrade        *VenueTrade            `protobuf:"bytes,9,opt,name=source_trade,json=sourceTrade,proto3" json:"source_trade,omitempty"`
+	StrategyInstanceId int64                  `protobuf:"varint,10,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
+	StrategyRevision   int64                  `protobuf:"varint,11,opt,name=strategy_revision,json=strategyRevision,proto3" json:"strategy_revision,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SyntheticTapePlan) Reset() {
@@ -129,6 +131,20 @@ func (x *SyntheticTapePlan) GetSourceTrade() *VenueTrade {
 		return x.SourceTrade
 	}
 	return nil
+}
+
+func (x *SyntheticTapePlan) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *SyntheticTapePlan) GetStrategyRevision() int64 {
+	if x != nil {
+		return x.StrategyRevision
+	}
+	return 0
 }
 
 type SyntheticTapeResult struct {
@@ -227,7 +243,7 @@ var File_deer_proto_common_v1_synthetic_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_synthetic_proto_rawDesc = "" +
 	"\n" +
-	"$deer/proto/common/v1/synthetic.proto\x12\x12muskdeer.common.v1\x1a deer/proto/common/v1/venue.proto\"\xda\x02\n" +
+	"$deer/proto/common/v1/synthetic.proto\x12\x12muskdeer.common.v1\x1a deer/proto/common/v1/venue.proto\"\xb9\x03\n" +
 	"\x11SyntheticTapePlan\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
 	"\x06symbol\x18\x02 \x01(\tR\x06symbol\x12\x1a\n" +
@@ -237,7 +253,10 @@ const file_deer_proto_common_v1_synthetic_proto_rawDesc = "" +
 	"\bquantity\x18\x06 \x01(\tR\bquantity\x12>\n" +
 	"\bstrategy\x18\a \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\bstrategy\x121\n" +
 	"\x04book\x18\b \x01(\v2\x1d.muskdeer.common.v1.VenueBookR\x04book\x12A\n" +
-	"\fsource_trade\x18\t \x01(\v2\x1e.muskdeer.common.v1.VenueTradeR\vsourceTrade\"\xfa\x01\n" +
+	"\fsource_trade\x18\t \x01(\v2\x1e.muskdeer.common.v1.VenueTradeR\vsourceTrade\x120\n" +
+	"\x14strategy_instance_id\x18\n" +
+	" \x01(\x03R\x12strategyInstanceId\x12+\n" +
+	"\x11strategy_revision\x18\v \x01(\x03R\x10strategyRevision\"\xfa\x01\n" +
 	"\x13SyntheticTapeResult\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x19\n" +
 	"\btrade_id\x18\x02 \x01(\tR\atradeId\x12\x14\n" +

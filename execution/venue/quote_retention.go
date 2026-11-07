@@ -25,8 +25,11 @@ func retainQuoteOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1.
 		if !native.Active(order.Status) {
 			continue
 		}
+		if profile.StrategyInstanceId != 0 && !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(profile)) && strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
+			continue // Other instances remain in risk and crossing checks, never cancellation.
+		}
 		legacy := strings.HasPrefix(order.ClientId, native.LegacyPrefix+profile.Symbol+"_")
-		if legacy && cutover || !legacy && !strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
+		if legacy && cutover || !legacy && !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(profile)) {
 			return nil, native.ErrInvalid
 		}
 		key, quantity, err := orderKey(order)
@@ -87,7 +90,7 @@ func retainBridgeOrders(profile *commonv1.VenueProfilePolicy, snapshot *commonv1
 	bridges := make(map[domain.Side]*commonv1.VenueOrder)
 	for _, order := range snapshot.Orders {
 		side := domain.Side(order.Side)
-		if fresh[side] || best[side].IsZero() || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_") {
+		if fresh[side] || best[side].IsZero() || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(profile)) {
 			continue
 		}
 		price, ok := bridgePrice(order, best, limit)
@@ -144,4 +147,10 @@ func quoteSubmissionOrder(targets []*commonv1.VenueTarget) []*commonv1.VenueTarg
 		}
 	}
 	return ordered
+}
+
+// Only this instance's quotes, plus explicitly unfinished legacy cutover, may
+// be cancelled. Other instances continue to count toward the shared fund risk.
+func ownsCancellation(profile *commonv1.VenueProfilePolicy, clientID string, cutover bool) bool {
+	return strings.HasPrefix(clientID, native.InstanceClientPrefix(profile)) || !cutover && strings.HasPrefix(clientID, native.LegacyPrefix+profile.Symbol+"_")
 }

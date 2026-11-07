@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
+
 	"gorm.io/gorm"
 
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
@@ -117,6 +119,9 @@ func Check(ctx context.Context, db *gorm.DB) error {
 	if ctx == nil || db == nil {
 		return ErrHistory
 	}
+	if schemaformat.Check(ctx, db) == nil {
+		return nil
+	}
 	var rows []*commonmodelv1.VenueSchemaMigration
 	if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Order("version").Find(&rows).Error; err != nil {
 		return errors.Join(ErrHistory, err)
@@ -138,14 +143,34 @@ func validate(rows []*commonmodelv1.VenueSchemaMigration, complete bool) error {
 }
 
 func definitions() []string {
-	return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition, historicalIntentDefinition, databaseProfilesDefinition, venueModelsDefinition, strategyParametersDefinition}
+	return []string{
+		definition,
+		liveDefinition,
+		syntheticDefinition,
+		developmentBaselineDefinition,
+		historicalIntentDefinition,
+		databaseProfilesDefinition,
+		venueModelsDefinition,
+		strategyParametersDefinition,
+	}
 }
 
 func definitionsFor(rows []*commonmodelv1.VenueSchemaMigration) []string {
 	if len(rows) >= 7 && rows[6].Checksum == checksum(legacyStatelessDefinition) {
 		// At least seven versions already exist, so the loop can never execute
 		// legacyStatelessDefinition. Retain its identity and append safe upgrades.
-		return []string{definition, liveDefinition, syntheticDefinition, developmentBaselineDefinition, historicalIntentDefinition, databaseProfilesDefinition, legacyStatelessDefinition, legacyPlanGraceDefinition, statelessBusinessDefinition, strategyParametersDefinition}
+		return []string{
+			definition,
+			liveDefinition,
+			syntheticDefinition,
+			developmentBaselineDefinition,
+			historicalIntentDefinition,
+			databaseProfilesDefinition,
+			legacyStatelessDefinition,
+			legacyPlanGraceDefinition,
+			statelessBusinessDefinition,
+			strategyParametersDefinition,
+		}
 	}
 	return definitions()
 }

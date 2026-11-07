@@ -2,8 +2,6 @@ package venue
 
 import (
 	"context"
-	"crypto/sha256"
-	"fmt"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -25,11 +23,10 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 	if !validStoreContext(ctx) || send == nil || !validSyntheticPlan(cfg, execution, plan) {
 		return nil, ErrInvalidSubmit
 	}
-	encoded, err := proto.MarshalOptions{Deterministic: true}.Marshal(cfg)
+	digest, err := native.SyntheticPolicyDigest(cfg)
 	if err != nil {
 		return nil, err
 	}
-	digest := fmt.Sprintf("%x", sha256.Sum256(encoded))
 	row, fresh, err := s.claimSynthetic(ctx, execution, cfg, plan, digest)
 	if err != nil {
 		return nil, err
@@ -215,10 +212,16 @@ func lockSyntheticAuthorities(ctx context.Context, tx *gorm.DB, execution domain
 	if err != nil {
 		return 0, 0, err
 	}
+	if err := lockCurrentInstance(ctx, tx, plan.GetStrategyInstanceId(), plan.GetStrategyRevision(), "", plan.Symbol, plan.Book.Source, domain.StrategyTemplateWashTrade); err != nil {
+		return 0, 0, err
+	}
 	remaining := time.Duration(lease.ExpiresAt-now)*time.Millisecond - 50*time.Millisecond
 	source := proto.CloneOf(plan.Book.Publisher)
 	source.ExpiresAtMs = plan.Book.ValidUntilMs
-	for _, authority := range []*commonv1.VenueAuthority{plan.Strategy, source} {
+	for _, authority := range []*commonv1.VenueAuthority{
+		plan.Strategy,
+		source,
+	} {
 		left, err := repository.LockNativeAuthority(ctx, tx, authority)
 		if err != nil {
 			return 0, 0, err

@@ -58,7 +58,7 @@ func validateNativeRole(cfg *configv1.ServiceConfig) error {
 
 // ValidProfile validates immutable account trading policy values.
 func ValidProfile(p *commonv1.VenueProfilePolicy) bool {
-	if p == nil || p.UserId <= 0 || p.FundId <= 0 || !Symbol(p.Symbol) || p.Leverage == 0 || p.Leverage > 10 || p.MarketDataSource != Source {
+	if p == nil || p.UserId <= 0 || p.FundId <= 0 || p.StrategyInstanceId < 0 || !Symbol(p.Symbol) || p.Leverage == 0 || p.Leverage > 10 || p.MarketDataSource != Source {
 		return false
 	}
 	maximum, e1 := domain.ParseLedgerDecimal(p.MaximumNotional, false, false)

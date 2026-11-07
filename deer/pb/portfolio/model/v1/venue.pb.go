@@ -30,10 +30,11 @@ type VenueAccountSnapshot struct {
 	CreateAt         int64                  `protobuf:"varint,2,opt,name=create_at,json=createAt,proto3" json:"create_at,omitempty" gorm:"column:create_at;type:bigint;not null;autoCreateTime:milli"`
 	UpdateAt         int64                  `protobuf:"varint,3,opt,name=update_at,json=updateAt,proto3" json:"update_at,omitempty" gorm:"column:update_at;type:bigint;not null;autoUpdateTime:milli"`
 	DeleteAt         *int64                 `protobuf:"varint,4,opt,name=delete_at,json=deleteAt,proto3,oneof" json:"delete_at,omitempty" gorm:"column:delete_at;type:bigint"`
-	AccountId        string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account"`
+	AccountId        string                 `protobuf:"bytes,5,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty" gorm:"column:account_id;type:varchar(64);not null;uniqueIndex:uk_venue_projection_scope"`
 	Snapshot         *v1.VenueSnapshot      `protobuf:"bytes,6,opt,name=snapshot,proto3" json:"snapshot,omitempty" gorm:"column:snapshot;type:jsonb;serializer:json;not null"`
 	PublisherOwnerId string                 `protobuf:"bytes,7,opt,name=publisher_owner_id,json=publisherOwnerId,proto3" json:"publisher_owner_id,omitempty" gorm:"column:publisher_owner_id;type:varchar(128);not null"`
 	PublisherEpoch   int64                  `protobuf:"varint,8,opt,name=publisher_epoch,json=publisherEpoch,proto3" json:"publisher_epoch,omitempty" gorm:"column:publisher_epoch;type:bigint;not null"`
+	Symbol           string                 `protobuf:"bytes,9,opt,name=symbol,proto3" json:"symbol,omitempty" gorm:"column:symbol;type:varchar(32);default:(-);uniqueIndex:uk_venue_projection_scope"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -124,21 +125,29 @@ func (x *VenueAccountSnapshot) GetPublisherEpoch() int64 {
 	return 0
 }
 
+func (x *VenueAccountSnapshot) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
 var File_deer_proto_portfolio_model_v1_venue_proto protoreflect.FileDescriptor
 
 const file_deer_proto_portfolio_model_v1_venue_proto_rawDesc = "" +
 	"\n" +
-	")deer/proto/portfolio/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\xdc\x06\n" +
+	")deer/proto/portfolio/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\xcc\a\n" +
 	"\x14VenueAccountSnapshot\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
 	"\tupdate_at\x18\x03 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\"R\bupdateAt\x12J\n" +
-	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12\x81\x01\n" +
+	"\tdelete_at\x18\x04 \x01(\x03B(\x9a\x84\x9e\x03#gorm:\"column:delete_at;type:bigint\"H\x00R\bdeleteAt\x88\x01\x01\x12|\n" +
 	"\n" +
-	"account_id\x18\x05 \x01(\tBb\x9a\x84\x9e\x03]gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\"R\taccountId\x12~\n" +
+	"account_id\x18\x05 \x01(\tB]\x9a\x84\x9e\x03Xgorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_venue_projection_scope\"R\taccountId\x12~\n" +
 	"\bsnapshot\x18\x06 \x01(\v2!.muskdeer.common.v1.VenueSnapshotB?\x9a\x84\x9e\x03:gorm:\"column:snapshot;type:jsonb;serializer:json;not null\"R\bsnapshot\x12n\n" +
 	"\x12publisher_owner_id\x18\a \x01(\tB@\x9a\x84\x9e\x03;gorm:\"column:publisher_owner_id;type:varchar(128);not null\"R\x10publisherOwnerId\x12`\n" +
-	"\x0fpublisher_epoch\x18\b \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:publisher_epoch;type:bigint;not null\"R\x0epublisherEpochB\f\n" +
+	"\x0fpublisher_epoch\x18\b \x01(\x03B7\x9a\x84\x9e\x032gorm:\"column:publisher_epoch;type:bigint;not null\"R\x0epublisherEpoch\x12t\n" +
+	"\x06symbol\x18\t \x01(\tB\\\x9a\x84\x9e\x03Wgorm:\"column:symbol;type:varchar(32);default:(-);uniqueIndex:uk_venue_projection_scope\"R\x06symbolB\f\n" +
 	"\n" +
 	"_delete_atB>Z<github.com/hmlax/muskdeer/deer/pb/portfolio/model/v1;modelv1b\x06proto3"
 

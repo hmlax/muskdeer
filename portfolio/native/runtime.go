@@ -32,12 +32,13 @@ import (
 // Runtime polls authoritative execution observations; it never simulates money.
 type Runtime struct {
 	portfoliovenuev1.UnimplementedPortfolioServer
-	db      *gorm.DB
-	owner   string
-	cfg     *venueconfig.RuntimeConfig
-	factory *rpcclient.Factory
-	leases  domain.LeaseRepository
-	logger  *logging.Logger
+	children map[string]*Runtime
+	db       *gorm.DB
+	owner    string
+	cfg      *venueconfig.RuntimeConfig
+	factory  *rpcclient.Factory
+	leases   domain.LeaseRepository
+	logger   *logging.Logger
 }
 
 // NewRuntime borrows the existing pool and RPC factory without starting tasks.
@@ -67,6 +68,13 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
 
 // Workers owns one bounded projection loop per fund.
 func (r *Runtime) Workers() []deer.Worker {
+	if r.children != nil {
+		var workers []deer.Worker
+		for _, key := range sortedDependencyKeys(r.children) {
+			workers = append(workers, r.children[key].Workers()...)
+		}
+		return workers
+	}
 	var result []deer.Worker
 	for _, profile := range r.cfg.Venue.Profiles {
 		result = append(result, deer.Worker{
@@ -128,6 +136,9 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy
 		}
 		fresh := errors.Is(err, gorm.ErrRecordNotFound)
 		row.AccountId = values.ScopeKey(profile.UserId, profile.FundId)
+		if profile.StrategyInstanceId != 0 {
+			row.Symbol = profile.Symbol
+		}
 		row.Snapshot, row.PublisherOwnerId, row.PublisherEpoch = proto.CloneOf(snapshot), token.OwnerID, token.Epoch
 		if fresh {
 			return tx.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Create(&row).Error
@@ -139,6 +150,12 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy
 
 // GetSnapshot returns no stale or unfenced observation as current state.
 func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (*commonv1.VenueSnapshot, error) {
+	if r.children != nil {
+		if child := r.children[values.ScopeKey(scope.GetUserId(), scope.GetFundId())]; child != nil {
+			return child.GetSnapshot(ctx, scope)
+		}
+		return nil, status.Error(codes.InvalidArgument, values.MessageInvalid)
+	}
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, values.MessageInvalid)
 	}

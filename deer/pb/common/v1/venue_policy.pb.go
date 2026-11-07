@@ -34,8 +34,10 @@ type VenuePolicy struct {
 	Depth            uint32                 `protobuf:"varint,5,opt,name=depth,proto3" json:"depth,omitempty"`
 	LeaseTtl         *durationpb.Duration   `protobuf:"bytes,6,opt,name=lease_ttl,json=leaseTtl,proto3" json:"lease_ttl,omitempty"`
 	SyntheticTape    *v1.SyntheticTape      `protobuf:"bytes,7,opt,name=synthetic_tape,json=syntheticTape,proto3" json:"synthetic_tape,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Set only for a migrated run with existing consumed slots.
+	SyntheticPolicyDigest string `protobuf:"bytes,8,opt,name=synthetic_policy_digest,json=syntheticPolicyDigest,proto3" json:"synthetic_policy_digest,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *VenuePolicy) Reset() {
@@ -117,6 +119,13 @@ func (x *VenuePolicy) GetSyntheticTape() *v1.SyntheticTape {
 	return nil
 }
 
+func (x *VenuePolicy) GetSyntheticPolicyDigest() string {
+	if x != nil {
+		return x.SyntheticPolicyDigest
+	}
+	return ""
+}
+
 // VenueProfilePolicy projects business fields from the generated budget
 // model. Dynamic balances, reservations and timestamps never enter its digest.
 type VenueProfilePolicy struct {
@@ -130,6 +139,7 @@ type VenueProfilePolicy struct {
 	MarketDataSource     string                 `protobuf:"bytes,7,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty"`
 	PriceTick            string                 `protobuf:"bytes,8,opt,name=price_tick,json=priceTick,proto3" json:"price_tick,omitempty"`
 	QuantityStep         string                 `protobuf:"bytes,9,opt,name=quantity_step,json=quantityStep,proto3" json:"quantity_step,omitempty"`
+	StrategyInstanceId   int64                  `protobuf:"varint,10,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -225,6 +235,13 @@ func (x *VenueProfilePolicy) GetQuantityStep() string {
 		return x.QuantityStep
 	}
 	return ""
+}
+
+func (x *VenueProfilePolicy) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
 }
 
 // VenueProfileImport is an explicit maintenance input, never service config.
@@ -405,7 +422,7 @@ var File_deer_proto_common_v1_venue_policy_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_venue_policy_proto_rawDesc = "" +
 	"\n" +
-	"'deer/proto/common/v1/venue_policy.proto\x12\x12muskdeer.common.v1\x1a\x1egoogle/protobuf/duration.proto\x1a(deer/proto/common/config/v1/config.proto\"\xcb\x02\n" +
+	"'deer/proto/common/v1/venue_policy.proto\x12\x12muskdeer.common.v1\x1a\x1egoogle/protobuf/duration.proto\x1a(deer/proto/common/config/v1/config.proto\"\x83\x03\n" +
 	"\vVenuePolicy\x12\x16\n" +
 	"\x06target\x18\x01 \x01(\tR\x06target\x12\x1b\n" +
 	"\ttoken_env\x18\x02 \x01(\tR\btokenEnv\x12B\n" +
@@ -413,7 +430,8 @@ const file_deer_proto_common_v1_venue_policy_proto_rawDesc = "" +
 	"\x11quantity_fraction\x18\x04 \x01(\tR\x10quantityFraction\x12\x14\n" +
 	"\x05depth\x18\x05 \x01(\rR\x05depth\x126\n" +
 	"\tlease_ttl\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\bleaseTtl\x12H\n" +
-	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTape\"\xcd\x02\n" +
+	"\x0esynthetic_tape\x18\a \x01(\v2!.muskdeer.config.v1.SyntheticTapeR\rsyntheticTape\x126\n" +
+	"\x17synthetic_policy_digest\x18\b \x01(\tR\x15syntheticPolicyDigest\"\xff\x02\n" +
 	"\x12VenueProfilePolicy\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x17\n" +
 	"\afund_id\x18\x02 \x01(\x03R\x06fundId\x12\x16\n" +
@@ -424,7 +442,9 @@ const file_deer_proto_common_v1_venue_policy_proto_rawDesc = "" +
 	"\x12market_data_source\x18\a \x01(\tR\x10marketDataSource\x12\x1d\n" +
 	"\n" +
 	"price_tick\x18\b \x01(\tR\tpriceTick\x12#\n" +
-	"\rquantity_step\x18\t \x01(\tR\fquantityStep\"X\n" +
+	"\rquantity_step\x18\t \x01(\tR\fquantityStep\x120\n" +
+	"\x14strategy_instance_id\x18\n" +
+	" \x01(\x03R\x12strategyInstanceId\"X\n" +
 	"\x12VenueProfileImport\x12B\n" +
 	"\bprofiles\x18\x01 \x03(\v2&.muskdeer.common.v1.VenueProfilePolicyR\bprofiles\"]\n" +
 	"\x13VenueStrategyImport\x12F\n" +

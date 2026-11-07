@@ -1,0 +1,21 @@
+syntax = "proto3";
+package muskdeer.model.v1;
+import "tagger/tagger.proto";
+import "deer/proto/common/v1/strategy_instance.proto";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1;modelv1";
+// StrategyTemplate owns a registered algorithm, input requirements and parameter
+// contract. Concrete run parameters belong to its strategy_instances rows.
+message StrategyTemplate {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  string template_key = 5 [(tagger.tags) = "gorm:\"column:template_key;type:varchar(64);not null;uniqueIndex:uk_strategy_template_key\""];
+  string name = 6 [(tagger.tags) = "gorm:\"column:name;type:varchar(128);not null\""];
+  string strategy_type = 7 [(tagger.tags) = "gorm:\"column:strategy_type;type:varchar(32);not null\""];
+  string implementation = 8 [(tagger.tags) = "gorm:\"column:implementation;type:varchar(64);not null\""];
+  int64 revision = 9 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  bool enabled = 10 [(tagger.tags) = "gorm:\"column:enabled;type:boolean;not null\""];
+  muskdeer.common.v1.StrategyTemplateInputs required_inputs = 11 [(tagger.tags) = "gorm:\"column:required_inputs;type:jsonb;not null;serializer:json\""];
+  muskdeer.common.v1.StrategyTemplateContract parameter_contract = 12 [(tagger.tags) = "gorm:\"column:parameter_contract;type:jsonb;not null;serializer:json\""];
+}

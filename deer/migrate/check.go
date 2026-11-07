@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
+
 	"gorm.io/gorm"
 
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
@@ -34,6 +36,9 @@ func CheckCurrent(ctx context.Context, db *gorm.DB) error {
 	err = db.WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Order("version ASC").Limit(len(definitions) + 1).Find(&history).Error
 	if err != nil {
 		return &checkError{cause: errors.Join(err, ctx.Err())}
+	}
+	if schemaformat.Match(history) {
+		return nil
 	}
 	if len(history) != len(definitions) {
 		return ErrHistoryMismatch

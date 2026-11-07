@@ -15,6 +15,8 @@ message SyntheticTapePlan {
   VenueAuthority strategy = 7;
   VenueBook book = 8;
   VenueTrade source_trade = 9;
+  int64 strategy_instance_id = 10;
+  int64 strategy_revision = 11;
 }
 message SyntheticTapeResult {
   string state = 1;

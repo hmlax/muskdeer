@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
+
 	"gorm.io/gorm"
 
 	model "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
@@ -27,6 +29,9 @@ func Apply(ctx context.Context, db *gorm.DB) error {
 		return ErrHistory
 	}
 	if _, bounded := ctx.Deadline(); !bounded {
+		return ErrHistory
+	}
+	if schemaformat.Check(ctx, db) == nil {
 		return ErrHistory
 	}
 	return db.WithContext(ctx).Model(&model.RuntimePolicyMigration{}).Transaction(func(tx *gorm.DB) error {

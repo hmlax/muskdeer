@@ -85,6 +85,7 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 		if err != nil || proposal.Side != plan.GetSide() || proposal.Quantity != plan.GetQuantity() {
 			return nil, ErrInvalidSubmit
 		}
+		plan.StrategyInstanceId, plan.StrategyRevision = proposal.StrategyInstanceId, proposal.StrategyRevision
 		return plan, nil
 	}
 	// An aggregate-mode client must explicitly supply that source intent. The
@@ -102,12 +103,14 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 		return nil, err
 	}
 	return native.SyntheticSourcePlan(r.cfg.Venue, &commonv1.SyntheticTapePlan{
-		RunId:       proposal.RunId,
-		Symbol:      proposal.Symbol,
-		Sequence:    proposal.Sequence,
-		Book:        book,
-		Strategy:    proposal.Strategy,
-		SourceTrade: trade,
+		RunId:              proposal.RunId,
+		Symbol:             proposal.Symbol,
+		Sequence:           proposal.Sequence,
+		Book:               book,
+		Strategy:           proposal.Strategy,
+		SourceTrade:        trade,
+		StrategyInstanceId: proposal.StrategyInstanceId,
+		StrategyRevision:   proposal.StrategyRevision,
 	})
 }
 

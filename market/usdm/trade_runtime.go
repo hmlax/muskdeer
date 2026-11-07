@@ -22,6 +22,12 @@ const tradeWorkerPrefix = "market.usdm.trade."
 // GetTrade returns the latest owned aggregate observation; it never falls back
 // to depth prices or another exchange when the trade stream is unavailable.
 func (r *Runtime) GetTrade(ctx context.Context, request *marketvenuev1.TradeRequest) (*commonv1.VenueTrade, error) {
+	if r.children != nil {
+		if child := r.children[request.GetSymbol()]; child != nil {
+			return child.GetTrade(ctx, request)
+		}
+		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
+	}
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) && !rpcsecurity.HasService(ctx, rpcsecurity.ServiceExecution) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}

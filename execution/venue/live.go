@@ -19,8 +19,10 @@ const minimumLiveSDKWindow = 500 * time.Millisecond
 
 // LiveAuthority binds one source observation and the current strategy owner.
 type LiveAuthority struct {
-	Strategy *commonv1.VenueAuthority
-	Book     *commonv1.VenueBook
+	Strategy   *commonv1.VenueAuthority
+	Book       *commonv1.VenueBook
+	InstanceID int64
+	Revision   int64
 }
 
 // PrepareLive admits only current selected-source plans and margin obligations.
@@ -35,6 +37,10 @@ func (s *Store) PrepareLive(ctx context.Context, execution domain.LeaseToken, re
 
 func setLiveAuthority(ctx context.Context, row *executionmodelv1.VenueOrderIntent, authority *LiveAuthority, now int64) {
 	deadline, _ := ctx.Deadline()
+	if authority.InstanceID != 0 {
+		row.StrategyInstanceId = &authority.InstanceID
+		row.StrategyRevision = &authority.Revision
+	}
 	row.ExpiresAt = now + min(time.Until(deadline), maximumOperationTimeout).Milliseconds()
 	row.StrategyAccountId = authority.Strategy.AccountId
 	row.StrategyOwnerId = authority.Strategy.OwnerId
@@ -48,6 +54,9 @@ func setLiveAuthority(ctx context.Context, row *executionmodelv1.VenueOrderInten
 func checkLiveAuthority(ctx context.Context, tx *gorm.DB, row *executionmodelv1.VenueOrderIntent, now int64) (time.Duration, error) {
 	if row.StrategyEpoch == 0 && row.SourceEpoch == 0 {
 		return maximumOperationTimeout, nil // The original transport-only seam.
+	}
+	if err := lockCurrentInstance(ctx, tx, row.GetStrategyInstanceId(), row.GetStrategyRevision(), row.AccountId, row.Symbol, native.Source, domain.StrategyTemplateMarketMaker, domain.StrategyTemplateGrid); err != nil {
+		return 0, err
 	}
 	remaining := time.Duration(min(row.ExpiresAt, row.SourceUntil)-now)*time.Millisecond - 50*time.Millisecond
 	if remaining <= 0 || row.StrategyAccountId != native.StrategyKey(row.UserId, row.FundId) || row.SourceAccountId != native.MarketKey(row.Symbol) {

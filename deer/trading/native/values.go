@@ -66,6 +66,15 @@ func MarketKey(symbol string) string { return "hm/" + symbol }
 // PortfolioKey identifies the fund's rebuildable observation publisher.
 func PortfolioKey(user, fund int64) string { return "hp/" + ScopeKey(user, fund) }
 
+// InstanceClientPrefix isolates quote maintenance for instances sharing a fund.
+func InstanceClientPrefix(profile *commonv1.VenueProfilePolicy) string {
+	prefix := ClientPrefix + profile.GetSymbol() + "_"
+	if profile.GetStrategyInstanceId() > 0 {
+		prefix += "s" + strconv.FormatInt(profile.StrategyInstanceId, 10) + "_"
+	}
+	return prefix
+}
+
 // Symbol accepts a bounded exchange symbol without URL or routing syntax.
 func Symbol(value string) bool {
 	if len(value) < 2 || len(value) > 24 {

@@ -99,7 +99,11 @@ func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapeP
 		if input.SourceTrade != nil {
 			return nil, ErrInvalid
 		}
-		return SyntheticPlan(h, input.Symbol, input.Sequence, input.Book, input.Strategy)
+		plan, err := SyntheticPlan(h, input.Symbol, input.Sequence, input.Book, input.Strategy)
+		if err == nil {
+			plan.StrategyInstanceId, plan.StrategyRevision = input.StrategyInstanceId, input.StrategyRevision
+		}
+		return plan, err
 	}
 	book, trade := input.GetBook(), input.GetSourceTrade()
 	if ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || input.Sequence >= h.SyntheticTape.MaximumEvents ||
@@ -119,14 +123,16 @@ func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapeP
 		return nil, ErrInvalid
 	}
 	return &commonv1.SyntheticTapePlan{
-		RunId:       input.RunId,
-		Symbol:      input.Symbol,
-		Sequence:    input.Sequence,
-		Side:        target.Side,
-		Price:       target.Price,
-		Quantity:    target.Quantity,
-		Strategy:    proto.CloneOf(input.Strategy),
-		Book:        proto.CloneOf(book),
-		SourceTrade: proto.CloneOf(trade),
+		RunId:              input.RunId,
+		Symbol:             input.Symbol,
+		Sequence:           input.Sequence,
+		Side:               target.Side,
+		Price:              target.Price,
+		Quantity:           target.Quantity,
+		Strategy:           proto.CloneOf(input.Strategy),
+		Book:               proto.CloneOf(book),
+		SourceTrade:        proto.CloneOf(trade),
+		StrategyInstanceId: input.StrategyInstanceId,
+		StrategyRevision:   input.StrategyRevision,
 	}, nil
 }

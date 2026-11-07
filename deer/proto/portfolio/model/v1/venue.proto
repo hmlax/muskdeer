@@ -13,8 +13,9 @@ message VenueAccountSnapshot {
   int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
   int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
   optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
-  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_himalaya_projection_account\""];
+  string account_id = 5 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_venue_projection_scope\""];
   muskdeer.common.v1.VenueSnapshot snapshot = 6 [(tagger.tags) = "gorm:\"column:snapshot;type:jsonb;serializer:json;not null\""];
   string publisher_owner_id = 7 [(tagger.tags) = "gorm:\"column:publisher_owner_id;type:varchar(128);not null\""];
   int64 publisher_epoch = 8 [(tagger.tags) = "gorm:\"column:publisher_epoch;type:bigint;not null\""];
+  string symbol = 9 [(tagger.tags) = "gorm:\"column:symbol;type:varchar(32);default:(-);uniqueIndex:uk_venue_projection_scope\""];
 }

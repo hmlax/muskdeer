@@ -56,6 +56,8 @@ type VenueOrderIntent struct {
 	SourceUntil                 int64                  `protobuf:"varint,27,opt,name=source_until,json=sourceUntil,proto3" json:"source_until,omitempty" gorm:"column:source_until;type:bigint;not null"`
 	HistoricalApprovalReference string                 `protobuf:"bytes,28,opt,name=historical_approval_reference,json=historicalApprovalReference,proto3" json:"historical_approval_reference,omitempty" gorm:"column:historical_approval_reference;type:varchar(256);not null;default:''"`
 	HistoricalSnapshot          *v1.VenueSnapshot      `protobuf:"bytes,29,opt,name=historical_snapshot,json=historicalSnapshot,proto3" json:"historical_snapshot,omitempty" gorm:"column:historical_snapshot;type:jsonb;serializer:json"`
+	StrategyInstanceId          *int64                 `protobuf:"varint,30,opt,name=strategy_instance_id,json=strategyInstanceId,proto3,oneof" json:"strategy_instance_id,omitempty" gorm:"column:strategy_instance_id;type:bigint;default:(-)"`
+	StrategyRevision            *int64                 `protobuf:"varint,31,opt,name=strategy_revision,json=strategyRevision,proto3,oneof" json:"strategy_revision,omitempty" gorm:"column:strategy_revision;type:bigint;default:(-)"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -293,6 +295,20 @@ func (x *VenueOrderIntent) GetHistoricalSnapshot() *v1.VenueSnapshot {
 	return nil
 }
 
+func (x *VenueOrderIntent) GetStrategyInstanceId() int64 {
+	if x != nil && x.StrategyInstanceId != nil {
+		return *x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *VenueOrderIntent) GetStrategyRevision() int64 {
+	if x != nil && x.StrategyRevision != nil {
+		return *x.StrategyRevision
+	}
+	return 0
+}
+
 // VenueCancellation separates a cancel acknowledgement from terminal proof.
 type VenueCancellation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -438,7 +454,7 @@ var File_deer_proto_execution_model_v1_venue_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_model_v1_venue_proto_rawDesc = "" +
 	"\n" +
-	")deer/proto/execution/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\xf5\x15\n" +
+	")deer/proto/execution/model/v1/venue.proto\x12\x11muskdeer.model.v1\x1a deer/proto/common/v1/venue.proto\x1a\x13tagger/tagger.proto\"\x8c\x18\n" +
 	"\x10VenueOrderIntent\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +
@@ -472,9 +488,13 @@ const file_deer_proto_execution_model_v1_venue_proto_rawDesc = "" +
 	"\fsource_epoch\x18\x1a \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_epoch;type:bigint;not null\"R\vsourceEpoch\x12W\n" +
 	"\fsource_until\x18\x1b \x01(\x03B4\x9a\x84\x9e\x03/gorm:\"column:source_until;type:bigint;not null\"R\vsourceUntil\x12\x9a\x01\n" +
 	"\x1dhistorical_approval_reference\x18\x1c \x01(\tBV\x9a\x84\x9e\x03Qgorm:\"column:historical_approval_reference;type:varchar(256);not null;default:''\"R\x1bhistoricalApprovalReference\x12\x95\x01\n" +
-	"\x13historical_snapshot\x18\x1d \x01(\v2!.muskdeer.common.v1.VenueSnapshotBA\x9a\x84\x9e\x03<gorm:\"column:historical_snapshot;type:jsonb;serializer:json\"R\x12historicalSnapshotB\f\n" +
+	"\x13historical_snapshot\x18\x1d \x01(\v2!.muskdeer.common.v1.VenueSnapshotBA\x9a\x84\x9e\x03<gorm:\"column:historical_snapshot;type:jsonb;serializer:json\"R\x12historicalSnapshot\x12v\n" +
+	"\x14strategy_instance_id\x18\x1e \x01(\x03B?\x9a\x84\x9e\x03:gorm:\"column:strategy_instance_id;type:bigint;default:(-)\"H\x01R\x12strategyInstanceId\x88\x01\x01\x12n\n" +
+	"\x11strategy_revision\x18\x1f \x01(\x03B<\x9a\x84\x9e\x037gorm:\"column:strategy_revision;type:bigint;default:(-)\"H\x02R\x10strategyRevision\x88\x01\x01B\f\n" +
 	"\n" +
-	"_delete_at\"\x87\t\n" +
+	"_delete_atB\x17\n" +
+	"\x15_strategy_instance_idB\x14\n" +
+	"\x12_strategy_revision\"\x87\t\n" +
 	"\x11VenueCancellation\x12J\n" +
 	"\x02id\x18\x01 \x01(\x03B:\x9a\x84\x9e\x035gorm:\"column:id;type:bigint;primaryKey;autoIncrement\"R\x02id\x12c\n" +
 	"\tcreate_at\x18\x02 \x01(\x03BF\x9a\x84\x9e\x03Agorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\"R\bcreateAt\x12c\n" +

@@ -32,11 +32,14 @@ func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *co
 	if e1 != nil || e2 != nil {
 		return ErrInvalidSubmit
 	}
+	if err := r.gridSubmissionRisk(cycle, target); err != nil {
+		return err
+	}
 	prepared, err := r.store.PrepareLive(ctx, cycle.lease, SubmitRequest{
 		UserID:   cycle.profile.UserId,
 		FundID:   cycle.profile.FundId,
 		Symbol:   cycle.profile.Symbol,
-		ClientID: native.ClientPrefix + cycle.profile.Symbol + "_" + rand.Text(),
+		ClientID: native.InstanceClientPrefix(cycle.profile) + rand.Text(),
 		Side:     domain.Side(target.Side),
 		Price:    price,
 		Quantity: quantity,
@@ -108,4 +111,57 @@ func quoteSeedTargets(snapshot *commonv1.VenueSnapshot, targets []*commonv1.Venu
 		present[side] = true
 	}
 	return seeds
+}
+
+// Include every active order plus earlier submissions before adding grid risk.
+func (r *Runtime) gridSubmissionRisk(cycle *quoteCycle, target *commonv1.VenueTarget) error {
+	if r.cfg.Grid == nil {
+		return nil
+	}
+	limit, err := native.Value(r.cfg.Grid.InventoryLimit, false, false)
+	if err != nil {
+		return err
+	}
+	net, total := decimal.Zero, decimal.Zero
+	for _, position := range cycle.snapshot.Positions {
+		quantity, err := native.Value(position.SignedQuantity, true, true)
+		if err != nil {
+			return err
+		}
+		net = net.Add(quantity)
+	}
+	buys, sells := decimal.Zero, decimal.Zero
+	for _, order := range cycle.snapshot.Orders {
+		if !native.Active(order.Status) {
+			continue
+		}
+		quantity, e1 := native.Value(order.Quantity, false, false)
+		executed, e2 := native.Value(order.ExecutedQuantity, false, true)
+		price, e3 := native.Value(order.Price, false, false)
+		if e1 != nil || e2 != nil || e3 != nil || executed.GreaterThan(quantity) {
+			return native.ErrInvalid
+		}
+		quantity = quantity.Sub(executed)
+		total = total.Add(price.Mul(quantity))
+		if order.Side == string(domain.SideBuy) {
+			buys = buys.Add(quantity)
+		} else {
+			sells = sells.Add(quantity)
+		}
+	}
+	for _, admitted := range append(append([]*commonv1.VenueTarget{}, cycle.admitted...), target) {
+		q, _ := native.Value(admitted.Quantity, false, false)
+		p, _ := native.Value(admitted.Price, false, false)
+		total = total.Add(p.Mul(q))
+		if admitted.Side == string(domain.SideBuy) {
+			buys = buys.Add(q)
+		} else {
+			sells = sells.Add(q)
+		}
+	}
+	budget, err := native.Value(r.cfg.Grid.TotalBudget, false, false)
+	if err != nil || total.GreaterThan(budget) || net.Add(buys).GreaterThan(limit) || net.Sub(sells).LessThan(limit.Neg()) {
+		return ErrRiskLimit
+	}
+	return nil
 }

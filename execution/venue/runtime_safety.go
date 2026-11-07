@@ -3,7 +3,6 @@ package venue
 import (
 	"context"
 	"errors"
-	"strings"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -14,6 +13,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
+	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 )
 
 func (r *Runtime) unresolvedCancels(ctx context.Context, account string) (bool, error) {
@@ -44,6 +44,9 @@ func safeReason(err error) string {
 }
 
 func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.VenueProfilePolicy, plan *executionvenuev1.QuotePlan, book *commonv1.VenueBook) error {
+	if plan.GetStrategyInstanceId() != r.cfg.InstanceID || plan.GetStrategyRevision() != r.cfg.Revision {
+		return domain.ErrLeaseLost
+	}
 	if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
 		plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.Publisher.OwnerId != plan.Book.GetPublisher().GetOwnerId() || book.Publisher.Epoch != plan.Book.Publisher.Epoch ||
 		plan.Strategy.AccountId != native.StrategyKey(profile.UserId, profile.FundId) || repository.CheckNativeAuthority(ctx, r.db, plan.Strategy) != nil {
@@ -86,15 +89,21 @@ func (r *Runtime) targets(profile *commonv1.VenueProfilePolicy, plan *executionv
 		if side == domain.SideSell {
 			levels = plan.Book.Asks
 		}
-		first, e1 := native.Value(levels[0].Price, false, false)
-		last, e2 := native.Value(levels[len(levels)-1].Price, false, false)
-		if e1 != nil || e2 != nil {
-			return nil, native.ErrInvalid
-		}
-		first, e1 = domain.RoundPrice(first, tick, side)
-		last, e2 = domain.RoundPrice(last, tick, side)
-		if e1 != nil || e2 != nil || price.LessThan(decimal.Min(first, last)) || price.GreaterThan(decimal.Max(first, last)) {
-			return nil, native.ErrInvalid
+		if r.cfg.Grid != nil {
+			if err := r.validateGridTarget(plan.Book, proposal); err != nil {
+				return nil, err
+			}
+		} else {
+			first, e1 := native.Value(levels[0].Price, false, false)
+			last, e2 := native.Value(levels[len(levels)-1].Price, false, false)
+			if e1 != nil || e2 != nil {
+				return nil, native.ErrInvalid
+			}
+			first, e1 = domain.RoundPrice(first, tick, side)
+			last, e2 = domain.RoundPrice(last, tick, side)
+			if e1 != nil || e2 != nil || price.LessThan(decimal.Min(first, last)) || price.GreaterThan(decimal.Max(first, last)) {
+				return nil, native.ErrInvalid
+			}
 		}
 		key := string(side) + "/" + price.String()
 		if result[key] != nil {
@@ -158,9 +167,7 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProf
 		if !native.Active(order.Status) {
 			continue
 		}
-		owned := strings.HasPrefix(order.ClientId, native.ClientPrefix+profile.Symbol+"_")
-		legacy := !budget.CutoverCompleted && strings.HasPrefix(order.ClientId, native.LegacyPrefix+profile.Symbol+"_")
-		if !owned && !legacy {
+		if !ownsCancellation(profile, order.ClientId, budget.CutoverCompleted) {
 			continue
 		}
 		if err := r.store.Observe(ctx, lease, &commonv1.VenueSnapshot{
@@ -175,4 +182,45 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProf
 	}
 	_, err = r.refresh(ctx, profile, lease, nil)
 	return err
+}
+
+func (r *Runtime) maximumTargets() int {
+	if r.cfg.Grid != nil {
+		return int(r.cfg.Grid.GridCount)
+	}
+	return 40
+}
+func (r *Runtime) validateGridTarget(book *commonv1.VenueBook, target *commonv1.VenueTarget) error {
+	p, err := strategyconfig.Grid(r.cfg.Grid)
+	if err != nil {
+		return err
+	}
+	if time.Since(time.UnixMilli(book.EventAtMs)) > p.MaxMarketAge {
+		return native.ErrInvalid
+	}
+	tick, err := native.Value(r.cfg.Venue.Profiles[0].PriceTick, false, false)
+	if err != nil {
+		return err
+	}
+	bid, e1 := native.Value(book.Bids[0].Price, false, false)
+	ask, e2 := native.Value(book.Asks[0].Price, false, false)
+	if e1 != nil || e2 != nil {
+		return native.ErrInvalid
+	}
+	mid, _ := bid.Add(ask).QuoRem(decimal.NewFromInt(2), 19)
+	levels, err := domain.GridPrices(p, tick, mid, decimal.Zero, decimal.Zero)
+	if err != nil {
+		return err
+	}
+	price, _ := native.Value(target.Price, false, false)
+	quantity, _ := native.Value(target.Quantity, false, false)
+	if price.Mul(quantity).GreaterThan(p.PerOrderNotional) {
+		return ErrRiskLimit
+	}
+	for _, level := range levels {
+		if string(level.Side) == target.Side && level.Price.Equal(price) {
+			return nil
+		}
+	}
+	return native.ErrInvalid
 }

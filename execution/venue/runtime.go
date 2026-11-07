@@ -41,8 +41,8 @@ type Runtime struct {
 	gateway gateway.Factory
 	store   *Store
 	leases  domain.LeaseRepository
-	client  atomic.Pointer[gatewaySession]
-	closing atomic.Bool
+	client  *atomic.Pointer[gatewaySession]
+	closing *atomic.Bool
 	gates   map[string]chan struct{}
 	plans   map[string]*atomic.Int64
 }
@@ -92,6 +92,8 @@ func NewRuntime(ctx context.Context, cfg *configv1.BusinessRuntime, deps Depende
 		leases:  leases,
 		gates:   gates,
 		plans:   plans,
+		client:  &atomic.Pointer[gatewaySession]{},
+		closing: &atomic.Bool{},
 	}, nil
 }
 
@@ -268,7 +270,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
 	profile, err := native.Profile(r.cfg.Venue, plan.GetScope())
-	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > 40 || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {
+	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > r.maximumTargets() || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
 	leave, err := r.enter(plan.Scope)
@@ -332,8 +334,10 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 		bridgeSlots: r.cfg.BridgeSlots,
 		lease:       lease,
 		authority: LiveAuthority{
-			Strategy: plan.Strategy,
-			Book:     book,
+			Strategy:   plan.Strategy,
+			Book:       book,
+			InstanceID: r.cfg.InstanceID,
+			Revision:   r.cfg.Revision,
 		},
 		targets:  quoteMaintenanceOrder(plan.Targets, snapshot),
 		snapshot: snapshot,
@@ -344,7 +348,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	if budget.CutoverCompleted {
 		seedErr = r.seedQuoteSides(ctx, cycle)
 	}
-	err = r.cancelObsolete(ctx, profile, lease, snapshot, retained, result)
+	err = r.cancelObsolete(ctx, profile, lease, snapshot, retained, result, budget.CutoverCompleted)
 	if err != nil {
 		return nil, errors.Join(err, seedErr)
 	}
@@ -512,9 +516,12 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 	return r.client.Load().Cancel(ctx, admission)
 }
 
-func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.VenueProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, retained *quoteRetention, result *executionvenuev1.QuoteResult) error {
+func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.VenueProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, retained *quoteRetention, result *executionvenuev1.QuoteResult, cutover bool) error {
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
+			continue
+		}
+		if !ownsCancellation(profile, order.ClientId, cutover) {
 			continue
 		}
 		if retained.orders[order.OrderId] {

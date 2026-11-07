@@ -17,6 +17,8 @@ message VenuePolicy {
   uint32 depth = 5;
   google.protobuf.Duration lease_ttl = 6;
   muskdeer.config.v1.SyntheticTape synthetic_tape = 7;
+  // Set only for a migrated run with existing consumed slots.
+  string synthetic_policy_digest = 8;
 }
 
 // VenueProfilePolicy projects business fields from the generated budget
@@ -31,6 +33,7 @@ message VenueProfilePolicy {
   string market_data_source = 7;
   string price_tick = 8;
   string quantity_step = 9;
+  int64 strategy_instance_id = 10;
 }
 
 // VenueProfileImport is an explicit maintenance input, never service config.

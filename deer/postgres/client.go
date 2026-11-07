@@ -69,7 +69,10 @@ func New(ctx context.Context, cfg *configv1.Postgres, application string) (*Clie
 	}
 	parsed, err := connectionConfig(cfg, password, application)
 	if err != nil {
-		return nil, &operationError{operation: "configuration", cause: err}
+		return nil, &operationError{
+			operation: "configuration",
+			cause:     err,
+		}
 	}
 	pool := stdlib.OpenDB(*parsed)
 	pool.SetMaxOpenConns(int(cfg.MaxOpenConns))
@@ -93,6 +96,9 @@ func New(ctx context.Context, cfg *configv1.Postgres, application string) (*Clie
 	})
 	if err != nil {
 		return rollback("gorm initialization", err)
+	}
+	if err := identityReturning(db); err != nil {
+		return rollback("gorm identity contract", err)
 	}
 	if err := connect.Err(); err != nil {
 		return rollback("connect", err)
@@ -119,7 +125,10 @@ func (c *Client) Ping(ctx context.Context) error {
 	bounded, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	if err := c.pool.PingContext(bounded); err != nil {
-		return &operationError{operation: "health check", cause: err}
+		return &operationError{
+			operation: "health check",
+			cause:     err,
+		}
 	}
 	return nil
 }
@@ -135,7 +144,10 @@ func (e *operationError) Unwrap() error { return e.cause }
 
 func closePool(pool *sql.DB) error {
 	if err := pool.Close(); err != nil {
-		return &operationError{operation: "close", cause: err}
+		return &operationError{
+			operation: "close",
+			cause:     err,
+		}
 	}
 	return nil
 }
@@ -147,7 +159,12 @@ func validate(cfg *configv1.Postgres) error {
 	if cfg == nil {
 		return errors.New("postgres configuration is required")
 	}
-	for _, value := range []string{cfg.Host, cfg.Database, cfg.Username, cfg.PasswordEnv} {
+	for _, value := range []string{
+		cfg.Host,
+		cfg.Database,
+		cfg.Username,
+		cfg.PasswordEnv,
+	} {
 		if strings.TrimSpace(value) == "" || strings.TrimSpace(value) != value {
 			return errors.New("postgres host, database, username and password_env are required")
 		}

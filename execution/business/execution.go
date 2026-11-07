@@ -27,13 +27,17 @@ const workerExecutionOutbox = "execution.outbox"
 
 // Execution contains only the execution RPC and its owned work plan.
 type Execution struct {
-	handler *executiongrpc.Server
-	workers []deer.Worker
-	native  *venueexecution.Runtime
+	handler   *executiongrpc.Server
+	workers   []deer.Worker
+	native    *venueexecution.Runtime
+	instances *venueexecution.Instances
 }
 
 // NewExecution assembles the execution service without starting tasks.
 func NewExecution(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Execution, error) {
+	if cfg.GetVenueConnection() != nil {
+		return NewInstances(ctx, cfg, owner)
+	}
 	if cfg.GetName() != "execution" {
 		return nil, runtimeconfig.ErrInvalidConfig
 	}
@@ -74,6 +78,10 @@ func (s *Execution) Workers() []deer.Worker { return slices.Clone(s.workers) }
 
 // RegisterGRPC registers only the execution contract.
 func (s *Execution) RegisterGRPC(registrar grpc.ServiceRegistrar) error {
+	if s.instances != nil {
+		s.instances.RegisterGRPC(registrar)
+		return nil
+	}
 	if s.native != nil {
 		s.native.RegisterGRPC(registrar)
 		return nil

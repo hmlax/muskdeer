@@ -3,6 +3,7 @@ syntax = "proto3";
 package muskdeer.model.v1;
 
 import "deer/proto/common/v1/strategy_parameters.proto";
+import "deer/proto/common/v1/strategy_instance.proto";
 import "tagger/tagger.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1;modelv1";
@@ -30,6 +31,14 @@ message StrategyInstance {
   int64 runtime_owner_epoch = 19 [(tagger.tags) = "gorm:\"column:runtime_owner_epoch;type:bigint;not null;default:0\""];
   // Durable requested target, independent of runtime recovery/ownership.
   string desired_state = 20 [(tagger.tags) = "gorm:\"column:desired_state;type:varchar(16);not null;default:''\""];
+  // Current configuration is authoritative here. Legacy version rows are audit.
+  muskdeer.common.v1.StrategyInstanceParameters parameters = 21 [(tagger.tags) = "gorm:\"column:parameters;type:jsonb;serializer:json;default:(-)\""];
+  string implementation = 22 [(tagger.tags) = "gorm:\"column:implementation;type:varchar(64);default:(-)\""];
+  // Preserves an existing finite tape run's policy identity across migration.
+  string tape_policy_digest = 23 [(tagger.tags) = "gorm:\"column:tape_policy_digest;type:varchar(64);default:(-)\""];
+  string tape_parameters_digest = 24 [(tagger.tags) = "gorm:\"column:tape_parameters_digest;type:varchar(64);default:(-)\""];
+  int64 template_id = 25 [(tagger.tags) = "gorm:\"column:template_id;type:bigint;default:(-);index:idx_strategy_template_instance\""];
+  int64 template_revision = 26 [(tagger.tags) = "gorm:\"column:template_revision;type:bigint;default:(-)\""];
 }
 
 // StrategyConfigVersion stores immutable version/source identity and typed
@@ -49,4 +58,7 @@ message StrategyConfigVersion {
   optional string template = 11 [(tagger.tags) = "gorm:\"column:template;type:varchar(32)\""];
   muskdeer.common.v1.MakerParameters maker_parameters = 12 [(tagger.tags) = "gorm:\"column:maker_parameters;type:jsonb;serializer:json\""];
   muskdeer.common.v1.GridParameters grid_parameters = 13 [(tagger.tags) = "gorm:\"column:grid_parameters;type:jsonb;serializer:json\""];
+  muskdeer.common.v1.StrategyInstanceParameters parameters = 14 [(tagger.tags) = "gorm:\"column:parameters;type:jsonb;serializer:json;default:(-)\""];
+  optional int64 template_id = 15 [(tagger.tags) = "gorm:\"column:template_id;type:bigint;default:(-)\""];
+  optional int64 template_revision = 16 [(tagger.tags) = "gorm:\"column:template_revision;type:bigint;default:(-)\""];
 }
