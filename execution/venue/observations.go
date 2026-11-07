@@ -3,6 +3,7 @@ package venue
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
@@ -23,6 +24,7 @@ func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *
 		return ErrInvalidSnapshot
 	}
 	byClient := make(map[string]*commonv1.VenueOrder, len(snapshot.Orders))
+	clients := make([]string, 0, len(snapshot.Orders))
 	for _, order := range snapshot.Orders {
 		if order == nil || order.OrderId == "" || !native.Active(order.Status) && !native.Terminal(order.Status) {
 			return ErrInvalidSnapshot
@@ -31,6 +33,7 @@ func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *
 			return ErrInvalidSnapshot
 		}
 		byClient[order.ClientId] = order
+		clients = append(clients, order.ClientId)
 	}
 	return s.db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		_, now, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch))
@@ -43,7 +46,9 @@ func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *
 		}
 		var rows []*executionmodelv1.VenueOrderIntent
 		if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
-			Where("account_id = ? AND state != ?", lease.Key.AccountID, IntentTerminal).Clauses(clause.Locking{Strength: "UPDATE"}).Find(&rows).Error; err != nil {
+			Where("account_id = ? AND state != ?", lease.Key.AccountID, IntentTerminal).
+			Where("client_id IN ? OR state = ?", clients, IntentPrepared).
+			Clauses(clause.Locking{Strength: "UPDATE"}).Find(&rows).Error; err != nil {
 			return err
 		}
 		for _, row := range rows {
@@ -99,6 +104,9 @@ func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.Tradi
 		!price.Equal(expectedPrice) || !quantity.Equal(expectedQuantity) || order.Side != row.Side || row.Symbol != scope.Symbol ||
 		row.UserId != scope.UserId || row.FundId != scope.FundId || row.OrderId != "" && row.OrderId != order.OrderId || row.State == IntentPrepared {
 		return ErrInvalidSnapshot
+	}
+	if row.State == IntentAcknowledged && row.OrderId == order.OrderId && native.Active(order.Status) {
+		return nil // Preserve acknowledgement time; repeated reads are not new sends.
 	}
 	row.OrderId, row.State = order.OrderId, IntentAcknowledged
 	if native.Terminal(order.Status) {
@@ -164,6 +172,10 @@ func (s *Store) PendingIDs(ctx context.Context, account string) ([]uint64, error
 // SyncBudget updates observations without enabling a disabled fund. Observed
 // gross obligation never decreases automatically, preserving legacy/fill risk.
 func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, observed decimal.Decimal) error {
+	return s.syncBudget(ctx, lease, snapshot, observed, false)
+}
+
+func (s *Store) syncBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, observed decimal.Decimal, current bool) error {
 	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch)); err != nil {
 			return err
@@ -174,6 +186,18 @@ func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapsho
 		}
 		if snapshot.GetScope().GetUserId() != row.UserId || snapshot.Scope.FundId != row.FundId || observed.IsNegative() {
 			return ErrInvalidSnapshot
+		}
+		if current {
+			now := time.Now().UnixMilli()
+			if snapshot.StartedAtMs <= 0 || snapshot.StartedAtMs > now || snapshot.ObservedAtMs < snapshot.StartedAtMs || snapshot.ObservedAtMs > now || snapshot.ValidUntilMs != snapshot.StartedAtMs+native.SnapshotAge.Milliseconds() || snapshot.ValidUntilMs <= now {
+				return ErrInvalidSnapshot
+			}
+			row.ObservedNotional = observed.String()
+			row.AvailableQuote = snapshot.Available
+			row.WorstFeeRate = snapshot.Market.WorstFeeRate
+			row.SnapshotExpiresAt = snapshot.ValidUntilMs
+			return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", row.Id).
+				Select("ObservedNotional", "AvailableQuote", "WorstFeeRate", "SnapshotExpiresAt").Updates(row).Error
 		}
 		previous, err := domain.ParseLedgerDecimal(row.ObservedNotional, false, true)
 		if err != nil {

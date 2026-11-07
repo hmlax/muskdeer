@@ -401,6 +401,12 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 	if err != nil {
 		return nil, err
 	}
+	if r.cfg.InstanceID > 0 {
+		if err := r.store.Observe(ctx, lease, snapshot); err != nil {
+			return nil, err
+		}
+		return snapshot, r.syncSnapshotBudget(ctx, lease, snapshot, book)
+	}
 	clients, err := r.store.pendingClientIDs(ctx, lease.Key.AccountID)
 	if err != nil {
 		return nil, err
@@ -463,14 +469,21 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 	if err := r.store.Observe(ctx, lease, snapshot); err != nil {
 		return nil, err
 	}
+	if err := r.syncSnapshotBudget(ctx, lease, snapshot, book); err != nil {
+		return nil, err
+	}
+	return snapshot, recoveryErr
+}
+
+func (r *Runtime) syncSnapshotBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, book *commonv1.VenueBook) error {
 	mark, err := native.Value(snapshot.Market.MarkPrice, false, false)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if len(book.GetAsks()) != 0 {
 		upper, err := native.Value(book.Asks[len(book.Asks)-1].Price, false, false)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		mark = decimal.Max(mark, upper)
 	}
@@ -478,7 +491,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 	for _, position := range snapshot.Positions {
 		quantity, err := native.Value(position.SignedQuantity, true, true)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		gross = gross.Add(quantity.Abs().Mul(mark))
 	}
@@ -491,10 +504,10 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 		executed, _ := native.Value(order.ExecutedQuantity, false, true)
 		gross = gross.Add(quantity.Sub(executed).Mul(decimal.Max(price, mark)))
 	}
-	if err := r.store.SyncBudget(ctx, lease, snapshot, gross); err != nil {
-		return nil, err
+	if r.cfg.InstanceID > 0 {
+		return r.store.syncBudget(ctx, lease, snapshot, gross, true)
 	}
-	return snapshot, recoveryErr
+	return r.store.SyncBudget(ctx, lease, snapshot, gross)
 }
 
 func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *commonv1.VenueProfilePolicy, order *commonv1.VenueOrder) error {

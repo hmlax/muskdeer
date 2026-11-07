@@ -17,6 +17,9 @@ import (
 )
 
 func (r *Runtime) unresolvedCancels(ctx context.Context, account string) (bool, error) {
+	if r.cfg.InstanceID > 0 {
+		return false, nil // Current venue orders, rather than historical receipts, govern quotation.
+	}
 	var pending int64
 	query, err := pendingSDKCancellations(ctx, r.db, account)
 	if err != nil {

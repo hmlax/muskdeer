@@ -89,17 +89,26 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 		if !budget.Enabled || budget.SnapshotExpiresAt <= now || budget.UserId != request.UserID || budget.FundId != request.FundID {
 			return ErrRiskLimit
 		}
-		var ambiguous int64
-		if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
-			Where("account_id = ? AND state = ? AND historical_approval_reference = ''", lease.Key.AccountID, IntentDispatched).Count(&ambiguous).Error; err != nil {
-			return err
-		}
-		if ambiguous != 0 {
-			return domain.ErrOutcomeUnknown
+		if live == nil || live.InstanceID == 0 {
+			var ambiguous int64
+			if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
+				Where("account_id = ? AND state = ? AND historical_approval_reference = ''", lease.Key.AccountID, IntentDispatched).Count(&ambiguous).Error; err != nil {
+				return err
+			}
+			if ambiguous != 0 {
+				return domain.ErrOutcomeUnknown
+			}
 		}
 		maximum, observed, reserved, err := budgetAmounts(budget)
 		if err != nil {
 			return err
+		}
+		auditReserved := reserved
+		if live != nil {
+			reserved, err = admissionReservation(ctx, tx, budget, live.InstanceID)
+			if err != nil {
+				return err
+			}
 		}
 		notional := request.Price.Mul(request.Quantity)
 		if observed.Add(reserved).Add(notional).GreaterThan(maximum) {
@@ -134,7 +143,7 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 			return err
 		}
 		return tx.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Where("id = ?", budget.Id).
-			Update("reserved_notional", reserved.Add(notional).String()).Error
+			Update("reserved_notional", auditReserved.Add(notional).String()).Error
 	})
 	if err != nil {
 		return Prepared{}, err
@@ -156,7 +165,7 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 
 // WithSubmission commits a one-way claim before the effect, then locks and
 // rechecks the current lease at SDK egress. Lease rows remain locked through
-// the bounded callback. A crash leaves DISPATCHED, which blocks new risk.
+// the bounded callback. A crash leaves DISPATCHED and its full reservation.
 // This cannot revoke a packet already accepted by the unchanged native server.
 func (s *Store) WithSubmission(ctx context.Context, admission Admission, send func(context.Context) error) error {
 	if s == nil || s.db == nil || !validStoreContext(ctx) || send == nil || admission.IntentID <= 0 {
@@ -184,12 +193,6 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 		if !budget.Enabled || budget.SnapshotExpiresAt <= now {
 			return ErrRiskLimit
 		}
-		if err := checkReservedBudget(budget); err != nil {
-			return err
-		}
-		if err := checkDevelopmentRiskHold(ctx, tx, budget); err != nil {
-			return err
-		}
 		freshness := time.Duration(budget.SnapshotExpiresAt-now)*time.Millisecond - 50*time.Millisecond
 		if freshness <= 0 {
 			return ErrRiskLimit
@@ -204,7 +207,12 @@ func (s *Store) WithSubmission(ctx context.Context, admission Admission, send fu
 		if !s.matchesAdmission(&row, admission) {
 			return ErrInvalidSubmit
 		}
-		if err := checkPersistedLiveBudget(budget, &row); err != nil {
+		if row.GetStrategyInstanceId() == 0 {
+			if err := checkDevelopmentRiskHold(ctx, tx, budget); err != nil {
+				return err
+			}
+		}
+		if err := checkPersistedLiveBudget(ctx, tx, budget, &row); err != nil {
 			return err
 		}
 		left, err := checkLiveAuthority(ctx, tx, &row, now)
@@ -274,9 +282,6 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if !budget.Enabled || budget.SnapshotExpiresAt <= now {
 			return ErrRiskLimit
 		}
-		if err := checkReservedBudget(budget); err != nil {
-			return err
-		}
 		var row executionmodelv1.VenueOrderIntent
 		if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ? AND delete_at IS NULL", admission.IntentID).
 			Clauses(clause.Locking{Strength: "UPDATE"}).First(&row).Error; err != nil {
@@ -295,26 +300,28 @@ func (s *Store) claim(ctx context.Context, admission Admission, account string) 
 		if _, err := liveSubmissionWindow(ctx, &row, left); err != nil {
 			return err
 		}
-		if err := checkPersistedLiveBudget(budget, &row); err != nil {
+		if err := checkPersistedLiveBudget(ctx, tx, budget, &row); err != nil {
 			return err
 		}
-		var pending int64
-		if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
-			Where("account_id = ? AND state = ? AND historical_approval_reference = ''", account, IntentDispatched).Count(&pending).Error; err != nil {
-			return err
-		}
-		if pending > 0 {
-			return domain.ErrOutcomeUnknown
-		}
-		cancelQuery, err := pendingSDKCancellations(ctx, tx, account)
-		if err != nil {
-			return err
-		}
-		if err := cancelQuery.Where("state = ?", IntentDispatched).Count(&pending).Error; err != nil {
-			return err
-		}
-		if pending > 0 {
-			return domain.ErrOutcomeUnknown
+		if row.GetStrategyInstanceId() == 0 {
+			var pending int64
+			if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).
+				Where("account_id = ? AND state = ? AND historical_approval_reference = ''", account, IntentDispatched).Count(&pending).Error; err != nil {
+				return err
+			}
+			if pending > 0 {
+				return domain.ErrOutcomeUnknown
+			}
+			cancelQuery, err := pendingSDKCancellations(ctx, tx, account)
+			if err != nil {
+				return err
+			}
+			if err := cancelQuery.Where("state = ?", IntentDispatched).Count(&pending).Error; err != nil {
+				return err
+			}
+			if pending > 0 {
+				return domain.ErrOutcomeUnknown
+			}
 		}
 		return tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", row.Id).
 			Update("state", IntentDispatched).Error

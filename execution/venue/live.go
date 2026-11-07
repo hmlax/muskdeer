@@ -102,13 +102,20 @@ func checkLiveBudget(budget *commonmodelv1.TradingAccountPolicy, request SubmitR
 	return nil
 }
 
-func checkPersistedLiveBudget(budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent) error {
-	if row.SourceEpoch == 0 {
-		return nil
-	}
-	reserved, err := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)
+func checkPersistedLiveBudget(ctx context.Context, db *gorm.DB, budget *commonmodelv1.TradingAccountPolicy, row *executionmodelv1.VenueOrderIntent) error {
+	maximum, observed, _, err := budgetAmounts(budget)
 	if err != nil {
 		return err
+	}
+	reserved, err := admissionReservation(ctx, db, budget, row.GetStrategyInstanceId())
+	if err != nil {
+		return err
+	}
+	if observed.Add(reserved).GreaterThan(maximum) {
+		return ErrRiskLimit
+	}
+	if row.SourceEpoch == 0 {
+		return nil
 	}
 	price, e1 := domain.ParseLedgerDecimal(row.Price, false, false)
 	quantity, e2 := domain.ParseLedgerDecimal(row.Quantity, false, false)
