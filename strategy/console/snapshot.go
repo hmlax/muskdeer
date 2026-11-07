@@ -9,6 +9,7 @@ import (
 	commonmodel "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	execution "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
+	portfolio "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
@@ -53,11 +54,14 @@ func (s *Server) GetAccountSnapshot(ctx context.Context, in *pb.AccountRequest) 
 	if err != nil {
 		return nil, err
 	}
-	client, err := s.execution(ctx, account.AccountId)
+
+	// Portfolio owns the current gateway observation and rejects stale/unfenced
+	// snapshots. Reusing it avoids taking the execution admission gate from quotes.
+	conn, err := s.factory.Client(rpcclient.Target{Service: rpcsecurity.ServicePortfolio})
 	if err != nil {
-		return nil, err
+		return nil, s.fail(ctx, err)
 	}
-	snapshot, err := client.GetSnapshot(ctx, &common.VenueScope{
+	snapshot, err := portfolio.NewPortfolioClient(conn).GetSnapshot(ctx, &common.VenueScope{
 		UserId: account.UserId,
 		FundId: account.FundId,
 		Symbol: account.Symbol,
