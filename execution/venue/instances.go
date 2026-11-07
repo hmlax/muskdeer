@@ -155,6 +155,7 @@ func (r *Instances) run(ctx context.Context) (result error) {
 }
 
 func (r *Runtime) maintainInstance(ctx context.Context) error {
+	failed := false
 	for ctx.Err() == nil {
 		var err error
 		if r.cfg.Template == domain.StrategyTemplateWashTrade {
@@ -172,12 +173,15 @@ func (r *Runtime) maintainInstance(ctx context.Context) error {
 				}
 			}
 		}
-		if err != nil && ctx.Err() == nil {
+		if err != nil && !failed && ctx.Err() == nil {
 			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("instance", strconv.FormatInt(r.cfg.InstanceID, 10)), slog.String("reason", safeReason(err))); logErr != nil {
 				return logErr
 			}
 		}
-		if err := native.Wait(ctx, r.cfg.PollInterval); err != nil {
+		failed = err != nil
+		// Preserve the existing safety-observation cadence. Strategy evaluation
+		// still follows its independent database poll parameter.
+		if err := native.Wait(ctx, 500*time.Millisecond); err != nil {
 			return err
 		}
 	}
