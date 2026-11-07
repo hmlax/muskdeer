@@ -9,10 +9,11 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	model "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	strategymodel "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/trading/strategyregistry"
-	"gorm.io/gorm"
 )
 
 //go:embed 0001_strategy_instances.sql
@@ -27,7 +28,7 @@ func checksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(definitio
 
 // Match checks the complete consolidated ledger identity.
 func Match(rows []*model.SchemaMigration) bool {
-	return len(rows) == 2 && matchBaseline(rows[0]) && rows[1].Version == 2 && rows[1].Name == unlimitedName && rows[1].Checksum == unlimitedChecksum() && rows[1].DeleteAt == nil
+	return len(rows) == 3 && matchUnlimited(rows[:2]) && rows[2].Version == 3 && rows[2].Name == consoleName && rows[2].Checksum == consoleChecksum() && rows[2].DeleteAt == nil
 }
 
 func matchBaseline(row *model.SchemaMigration) bool {
@@ -43,7 +44,7 @@ func Check(ctx context.Context, db *gorm.DB) error {
 		return ErrHistory
 	}
 	var rows []*model.SchemaMigration
-	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Limit(3).Find(&rows).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Limit(4).Find(&rows).Error; err != nil {
 		return errors.Join(ErrHistory, err)
 	}
 	if !Match(rows) {

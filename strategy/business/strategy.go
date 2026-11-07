@@ -7,12 +7,14 @@ import (
 	"strconv"
 	"time"
 
+	"google.golang.org/grpc"
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	executionmodelv1 "github.com/hmlax/muskdeer/deer/pb/execution/model/v1"
+	consolev1 "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
 	"github.com/hmlax/muskdeer/deer/runloop"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
@@ -20,16 +22,27 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
 	"github.com/hmlax/muskdeer/execution/delivery/executiongrpc"
 	"github.com/hmlax/muskdeer/market/delivery/marketgrpc"
+	"github.com/hmlax/muskdeer/strategy/console"
 	nativestrategy "github.com/hmlax/muskdeer/strategy/native"
 	"github.com/hmlax/muskdeer/strategy/usecase"
 )
 
 const strategyWorkerPrefix = "strategy.account."
 
-// Strategy owns only account controllers; it exposes no management RPCs.
-type Strategy struct{ workers []deer.Worker }
+// Strategy owns account controllers and an optional authenticated console.
+type Strategy struct {
+	workers []deer.Worker
+	console *console.Server
+}
 
-// NewStrategy assembles independent strategy workers without management delivery.
+// RegisterGRPC publishes the console only after explicit operator mTLS admission.
+func (s *Strategy) RegisterGRPC(registrar grpc.ServiceRegistrar) {
+	if s.console != nil {
+		consolev1.RegisterConsoleServer(registrar, s.console)
+	}
+}
+
+// NewStrategy assembles independent strategy workers and approved delivery.
 func NewStrategy(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer.Deer) (*Strategy, error) {
 	if cfg.GetVenueConnection() != nil {
 		return NewInstances(ctx, cfg, owner)

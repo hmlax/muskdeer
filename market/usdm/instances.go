@@ -5,12 +5,13 @@ import (
 	"maps"
 	"slices"
 
+	"gorm.io/gorm"
+
 	"github.com/hmlax/muskdeer/deer/logging"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
-	"gorm.io/gorm"
 )
 
 func sortedDependencyKeys[V any](values map[string]V) []string {
@@ -31,6 +32,10 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 	}
 	parent := &Runtime{children: make(map[string]*Runtime)}
 	for _, instance := range instances {
+		parent.inventory = append(parent.inventory, &commonv1.VenueInstanceRevision{
+			Id:       instance.ID,
+			Revision: instance.Revision,
+		})
 		if instance.Profile.MarketDataSource != native.Source {
 			return nil, instanceconfig.ErrInvalid
 		}

@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
-
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -21,6 +19,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
@@ -91,6 +90,9 @@ func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig
 }
 
 func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProfilePolicy) error {
+	if active, err := instanceconfig.Active(ctx, db, cfg.InstanceID, cfg.Revision); err != nil || !active {
+		return err
+	}
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.StrategyKey(profile.UserId, profile.FundId),

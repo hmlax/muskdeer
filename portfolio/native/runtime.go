@@ -31,6 +31,7 @@ import (
 
 // Runtime polls authoritative execution observations; it never simulates money.
 type Runtime struct {
+	inventory []*commonv1.VenueInstanceRevision
 	portfoliovenuev1.UnimplementedPortfolioServer
 	children map[string]*Runtime
 	db       *gorm.DB

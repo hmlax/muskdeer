@@ -40,6 +40,15 @@ type Instance struct {
 // A supplied connection binds consumed tape identity to the same transport
 // fields that execution attaches before publication. It supplies no parameters.
 func Load(ctx context.Context, db *gorm.DB, connections ...*configv1.VenueConnection) ([]*Instance, error) {
+	return load(ctx, db, false, connections...)
+}
+
+// LoadAll assembles stopped instances as well, enabling explicit control without hot parameter reload.
+func LoadAll(ctx context.Context, db *gorm.DB, connections ...*configv1.VenueConnection) ([]*Instance, error) {
+	return load(ctx, db, true, connections...)
+}
+
+func load(ctx context.Context, db *gorm.DB, all bool, connections ...*configv1.VenueConnection) ([]*Instance, error) {
 	if err := validContext(ctx); err != nil || db == nil {
 		return nil, ErrInvalid
 	}
@@ -73,7 +82,7 @@ func Load(ctx context.Context, db *gorm.DB, connections ...*configv1.VenueConnec
 			if err != nil {
 				return err
 			}
-			if !row.DesiredRunning {
+			if !all && !row.DesiredRunning {
 				continue
 			}
 			if instance.Type == domain.StrategyTemplateWashTrade {

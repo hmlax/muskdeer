@@ -7,5 +7,6 @@ import "deer/proto/common/v1/venue.proto";
 option go_package = "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1;venuev1";
 
 service Portfolio {
+  rpc DescribeInstances(muskdeer.common.v1.VenueInstanceInventoryRequest) returns (muskdeer.common.v1.VenueInstanceInventory);
   rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
 }

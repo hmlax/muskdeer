@@ -20,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Market_GetBook_FullMethodName  = "/muskdeer.market.venue.v1.Market/GetBook"
-	Market_GetTrade_FullMethodName = "/muskdeer.market.venue.v1.Market/GetTrade"
+	Market_DescribeInstances_FullMethodName = "/muskdeer.market.venue.v1.Market/DescribeInstances"
+	Market_GetBook_FullMethodName           = "/muskdeer.market.venue.v1.Market/GetBook"
+	Market_GetTrade_FullMethodName          = "/muskdeer.market.venue.v1.Market/GetTrade"
 )
 
 // MarketClient is the client API for Market service.
@@ -30,6 +31,7 @@ const (
 //
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 type MarketClient interface {
+	DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error)
 	GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.VenueBook, error)
 	GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.VenueTrade, error)
 }
@@ -40,6 +42,16 @@ type marketClient struct {
 
 func NewMarketClient(cc grpc.ClientConnInterface) MarketClient {
 	return &marketClient{cc}
+}
+
+func (c *marketClient) DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(v1.VenueInstanceInventory)
+	err := c.cc.Invoke(ctx, Market_DescribeInstances_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *marketClient) GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.VenueBook, error) {
@@ -68,6 +80,7 @@ func (c *marketClient) GetTrade(ctx context.Context, in *TradeRequest, opts ...g
 //
 // These are internal Muskdeer contracts, independent of the upstream SDK wire.
 type MarketServer interface {
+	DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error)
 	GetBook(context.Context, *BookRequest) (*v1.VenueBook, error)
 	GetTrade(context.Context, *TradeRequest) (*v1.VenueTrade, error)
 	mustEmbedUnimplementedMarketServer()
@@ -80,6 +93,9 @@ type MarketServer interface {
 // pointer dereference when methods are called.
 type UnimplementedMarketServer struct{}
 
+func (UnimplementedMarketServer) DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeInstances not implemented")
+}
 func (UnimplementedMarketServer) GetBook(context.Context, *BookRequest) (*v1.VenueBook, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetBook not implemented")
 }
@@ -105,6 +121,24 @@ func RegisterMarketServer(s grpc.ServiceRegistrar, srv MarketServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Market_ServiceDesc, srv)
+}
+
+func _Market_DescribeInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(v1.VenueInstanceInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MarketServer).DescribeInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Market_DescribeInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MarketServer).DescribeInstances(ctx, req.(*v1.VenueInstanceInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Market_GetBook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -150,6 +184,10 @@ var Market_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "muskdeer.market.venue.v1.Market",
 	HandlerType: (*MarketServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "DescribeInstances",
+			Handler:    _Market_DescribeInstances_Handler,
+		},
 		{
 			MethodName: "GetBook",
 			Handler:    _Market_GetBook_Handler,

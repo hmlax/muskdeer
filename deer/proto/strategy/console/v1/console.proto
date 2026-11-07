@@ -1,0 +1,157 @@
+syntax = "proto3";
+package muskdeer.strategy.console.v1;
+option go_package = "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1;consolev1";
+
+// Console is the platform operator's mTLS-only administration boundary.
+// Authentication/RBAC and their database remain in the independent admin app.
+service Console {
+ rpc GetOverview(ActorRequest) returns (Overview);
+ rpc ListTemplates(ListRequest) returns (TemplatePage);
+ rpc ListInstances(InstanceListRequest) returns (InstancePage);
+ rpc GetInstance(InstanceRequest) returns (Instance);
+ rpc CreateInstance(CreateInstanceRequest) returns (Instance);
+ rpc UpdateInstance(UpdateInstanceRequest) returns (Instance);
+ rpc SetInstanceRunning(RunningRequest) returns (Instance);
+ rpc ListInstruments(ListRequest) returns (InstrumentPage);
+ rpc ListAccounts(ListRequest) returns (AccountPage);
+ rpc ListOrderRecords(RecordListRequest) returns (OrderPage);
+ rpc ListCancellations(RecordListRequest) returns (CancellationPage);
+ rpc ListSyntheticRecords(RecordListRequest) returns (SyntheticPage);
+ rpc GetAccountSnapshot(AccountRequest) returns (AccountSnapshot);
+ rpc CancelInstanceOrders(CancelRequest) returns (CancelReply);
+}
+
+// Scope is assembled by the trusted operator from its own tenant bindings,
+// never copied from an HTTP body or from browser-supplied identity metadata.
+message Actor {
+ string subject = 1; uint64 tenant_id = 2; string request_id = 3;
+ repeated string allowed_account_ids = 4;
+}
+message ActorRequest { Actor actor = 1; }
+message ListRequest { Actor actor = 1; uint32 page = 2; uint32 page_size = 3; string search = 4; string account_id = 5; }
+message InstanceListRequest {
+ Actor actor = 1; uint32 page = 2; uint32 page_size = 3; string search = 4;
+ string strategy_type = 5; string account_id = 6;
+}
+message InstanceRequest { Actor actor = 1; int64 id = 2; }
+message CreateInstanceRequest {
+ Actor actor = 1; string instance_key = 2; int64 template_id = 3;
+ int64 template_revision = 4; string account_id = 5; int64 instrument_id = 6;
+ string market_data_source = 7; InstanceParameters parameters = 8;
+}
+message UpdateInstanceRequest {
+ Actor actor = 1; int64 id = 2; int64 expected_revision = 3;
+ int64 expected_control_version = 4; InstanceParameters parameters = 5;
+}
+message RunningRequest {
+ Actor actor = 1; int64 id = 2; int64 expected_revision = 3;
+ int64 expected_control_version = 4; bool running = 5;
+}
+message AccountRequest { Actor actor = 1; string account_id = 2; }
+message RecordListRequest {
+ Actor actor = 1; uint32 page = 2; uint32 page_size = 3; string symbol = 4;
+ string account_id = 5; string state = 6; int64 instance_id = 7;
+ string run_id = 8;
+}
+message CancelRequest {
+ Actor actor = 1; int64 instance_id = 2; int64 expected_revision = 3;
+ // Required explicit intent; an absent flag must never widen cancellation.
+ bool cancel_all = 4;
+}
+message CancelReply { uint32 acknowledged = 1; bool confirmation_pending = 2; }
+message Overview {
+ uint64 templates = 1; uint64 instances = 2; uint64 desired_running = 3;
+ uint64 instruments = 4; uint64 accounts = 5; uint64 order_records = 6;
+ uint64 synthetic_published = 7; uint64 synthetic_unknown = 8; int64 observed_at_ms = 9;
+}
+message Template {
+ int64 id = 1; string key = 2; string name = 3; string strategy_type = 4;
+ string implementation = 5; int64 revision = 6; bool enabled = 7;
+ bool requires_order_book = 8; bool requires_account = 9;
+ string trades_mode = 10; repeated string execution_fields = 11;
+ repeated string parameter_fields = 12;
+}
+message TemplatePage { repeated Template items = 1; uint64 total = 2; }
+message Instance {
+ int64 id = 1; string instance_key = 2; string strategy_type = 3;
+ string implementation = 4; int64 template_id = 5; int64 template_revision = 6;
+ string account_id = 7; int64 instrument_id = 8; string symbol = 9;
+ string market_data_source = 10; bool desired_running = 11;
+ int64 revision = 12; int64 control_version = 13; InstanceParameters parameters = 14;
+ bool restart_required = 15; repeated RuntimeVersion runtimes = 16;
+ int64 created_at_ms = 17; int64 updated_at_ms = 18; bool archived = 19;
+}
+message RuntimeVersion { string service = 1; int64 revision = 2; bool available = 3; }
+message InstancePage { repeated Instance items = 1; uint64 total = 2; }
+message InstanceParameters {
+ ExecutionParameters execution = 1;
+ oneof algorithm { DepthParameters market_maker = 2; GridParameters grid = 3; WashParameters wash_trade = 4; }
+}
+message ExecutionParameters {
+ int64 poll_interval_ms = 1; int64 operation_timeout_ms = 2;
+ int64 lease_ttl_ms = 3; uint32 leverage = 4;
+}
+message DepthParameters {
+ uint32 depth = 1; string quantity_fraction = 2;
+ string replacement_fraction = 3; uint32 bridge_slots = 4;
+}
+message GridParameters {
+ string lower_price = 1; string upper_price = 2; int32 grid_count = 3;
+ string total_budget = 4; string per_order_notional = 5;
+ string inventory_limit = 6; int64 max_market_age_ms = 7;
+}
+message WashParameters {
+ bool development_only = 1; string mode = 2; string run_id = 3;
+ int64 interval_ms = 4;
+ // Zero is unlimited; no historical slot is reset or resent.
+ uint32 maximum_events = 5;
+ string quantity = 6; string maximum_notional = 7; string quantity_fraction = 8;
+}
+message Instrument {
+ int64 id = 1; string symbol = 2; string base_asset = 3; string quote_asset = 4;
+ string status = 5; string execution_venue = 6; string price_tick = 7;
+ string quantity_step = 8; string minimum_notional = 9;
+}
+message InstrumentPage { repeated Instrument items = 1; uint64 total = 2; }
+message Account {
+ int64 id = 1; string account_id = 2; int64 user_id = 3; int64 fund_id = 4;
+ string symbol = 5; string maximum_notional = 6; string maximum_order_notional = 7;
+ uint32 leverage = 8; bool enabled = 9; string observed_notional = 10;
+ string reserved_notional = 11; string available_quote = 12;
+ int64 snapshot_expires_at_ms = 13;
+}
+message AccountPage { repeated Account items = 1; uint64 total = 2; }
+message OrderRecord {
+ int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;
+ string account_id = 4; string symbol = 5; string client_id = 6;
+ string side = 7; string price = 8; string quantity = 9; uint32 leverage = 10;
+ string state = 11; string order_id = 12; string reserved_notional = 13;
+ int64 instance_id = 14; int64 revision = 15;
+}
+message OrderPage { repeated OrderRecord items = 1; uint64 total = 2; }
+message Cancellation {
+ int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;
+ string account_id = 4; string symbol = 5; string order_id = 6; string state = 7;
+}
+message CancellationPage { repeated Cancellation items = 1; uint64 total = 2; }
+message SyntheticRecord {
+ int64 id = 1; int64 created_at_ms = 2; string run_id = 3; string symbol = 4;
+ uint64 sequence = 5; string side = 6; string price = 7; string quantity = 8;
+ string notional = 9; string state = 10; string trade_id = 11;
+ int64 instance_id = 12; string source_trade_id = 13;
+}
+message SyntheticPage { repeated SyntheticRecord items = 1; uint64 total = 2; }
+// AccountSnapshot comes from the matching gateway, never from local order audit.
+message AccountSnapshot {
+ string account_id = 1; string symbol = 2; int64 valid_until_ms = 3;
+ repeated ActiveOrder orders = 4; repeated Position positions = 5;
+ string available = 6; string mark_price = 7; int64 observed_at_ms = 8;
+}
+message ActiveOrder {
+ string order_id = 1; string client_id = 2; string side = 3; string price = 4;
+ string quantity = 5; string executed_quantity = 6; string status = 7;
+}
+message Position {
+ string symbol = 1; string signed_quantity = 2; string entry_price = 3;
+ string leverage = 4;
+}

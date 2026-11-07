@@ -25,19 +25,24 @@ var File_deer_proto_portfolio_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_portfolio_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/portfolio/venue/v1/runtime.proto\x12\x1bmuskdeer.portfolio.venue.v1\x1a deer/proto/common/v1/venue.proto2]\n" +
-	"\tPortfolio\x12P\n" +
+	"+deer/proto/portfolio/venue/v1/runtime.proto\x12\x1bmuskdeer.portfolio.venue.v1\x1a deer/proto/common/v1/venue.proto2\xd1\x01\n" +
+	"\tPortfolio\x12r\n" +
+	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12P\n" +
 	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshotB>Z<github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1;venuev1b\x06proto3"
 
 var file_deer_proto_portfolio_venue_v1_runtime_proto_goTypes = []any{
-	(*v1.VenueScope)(nil),    // 0: muskdeer.common.v1.VenueScope
-	(*v1.VenueSnapshot)(nil), // 1: muskdeer.common.v1.VenueSnapshot
+	(*v1.VenueInstanceInventoryRequest)(nil), // 0: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*v1.VenueScope)(nil),                    // 1: muskdeer.common.v1.VenueScope
+	(*v1.VenueInstanceInventory)(nil),        // 2: muskdeer.common.v1.VenueInstanceInventory
+	(*v1.VenueSnapshot)(nil),                 // 3: muskdeer.common.v1.VenueSnapshot
 }
 var file_deer_proto_portfolio_venue_v1_runtime_proto_depIdxs = []int32{
-	0, // 0: muskdeer.portfolio.venue.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
-	1, // 1: muskdeer.portfolio.venue.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
+	0, // 0: muskdeer.portfolio.venue.v1.Portfolio.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
+	1, // 1: muskdeer.portfolio.venue.v1.Portfolio.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	2, // 2: muskdeer.portfolio.venue.v1.Portfolio.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	3, // 3: muskdeer.portfolio.venue.v1.Portfolio.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	2, // [2:4] is the sub-list for method output_type
+	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

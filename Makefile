@@ -62,6 +62,7 @@ build:
 	python3 scripts/go.py build -o .cache/bin/venueinit ./cmd/venueinit
 	python3 scripts/go.py build -o .cache/bin/venuebaseline ./cmd/venuebaseline
 	python3 scripts/go.py build -o .cache/bin/instancemigrate ./cmd/instancemigrate
+	python3 scripts/go.py build -o .cache/bin/instanceupgrade ./cmd/instanceupgrade
 	@for name in market strategy execution portfolio cron; do \
 		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
 	done

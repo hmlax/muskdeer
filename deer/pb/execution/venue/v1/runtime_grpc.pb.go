@@ -20,16 +20,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Execution_GetSnapshot_FullMethodName      = "/muskdeer.execution.venue.v1.Execution/GetSnapshot"
-	Execution_Reconcile_FullMethodName        = "/muskdeer.execution.venue.v1.Execution/Reconcile"
-	Execution_PublishSynthetic_FullMethodName = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
+	Execution_DescribeInstances_FullMethodName    = "/muskdeer.execution.venue.v1.Execution/DescribeInstances"
+	Execution_GetSnapshot_FullMethodName          = "/muskdeer.execution.venue.v1.Execution/GetSnapshot"
+	Execution_CancelInstanceOrders_FullMethodName = "/muskdeer.execution.venue.v1.Execution/CancelInstanceOrders"
+	Execution_Reconcile_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/Reconcile"
+	Execution_PublishSynthetic_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
 )
 
 // ExecutionClient is the client API for Execution service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ExecutionClient interface {
+	DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error)
 	GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error)
+	CancelInstanceOrders(ctx context.Context, in *CancelInstanceRequest, opts ...grpc.CallOption) (*QuoteResult, error)
 	Reconcile(ctx context.Context, in *QuotePlan, opts ...grpc.CallOption) (*QuoteResult, error)
 	PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
 }
@@ -42,10 +46,30 @@ func NewExecutionClient(cc grpc.ClientConnInterface) ExecutionClient {
 	return &executionClient{cc}
 }
 
+func (c *executionClient) DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(v1.VenueInstanceInventory)
+	err := c.cc.Invoke(ctx, Execution_DescribeInstances_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *executionClient) GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(v1.VenueSnapshot)
 	err := c.cc.Invoke(ctx, Execution_GetSnapshot_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *executionClient) CancelInstanceOrders(ctx context.Context, in *CancelInstanceRequest, opts ...grpc.CallOption) (*QuoteResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(QuoteResult)
+	err := c.cc.Invoke(ctx, Execution_CancelInstanceOrders_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +100,9 @@ func (c *executionClient) PublishSynthetic(ctx context.Context, in *v1.Synthetic
 // All implementations must embed UnimplementedExecutionServer
 // for forward compatibility.
 type ExecutionServer interface {
+	DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error)
 	GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error)
+	CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error)
 	Reconcile(context.Context, *QuotePlan) (*QuoteResult, error)
 	PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error)
 	mustEmbedUnimplementedExecutionServer()
@@ -89,8 +115,14 @@ type ExecutionServer interface {
 // pointer dereference when methods are called.
 type UnimplementedExecutionServer struct{}
 
+func (UnimplementedExecutionServer) DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeInstances not implemented")
+}
 func (UnimplementedExecutionServer) GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSnapshot not implemented")
+}
+func (UnimplementedExecutionServer) CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method CancelInstanceOrders not implemented")
 }
 func (UnimplementedExecutionServer) Reconcile(context.Context, *QuotePlan) (*QuoteResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reconcile not implemented")
@@ -119,6 +151,24 @@ func RegisterExecutionServer(s grpc.ServiceRegistrar, srv ExecutionServer) {
 	s.RegisterService(&Execution_ServiceDesc, srv)
 }
 
+func _Execution_DescribeInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(v1.VenueInstanceInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExecutionServer).DescribeInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Execution_DescribeInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExecutionServer).DescribeInstances(ctx, req.(*v1.VenueInstanceInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Execution_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(v1.VenueScope)
 	if err := dec(in); err != nil {
@@ -133,6 +183,24 @@ func _Execution_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ExecutionServer).GetSnapshot(ctx, req.(*v1.VenueScope))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Execution_CancelInstanceOrders_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CancelInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExecutionServer).CancelInstanceOrders(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Execution_CancelInstanceOrders_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExecutionServer).CancelInstanceOrders(ctx, req.(*CancelInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -181,8 +249,16 @@ var Execution_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ExecutionServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "DescribeInstances",
+			Handler:    _Execution_DescribeInstances_Handler,
+		},
+		{
 			MethodName: "GetSnapshot",
 			Handler:    _Execution_GetSnapshot_Handler,
+		},
+		{
+			MethodName: "CancelInstanceOrders",
+			Handler:    _Execution_CancelInstanceOrders_Handler,
 		},
 		{
 			MethodName: "Reconcile",

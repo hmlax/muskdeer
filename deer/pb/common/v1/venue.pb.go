@@ -872,6 +872,139 @@ func (x *VenueTrade) GetPublisher() *VenueAuthority {
 	return nil
 }
 
+// VenueInstanceInventory contains immutable startup revisions, including stopped instances.
+type VenueInstanceInventoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VenueInstanceInventoryRequest) Reset() {
+	*x = VenueInstanceInventoryRequest{}
+	mi := &file_deer_proto_common_v1_venue_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VenueInstanceInventoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VenueInstanceInventoryRequest) ProtoMessage() {}
+
+func (x *VenueInstanceInventoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_venue_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VenueInstanceInventoryRequest.ProtoReflect.Descriptor instead.
+func (*VenueInstanceInventoryRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_venue_proto_rawDescGZIP(), []int{10}
+}
+
+type VenueInstanceRevision struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Revision      int64                  `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VenueInstanceRevision) Reset() {
+	*x = VenueInstanceRevision{}
+	mi := &file_deer_proto_common_v1_venue_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VenueInstanceRevision) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VenueInstanceRevision) ProtoMessage() {}
+
+func (x *VenueInstanceRevision) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_venue_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VenueInstanceRevision.ProtoReflect.Descriptor instead.
+func (*VenueInstanceRevision) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_venue_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *VenueInstanceRevision) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *VenueInstanceRevision) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+type VenueInstanceInventory struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Instances     []*VenueInstanceRevision `protobuf:"bytes,1,rep,name=instances,proto3" json:"instances,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VenueInstanceInventory) Reset() {
+	*x = VenueInstanceInventory{}
+	mi := &file_deer_proto_common_v1_venue_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VenueInstanceInventory) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VenueInstanceInventory) ProtoMessage() {}
+
+func (x *VenueInstanceInventory) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_venue_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VenueInstanceInventory.ProtoReflect.Descriptor instead.
+func (*VenueInstanceInventory) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_venue_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *VenueInstanceInventory) GetInstances() []*VenueInstanceRevision {
+	if x != nil {
+		return x.Instances
+	}
+	return nil
+}
+
 var File_deer_proto_common_v1_venue_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
@@ -957,7 +1090,13 @@ const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
 	"\x0ereceived_at_ms\x18\n" +
 	" \x01(\x03R\freceivedAtMs\x12$\n" +
 	"\x0evalid_until_ms\x18\v \x01(\x03R\fvalidUntilMs\x12@\n" +
-	"\tpublisher\x18\f \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\tpublisherB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
+	"\tpublisher\x18\f \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\tpublisher\"\x1f\n" +
+	"\x1dVenueInstanceInventoryRequest\"C\n" +
+	"\x15VenueInstanceRevision\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
+	"\brevision\x18\x02 \x01(\x03R\brevision\"a\n" +
+	"\x16VenueInstanceInventory\x12G\n" +
+	"\tinstances\x18\x01 \x03(\v2).muskdeer.common.v1.VenueInstanceRevisionR\tinstancesB6Z4github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1b\x06proto3"
 
 var (
 	file_deer_proto_common_v1_venue_proto_rawDescOnce sync.Once
@@ -971,33 +1110,37 @@ func file_deer_proto_common_v1_venue_proto_rawDescGZIP() []byte {
 	return file_deer_proto_common_v1_venue_proto_rawDescData
 }
 
-var file_deer_proto_common_v1_venue_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_deer_proto_common_v1_venue_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_deer_proto_common_v1_venue_proto_goTypes = []any{
-	(*VenueScope)(nil),     // 0: muskdeer.common.v1.VenueScope
-	(*VenueLevel)(nil),     // 1: muskdeer.common.v1.VenueLevel
-	(*VenueAuthority)(nil), // 2: muskdeer.common.v1.VenueAuthority
-	(*VenueBook)(nil),      // 3: muskdeer.common.v1.VenueBook
-	(*VenueMarket)(nil),    // 4: muskdeer.common.v1.VenueMarket
-	(*VenueOrder)(nil),     // 5: muskdeer.common.v1.VenueOrder
-	(*VenuePosition)(nil),  // 6: muskdeer.common.v1.VenuePosition
-	(*VenueSnapshot)(nil),  // 7: muskdeer.common.v1.VenueSnapshot
-	(*VenueTarget)(nil),    // 8: muskdeer.common.v1.VenueTarget
-	(*VenueTrade)(nil),     // 9: muskdeer.common.v1.VenueTrade
+	(*VenueScope)(nil),                    // 0: muskdeer.common.v1.VenueScope
+	(*VenueLevel)(nil),                    // 1: muskdeer.common.v1.VenueLevel
+	(*VenueAuthority)(nil),                // 2: muskdeer.common.v1.VenueAuthority
+	(*VenueBook)(nil),                     // 3: muskdeer.common.v1.VenueBook
+	(*VenueMarket)(nil),                   // 4: muskdeer.common.v1.VenueMarket
+	(*VenueOrder)(nil),                    // 5: muskdeer.common.v1.VenueOrder
+	(*VenuePosition)(nil),                 // 6: muskdeer.common.v1.VenuePosition
+	(*VenueSnapshot)(nil),                 // 7: muskdeer.common.v1.VenueSnapshot
+	(*VenueTarget)(nil),                   // 8: muskdeer.common.v1.VenueTarget
+	(*VenueTrade)(nil),                    // 9: muskdeer.common.v1.VenueTrade
+	(*VenueInstanceInventoryRequest)(nil), // 10: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*VenueInstanceRevision)(nil),         // 11: muskdeer.common.v1.VenueInstanceRevision
+	(*VenueInstanceInventory)(nil),        // 12: muskdeer.common.v1.VenueInstanceInventory
 }
 var file_deer_proto_common_v1_venue_proto_depIdxs = []int32{
-	1, // 0: muskdeer.common.v1.VenueBook.bids:type_name -> muskdeer.common.v1.VenueLevel
-	1, // 1: muskdeer.common.v1.VenueBook.asks:type_name -> muskdeer.common.v1.VenueLevel
-	2, // 2: muskdeer.common.v1.VenueBook.publisher:type_name -> muskdeer.common.v1.VenueAuthority
-	0, // 3: muskdeer.common.v1.VenueSnapshot.scope:type_name -> muskdeer.common.v1.VenueScope
-	4, // 4: muskdeer.common.v1.VenueSnapshot.market:type_name -> muskdeer.common.v1.VenueMarket
-	6, // 5: muskdeer.common.v1.VenueSnapshot.positions:type_name -> muskdeer.common.v1.VenuePosition
-	5, // 6: muskdeer.common.v1.VenueSnapshot.orders:type_name -> muskdeer.common.v1.VenueOrder
-	2, // 7: muskdeer.common.v1.VenueTrade.publisher:type_name -> muskdeer.common.v1.VenueAuthority
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	1,  // 0: muskdeer.common.v1.VenueBook.bids:type_name -> muskdeer.common.v1.VenueLevel
+	1,  // 1: muskdeer.common.v1.VenueBook.asks:type_name -> muskdeer.common.v1.VenueLevel
+	2,  // 2: muskdeer.common.v1.VenueBook.publisher:type_name -> muskdeer.common.v1.VenueAuthority
+	0,  // 3: muskdeer.common.v1.VenueSnapshot.scope:type_name -> muskdeer.common.v1.VenueScope
+	4,  // 4: muskdeer.common.v1.VenueSnapshot.market:type_name -> muskdeer.common.v1.VenueMarket
+	6,  // 5: muskdeer.common.v1.VenueSnapshot.positions:type_name -> muskdeer.common.v1.VenuePosition
+	5,  // 6: muskdeer.common.v1.VenueSnapshot.orders:type_name -> muskdeer.common.v1.VenueOrder
+	2,  // 7: muskdeer.common.v1.VenueTrade.publisher:type_name -> muskdeer.common.v1.VenueAuthority
+	11, // 8: muskdeer.common.v1.VenueInstanceInventory.instances:type_name -> muskdeer.common.v1.VenueInstanceRevision
+	9,  // [9:9] is the sub-list for method output_type
+	9,  // [9:9] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_venue_proto_init() }
@@ -1011,7 +1154,7 @@ func file_deer_proto_common_v1_venue_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_v1_venue_proto_rawDesc), len(file_deer_proto_common_v1_venue_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

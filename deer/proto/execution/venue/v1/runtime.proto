@@ -8,7 +8,9 @@ import "deer/proto/common/v1/synthetic.proto";
 option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1";
 
 service Execution {
+  rpc DescribeInstances(muskdeer.common.v1.VenueInstanceInventoryRequest) returns (muskdeer.common.v1.VenueInstanceInventory);
   rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
+  rpc CancelInstanceOrders(CancelInstanceRequest) returns (QuoteResult);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
 }
@@ -29,3 +31,5 @@ message QuoteResult {
   uint32 retained = 3;
   string state = 4;
 }
+
+message CancelInstanceRequest { int64 id = 1; int64 revision = 2; bool cancel_all = 3; }

@@ -21,6 +21,7 @@ func NewSpec(cfg *Config, work *WorkPlan, logging *processlog.Lifecycle, output 
 	}
 	if cfg.service.Postgres != nil {
 		spec.Workers = work.configure
+		spec.RegisterGRPC = work.register
 	}
 	return spec
 }

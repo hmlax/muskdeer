@@ -182,6 +182,66 @@ func (x *QuoteResult) GetState() string {
 	return ""
 }
 
+type CancelInstanceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Revision      int64                  `protobuf:"varint,2,opt,name=revision,proto3" json:"revision,omitempty"`
+	CancelAll     bool                   `protobuf:"varint,3,opt,name=cancel_all,json=cancelAll,proto3" json:"cancel_all,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CancelInstanceRequest) Reset() {
+	*x = CancelInstanceRequest{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CancelInstanceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CancelInstanceRequest) ProtoMessage() {}
+
+func (x *CancelInstanceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CancelInstanceRequest.ProtoReflect.Descriptor instead.
+func (*CancelInstanceRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CancelInstanceRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *CancelInstanceRequest) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *CancelInstanceRequest) GetCancelAll() bool {
+	if x != nil {
+		return x.CancelAll
+	}
+	return false
+}
+
 var File_deer_proto_execution_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
@@ -200,9 +260,16 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\x06placed\x18\x01 \x01(\rR\x06placed\x12\x1c\n" +
 	"\tcancelled\x18\x02 \x01(\rR\tcancelled\x12\x1a\n" +
 	"\bretained\x18\x03 \x01(\rR\bretained\x12\x14\n" +
-	"\x05state\x18\x04 \x01(\tR\x05state2\xa0\x02\n" +
-	"\tExecution\x12P\n" +
-	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12]\n" +
+	"\x05state\x18\x04 \x01(\tR\x05state\"b\n" +
+	"\x15CancelInstanceRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
+	"\brevision\x18\x02 \x01(\x03R\brevision\x12\x1d\n" +
+	"\n" +
+	"cancel_all\x18\x03 \x01(\bR\tcancelAll2\x8a\x04\n" +
+	"\tExecution\x12r\n" +
+	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12P\n" +
+	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12t\n" +
+	"\x14CancelInstanceOrders\x122.muskdeer.execution.venue.v1.CancelInstanceRequest\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12]\n" +
 	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12b\n" +
 	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResultB>Z<github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1b\x06proto3"
 
@@ -218,34 +285,41 @@ func file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescData
 }
 
-var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
-	(*QuotePlan)(nil),              // 0: muskdeer.execution.venue.v1.QuotePlan
-	(*QuoteResult)(nil),            // 1: muskdeer.execution.venue.v1.QuoteResult
-	(*v1.VenueScope)(nil),          // 2: muskdeer.common.v1.VenueScope
-	(*v1.VenueBook)(nil),           // 3: muskdeer.common.v1.VenueBook
-	(*v1.VenueAuthority)(nil),      // 4: muskdeer.common.v1.VenueAuthority
-	(*v1.VenueTarget)(nil),         // 5: muskdeer.common.v1.VenueTarget
-	(*v1.SyntheticTapePlan)(nil),   // 6: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.VenueSnapshot)(nil),       // 7: muskdeer.common.v1.VenueSnapshot
-	(*v1.SyntheticTapeResult)(nil), // 8: muskdeer.common.v1.SyntheticTapeResult
+	(*QuotePlan)(nil),                        // 0: muskdeer.execution.venue.v1.QuotePlan
+	(*QuoteResult)(nil),                      // 1: muskdeer.execution.venue.v1.QuoteResult
+	(*CancelInstanceRequest)(nil),            // 2: muskdeer.execution.venue.v1.CancelInstanceRequest
+	(*v1.VenueScope)(nil),                    // 3: muskdeer.common.v1.VenueScope
+	(*v1.VenueBook)(nil),                     // 4: muskdeer.common.v1.VenueBook
+	(*v1.VenueAuthority)(nil),                // 5: muskdeer.common.v1.VenueAuthority
+	(*v1.VenueTarget)(nil),                   // 6: muskdeer.common.v1.VenueTarget
+	(*v1.VenueInstanceInventoryRequest)(nil), // 7: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*v1.SyntheticTapePlan)(nil),             // 8: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.VenueInstanceInventory)(nil),        // 9: muskdeer.common.v1.VenueInstanceInventory
+	(*v1.VenueSnapshot)(nil),                 // 10: muskdeer.common.v1.VenueSnapshot
+	(*v1.SyntheticTapeResult)(nil),           // 11: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_execution_venue_v1_runtime_proto_depIdxs = []int32{
-	2, // 0: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
-	3, // 1: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
-	4, // 2: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
-	5, // 3: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
-	2, // 4: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
-	0, // 5: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
-	6, // 6: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	7, // 7: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
-	1, // 8: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	8, // 9: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	7, // [7:10] is the sub-list for method output_type
-	4, // [4:7] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3,  // 0: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
+	4,  // 1: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	5,  // 2: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	6,  // 3: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
+	7,  // 4: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
+	3,  // 5: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	2,  // 6: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
+	0,  // 7: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
+	8,  // 8: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	9,  // 9: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	10, // 10: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	1,  // 11: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	1,  // 12: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	11, // 13: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	9,  // [9:14] is the sub-list for method output_type
+	4,  // [4:9] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_execution_venue_v1_runtime_proto_init() }
@@ -259,7 +333,7 @@ func file_deer_proto_execution_venue_v1_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc), len(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

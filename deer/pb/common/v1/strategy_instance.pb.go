@@ -80,8 +80,10 @@ type StrategyInstanceParameters struct {
 	MarketMaker   *DepthMakerParameters        `protobuf:"bytes,3,opt,name=market_maker,json=marketMaker,proto3" json:"market_maker,omitempty"`
 	Grid          *GridParameters              `protobuf:"bytes,4,opt,name=grid,proto3" json:"grid,omitempty"`
 	WashTrade     *WashTradeParameters         `protobuf:"bytes,5,opt,name=wash_trade,json=washTrade,proto3" json:"wash_trade,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Historical audit only; rejected in current instance parameters.
+	ManagementChange *StrategyManagementChange `protobuf:"bytes,6,opt,name=management_change,json=managementChange,proto3" json:"management_change,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *StrategyInstanceParameters) Reset() {
@@ -145,6 +147,13 @@ func (x *StrategyInstanceParameters) GetGrid() *GridParameters {
 func (x *StrategyInstanceParameters) GetWashTrade() *WashTradeParameters {
 	if x != nil {
 		return x.WashTrade
+	}
+	return nil
+}
+
+func (x *StrategyInstanceParameters) GetManagementChange() *StrategyManagementChange {
+	if x != nil {
+		return x.ManagementChange
 	}
 	return nil
 }
@@ -697,18 +706,96 @@ func (x *StrategyTemplateContract) GetAlgorithmFields() []string {
 	return nil
 }
 
+// StrategyManagementChange records an explicit console mutation in history.
+type StrategyManagementChange struct {
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	Operation              string                 `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
+	DesiredRunning         *bool                  `protobuf:"varint,2,opt,name=desired_running,json=desiredRunning,proto3,oneof" json:"desired_running,omitempty"`
+	RequestId              string                 `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	ExpectedRevision       int64                  `protobuf:"varint,4,opt,name=expected_revision,json=expectedRevision,proto3" json:"expected_revision,omitempty"`
+	ExpectedControlVersion int64                  `protobuf:"varint,5,opt,name=expected_control_version,json=expectedControlVersion,proto3" json:"expected_control_version,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *StrategyManagementChange) Reset() {
+	*x = StrategyManagementChange{}
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StrategyManagementChange) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StrategyManagementChange) ProtoMessage() {}
+
+func (x *StrategyManagementChange) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StrategyManagementChange.ProtoReflect.Descriptor instead.
+func (*StrategyManagementChange) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_strategy_instance_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *StrategyManagementChange) GetOperation() string {
+	if x != nil {
+		return x.Operation
+	}
+	return ""
+}
+
+func (x *StrategyManagementChange) GetDesiredRunning() bool {
+	if x != nil && x.DesiredRunning != nil {
+		return *x.DesiredRunning
+	}
+	return false
+}
+
+func (x *StrategyManagementChange) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *StrategyManagementChange) GetExpectedRevision() int64 {
+	if x != nil {
+		return x.ExpectedRevision
+	}
+	return 0
+}
+
+func (x *StrategyManagementChange) GetExpectedControlVersion() int64 {
+	if x != nil {
+		return x.ExpectedControlVersion
+	}
+	return 0
+}
+
 var File_deer_proto_common_v1_strategy_instance_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_strategy_instance_proto_rawDesc = "" +
 	"\n" +
-	",deer/proto/common/v1/strategy_instance.proto\x12\x12muskdeer.common.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\"\xdf\x02\n" +
+	",deer/proto/common/v1/strategy_instance.proto\x12\x12muskdeer.common.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\"\xba\x03\n" +
 	"\x1aStrategyInstanceParameters\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\rR\rschemaVersion\x12M\n" +
 	"\texecution\x18\x02 \x01(\v2/.muskdeer.common.v1.StrategyExecutionParametersR\texecution\x12K\n" +
 	"\fmarket_maker\x18\x03 \x01(\v2(.muskdeer.common.v1.DepthMakerParametersR\vmarketMaker\x126\n" +
 	"\x04grid\x18\x04 \x01(\v2\".muskdeer.common.v1.GridParametersR\x04grid\x12F\n" +
 	"\n" +
-	"wash_trade\x18\x05 \x01(\v2'.muskdeer.common.v1.WashTradeParametersR\twashTrade\"\xb7\x01\n" +
+	"wash_trade\x18\x05 \x01(\v2'.muskdeer.common.v1.WashTradeParametersR\twashTrade\x12Y\n" +
+	"\x11management_change\x18\x06 \x01(\v2,.muskdeer.common.v1.StrategyManagementChangeR\x10managementChange\"\xb7\x01\n" +
 	"\x1bStrategyExecutionParameters\x12(\n" +
 	"\x10poll_interval_ms\x18\x01 \x01(\x03R\x0epollIntervalMs\x120\n" +
 	"\x14operation_timeout_ms\x18\x02 \x01(\x03R\x12operationTimeoutMs\x12 \n" +
@@ -759,7 +846,15 @@ const file_deer_proto_common_v1_strategy_instance_proto_rawDesc = "" +
 	"\x11execution_message\x18\x02 \x01(\tR\x10executionMessage\x12+\n" +
 	"\x11algorithm_message\x18\x03 \x01(\tR\x10algorithmMessage\x12)\n" +
 	"\x10execution_fields\x18\x04 \x03(\tR\x0fexecutionFields\x12)\n" +
-	"\x10algorithm_fields\x18\x05 \x03(\tR\x0falgorithmFields*i\n" +
+	"\x10algorithm_fields\x18\x05 \x03(\tR\x0falgorithmFields\"\x80\x02\n" +
+	"\x18StrategyManagementChange\x12\x1c\n" +
+	"\toperation\x18\x01 \x01(\tR\toperation\x12,\n" +
+	"\x0fdesired_running\x18\x02 \x01(\bH\x00R\x0edesiredRunning\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\x12+\n" +
+	"\x11expected_revision\x18\x04 \x01(\x03R\x10expectedRevision\x128\n" +
+	"\x18expected_control_version\x18\x05 \x01(\x03R\x16expectedControlVersionB\x12\n" +
+	"\x10_desired_running*i\n" +
 	"\rWashTradeMode\x12\x1f\n" +
 	"\x1bWASH_TRADE_MODE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14WASH_TRADE_MODE_BOOK\x10\x01\x12\x1d\n" +
@@ -778,7 +873,7 @@ func file_deer_proto_common_v1_strategy_instance_proto_rawDescGZIP() []byte {
 }
 
 var file_deer_proto_common_v1_strategy_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_deer_proto_common_v1_strategy_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_deer_proto_common_v1_strategy_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_deer_proto_common_v1_strategy_instance_proto_goTypes = []any{
 	(WashTradeMode)(0),                  // 0: muskdeer.common.v1.WashTradeMode
 	(*StrategyInstanceParameters)(nil),  // 1: muskdeer.common.v1.StrategyInstanceParameters
@@ -789,22 +884,24 @@ var file_deer_proto_common_v1_strategy_instance_proto_goTypes = []any{
 	(*StrategyInstanceInput)(nil),       // 6: muskdeer.common.v1.StrategyInstanceInput
 	(*StrategyTemplateInputs)(nil),      // 7: muskdeer.common.v1.StrategyTemplateInputs
 	(*StrategyTemplateContract)(nil),    // 8: muskdeer.common.v1.StrategyTemplateContract
-	(*GridParameters)(nil),              // 9: muskdeer.common.v1.GridParameters
+	(*StrategyManagementChange)(nil),    // 9: muskdeer.common.v1.StrategyManagementChange
+	(*GridParameters)(nil),              // 10: muskdeer.common.v1.GridParameters
 }
 var file_deer_proto_common_v1_strategy_instance_proto_depIdxs = []int32{
-	2, // 0: muskdeer.common.v1.StrategyInstanceParameters.execution:type_name -> muskdeer.common.v1.StrategyExecutionParameters
-	3, // 1: muskdeer.common.v1.StrategyInstanceParameters.market_maker:type_name -> muskdeer.common.v1.DepthMakerParameters
-	9, // 2: muskdeer.common.v1.StrategyInstanceParameters.grid:type_name -> muskdeer.common.v1.GridParameters
-	4, // 3: muskdeer.common.v1.StrategyInstanceParameters.wash_trade:type_name -> muskdeer.common.v1.WashTradeParameters
-	0, // 4: muskdeer.common.v1.WashTradeParameters.mode:type_name -> muskdeer.common.v1.WashTradeMode
-	6, // 5: muskdeer.common.v1.StrategyInstanceImport.instances:type_name -> muskdeer.common.v1.StrategyInstanceInput
-	1, // 6: muskdeer.common.v1.StrategyInstanceInput.parameters:type_name -> muskdeer.common.v1.StrategyInstanceParameters
-	0, // 7: muskdeer.common.v1.StrategyTemplateInputs.trades_when_wash_mode:type_name -> muskdeer.common.v1.WashTradeMode
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	2,  // 0: muskdeer.common.v1.StrategyInstanceParameters.execution:type_name -> muskdeer.common.v1.StrategyExecutionParameters
+	3,  // 1: muskdeer.common.v1.StrategyInstanceParameters.market_maker:type_name -> muskdeer.common.v1.DepthMakerParameters
+	10, // 2: muskdeer.common.v1.StrategyInstanceParameters.grid:type_name -> muskdeer.common.v1.GridParameters
+	4,  // 3: muskdeer.common.v1.StrategyInstanceParameters.wash_trade:type_name -> muskdeer.common.v1.WashTradeParameters
+	9,  // 4: muskdeer.common.v1.StrategyInstanceParameters.management_change:type_name -> muskdeer.common.v1.StrategyManagementChange
+	0,  // 5: muskdeer.common.v1.WashTradeParameters.mode:type_name -> muskdeer.common.v1.WashTradeMode
+	6,  // 6: muskdeer.common.v1.StrategyInstanceImport.instances:type_name -> muskdeer.common.v1.StrategyInstanceInput
+	1,  // 7: muskdeer.common.v1.StrategyInstanceInput.parameters:type_name -> muskdeer.common.v1.StrategyInstanceParameters
+	0,  // 8: muskdeer.common.v1.StrategyTemplateInputs.trades_when_wash_mode:type_name -> muskdeer.common.v1.WashTradeMode
+	9,  // [9:9] is the sub-list for method output_type
+	9,  // [9:9] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_strategy_instance_proto_init() }
@@ -813,13 +910,14 @@ func file_deer_proto_common_v1_strategy_instance_proto_init() {
 		return
 	}
 	file_deer_proto_common_v1_strategy_parameters_proto_init()
+	file_deer_proto_common_v1_strategy_instance_proto_msgTypes[8].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_v1_strategy_instance_proto_rawDesc), len(file_deer_proto_common_v1_strategy_instance_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

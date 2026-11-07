@@ -15,6 +15,16 @@ import (
 //go:embed 0002_unlimited_synthetic.sql
 var unlimitedDefinition string
 
+//go:embed 0003_console_instance_identity.sql
+var consoleDefinition string
+
+const consoleName = "0003_console_instance_identity.sql"
+
+func consoleChecksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(consoleDefinition))) }
+func matchUnlimited(rows []*model.SchemaMigration) bool {
+	return len(rows) == 2 && matchBaseline(rows[0]) && rows[1].Version == 2 && rows[1].Name == unlimitedName && rows[1].Checksum == unlimitedChecksum() && rows[1].DeleteAt == nil
+}
+
 const unlimitedName = "0002_unlimited_synthetic.sql"
 
 func unlimitedChecksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(unlimitedDefinition))) }
@@ -33,13 +43,13 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 		var rows []*model.SchemaMigration
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(3).Find(&rows).Error; err != nil {
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(4).Find(&rows).Error; err != nil {
 			return err
 		}
 		if Match(rows) {
 			return nil
 		}
-		if len(rows) != 1 || !matchBaseline(rows[0]) {
+		if !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
 			return ErrHistory
 		}
 		var active int64
@@ -50,13 +60,26 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 		if active > 0 {
 			return domain.ErrLeaseHeld
 		}
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(unlimitedDefinition).Error; err != nil {
+
+		if len(rows) == 1 {
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(unlimitedDefinition).Error; err != nil {
+				return err
+			}
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
+				Version:  2,
+				Name:     unlimitedName,
+				Checksum: unlimitedChecksum(),
+			}).Error; err != nil {
+				return err
+			}
+		}
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(consoleDefinition).Error; err != nil {
 			return err
 		}
 		return schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
-			Version:  2,
-			Name:     unlimitedName,
-			Checksum: unlimitedChecksum(),
+			Version:  3,
+			Name:     consoleName,
+			Checksum: consoleChecksum(),
 		}).Error
 	})
 }

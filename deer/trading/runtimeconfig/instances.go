@@ -3,12 +3,13 @@ package runtimeconfig
 import (
 	"context"
 
+	"gorm.io/gorm"
+
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
-	"gorm.io/gorm"
 )
 
 // InstancesData borrows the one Deer pool and reads current per-instance policy.
@@ -24,7 +25,7 @@ func InstancesData(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer
 	if err := schemaformat.Check(ctx, db); err != nil {
 		return nil, "", nil, err
 	}
-	instances, err := instanceconfig.Load(ctx, db, cfg.VenueConnection)
+	instances, err := instanceconfig.LoadAll(ctx, db, cfg.VenueConnection)
 	if err != nil {
 		return nil, "", nil, err
 	}

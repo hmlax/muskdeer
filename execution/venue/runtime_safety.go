@@ -11,6 +11,7 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
@@ -135,6 +136,13 @@ func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePol
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return err
+	}
+	active, err := instanceconfig.Active(ctx, r.db, r.cfg.InstanceID, r.cfg.Revision)
+	if err != nil {
+		return err
+	}
+	if !active {
+		return r.cancelManaged(ctx, profile)
 	}
 	_, snapshot, readErr := r.read(ctx, profile)
 	book, bookErr := r.book(ctx, profile.Symbol)

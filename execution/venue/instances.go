@@ -28,6 +28,7 @@ import (
 // Instances dispatches immutable per-instance settings through one SDK session.
 // Fund gates and durable budgets are shared even when algorithms differ.
 type Instances struct {
+	inventory []*commonv1.VenueInstanceRevision
 	executionv1.UnimplementedExecutionServer
 	children   map[int64]*Runtime
 	ordered    []*Runtime
@@ -58,6 +59,10 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 	client, closing := &atomic.Pointer[gatewaySession]{}, &atomic.Bool{}
 	gates := make(map[string]chan struct{})
 	for _, instance := range instances {
+		result.inventory = append(result.inventory, &commonv1.VenueInstanceRevision{
+			Id:       instance.ID,
+			Revision: instance.Revision,
+		})
 		if instance.ID <= 0 || result.children[instance.ID] != nil {
 			return nil, ErrInvalidConfig
 		}

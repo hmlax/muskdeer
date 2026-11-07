@@ -27,6 +27,7 @@ import (
 
 // Runtime publishes only its selected, currently owned native futures books.
 type Runtime struct {
+	inventory []*commonv1.VenueInstanceRevision
 	marketvenuev1.UnimplementedMarketServer
 	children map[string]*Runtime
 	db       *gorm.DB

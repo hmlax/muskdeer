@@ -87,3 +87,8 @@ message VenueTrade {
   int64 valid_until_ms = 11;
   VenueAuthority publisher = 12;
 }
+
+// VenueInstanceInventory contains immutable startup revisions, including stopped instances.
+message VenueInstanceInventoryRequest {}
+message VenueInstanceRevision { int64 id = 1; int64 revision = 2; }
+message VenueInstanceInventory { repeated VenueInstanceRevision instances = 1; }

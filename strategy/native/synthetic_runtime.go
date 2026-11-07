@@ -2,6 +2,7 @@ package native
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"gorm.io/gorm"
@@ -15,6 +16,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
@@ -35,7 +37,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 					cancel()
 					if err == nil {
 						sequence++
-					} else if ctx.Err() == nil {
+					} else if !errors.Is(err, errInstancePaused) && ctx.Err() == nil {
 						if err := logger.LogAttrs(ctx, slog.LevelWarn, values.StateRecovering, slog.String("strategy", values.SyntheticWorker), slog.String("symbol", profile.Symbol)); err != nil {
 							return err
 						}
@@ -52,7 +54,16 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 	return workers
 }
 
+var errInstancePaused = errors.New("strategy instance is paused")
+
 func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, symbol string, sequence uint64) error {
+	active, err := instanceconfig.Active(ctx, db, cfg.InstanceID, cfg.Revision)
+	if err != nil {
+		return err
+	}
+	if !active {
+		return errInstancePaused
+	}
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol),

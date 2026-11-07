@@ -63,7 +63,7 @@ func Definitions() []Definition {
 
 // Validate requires a matching implementation and exactly one concrete parameter set.
 func Validate(kind domain.StrategyTemplate, implementation string, p *commonv1.StrategyInstanceParameters) error {
-	if p == nil || p.SchemaVersion != ParametersSchemaVersion || !validExecution(p.Execution) {
+	if p == nil || p.SchemaVersion != ParametersSchemaVersion || p.ManagementChange != nil || !validExecution(p.Execution) {
 		return ErrInvalid
 	}
 	switch kind {

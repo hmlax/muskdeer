@@ -20,13 +20,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Portfolio_GetSnapshot_FullMethodName = "/muskdeer.portfolio.venue.v1.Portfolio/GetSnapshot"
+	Portfolio_DescribeInstances_FullMethodName = "/muskdeer.portfolio.venue.v1.Portfolio/DescribeInstances"
+	Portfolio_GetSnapshot_FullMethodName       = "/muskdeer.portfolio.venue.v1.Portfolio/GetSnapshot"
 )
 
 // PortfolioClient is the client API for Portfolio service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PortfolioClient interface {
+	DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error)
 	GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error)
 }
 
@@ -36,6 +38,16 @@ type portfolioClient struct {
 
 func NewPortfolioClient(cc grpc.ClientConnInterface) PortfolioClient {
 	return &portfolioClient{cc}
+}
+
+func (c *portfolioClient) DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(v1.VenueInstanceInventory)
+	err := c.cc.Invoke(ctx, Portfolio_DescribeInstances_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *portfolioClient) GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error) {
@@ -52,6 +64,7 @@ func (c *portfolioClient) GetSnapshot(ctx context.Context, in *v1.VenueScope, op
 // All implementations must embed UnimplementedPortfolioServer
 // for forward compatibility.
 type PortfolioServer interface {
+	DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error)
 	GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error)
 	mustEmbedUnimplementedPortfolioServer()
 }
@@ -63,6 +76,9 @@ type PortfolioServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPortfolioServer struct{}
 
+func (UnimplementedPortfolioServer) DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeInstances not implemented")
+}
 func (UnimplementedPortfolioServer) GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSnapshot not implemented")
 }
@@ -85,6 +101,24 @@ func RegisterPortfolioServer(s grpc.ServiceRegistrar, srv PortfolioServer) {
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&Portfolio_ServiceDesc, srv)
+}
+
+func _Portfolio_DescribeInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(v1.VenueInstanceInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PortfolioServer).DescribeInstances(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Portfolio_DescribeInstances_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PortfolioServer).DescribeInstances(ctx, req.(*v1.VenueInstanceInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Portfolio_GetSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -112,6 +146,10 @@ var Portfolio_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "muskdeer.portfolio.venue.v1.Portfolio",
 	HandlerType: (*PortfolioServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "DescribeInstances",
+			Handler:    _Portfolio_DescribeInstances_Handler,
+		},
 		{
 			MethodName: "GetSnapshot",
 			Handler:    _Portfolio_GetSnapshot_Handler,

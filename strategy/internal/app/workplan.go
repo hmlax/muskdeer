@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"errors"
+
+	"google.golang.org/grpc"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/trading/runtimeconfig"
@@ -37,4 +40,14 @@ func (p *WorkPlan) configure(ctx context.Context, owner *deer.Deer) ([]deer.Work
 	}
 	p.runtime = runtime
 	return runtime.Workers(), nil
+}
+
+func (p *WorkPlan) register(_ context.Context, _ *deer.Deer, registrar grpc.ServiceRegistrar) error {
+	if !p.configured {
+		return errors.New("strategy work plan requires initialization")
+	}
+	if p.runtime != nil {
+		p.runtime.RegisterGRPC(registrar)
+	}
+	return nil
 }

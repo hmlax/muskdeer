@@ -15,6 +15,8 @@ message StrategyInstanceParameters {
   DepthMakerParameters market_maker = 3;
   GridParameters grid = 4;
   WashTradeParameters wash_trade = 5;
+  // Historical audit only; rejected in current instance parameters.
+  StrategyManagementChange management_change = 6;
 }
 
 message StrategyExecutionParameters {
@@ -86,4 +88,13 @@ message StrategyTemplateContract {
   string algorithm_message = 3;
   repeated string execution_fields = 4;
   repeated string algorithm_fields = 5;
+}
+
+// StrategyManagementChange records an explicit console mutation in history.
+message StrategyManagementChange {
+  string operation = 1;
+  optional bool desired_running = 2;
+  string request_id = 3;
+  int64 expected_revision = 4;
+  int64 expected_control_version = 5;
 }
