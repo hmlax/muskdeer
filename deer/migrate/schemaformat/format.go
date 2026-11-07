@@ -27,7 +27,11 @@ func checksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(definitio
 
 // Match checks the complete consolidated ledger identity.
 func Match(rows []*model.SchemaMigration) bool {
-	return len(rows) == 1 && rows[0].Version == 1 && rows[0].Name == baselineName && rows[0].Checksum == checksum() && rows[0].DeleteAt == nil
+	return len(rows) == 2 && matchBaseline(rows[0]) && rows[1].Version == 2 && rows[1].Name == unlimitedName && rows[1].Checksum == unlimitedChecksum() && rows[1].DeleteAt == nil
+}
+
+func matchBaseline(row *model.SchemaMigration) bool {
+	return row.Version == 1 && row.Name == baselineName && row.Checksum == checksum() && row.DeleteAt == nil
 }
 
 // Check validates the current ledger without changing database objects.
@@ -39,7 +43,7 @@ func Check(ctx context.Context, db *gorm.DB) error {
 		return ErrHistory
 	}
 	var rows []*model.SchemaMigration
-	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Limit(2).Find(&rows).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Limit(3).Find(&rows).Error; err != nil {
 		return errors.Join(ErrHistory, err)
 	}
 	if !Match(rows) {
@@ -67,10 +71,13 @@ func Install(ctx context.Context, db *gorm.DB) error {
 		}).Model(&strategymodel.StrategyTemplate{}).Create(strategyregistry.Templates()).Error; err != nil {
 			return err
 		}
-		return tx.WithContext(ctx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
+		if err := tx.WithContext(ctx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
 			Version:  1,
 			Name:     baselineName,
 			Checksum: checksum(),
-		}).Error
+		}).Error; err != nil {
+			return err
+		}
+		return Upgrade(ctx, tx)
 	})
 }

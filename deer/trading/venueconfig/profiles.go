@@ -26,7 +26,7 @@ type RuntimeConfig struct {
 	InstanceID          int64
 	Revision            int64
 	Template            domain.StrategyTemplate
-	ResumeSequence      uint32
+	ResumeSequence      uint64
 	Grid                *commonv1.GridParameters
 }
 

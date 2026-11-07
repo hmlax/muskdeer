@@ -12,12 +12,14 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
 	"github.com/hmlax/muskdeer/deer/migrate"
 	policymigrate "github.com/hmlax/muskdeer/deer/migrate/runtimepolicy"
 	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
 	venuemigrate "github.com/hmlax/muskdeer/deer/migrate/venue"
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
@@ -198,5 +200,10 @@ func runInstances(ctx context.Context, path string) (result error) {
 		return err
 	}
 	defer func() { result = errors.Join(result, db.Close()) }()
-	return instanceconfig.Import(ctx, db.GORM(), &input, cfg.VenueConnection)
+	return db.GORM().WithContext(ctx).Model(&commonmodelv1.SchemaMigration{}).Transaction(func(tx *gorm.DB) error {
+		if err := schemaformat.Upgrade(ctx, tx); err != nil {
+			return err
+		}
+		return instanceconfig.Import(ctx, tx, &input, cfg.VenueConnection)
+	})
 }

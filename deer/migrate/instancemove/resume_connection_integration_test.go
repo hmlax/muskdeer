@@ -62,7 +62,7 @@ func TestConsumedTapeRestartsWithTheExecutionConnectionWithoutReset(t *testing.T
 			Plan: &values.SyntheticTapePlan{
 				RunId:    wash.Parameters.WashTrade.RunId,
 				Symbol:   wash.Profile.Symbol,
-				Sequence: uint32(sequence),
+				Sequence: uint64(sequence),
 			},
 			Notional: "1",
 			Result:   &values.SyntheticTapeResult{State: native.SyntheticUnknown},

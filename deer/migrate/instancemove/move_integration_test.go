@@ -206,7 +206,7 @@ func TestMovePreservesUnknownFundsAuditAndConsumedTapeWithoutReplay(t *testing.T
 			Plan: &values.SyntheticTapePlan{
 				RunId:    "migration-test",
 				Symbol:   "BTCUSDT",
-				Sequence: uint32(sequence),
+				Sequence: uint64(sequence),
 			},
 			Notional: "1",
 			Result:   &values.SyntheticTapeResult{State: native.SyntheticUnknown},

@@ -25,30 +25,31 @@ func TestKnownMigrationPathsNeverReplayHistoricalDrops(t *testing.T) {
 		{
 			name:    "fresh database",
 			bodies:  canonical,
-			pending: 8,
+			pending: 9,
 		},
 		{
 			name:    "retained version six",
 			bodies:  canonical,
 			applied: 6,
-			pending: 2,
+			pending: 3,
 		},
 		{
 			name:    "historical stateless version seven",
 			bodies:  stateless,
 			applied: 7,
-			pending: 3,
+			pending: 4,
 		},
 		{
 			name:    "historical stateless version eight",
 			bodies:  stateless,
 			applied: 8,
-			pending: 2,
+			pending: 3,
 		},
 		{
 			name:    "upgraded stateless version ten",
 			bodies:  stateless,
 			applied: 10,
+			pending: 1,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

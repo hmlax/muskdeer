@@ -125,7 +125,7 @@ func validMaker(p *commonv1.DepthMakerParameters) bool {
 }
 
 func validWashTrade(p *commonv1.WashTradeParameters) bool {
-	if !p.DevelopmentOnly || p.MaximumEvents == 0 || p.MaximumEvents > 1000 || p.IntervalMs < 100 || p.IntervalMs > time.Minute.Milliseconds() || len(p.RunId) == 0 || len(p.RunId) > 20 {
+	if !p.DevelopmentOnly || p.IntervalMs < 100 || p.IntervalMs > time.Minute.Milliseconds() || len(p.RunId) == 0 || len(p.RunId) > 20 {
 		return false
 	}
 	for _, character := range p.RunId {
@@ -137,7 +137,7 @@ func validWashTrade(p *commonv1.WashTradeParameters) bool {
 		return false
 	}
 	_, e1 := native.Value(p.Quantity, false, false)
-	_, e2 := native.Value(p.MaximumNotional, false, false)
+	_, e2 := native.Value(p.MaximumNotional, false, true)
 	fraction, e3 := native.Value(p.QuantityFraction, false, false)
 	return e1 == nil && e2 == nil && e3 == nil && fraction.LessThanOrEqual(decimal.NewFromInt(1))
 }

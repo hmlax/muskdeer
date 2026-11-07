@@ -3,12 +3,12 @@ package muskdeer.common.v1;
 option go_package = "github.com/hmlax/muskdeer/deer/pb/common/v1;commonv1";
 import "deer/proto/common/v1/venue.proto";
 
-// SyntheticTapePlan identifies one slot of a finite development market-data run.
+// SyntheticTapePlan identifies one slot of a development market-data run.
 // The same run/symbol/sequence never emits again, even if a reply is lost.
 message SyntheticTapePlan {
   string run_id = 1;
   string symbol = 2;
-  uint32 sequence = 3;
+  uint64 sequence = 3;
   string side = 4;
   string price = 5;
   string quantity = 6;

@@ -1,6 +1,7 @@
 package native
 
 import (
+	"math"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -26,7 +27,7 @@ func SyntheticStrategyKey(run, symbol string) string {
 	return "hs/" + SyntheticExecutionKey(run, symbol)
 }
 
-// ValidateSyntheticConfig requires a finite, explicitly developmental run.
+// ValidateSyntheticConfig requires an explicitly developmental run.
 func ValidateSyntheticConfig(h *commonv1.VenuePolicy) error {
 	if h == nil || ValidateSyntheticSettings(&configv1.VenueRuntime{
 		QuantityFraction: h.QuantityFraction,
@@ -65,7 +66,7 @@ func ValidateSyntheticSettings(h *configv1.VenueRuntime) error {
 	if !validSyntheticMode(h) {
 		return ErrInvalid
 	}
-	if !s.DevelopmentOnly || len(s.RunId) == 0 || len(s.RunId) > 20 || s.MaximumEvents == 0 || s.MaximumEvents > 1000 ||
+	if !s.DevelopmentOnly || len(s.RunId) == 0 || len(s.RunId) > 20 ||
 		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 {
 		return ErrInvalid
 	}
@@ -78,8 +79,8 @@ func ValidateSyntheticSettings(h *configv1.VenueRuntime) error {
 	seen := make(map[string]bool)
 	for _, p := range s.Profiles {
 		quantity, e1 := Value(p.GetQuantity(), false, false)
-		maximum, e2 := Value(p.GetMaximumNotional(), false, false)
-		if !Symbol(p.GetSymbol()) || seen[p.Symbol] || e1 != nil || e2 != nil || maximum.IsZero() || quantity.IsZero() {
+		_, e2 := Value(p.GetMaximumNotional(), false, true)
+		if !Symbol(p.GetSymbol()) || seen[p.Symbol] || e1 != nil || e2 != nil || quantity.IsZero() {
 			return ErrInvalid
 		}
 		seen[p.Symbol] = true
@@ -120,8 +121,8 @@ func SyntheticProfile(h *commonv1.VenuePolicy, symbol string) *configv1.Syntheti
 }
 
 // SyntheticPlan validates and prices a development slot from a fresh source.
-func SyntheticPlan(h *commonv1.VenuePolicy, symbol string, sequence uint32, book *commonv1.VenueBook, strategy *commonv1.VenueAuthority) (*commonv1.SyntheticTapePlan, error) {
-	if h.GetSyntheticTape().GetMode() != configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK || ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || sequence >= h.SyntheticTape.MaximumEvents ||
+func SyntheticPlan(h *commonv1.VenuePolicy, symbol string, sequence uint64, book *commonv1.VenueBook, strategy *commonv1.VenueAuthority) (*commonv1.SyntheticTapePlan, error) {
+	if h.GetSyntheticTape().GetMode() != configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK || ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || !SyntheticSlotAvailable(h.SyntheticTape, sequence) ||
 		book.GetSymbol() != symbol || book.GetSource() != Source || book.GetSegment() != Segment || book.GetValidUntilMs() <= time.Now().UnixMilli() ||
 		len(book.GetBids()) == 0 || len(book.GetAsks()) == 0 {
 		return nil, ErrInvalid
@@ -135,7 +136,7 @@ func SyntheticPlan(h *commonv1.VenuePolicy, symbol string, sequence uint32, book
 	bid, e2 := Value(book.Bids[0].GetPrice(), false, false)
 	ask, e3 := Value(book.Asks[0].GetPrice(), false, false)
 	quantity, e4 := Value(p.Quantity, false, false)
-	maximum, e5 := Value(p.MaximumNotional, false, false)
+	maximum, e5 := Value(p.MaximumNotional, false, true)
 	if e1 != nil || e2 != nil || e3 != nil || e4 != nil || e5 != nil || !bid.LessThan(ask) {
 		return nil, ErrInvalid
 	}
@@ -144,7 +145,7 @@ func SyntheticPlan(h *commonv1.VenuePolicy, symbol string, sequence uint32, book
 		side, price, rounding = domain.SideSell, bid, domain.SideBuy
 	}
 	price, err := domain.RoundPrice(price, tick, rounding)
-	if err != nil || price.Mul(quantity).GreaterThan(maximum) {
+	if err != nil || maximum.IsPositive() && price.Mul(quantity).GreaterThan(maximum) {
 		return nil, ErrInvalid
 	}
 	return &commonv1.SyntheticTapePlan{
@@ -157,4 +158,10 @@ func SyntheticPlan(h *commonv1.VenuePolicy, symbol string, sequence uint32, book
 		Strategy: proto.CloneOf(strategy),
 		Book:     proto.CloneOf(book),
 	}, nil
+}
+
+// SyntheticSlotAvailable treats zero as no business count limit. The signed
+// storage sequence is checked before conversion, so it can never wrap or replay.
+func SyntheticSlotAvailable(tape *configv1.SyntheticTape, sequence uint64) bool {
+	return tape != nil && sequence < math.MaxInt64 && (tape.MaximumEvents == 0 || sequence < uint64(tape.MaximumEvents))
 }

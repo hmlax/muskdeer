@@ -12,7 +12,7 @@
 
 每行的 `execution` 保存轮询、操作期限、租约期限及杠杆。共享账户的总资金政策仍由 `trading_account_policies` 持有；各实例不能分别透支。资金账户目前绑定一个通道产品，行情源失效不会隐式切换；当前原生期货通道只接收 Binance USD-M，其他接入不冒充已支持。
 
-网格与既有 spot 网格共用精确算术价格逻辑；期货分配单独核对双向库存与预算，最终提交计入全部活动订单及本批已提交订单。开发 WashTrade 只发布有限行情，不产生资金账户撮合或仓位成交。
+网格与既有 spot 网格共用精确算术价格逻辑；期货分配单独核对双向库存与预算，最终提交计入全部活动订单及本批已提交订单。开发 WashTrade 只发布行情，不产生资金账户撮合或仓位成交。`maximum_events=0` 表示不限累计次数，`maximum_notional="0"` 表示不限累计名义量；正数仍执行相应上限。频率、每次数量、来源新鲜度、去重和最终所有权检查不因零额度停用。
 
 当前独立实例以交易通道返回的当前活动订单、持仓及可用资金作为运行依据，报价路径不查询历史成交/撤单证明，也不因本地旧 DISPATCHED 或缺失撤单回执暂停整个账户。SDK 当前订单是通道的活动订单观察，多个查询并非原子撮合快照；保留查询开始时间及两秒有效期，并在最终提交时校验。
 
@@ -26,7 +26,7 @@
 
 ## 维护与迁移
 
-`venueinit -instances FILE` 接受 `StrategyInstanceImport` 的 Proto JSON。每项完整指定 `template_id`、`template_revision`、`instance_key`、`market_data_source`、`account_id`、`instrument_id`、`desired_running`、`parameters` 和 `expected_revision`。策略类型和实现标识从明确选择的模板取得；如输入同时携带这两项则必须一致。先停止所有交易节点；有有效租约拒绝维护。相同输入不追加版本，冲突和任一非法尾项使整批回滚。已有账户/产品/算法身份不可变，参数更新追加不可变历史；变更已消耗的 WashTrade 运行参数必须使用新的显式运行身份，不能清零旧配额。
+`venueinit -instances FILE` 接受 `StrategyInstanceImport` 的 Proto JSON。每项完整指定 `template_id`、`template_revision`、`instance_key`、`market_data_source`、`account_id`、`instrument_id`、`desired_running`、`parameters` 和 `expected_revision`。策略类型和实现标识从明确选择的模板取得；如输入同时携带这两项则必须一致。先停止所有交易节点；有有效租约拒绝维护。相同输入不追加版本，冲突和任一非法尾项使整批回滚。已有账户/产品/算法身份不可变，参数更新追加不可变历史；已消耗的 WashTrade 可以通过同一维护入口仅将上述两个累计上限改为零，保留原 run_id、旧策略摘要、全部历史槽和下一序号，追加参数修订审计；不重写原 UNKNOWN 或重新发布旧槽。其他运行参数变更仍须使用新的显式运行身份。
 
 已有合成槽的恢复校验使用执行器发布时相同的策略参数和 `venue_connection` 连接身份。四服务启动和实例维护命令均显式传入该基础连接，确保发布过数据后仍能按原槽号重启；不从连接配置补充业务参数，不改写旧摘要或重置批次。连接身份或运行参数与已消耗槽不一致时仍拒绝，不跳过摘要检查。
 

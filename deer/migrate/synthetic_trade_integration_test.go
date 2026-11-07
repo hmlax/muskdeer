@@ -66,7 +66,7 @@ func aggregateDispatchFixture(t *testing.T) *aggregateDispatchState {
 	}
 }
 
-func (s *aggregateDispatchState) plan(t *testing.T, sequence uint32, id int64) *commonv1.SyntheticTapePlan {
+func (s *aggregateDispatchState) plan(t *testing.T, sequence uint64, id int64) *commonv1.SyntheticTapePlan {
 	t.Helper()
 	now := time.Now()
 	input := proto.CloneOf(s.base)

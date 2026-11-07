@@ -285,17 +285,19 @@ func (x *DepthMakerParameters) GetBridgeSlots() uint32 {
 	return 0
 }
 
-// WashTrade publishes finite development market data, without financial fills.
+// WashTrade publishes development market data, without financial fills.
 type WashTradeParameters struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	DevelopmentOnly  bool                   `protobuf:"varint,1,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
-	Mode             WashTradeMode          `protobuf:"varint,2,opt,name=mode,proto3,enum=muskdeer.common.v1.WashTradeMode" json:"mode,omitempty"`
-	RunId            string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	IntervalMs       int64                  `protobuf:"varint,4,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
-	MaximumEvents    uint32                 `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
-	Quantity         string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
-	MaximumNotional  string                 `protobuf:"bytes,7,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
-	QuantityFraction string                 `protobuf:"bytes,8,opt,name=quantity_fraction,json=quantityFraction,proto3" json:"quantity_fraction,omitempty"`
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	DevelopmentOnly bool                   `protobuf:"varint,1,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
+	Mode            WashTradeMode          `protobuf:"varint,2,opt,name=mode,proto3,enum=muskdeer.common.v1.WashTradeMode" json:"mode,omitempty"`
+	RunId           string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	IntervalMs      int64                  `protobuf:"varint,4,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
+	// Zero disables the cumulative event-count limit.
+	MaximumEvents uint32 `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
+	Quantity      string `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	// Decimal zero disables the cumulative notional limit.
+	MaximumNotional  string `protobuf:"bytes,7,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	QuantityFraction string `protobuf:"bytes,8,opt,name=quantity_fraction,json=quantityFraction,proto3" json:"quantity_fraction,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }

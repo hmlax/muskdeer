@@ -54,12 +54,13 @@ message VenueRuntime {
   repeated string symbols = 10;
 }
 
-// SyntheticTape is an opt-in, finite market-data test run; it never places orders.
+// SyntheticTape is an opt-in development market-data run; it never places orders.
 message SyntheticTape {
   bool enabled = 1;
   bool development_only = 2;
   string run_id = 3;
   google.protobuf.Duration interval = 4;
+  // Zero disables the cumulative event-count limit.
   uint32 maximum_events = 5;
   repeated SyntheticTapeProfile profiles = 6;
   SyntheticTapeMode mode = 7;
@@ -74,6 +75,7 @@ message SyntheticTapeProfile {
   string symbol = 1;
   // Fixed size in BOOK mode; single-event quantity cap in AGG_TRADE mode.
   string quantity = 2;
+  // Decimal zero disables the cumulative notional limit.
   string maximum_notional = 3;
 }
 

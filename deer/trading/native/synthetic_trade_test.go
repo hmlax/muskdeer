@@ -57,6 +57,14 @@ func TestSyntheticTradePlanUsesSourceDirectionPriceQuantityAndKeepsProvenance(t 
 	if err != nil || plan.GetSide() != string(domain.SideSell) || plan.GetPrice() != "100.5" || plan.GetQuantity() != "0.007" || plan.GetSourceTrade().GetEventId() != "42" {
 		t.Fatalf("SyntheticSourcePlan(aggregate sell) = %v, %v, want SELL/100.5/0.007 from event 42", plan, err)
 	}
+	unlimited := proto.CloneOf(h)
+	unlimited.SyntheticTape.MaximumEvents = 0
+	unlimited.SyntheticTape.Profiles[0].MaximumNotional = "0"
+	next := proto.CloneOf(input)
+	next.Sequence = 1001
+	if result, err := SyntheticSourcePlan(unlimited, next); err != nil || result.GetSequence() != 1001 || result.GetSourceTrade().GetEventId() != "42" {
+		t.Fatalf("SyntheticSourcePlan(zero limits, aggregate event) = %v, %v, want continued source-bound publication", result, err)
+	}
 	encoded, err := proto.Marshal(plan)
 	if err != nil {
 		t.Fatal(err)

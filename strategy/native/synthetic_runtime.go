@@ -29,7 +29,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 		workers = append(workers, deer.Worker{
 			Name: values.SyntheticWorker + profile.Symbol,
 			Run: func(ctx context.Context) error {
-				for sequence := cfg.ResumeSequence; sequence < cfg.Venue.SyntheticTape.MaximumEvents && ctx.Err() == nil; {
+				for sequence := cfg.ResumeSequence; values.SyntheticSlotAvailable(cfg.Venue.SyntheticTape, sequence) && ctx.Err() == nil; {
 					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
 					err := syntheticTick(op, db, leases, factory, owner, cfg, profile.Symbol, sequence)
 					cancel()
@@ -52,7 +52,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 	return workers
 }
 
-func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, symbol string, sequence uint32) error {
+func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, symbol string, sequence uint64) error {
 	token, err := leases.Acquire(ctx, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol),

@@ -14,7 +14,7 @@ import (
 
 func TestSyntheticPlanIsFiniteAndUsesExactSourceGrid(t *testing.T) {
 	h, book := syntheticFixture()
-	for _, sequence := range []uint32{0, 1} {
+	for _, sequence := range []uint64{0, 1} {
 		plan, err := SyntheticPlan(h, "BTCUSDT", sequence, book, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -32,7 +32,7 @@ func TestSyntheticPlanIsFiniteAndUsesExactSourceGrid(t *testing.T) {
 		}
 		book.Asks[0].Price = "100.11"
 	}
-	if _, err := SyntheticPlan(h, "BTCUSDT", h.SyntheticTape.MaximumEvents, book, nil); err == nil {
+	if _, err := SyntheticPlan(h, "BTCUSDT", uint64(h.SyntheticTape.MaximumEvents), book, nil); err == nil {
 		t.Fatal("SyntheticPlan(exhausted count) accepted another slot")
 	}
 	book.ValidUntilMs = time.Now().Add(-time.Second).UnixMilli()
@@ -41,18 +41,16 @@ func TestSyntheticPlanIsFiniteAndUsesExactSourceGrid(t *testing.T) {
 	}
 }
 
-func TestSyntheticConfigRejectsUnboundedOrNonDevelopmentRuns(t *testing.T) {
+func TestSyntheticConfigRejectsInvalidOrNonDevelopmentRuns(t *testing.T) {
 	h, _ := syntheticFixture()
 	if err := ValidateSyntheticConfig(h); err != nil {
 		t.Fatal(err)
 	}
 	for _, change := range []func(*configv1.SyntheticTape){
 		func(s *configv1.SyntheticTape) { s.DevelopmentOnly = false },
-		func(s *configv1.SyntheticTape) { s.MaximumEvents = 0 },
-		func(s *configv1.SyntheticTape) { s.MaximumEvents = 1001 },
 		func(s *configv1.SyntheticTape) { s.Interval = durationpb.New(time.Millisecond) },
 		func(s *configv1.SyntheticTape) { s.Profiles[0].Quantity = "0.0001" },
-		func(s *configv1.SyntheticTape) { s.Profiles[0].MaximumNotional = "0" },
+		func(s *configv1.SyntheticTape) { s.Profiles[0].MaximumNotional = "-1" },
 		func(s *configv1.SyntheticTape) { s.Profiles = append(s.Profiles, proto.CloneOf(s.Profiles[0])) },
 		func(s *configv1.SyntheticTape) { s.RunId = "../escape" },
 	} {

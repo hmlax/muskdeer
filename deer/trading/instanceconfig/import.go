@@ -60,7 +60,7 @@ func Import(ctx context.Context, db *gorm.DB, input *common.StrategyInstanceImpo
 			if err := bindTemplateInput(write, templates[write.TemplateId]); err != nil {
 				return err
 			}
-			if err := writeInstance(ctx, tx, write); err != nil {
+			if err := writeInstance(ctx, tx, write, connections...); err != nil {
 				return err
 			}
 		}
@@ -68,7 +68,7 @@ func Import(ctx context.Context, db *gorm.DB, input *common.StrategyInstanceImpo
 		return err
 	})
 }
-func writeInstance(ctx context.Context, tx *gorm.DB, write *common.StrategyInstanceInput) error {
+func writeInstance(ctx context.Context, tx *gorm.DB, write *common.StrategyInstanceInput, connections ...*configv1.VenueConnection) error {
 	var row model.StrategyInstance
 	err := fresh(ctx, tx).Model(&model.StrategyInstance{}).Where("instance_key = ?", write.InstanceKey).Clauses(clause.Locking{Strength: "UPDATE"}).Take(&row).Error
 	create := errors.Is(err, gorm.ErrRecordNotFound)
@@ -100,7 +100,17 @@ func writeInstance(ctx context.Context, tx *gorm.DB, write *common.StrategyInsta
 		row.Revision++
 		row.RequestedConfigVersion++
 		if !proto.Equal(row.Parameters, write.Parameters) {
-			row.TapePolicyDigest, row.TapeParametersDigest = "", ""
+			var connection *configv1.VenueConnection
+			if len(connections) > 0 {
+				connection = connections[0]
+			}
+			if err := preserveUnlimitedTape(ctx, tx, tapeUpgrade{
+				row:        &row,
+				write:      write,
+				connection: connection,
+			}); err != nil {
+				return err
+			}
 		}
 	}
 	row.TemplateId, row.TemplateRevision = write.TemplateId, write.TemplateRevision

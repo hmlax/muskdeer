@@ -373,18 +373,19 @@ func (x *VenueRuntime) GetSymbols() []string {
 	return nil
 }
 
-// SyntheticTape is an opt-in, finite market-data test run; it never places orders.
+// SyntheticTape is an opt-in development market-data run; it never places orders.
 type SyntheticTape struct {
-	state           protoimpl.MessageState  `protogen:"open.v1"`
-	Enabled         bool                    `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
-	DevelopmentOnly bool                    `protobuf:"varint,2,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
-	RunId           string                  `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Interval        *durationpb.Duration    `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
-	MaximumEvents   uint32                  `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
-	Profiles        []*SyntheticTapeProfile `protobuf:"bytes,6,rep,name=profiles,proto3" json:"profiles,omitempty"`
-	Mode            SyntheticTapeMode       `protobuf:"varint,7,opt,name=mode,proto3,enum=muskdeer.config.v1.SyntheticTapeMode" json:"mode,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Enabled         bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	DevelopmentOnly bool                   `protobuf:"varint,2,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
+	RunId           string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
+	Interval        *durationpb.Duration   `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
+	// Zero disables the cumulative event-count limit.
+	MaximumEvents uint32                  `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
+	Profiles      []*SyntheticTapeProfile `protobuf:"bytes,6,rep,name=profiles,proto3" json:"profiles,omitempty"`
+	Mode          SyntheticTapeMode       `protobuf:"varint,7,opt,name=mode,proto3,enum=muskdeer.config.v1.SyntheticTapeMode" json:"mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SyntheticTape) Reset() {
@@ -470,7 +471,8 @@ type SyntheticTapeProfile struct {
 	state  protoimpl.MessageState `protogen:"open.v1"`
 	Symbol string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
 	// Fixed size in BOOK mode; single-event quantity cap in AGG_TRADE mode.
-	Quantity        string `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Quantity string `protobuf:"bytes,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	// Decimal zero disables the cumulative notional limit.
 	MaximumNotional string `protobuf:"bytes,3,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache

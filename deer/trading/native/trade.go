@@ -106,7 +106,7 @@ func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapeP
 		return plan, err
 	}
 	book, trade := input.GetBook(), input.GetSourceTrade()
-	if ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || input.Sequence >= h.SyntheticTape.MaximumEvents ||
+	if ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || !SyntheticSlotAvailable(h.SyntheticTape, input.Sequence) ||
 		book.GetSource() != Source || book.GetSegment() != Segment || book.GetSymbol() != input.Symbol || book.GetValidUntilMs() <= time.Now().UnixMilli() ||
 		ValidateTrade(trade, input.Symbol, time.Now()) != nil || trade.GetPublisher().GetAccountId() != TradeKey(input.Symbol) ||
 		trade.Publisher.GetOwnerId() == "" || trade.Publisher.GetEpoch() <= 0 || trade.Publisher.ExpiresAtMs < trade.ValidUntilMs {
@@ -116,10 +116,10 @@ func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapeP
 	if err != nil {
 		return nil, err
 	}
-	maximum, _ := Value(SyntheticProfile(h, input.Symbol).MaximumNotional, false, false)
+	maximum, _ := Value(SyntheticProfile(h, input.Symbol).MaximumNotional, false, true)
 	price, _ := Value(target.Price, false, false)
 	quantity, _ := Value(target.Quantity, false, false)
-	if price.Mul(quantity).GreaterThan(maximum) {
+	if maximum.IsPositive() && price.Mul(quantity).GreaterThan(maximum) {
 		return nil, ErrInvalid
 	}
 	return &commonv1.SyntheticTapePlan{

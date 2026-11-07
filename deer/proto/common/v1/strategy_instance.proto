@@ -37,14 +37,16 @@ enum WashTradeMode {
   WASH_TRADE_MODE_AGG_TRADE = 2;
 }
 
-// WashTrade publishes finite development market data, without financial fills.
+// WashTrade publishes development market data, without financial fills.
 message WashTradeParameters {
   bool development_only = 1;
   WashTradeMode mode = 2;
   string run_id = 3;
   int64 interval_ms = 4;
+  // Zero disables the cumulative event-count limit.
   uint32 maximum_events = 5;
   string quantity = 6;
+  // Decimal zero disables the cumulative notional limit.
   string maximum_notional = 7;
   string quantity_fraction = 8;
 }

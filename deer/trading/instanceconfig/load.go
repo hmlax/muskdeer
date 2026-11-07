@@ -32,7 +32,7 @@ type Instance struct {
 	Profile          *commonv1.VenueProfilePolicy
 	Parameters       *commonv1.StrategyInstanceParameters
 	TapePolicyDigest string
-	ResumeSequence   uint32
+	ResumeSequence   uint64
 }
 
 // Load reads every requested instance from one repeatable-read startup snapshot.
@@ -180,7 +180,7 @@ func resumeTape(ctx context.Context, db *gorm.DB, instance *Instance, connection
 		Select("count(*) AS count, coalesce(min(sequence),0) AS first, coalesce(max(sequence),-1) AS last, count(DISTINCT policy_digest) AS policies, coalesce(min(policy_digest),'') AS digest").Scan(&state).Error; err != nil {
 		return err
 	}
-	if state.Count < 0 || state.Count > int64(p.MaximumEvents) || state.Last+1 != state.Count || state.Count > 0 && (state.First != 0 || state.Policies != 1) {
+	if state.Count < 0 || p.MaximumEvents > 0 && state.Count > int64(p.MaximumEvents) || state.Last+1 != state.Count || state.Count > 0 && (state.First != 0 || state.Policies != 1) {
 		return ErrInvalid
 	}
 	if state.Count > 0 {
@@ -198,7 +198,7 @@ func resumeTape(ctx context.Context, db *gorm.DB, instance *Instance, connection
 	} else if instance.TapePolicyDigest != "" {
 		return ErrInvalid
 	}
-	instance.ResumeSequence = uint32(state.Count)
+	instance.ResumeSequence = uint64(state.Count)
 	return nil
 }
 

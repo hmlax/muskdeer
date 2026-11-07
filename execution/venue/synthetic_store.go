@@ -17,8 +17,8 @@ import (
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-// PublishSynthetic consumes a durable, finite send slot before its SDK effect.
-// An unknown outcome consumes its quota and is never sent again.
+// PublishSynthetic consumes a durable send slot before its SDK effect.
+// An unknown outcome remains consumed and is never sent again.
 func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToken, cfg *commonv1.VenuePolicy, plan *commonv1.SyntheticTapePlan, send func(context.Context, *gateway.SyntheticRequest) (*gateway.SyntheticResult, error)) (*commonv1.SyntheticTapeResult, error) {
 	if !validStoreContext(ctx) || send == nil || !validSyntheticPlan(cfg, execution, plan) {
 		return nil, ErrInvalidSubmit
@@ -101,36 +101,11 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 		if err != nil {
 			return err
 		}
-		var rows []*executionmodelv1.SyntheticTapeIntent
-		if err := tx.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Where("run_id = ? AND symbol = ?", plan.RunId, plan.Symbol).Order("sequence").Limit(1001).Find(&rows).Error; err != nil {
+		history, err := readSyntheticHistory(ctx, tx, cfg, plan, digest)
+		if err != nil {
 			return err
 		}
-		if len(rows) > 1000 {
-			return ErrRiskLimit
-		}
-		total := decimal.Zero
-		last := int64(0)
-		lastSource := int64(0)
-		for i, row := range rows {
-			amount, err := syntheticReservation(row, digest, int64(i))
-			if err != nil {
-				return err
-			}
-			total = total.Add(amount)
-			if cfg.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
-				sourceID, err := validateSyntheticTradeAudit(cfg, row.Plan)
-				if err != nil || sourceID <= lastSource {
-					return ErrInvalidSubmit
-				}
-				lastSource = sourceID
-			} else if row.Plan.GetSourceTrade() != nil {
-				return ErrInvalidSubmit
-			}
-			last = max(last, row.CreateAt)
-			if row.Sequence == int64(plan.Sequence) {
-				result = row
-			}
-		}
+		result = history.replay
 		if result != nil {
 			// Returning a committed receipt has no SDK effect. Do not wait on
 			// the strategy/source rows held by the first sender or require its
@@ -139,7 +114,7 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 		}
 		if cfg.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
 			sourceID, err := native.TradeSequence(plan.SourceTrade)
-			if err != nil || sourceID <= lastSource {
+			if err != nil || sourceID <= history.lastSource {
 				return ErrInvalidSubmit
 			}
 		}
@@ -147,17 +122,17 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 		if err != nil {
 			return err
 		}
-		if plan.Sequence != uint32(len(rows)) {
+		if plan.Sequence != uint64(history.count) {
 			return ErrInvalidSubmit
 		}
-		if last > 0 && now-last < cfg.SyntheticTape.Interval.AsDuration().Milliseconds() {
+		if history.last > 0 && now-history.last < cfg.SyntheticTape.Interval.AsDuration().Milliseconds() {
 			return ErrRiskLimit
 		}
 		price, _ := native.Value(plan.Price, false, false)
 		quantity, _ := native.Value(plan.Quantity, false, false)
 		notional := price.Mul(quantity)
-		maximum, _ := native.Value(native.SyntheticProfile(cfg, plan.Symbol).MaximumNotional, false, false)
-		if total.Add(notional).GreaterThan(maximum) {
+		maximum, _ := native.Value(native.SyntheticProfile(cfg, plan.Symbol).MaximumNotional, false, true)
+		if maximum.IsPositive() && history.total.Add(notional).GreaterThan(maximum) {
 			return ErrRiskLimit
 		}
 		result = &executionmodelv1.SyntheticTapeIntent{
@@ -198,7 +173,7 @@ func syntheticReservation(row *executionmodelv1.SyntheticTapeIntent, digest stri
 	amount, e1 := domain.ParseLedgerDecimal(row.Notional, false, false)
 	price, e2 := native.Value(row.Plan.GetPrice(), false, false)
 	quantity, e3 := native.Value(row.Plan.GetQuantity(), false, false)
-	if e1 != nil || e2 != nil || e3 != nil || row.DeleteAt != nil || row.PolicyDigest != digest || row.Sequence != sequence || row.Plan.GetSequence() != uint32(sequence) ||
+	if e1 != nil || e2 != nil || e3 != nil || row.DeleteAt != nil || row.PolicyDigest != digest || row.Sequence != sequence || row.Plan.GetSequence() != uint64(sequence) ||
 		row.Plan.GetRunId() != row.RunId || row.Plan.GetSymbol() != row.Symbol || !amount.Equal(price.Mul(quantity)) ||
 		!proto.Equal(row.Plan.GetSourceTrade(), row.Result.GetSourceTrade()) ||
 		row.Result.GetState() != native.SyntheticPublished && row.Result.GetState() != native.SyntheticUnknown {

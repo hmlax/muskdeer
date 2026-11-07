@@ -21,13 +21,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// SyntheticTapePlan identifies one slot of a finite development market-data run.
+// SyntheticTapePlan identifies one slot of a development market-data run.
 // The same run/symbol/sequence never emits again, even if a reply is lost.
 type SyntheticTapePlan struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	RunId              string                 `protobuf:"bytes,1,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
 	Symbol             string                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Sequence           uint32                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	Sequence           uint64                 `protobuf:"varint,3,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	Side               string                 `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`
 	Price              string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`
 	Quantity           string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
@@ -84,7 +84,7 @@ func (x *SyntheticTapePlan) GetSymbol() string {
 	return ""
 }
 
-func (x *SyntheticTapePlan) GetSequence() uint32 {
+func (x *SyntheticTapePlan) GetSequence() uint64 {
 	if x != nil {
 		return x.Sequence
 	}
@@ -247,7 +247,7 @@ const file_deer_proto_common_v1_synthetic_proto_rawDesc = "" +
 	"\x11SyntheticTapePlan\x12\x15\n" +
 	"\x06run_id\x18\x01 \x01(\tR\x05runId\x12\x16\n" +
 	"\x06symbol\x18\x02 \x01(\tR\x06symbol\x12\x1a\n" +
-	"\bsequence\x18\x03 \x01(\rR\bsequence\x12\x12\n" +
+	"\bsequence\x18\x03 \x01(\x04R\bsequence\x12\x12\n" +
 	"\x04side\x18\x04 \x01(\tR\x04side\x12\x14\n" +
 	"\x05price\x18\x05 \x01(\tR\x05price\x12\x1a\n" +
 	"\bquantity\x18\x06 \x01(\tR\bquantity\x12>\n" +

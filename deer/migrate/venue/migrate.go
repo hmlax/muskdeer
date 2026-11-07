@@ -52,6 +52,9 @@ var legacyPlanGraceDefinition string
 //go:embed sql/0009_stateless_business_audits.sql
 var statelessBusinessDefinition string
 
+//go:embed sql/0010_unlimited_synthetic.sql
+var unlimitedSyntheticDefinition string
+
 // Both legacy and current installers retain the same advisory lock. A ledger
 // rename and all business table changes commit in one bounded transaction.
 const bootstrapLedger = `DO $$
@@ -152,6 +155,7 @@ func definitions() []string {
 		databaseProfilesDefinition,
 		venueModelsDefinition,
 		strategyParametersDefinition,
+		unlimitedSyntheticDefinition,
 	}
 }
 
@@ -170,6 +174,7 @@ func definitionsFor(rows []*commonmodelv1.VenueSchemaMigration) []string {
 			legacyPlanGraceDefinition,
 			statelessBusinessDefinition,
 			strategyParametersDefinition,
+			unlimitedSyntheticDefinition,
 		}
 	}
 	return definitions()
