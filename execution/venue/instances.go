@@ -122,6 +122,13 @@ func (r *Instances) run(ctx context.Context) (result error) {
 		defer cancel()
 		result = errors.Join(result, client.Close(cleanup))
 	}()
+	for _, child := range r.ordered {
+		if child.directMaker() {
+			if _, ok := client.(gateway.QuoteClient); !ok {
+				return ErrInvalidConfig
+			}
+		}
+	}
 	if err := client.Ping(ctx); err != nil {
 		return err
 	}

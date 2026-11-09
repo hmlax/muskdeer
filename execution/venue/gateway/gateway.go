@@ -46,6 +46,22 @@ type Scope struct {
 	Symbol string
 }
 
+// QuoteRequest is a direct maker command with no local persistence identity.
+type QuoteRequest struct {
+	Scope    Scope
+	ClientID string
+	Side     domain.Side
+	Price    decimal.Decimal
+	Quantity decimal.Decimal
+	Leverage uint32
+}
+
+// QuoteClient sends maker operations directly to the venue, without a journal.
+type QuoteClient interface {
+	SubmitQuote(context.Context, QuoteRequest) (*SubmitResult, error)
+	CancelQuote(context.Context, CancelRequest) error
+}
+
 // Admission authorizes one durable intent at the final external call.
 type Admission struct {
 	IntentID int64

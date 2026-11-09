@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log/slog"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"google.golang.org/grpc"
@@ -33,13 +34,15 @@ import (
 type Runtime struct {
 	inventory []*commonv1.VenueInstanceRevision
 	portfoliovenuev1.UnimplementedPortfolioServer
-	children map[string]*Runtime
-	db       *gorm.DB
-	owner    string
-	cfg      *venueconfig.RuntimeConfig
-	factory  *rpcclient.Factory
-	leases   domain.LeaseRepository
-	logger   *logging.Logger
+	children   map[string]*Runtime
+	db         *gorm.DB
+	owner      string
+	cfg        *venueconfig.RuntimeConfig
+	factory    *rpcclient.Factory
+	leases     domain.LeaseRepository
+	logger     *logging.Logger
+	memoryOnly bool
+	latest     atomic.Pointer[commonv1.VenueSnapshot]
 }
 
 // NewRuntime borrows the existing pool and RPC factory without starting tasks.
@@ -123,8 +126,19 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy
 	if err != nil {
 		return err
 	}
-	if snapshot.ValidUntilMs <= time.Now().UnixMilli() || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId || snapshot.Scope.Symbol != profile.Symbol {
+	return r.saveSnapshot(ctx, profile, token, snapshot)
+}
+
+func (r *Runtime) saveSnapshot(ctx context.Context, profile *commonv1.VenueProfilePolicy, token domain.LeaseToken, snapshot *commonv1.VenueSnapshot) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || snapshot.GetScope().GetUserId() != profile.UserId || snapshot.GetScope().GetFundId() != profile.FundId || snapshot.GetScope().GetSymbol() != profile.Symbol {
 		return values.ErrInvalid
+	}
+	if r.memoryOnly {
+		r.latest.Store(proto.CloneOf(snapshot))
+		return nil
 	}
 	return r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Transaction(func(tx *gorm.DB) error {
 		if r.cfg.InstanceID == 0 {
@@ -164,6 +178,13 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (
 	}
 	if _, err := values.Profile(r.cfg.Venue, scope); err != nil {
 		return nil, status.Error(codes.InvalidArgument, values.MessageInvalid)
+	}
+	if r.memoryOnly {
+		snapshot := r.latest.Load()
+		if snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || snapshot.GetScope().GetUserId() != scope.UserId || snapshot.GetScope().GetFundId() != scope.FundId || snapshot.GetScope().GetSymbol() != scope.Symbol {
+			return nil, status.Error(codes.Unavailable, values.MessageInvalid)
+		}
+		return proto.CloneOf(snapshot), nil
 	}
 	var row portfoliomodelv1.VenueAccountSnapshot
 	if err := r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {

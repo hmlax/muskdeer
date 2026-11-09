@@ -24,8 +24,12 @@ func (r *Runtime) maintainCurrentDepth(ctx context.Context, cycle *quoteCycle, w
 		if cycle.result.Cancelled > 0 {
 			return cycle.result, nil
 		}
-		if err := r.store.CompleteCutover(ctx, cycle.lease); err != nil {
-			return nil, err
+		if r.directMaker() {
+			r.cutover.Store(true)
+		} else {
+			if err := r.store.CompleteCutover(ctx, cycle.lease); err != nil {
+				return nil, err
+			}
 		}
 	}
 	for _, target := range cycle.targets {

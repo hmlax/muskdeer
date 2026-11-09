@@ -174,11 +174,13 @@ func (r *Runtime) protectObserved(ctx context.Context, profile *commonv1.VenuePr
 		return r.cancelManaged(ctx, profile)
 	}
 	if r.cfg.InstanceID > 0 {
-		if err := r.store.Observe(ctx, lease, snapshot); err != nil {
-			return err
-		}
-		if err := r.syncSnapshotBudget(ctx, lease, snapshot, book); err != nil {
-			return err
+		if !r.directMaker() {
+			if err := r.store.Observe(ctx, lease, snapshot); err != nil {
+				return err
+			}
+			if err := r.syncSnapshotBudget(ctx, lease, snapshot, book); err != nil {
+				return err
+			}
 		}
 		retained := &quoteRetention{orders: make(map[string]bool)}
 		bid, e1 := native.Value(book.Bids[0].Price, false, false)
@@ -199,7 +201,7 @@ func (r *Runtime) protectObserved(ctx context.Context, profile *commonv1.VenuePr
 				retained.orders[order.OrderId] = true
 			}
 		}
-		return r.cancelObsolete(ctx, profile, lease, snapshot, retained, &executionvenuev1.QuoteResult{}, budget.CutoverCompleted)
+		return r.cancelObsolete(ctx, profile, lease, snapshot, retained, &executionvenuev1.QuoteResult{}, r.quoteCutover(budget.CutoverCompleted))
 	}
 	_, err = r.refresh(ctx, profile, lease, book)
 	return err
@@ -226,14 +228,16 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProf
 		if !native.Active(order.Status) {
 			continue
 		}
-		if !ownsCancellation(profile, order.ClientId, budget.CutoverCompleted) {
+		if !ownsCancellation(profile, order.ClientId, r.quoteCutover(budget.CutoverCompleted)) {
 			continue
 		}
-		if err := r.store.Observe(ctx, lease, &commonv1.VenueSnapshot{
-			Scope:  native.Scope(profile),
-			Orders: []*commonv1.VenueOrder{order},
-		}); err != nil {
-			return err
+		if !r.directMaker() {
+			if err := r.store.Observe(ctx, lease, &commonv1.VenueSnapshot{
+				Scope:  native.Scope(profile),
+				Orders: []*commonv1.VenueOrder{order},
+			}); err != nil {
+				return err
+			}
 		}
 		if err := r.cancelOne(ctx, lease, profile, order); err != nil {
 			return err

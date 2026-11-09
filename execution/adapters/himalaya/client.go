@@ -17,7 +17,8 @@ import (
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-// Client owns one upstream SDK connection. A nil guard exposes reads only.
+// Client owns one upstream SDK connection. A nil guard disables journalled
+// Submit/Cancel; explicit maker operations use SubmitQuote/CancelQuote.
 type Client struct {
 	sdk     *orderclient.Client
 	guard   SubmissionGuard
@@ -141,7 +142,14 @@ func (e *outcomeFailure) Unwrap() error { return errors.Join(domain.ErrOutcomeUn
 
 func sdkInput(request SubmitRequest) (*pb.PlaceRequest, error) {
 	identityValid := request.OwnerID == "" && request.Epoch == 0 || validIdentity(request.OwnerID) && request.Epoch > 0
-	if request.IntentID <= 0 || !identityValid || request.UserID <= 0 || request.FundID <= 0 ||
+	if request.IntentID <= 0 || !identityValid {
+		return nil, ErrInvalidSubmit
+	}
+	return sdkOrderInput(request)
+}
+
+func sdkOrderInput(request SubmitRequest) (*pb.PlaceRequest, error) {
+	if request.UserID <= 0 || request.FundID <= 0 ||
 		!validSymbol(request.Symbol) || !validIdentity(request.ClientID) || request.Leverage == 0 || request.Leverage > 150 {
 		return nil, ErrInvalidSubmit
 	}

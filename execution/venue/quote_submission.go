@@ -27,6 +27,9 @@ type quoteCycle struct {
 }
 
 func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *commonv1.VenueTarget) error {
+	if r.directMaker() {
+		return r.submitDirectQuote(ctx, cycle, target)
+	}
 	price, e1 := native.Value(target.Price, false, false)
 	quantity, e2 := native.Value(target.Quantity, false, false)
 	if e1 != nil || e2 != nil {

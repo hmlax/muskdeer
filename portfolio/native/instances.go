@@ -10,6 +10,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/logging"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -44,6 +45,7 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 		}
 		key := native.ScopeKey(instance.Profile.UserId, instance.Profile.FundId)
 		if child := parent.children[key]; child != nil {
+			child.memoryOnly = child.memoryOnly || instance.Type == domain.StrategyTemplateMarketMaker
 			if child.cfg.Venue.Profiles[0].Symbol != instance.Profile.Symbol {
 				return nil, instanceconfig.ErrInvalid
 			}
@@ -54,11 +56,12 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 			continue
 		}
 		parent.children[key] = &Runtime{
-			db:      db,
-			owner:   owner,
-			cfg:     settings,
-			factory: factory,
-			logger:  logger,
+			db:         db,
+			owner:      owner,
+			cfg:        settings,
+			factory:    factory,
+			logger:     logger,
+			memoryOnly: instance.Type == domain.StrategyTemplateMarketMaker,
 		}
 	}
 	return parent, nil

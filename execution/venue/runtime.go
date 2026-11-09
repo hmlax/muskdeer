@@ -46,6 +46,7 @@ type Runtime struct {
 	gates     map[string]chan struct{}
 	plans     map[string]*atomic.Int64
 	quotePlan atomic.Pointer[quotePlanAuthority]
+	cutover   atomic.Bool
 }
 
 // Dependencies are borrowed once; the worker owns only the adapter connection it dials.
@@ -311,6 +312,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	if err != nil || !budget.Enabled {
 		return nil, ErrRiskLimit
 	}
+	cutover := r.quoteCutover(budget.CutoverCompleted)
 	result := &executionvenuev1.QuoteResult{State: native.StateRecovering}
 	if recoveryErr != nil {
 		return result, recoveryErr
@@ -324,7 +326,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	if err != nil {
 		return nil, err
 	}
-	retained, err := retainQuoteOrders(profile, snapshot, wanted, budget.CutoverCompleted, r.cfg.ReplacementFraction)
+	retained, err := retainQuoteOrders(profile, snapshot, wanted, cutover, r.cfg.ReplacementFraction)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +349,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 		result:   result,
 	}
 	if r.cfg.InstanceID > 0 {
-		return r.maintainCurrentDepth(ctx, cycle, wanted, budget.CutoverCompleted)
+		return r.maintainCurrentDepth(ctx, cycle, wanted, cutover)
 	}
 	var seedErr error
 	if budget.CutoverCompleted {
@@ -405,6 +407,9 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 	raw, snapshot, err := r.read(ctx, profile)
 	if err != nil {
 		return nil, err
+	}
+	if r.directMaker() {
+		return snapshot, nil
 	}
 	if r.cfg.InstanceID > 0 {
 		if err := r.store.Observe(ctx, lease, snapshot); err != nil {
@@ -481,14 +486,25 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 }
 
 func (r *Runtime) syncSnapshotBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, book *commonv1.VenueBook) error {
-	mark, err := native.Value(snapshot.Market.MarkPrice, false, false)
+	gross, err := snapshotGross(snapshot, book)
 	if err != nil {
 		return err
+	}
+	if r.cfg.InstanceID > 0 {
+		return r.store.syncBudget(ctx, lease, snapshot, gross, true)
+	}
+	return r.store.SyncBudget(ctx, lease, snapshot, gross)
+}
+
+func snapshotGross(snapshot *commonv1.VenueSnapshot, book *commonv1.VenueBook) (decimal.Decimal, error) {
+	mark, err := native.Value(snapshot.Market.MarkPrice, false, false)
+	if err != nil {
+		return decimal.Zero, err
 	}
 	if len(book.GetAsks()) != 0 {
 		upper, err := native.Value(book.Asks[len(book.Asks)-1].Price, false, false)
 		if err != nil {
-			return err
+			return decimal.Zero, err
 		}
 		mark = decimal.Max(mark, upper)
 	}
@@ -496,7 +512,7 @@ func (r *Runtime) syncSnapshotBudget(ctx context.Context, lease domain.LeaseToke
 	for _, position := range snapshot.Positions {
 		quantity, err := native.Value(position.SignedQuantity, true, true)
 		if err != nil {
-			return err
+			return decimal.Zero, err
 		}
 		gross = gross.Add(quantity.Abs().Mul(mark))
 	}
@@ -509,16 +525,27 @@ func (r *Runtime) syncSnapshotBudget(ctx context.Context, lease domain.LeaseToke
 		executed, _ := native.Value(order.ExecutedQuantity, false, true)
 		gross = gross.Add(quantity.Sub(executed).Mul(decimal.Max(price, mark)))
 	}
-	if r.cfg.InstanceID > 0 {
-		return r.store.syncBudget(ctx, lease, snapshot, gross, true)
-	}
-	return r.store.SyncBudget(ctx, lease, snapshot, gross)
+	return gross, nil
 }
 
 func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profile *commonv1.VenueProfilePolicy, order *commonv1.VenueOrder) error {
 	id, err := strconv.ParseUint(order.OrderId, 10, 64)
 	if err != nil {
 		return err
+	}
+	if r.directMaker() {
+		client, ok := r.client.Load().Client.(gateway.QuoteClient)
+		if !ok {
+			return ErrInvalidConfig
+		}
+		return client.CancelQuote(ctx, CancelRequest{
+			Scope: Scope{
+				UserID: profile.UserId,
+				FundID: profile.FundId,
+				Symbol: profile.Symbol,
+			},
+			OrderID: id,
+		})
 	}
 	admission, err := r.store.PrepareCancel(ctx, lease, CancelRequest{
 		Scope: Scope{
