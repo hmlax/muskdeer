@@ -189,14 +189,10 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 }
 
 func (r *Runtime) acquire(ctx context.Context, profile *commonv1.VenueProfilePolicy) (domain.LeaseToken, error) {
-	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
+	return native.KeepLease(ctx, r.leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: AccountID(profile.UserId, profile.FundId),
 	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return domain.LeaseToken{}, err
-	}
-	return r.leases.Renew(ctx, token, r.cfg.Venue.LeaseTtl.AsDuration())
 }
 
 func (r *Runtime) enter(scope *commonv1.VenueScope) (func(), error) {

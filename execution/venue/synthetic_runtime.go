@@ -19,14 +19,10 @@ import (
 )
 
 func (r *Runtime) acquireSynthetic(ctx context.Context, symbol string) (domain.LeaseToken, error) {
-	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
+	return native.KeepLease(ctx, r.leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: native.SyntheticExecutionKey(r.cfg.Venue.SyntheticTape.RunId, symbol),
 	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return domain.LeaseToken{}, err
-	}
-	return r.leases.Renew(ctx, token, r.cfg.Venue.LeaseTtl.AsDuration())
 }
 
 // PublishSynthetic emits development market data only. Execution refreshes the

@@ -40,8 +40,15 @@ func TestVenueStatelessHistoryUpgradeAppendsWithoutRewritingExistingData(t *test
 		t.Fatal(err)
 	}
 	var rows []*commonmodelv1.VenueSchemaMigration
-	if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Order("version").Find(&rows).Error; err != nil || len(rows) != 10 {
-		t.Fatalf("stateless upgrade history = %d rows, %v, want 10", len(rows), err)
+	if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Order("version").Find(&rows).Error; err != nil || len(rows) != 11 {
+		t.Fatalf("stateless upgrade history = %d rows, %v, want 11 including unlimited synthetic slots", len(rows), err)
+	}
+	unlimited, err := os.ReadFile("venue/sql/0010_unlimited_synthetic.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rows[10].Version != 11 || rows[10].Checksum != fmt.Sprintf("%x", sha256.Sum256(unlimited)) {
+		t.Fatal("unlimited synthetic migration missing or changed")
 	}
 	for i, old := range before {
 		if !proto.Equal(old, rows[i]) {

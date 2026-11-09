@@ -5,6 +5,7 @@ package migrate
 import (
 	"context"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -129,10 +130,11 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	receipts := &syntheticReplayProbe{Runtime: execution}
 	discovery.entries[rpcsecurity.ServiceExecution] = nacos.Instance{
 		ID:      "execution-sdk-test",
 		Service: rpcsecurity.ServiceExecution,
-		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceExecution, func(server *grpc.Server) { execution.RegisterGRPC(server) }),
+		Address: nativeTLSServer(t, ca, rpcsecurity.ServiceExecution, func(server *grpc.Server) { executionvenuev1.RegisterExecutionServer(server, receipts) }),
 	}
 	unauthorized := nativeFactory(ctx, t, ca, rpcsecurity.ServicePortfolio, discovery)
 	connection, err := unauthorized.Client(rpcclient.Target{Service: rpcsecurity.ServiceExecution})
@@ -188,6 +190,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	}
 	// A new worker starts its local sequence at zero, but the persisted slots
 	// return the earlier results rather than issuing two more SDK publications.
+	beforeReplays := receipts.replayed.Load()
 	restarted, err := nativestrategy.Workers(ctx, db, lease.OwnerID, cfg, strategyFactory, logger)
 	if err != nil {
 		t.Fatal(err)
@@ -201,7 +204,7 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 	runNativeWorkers(ctx, t, selected)
 	nativeWait(ctx, t, func() bool {
 		var after commonmodelv1.ExecutionShardLease
-		return db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("id = ?", before.Id).First(&after).Error == nil && after.UpdateAt >= before.UpdateAt+100
+		return receipts.replayed.Load() >= beforeReplays+2 && db.WithContext(ctx).Model(&commonmodelv1.ExecutionShardLease{}).Where("id = ?", before.Id).First(&after).Error == nil && after.Epoch == before.Epoch && after.OwnerId == before.OwnerId
 	})
 	sdk.mu.Lock()
 	defer sdk.mu.Unlock()
@@ -209,4 +212,19 @@ func testSyntheticTapeWorkers(t *testing.T, mode configv1.SyntheticTapeMode) {
 		t.Fatalf("SDK effects synthetic=%d orders=%d next=%d, want 2/0/0", len(sdk.synthetic), len(sdk.orders), sdk.next)
 	}
 	assertSyntheticSDKDirections(t, mode, sdk.synthetic)
+}
+
+// Observe completed cached receipts, rather than requiring a redundant lease
+// UPDATE as evidence that the restarted worker reached execution.
+type syntheticReplayProbe struct {
+	*venueexecution.Runtime
+	replayed atomic.Int64
+}
+
+func (p *syntheticReplayProbe) PublishSynthetic(ctx context.Context, in *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapeResult, error) {
+	result, err := p.Runtime.PublishSynthetic(ctx, in)
+	if err == nil && result.GetReplayed() {
+		p.replayed.Add(1)
+	}
+	return result, err
 }

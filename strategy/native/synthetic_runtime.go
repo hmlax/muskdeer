@@ -64,14 +64,10 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if !active {
 		return errInstancePaused
 	}
-	token, err := leases.Acquire(ctx, domain.LeaseKey{
+	token, err := values.KeepLease(ctx, leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol),
 	}, owner, cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return err
-	}
-	token, err = leases.Renew(ctx, token, cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}

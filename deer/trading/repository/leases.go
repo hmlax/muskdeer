@@ -44,8 +44,22 @@ func (r *leaseStore) Acquire(ctx context.Context, key domain.LeaseKey, owner str
 	if err := validateLeaseCall(ctx, key, owner, ttl); err != nil {
 		return domain.LeaseToken{}, err
 	}
+	// Reusing this incarnation's retained token is a read, not a new grant.
+	// Avoid row-lock WAL and waiting behind in-flight effects on every poll.
+	// Release/takeover can still race this read, so the final effect must lock
+	// and verify its epoch exactly as before.
+	retained := leaseModel(key)
+	err := r.db.WithContext(ctx).Model(leaseModel(key)).Where(leasePredicate(key)).
+		Where("delete_at IS NULL AND owner_id = ?", owner).
+		Where("expires_at > floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint").Take(retained).Error
+	if err == nil {
+		return leaseToken(key, retained), nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return domain.LeaseToken{}, leaseFailure(ctx, err)
+	}
 	var result domain.LeaseToken
-	err := r.db.WithContext(ctx).Model(leaseModel(key)).Transaction(func(tx *gorm.DB) error {
+	err = r.db.WithContext(ctx).Model(leaseModel(key)).Transaction(func(tx *gorm.DB) error {
 		initial := leaseModel(key)
 		if err := tx.WithContext(ctx).Model(leaseModel(key)).Clauses(clause.OnConflict{DoNothing: true}).Create(initial).Error; err != nil {
 			return err

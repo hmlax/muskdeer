@@ -93,14 +93,10 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if active, err := instanceconfig.Active(ctx, db, cfg.InstanceID, cfg.Revision); err != nil || !active {
 		return err
 	}
-	token, err := leases.Acquire(ctx, domain.LeaseKey{
+	token, err := values.KeepLease(ctx, leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.StrategyKey(profile.UserId, profile.FundId),
 	}, owner, cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return err
-	}
-	token, err = leases.Renew(ctx, token, cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}

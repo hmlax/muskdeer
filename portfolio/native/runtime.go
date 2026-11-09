@@ -104,14 +104,10 @@ func (r *Runtime) Workers() []deer.Worker {
 }
 
 func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
-	token, err := r.leases.Acquire(ctx, domain.LeaseKey{
+	token, err := values.KeepLease(ctx, r.leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: values.PortfolioKey(profile.UserId, profile.FundId),
 	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return err
-	}
-	token, err = r.leases.Renew(ctx, token, r.cfg.Venue.LeaseTtl.AsDuration())
 	if err != nil {
 		return err
 	}
