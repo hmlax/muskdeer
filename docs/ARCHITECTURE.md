@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-09 最新要求：当前 development_only WashTrade 订阅行情、计算单次量后直接调用 SDK WashTrade，事件处理不进行任何数据库读写；配置/启停独立控制面刷新。旧批次与序号只留历史，不再参与运行，详见 [DIRECT_WASH_TRADE.md](DIRECT_WASH_TRADE.md)。
+
 2026-11-09 铺单订单无本地持久化：当前 market_maker 使用独立强类型 QuoteClient 直接发送撮合命令，不复用本地下单/撤单日志接口；execution 不写订单与账户运行观察，portfolio 对铺单账户仅保存内存实时快照。实例配置、启停及参数仍来自数据库。旧通道日志由网格/历史恢复继续使用，开发合成记录不变，见 [DIRECT_MAKER_QUOTES.md](DIRECT_MAKER_QUOTES.md)。
 
 2026-11-09 当前通道调整：四核心的实例入口不再申请、续期或查询数据库进程所有权，gRPC 按已有服务发现路由；撮合资金、挂单及持仓是当前敞口来源，不汇总历史预留。保留实例配置/启停的最终检查和持久化单次发送，不再宣称跨副本独占执行。版本5保留所有旧审计，细节与旧路径边界见 [MATCHING_AUTHORITY.md](MATCHING_AUTHORITY.md)。

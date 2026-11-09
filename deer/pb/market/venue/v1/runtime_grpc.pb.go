@@ -23,6 +23,8 @@ const (
 	Market_DescribeInstances_FullMethodName = "/muskdeer.market.venue.v1.Market/DescribeInstances"
 	Market_GetBook_FullMethodName           = "/muskdeer.market.venue.v1.Market/GetBook"
 	Market_GetTrade_FullMethodName          = "/muskdeer.market.venue.v1.Market/GetTrade"
+	Market_SubscribeBooks_FullMethodName    = "/muskdeer.market.venue.v1.Market/SubscribeBooks"
+	Market_SubscribeTrades_FullMethodName   = "/muskdeer.market.venue.v1.Market/SubscribeTrades"
 )
 
 // MarketClient is the client API for Market service.
@@ -34,6 +36,8 @@ type MarketClient interface {
 	DescribeInstances(ctx context.Context, in *v1.VenueInstanceInventoryRequest, opts ...grpc.CallOption) (*v1.VenueInstanceInventory, error)
 	GetBook(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (*v1.VenueBook, error)
 	GetTrade(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (*v1.VenueTrade, error)
+	SubscribeBooks(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[v1.VenueBook], error)
+	SubscribeTrades(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[v1.VenueTrade], error)
 }
 
 type marketClient struct {
@@ -74,6 +78,44 @@ func (c *marketClient) GetTrade(ctx context.Context, in *TradeRequest, opts ...g
 	return out, nil
 }
 
+func (c *marketClient) SubscribeBooks(ctx context.Context, in *BookRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[v1.VenueBook], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Market_ServiceDesc.Streams[0], Market_SubscribeBooks_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[BookRequest, v1.VenueBook]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Market_SubscribeBooksClient = grpc.ServerStreamingClient[v1.VenueBook]
+
+func (c *marketClient) SubscribeTrades(ctx context.Context, in *TradeRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[v1.VenueTrade], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Market_ServiceDesc.Streams[1], Market_SubscribeTrades_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[TradeRequest, v1.VenueTrade]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Market_SubscribeTradesClient = grpc.ServerStreamingClient[v1.VenueTrade]
+
 // MarketServer is the server API for Market service.
 // All implementations must embed UnimplementedMarketServer
 // for forward compatibility.
@@ -83,6 +125,8 @@ type MarketServer interface {
 	DescribeInstances(context.Context, *v1.VenueInstanceInventoryRequest) (*v1.VenueInstanceInventory, error)
 	GetBook(context.Context, *BookRequest) (*v1.VenueBook, error)
 	GetTrade(context.Context, *TradeRequest) (*v1.VenueTrade, error)
+	SubscribeBooks(*BookRequest, grpc.ServerStreamingServer[v1.VenueBook]) error
+	SubscribeTrades(*TradeRequest, grpc.ServerStreamingServer[v1.VenueTrade]) error
 	mustEmbedUnimplementedMarketServer()
 }
 
@@ -101,6 +145,12 @@ func (UnimplementedMarketServer) GetBook(context.Context, *BookRequest) (*v1.Ven
 }
 func (UnimplementedMarketServer) GetTrade(context.Context, *TradeRequest) (*v1.VenueTrade, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTrade not implemented")
+}
+func (UnimplementedMarketServer) SubscribeBooks(*BookRequest, grpc.ServerStreamingServer[v1.VenueBook]) error {
+	return status.Error(codes.Unimplemented, "method SubscribeBooks not implemented")
+}
+func (UnimplementedMarketServer) SubscribeTrades(*TradeRequest, grpc.ServerStreamingServer[v1.VenueTrade]) error {
+	return status.Error(codes.Unimplemented, "method SubscribeTrades not implemented")
 }
 func (UnimplementedMarketServer) mustEmbedUnimplementedMarketServer() {}
 func (UnimplementedMarketServer) testEmbeddedByValue()                {}
@@ -177,6 +227,28 @@ func _Market_GetTrade_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Market_SubscribeBooks_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(BookRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MarketServer).SubscribeBooks(m, &grpc.GenericServerStream[BookRequest, v1.VenueBook]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Market_SubscribeBooksServer = grpc.ServerStreamingServer[v1.VenueBook]
+
+func _Market_SubscribeTrades_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(TradeRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(MarketServer).SubscribeTrades(m, &grpc.GenericServerStream[TradeRequest, v1.VenueTrade]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Market_SubscribeTradesServer = grpc.ServerStreamingServer[v1.VenueTrade]
+
 // Market_ServiceDesc is the grpc.ServiceDesc for Market service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -197,6 +269,17 @@ var Market_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Market_GetTrade_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SubscribeBooks",
+			Handler:       _Market_SubscribeBooks_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "SubscribeTrades",
+			Handler:       _Market_SubscribeTrades_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "deer/proto/market/venue/v1/runtime.proto",
 }

@@ -39,3 +39,20 @@ func TestSyntheticAdapterMapsBusinessSideAndRejectsUnknownSide(t *testing.T) {
 		t.Fatalf("SDK synthetic requests = %v; want exactly BUY and SELL", peer.syntheticRequests)
 	}
 }
+
+func TestDirectWashAdapterWorksWithoutPersistenceAdmission(t *testing.T) {
+	t.Parallel()
+	peer := &sdkPeer{}
+	client := sdkClient(t, peer, nil)
+	result, err := client.WashTrade(t.Context(), &gateway.SyntheticRequest{
+		Symbol: "BTCUSDT", Side: domain.SideBuy, Price: "100.1", Quantity: "0.001",
+	})
+	if err != nil || result.GetTradeID() != "adapter-tape-test" {
+		t.Fatalf("direct SDK = %v, %v", result, err)
+	}
+	peer.mu.Lock()
+	defer peer.mu.Unlock()
+	if len(peer.syntheticRequests) != 1 {
+		t.Fatalf("SDK called %d times", len(peer.syntheticRequests))
+	}
+}

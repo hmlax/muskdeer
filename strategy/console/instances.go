@@ -189,7 +189,7 @@ func (s *Server) manage(ctx context.Context, actor *pb.Actor, command instanceco
 	if actor.TenantId > 0 {
 		command.Accounts = actor.AllowedAccountIds
 	}
-	row, err := instanceconfig.Manage(ctx, s.db, command, s.connection)
+	row, err := instanceconfig.ManageConfigured(ctx, s.db, command)
 	if err != nil {
 		switch {
 		case errors.Is(err, instanceconfig.ErrConflict):

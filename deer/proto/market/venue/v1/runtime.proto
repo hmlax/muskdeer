@@ -11,6 +11,8 @@ service Market {
   rpc DescribeInstances(muskdeer.common.v1.VenueInstanceInventoryRequest) returns (muskdeer.common.v1.VenueInstanceInventory);
   rpc GetBook(BookRequest) returns (muskdeer.common.v1.VenueBook);
   rpc GetTrade(TradeRequest) returns (muskdeer.common.v1.VenueTrade);
+  rpc SubscribeBooks(BookRequest) returns (stream muskdeer.common.v1.VenueBook);
+  rpc SubscribeTrades(TradeRequest) returns (stream muskdeer.common.v1.VenueTrade);
 }
 
 message BookRequest { string symbol = 1; }

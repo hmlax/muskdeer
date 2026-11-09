@@ -62,6 +62,11 @@ type QuoteClient interface {
 	CancelQuote(context.Context, CancelRequest) error
 }
 
+// WashClient publishes one development market-data event without persistence.
+type WashClient interface {
+	WashTrade(context.Context, *SyntheticRequest) (*SyntheticResult, error)
+}
+
 // Admission authorizes one durable intent at the final external call.
 type Admission struct {
 	IntentID int64

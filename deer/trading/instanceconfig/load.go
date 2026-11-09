@@ -40,15 +40,30 @@ type Instance struct {
 // A supplied connection binds consumed tape identity to the same transport
 // fields that execution attaches before publication. It supplies no parameters.
 func Load(ctx context.Context, db *gorm.DB, connections ...*configv1.VenueConnection) ([]*Instance, error) {
-	return load(ctx, db, false, connections...)
+	return load(ctx, db, false, false, connections...)
 }
 
 // LoadAll assembles stopped instances as well, enabling explicit control without hot parameter reload.
 func LoadAll(ctx context.Context, db *gorm.DB, connections ...*configv1.VenueConnection) ([]*Instance, error) {
-	return load(ctx, db, true, connections...)
+	return load(ctx, db, true, false, connections...)
 }
 
-func load(ctx context.Context, db *gorm.DB, all bool, connections ...*configv1.VenueConnection) ([]*Instance, error) {
+// LoadConfigured reads current instance configuration without consulting
+// historical development publications or reconstructing a run cursor.
+func LoadConfigured(ctx context.Context, db *gorm.DB) ([]*Instance, error) {
+	return load(ctx, db, true, true)
+}
+
+func configuredRow(row *strategymodelv1.StrategyInstance) *strategymodelv1.StrategyInstance {
+	if row.Template != string(domain.StrategyTemplateWashTrade) {
+		return row
+	}
+	snapshot := proto.CloneOf(row)
+	snapshot.TapePolicyDigest, snapshot.TapeParametersDigest = "", ""
+	return snapshot
+}
+
+func load(ctx context.Context, db *gorm.DB, all, direct bool, connections ...*configv1.VenueConnection) ([]*Instance, error) {
 	if err := validContext(ctx); err != nil || db == nil {
 		return nil, ErrInvalid
 	}
@@ -78,14 +93,18 @@ func load(ctx context.Context, db *gorm.DB, all bool, connections ...*configv1.V
 		}
 		runs := make(map[string]bool)
 		for _, row := range rows {
-			instance, err := fromRow(row, templates[row.TemplateId], instruments[row.InstrumentId], budgets[row.AccountId])
+			input := row
+			if direct {
+				input = configuredRow(row)
+			}
+			instance, err := fromRow(input, templates[row.TemplateId], instruments[row.InstrumentId], budgets[row.AccountId])
 			if err != nil {
 				return err
 			}
 			if !all && !row.DesiredRunning {
 				continue
 			}
-			if instance.Type == domain.StrategyTemplateWashTrade {
+			if !direct && instance.Type == domain.StrategyTemplateWashTrade {
 				key := native.SyntheticExecutionKey(instance.Parameters.WashTrade.RunId, instance.Profile.Symbol)
 				if runs[key] {
 					return ErrInvalid

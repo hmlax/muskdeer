@@ -1,5 +1,7 @@
 # 当前通道以撮合为准
 
+2026-11-09 最新 WashTrade 约定覆盖下文旧开发槽描述：当前 development_only 实例订阅直发、不读写批次或消耗记录；旧历史保留，见 [DIRECT_WASH_TRADE.md](DIRECT_WASH_TRADE.md)。
+
 2026-11-09 用户明确取消当前通道运行的数据库进程执行权记录，以及本地历史资金预留汇总。本约定替代旧文档中要求当前实例续租、最终执行 epoch 和累计未知资金预留的部分。
 
 四核心通过 `strategy_instances` 装配时：

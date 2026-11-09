@@ -23,6 +23,9 @@ import (
 )
 
 func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger, leases domain.LeaseRepository) []deer.Worker {
+	if cfg.InstanceID > 0 {
+		return washWorkers(cfg, factory, logger)
+	}
 	if !cfg.Venue.GetSyntheticTape().GetEnabled() {
 		return nil
 	}

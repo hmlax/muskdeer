@@ -32,6 +32,8 @@ import (
 
 // Runtime owns the only SDK writer, with bounded local admission and durable fencing.
 type Runtime struct {
+	washControl atomic.Pointer[washControl]
+	washNext    atomic.Int64
 	executionvenuev1.UnimplementedExecutionServer
 	db        *gorm.DB
 	owner     string

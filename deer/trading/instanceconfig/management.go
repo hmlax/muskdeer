@@ -44,6 +44,16 @@ type ManagementWrite struct {
 // Manage atomically applies one versioned command and appends its complete
 // historical parameters. It never reloads workers or modifies financial policy.
 func Manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connection *config.VenueConnection) (*model.StrategyInstance, error) {
+	return manage(ctx, db, command, connection, false)
+}
+
+// ManageConfigured changes configuration/control only; it never reads or
+// rewrites historical WashTrade batches or receipts.
+func ManageConfigured(ctx context.Context, db *gorm.DB, command ManagementWrite) (*model.StrategyInstance, error) {
+	return manage(ctx, db, command, nil, true)
+}
+
+func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connection *config.VenueConnection, direct bool) (*model.StrategyInstance, error) {
 	if validContext(ctx) != nil || db == nil || len(command.Subject) == 0 || len(command.Subject) > 64 || len(command.RequestID) < 16 || len(command.RequestID) > 128 {
 		return nil, ErrInvalid
 	}
@@ -63,7 +73,7 @@ func Manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 				return ErrConflict
 			}
 		}
-		if err := applyManagement(ctx, tx, row, command, connection); err != nil {
+		if err := applyManagement(ctx, tx, row, command, connection, direct); err != nil {
 			return err
 		}
 		row.DesiredState = string(domain.StrategyStateStopped)
@@ -88,11 +98,15 @@ func Manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 				return err
 			}
 		}
-		instance, err := fromRow(row, &template, &instrument, &budget)
+		input := row
+		if direct {
+			input = configuredRow(row)
+		}
+		instance, err := fromRow(input, &template, &instrument, &budget)
 		if err != nil {
 			return err
 		}
-		if instance.Type == domain.StrategyTemplateWashTrade {
+		if !direct && instance.Type == domain.StrategyTemplateWashTrade {
 			if err := resumeTape(ctx, tx, instance, connection); err != nil {
 				return err
 			}
@@ -131,7 +145,7 @@ func Manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 	return result, err
 }
 
-func applyManagement(ctx context.Context, tx *gorm.DB, row *model.StrategyInstance, command ManagementWrite, connection *config.VenueConnection) error {
+func applyManagement(ctx context.Context, tx *gorm.DB, row *model.StrategyInstance, command ManagementWrite, connection *config.VenueConnection, direct bool) error {
 	switch command.Operation {
 	case ManagementCreate:
 		if err := createManagement(ctx, tx, row, command); err != nil {
@@ -151,12 +165,14 @@ func applyManagement(ctx context.Context, tx *gorm.DB, row *model.StrategyInstan
 		if err := Validate(domain.StrategyTemplate(row.Template), row.Implementation, in.Parameters); err != nil {
 			return err
 		}
-		if err := preserveUnlimitedTape(ctx, tx, tapeUpgrade{
-			row:        row,
-			write:      in,
-			connection: connection,
-		}); err != nil {
-			return err
+		if !direct {
+			if err := preserveUnlimitedTape(ctx, tx, tapeUpgrade{
+				row:        row,
+				write:      in,
+				connection: connection,
+			}); err != nil {
+				return err
+			}
 		}
 		row.Parameters = in.Parameters
 		row.Revision++

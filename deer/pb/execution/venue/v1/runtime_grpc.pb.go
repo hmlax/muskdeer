@@ -25,6 +25,7 @@ const (
 	Execution_CancelInstanceOrders_FullMethodName = "/muskdeer.execution.venue.v1.Execution/CancelInstanceOrders"
 	Execution_Reconcile_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/Reconcile"
 	Execution_PublishSynthetic_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
+	Execution_WashTrade_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/WashTrade"
 )
 
 // ExecutionClient is the client API for Execution service.
@@ -36,6 +37,7 @@ type ExecutionClient interface {
 	CancelInstanceOrders(ctx context.Context, in *CancelInstanceRequest, opts ...grpc.CallOption) (*QuoteResult, error)
 	Reconcile(ctx context.Context, in *QuotePlan, opts ...grpc.CallOption) (*QuoteResult, error)
 	PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
+	WashTrade(ctx context.Context, in *WashTradeRequest, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
 }
 
 type executionClient struct {
@@ -96,6 +98,16 @@ func (c *executionClient) PublishSynthetic(ctx context.Context, in *v1.Synthetic
 	return out, nil
 }
 
+func (c *executionClient) WashTrade(ctx context.Context, in *WashTradeRequest, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(v1.SyntheticTapeResult)
+	err := c.cc.Invoke(ctx, Execution_WashTrade_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ExecutionServer is the server API for Execution service.
 // All implementations must embed UnimplementedExecutionServer
 // for forward compatibility.
@@ -105,6 +117,7 @@ type ExecutionServer interface {
 	CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error)
 	Reconcile(context.Context, *QuotePlan) (*QuoteResult, error)
 	PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error)
+	WashTrade(context.Context, *WashTradeRequest) (*v1.SyntheticTapeResult, error)
 	mustEmbedUnimplementedExecutionServer()
 }
 
@@ -129,6 +142,9 @@ func (UnimplementedExecutionServer) Reconcile(context.Context, *QuotePlan) (*Quo
 }
 func (UnimplementedExecutionServer) PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method PublishSynthetic not implemented")
+}
+func (UnimplementedExecutionServer) WashTrade(context.Context, *WashTradeRequest) (*v1.SyntheticTapeResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method WashTrade not implemented")
 }
 func (UnimplementedExecutionServer) mustEmbedUnimplementedExecutionServer() {}
 func (UnimplementedExecutionServer) testEmbeddedByValue()                   {}
@@ -241,6 +257,24 @@ func _Execution_PublishSynthetic_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Execution_WashTrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WashTradeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExecutionServer).WashTrade(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Execution_WashTrade_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExecutionServer).WashTrade(ctx, req.(*WashTradeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Execution_ServiceDesc is the grpc.ServiceDesc for Execution service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -267,6 +301,10 @@ var Execution_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PublishSynthetic",
 			Handler:    _Execution_PublishSynthetic_Handler,
+		},
+		{
+			MethodName: "WashTrade",
+			Handler:    _Execution_WashTrade_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

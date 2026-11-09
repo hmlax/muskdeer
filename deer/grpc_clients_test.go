@@ -11,6 +11,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	health "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -311,4 +312,59 @@ func (p *rpcFactoryProbe) Multiply(ctx context.Context, _ *probev1.MultiplyReque
 		return nil, status.FromContextError(ctx.Err()).Err()
 	}
 	return nil, status.Error(codes.Unavailable, "fixture business failure")
+}
+
+func TestRPCSubscriptionsDoNotConsumeUnarySlotsAndCloseJoins(t *testing.T) {
+	ca := testcert.New(t)
+	node := runRPCFactoryNode(t, ca, &identityProbe{observed: make(chan identitySnapshot, 1)})
+	factory := newRPCFactory(t, ca, &rpcDiscoveryFixture{instances: []nacos.Instance{{ID: "execution-a", Service: "execution.grpc", Address: node.GRPCAddress()}}}, time.Second)
+	started := make(chan struct{}, 3)
+	done := make(chan error, 3)
+	for range 3 {
+		go func() {
+			done <- factory.Subscribe(t.Context(), rpcclient.Target{Service: "execution.grpc"}, func(ctx context.Context, conn grpc.ClientConnInterface) error {
+				bounded, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+				defer cancel()
+				stream, err := health.NewHealthClient(conn).Watch(bounded, &health.HealthCheckRequest{})
+				if err != nil {
+					return err
+				}
+				if _, err := stream.Recv(); err != nil {
+					return err
+				}
+				started <- struct{}{}
+				_, err = stream.Recv()
+				return err
+			})
+		}()
+	}
+	for range 3 {
+		select {
+		case <-started:
+		case err := <-done:
+			t.Fatalf("subscription startup: %v", err)
+		case <-time.After(5 * time.Second):
+			t.Fatal("subscription occupied a unary slot")
+		}
+	}
+	conn, err := factory.Client(rpcclient.Target{Service: "execution.grpc"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := probev1.NewArithmeticProbeClient(conn).Multiply(t.Context(), &probev1.MultiplyRequest{Price: "2", Quantity: "3"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := factory.Close(); err != nil {
+		t.Fatal(err)
+	}
+	for range 3 {
+		select {
+		case err := <-done:
+			if status.Code(err) != codes.Canceled {
+				t.Fatalf("stream close = %v", err)
+			}
+		case <-time.After(time.Second):
+			t.Fatal("stream did not join")
+		}
+	}
 }

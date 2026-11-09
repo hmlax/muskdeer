@@ -22,6 +22,137 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Current development publication has no local batch or persistence identity.
+type WashTradeRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	StrategyInstanceId int64                  `protobuf:"varint,1,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
+	StrategyRevision   int64                  `protobuf:"varint,2,opt,name=strategy_revision,json=strategyRevision,proto3" json:"strategy_revision,omitempty"`
+	Symbol             string                 `protobuf:"bytes,3,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Side               string                 `protobuf:"bytes,4,opt,name=side,proto3" json:"side,omitempty"`
+	Price              string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`
+	Quantity           string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	// Types that are valid to be assigned to Source:
+	//
+	//	*WashTradeRequest_Trade
+	//	*WashTradeRequest_Book
+	Source        isWashTradeRequest_Source `protobuf_oneof:"source"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WashTradeRequest) Reset() {
+	*x = WashTradeRequest{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WashTradeRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WashTradeRequest) ProtoMessage() {}
+
+func (x *WashTradeRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WashTradeRequest.ProtoReflect.Descriptor instead.
+func (*WashTradeRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *WashTradeRequest) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *WashTradeRequest) GetStrategyRevision() int64 {
+	if x != nil {
+		return x.StrategyRevision
+	}
+	return 0
+}
+
+func (x *WashTradeRequest) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *WashTradeRequest) GetSide() string {
+	if x != nil {
+		return x.Side
+	}
+	return ""
+}
+
+func (x *WashTradeRequest) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *WashTradeRequest) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+func (x *WashTradeRequest) GetSource() isWashTradeRequest_Source {
+	if x != nil {
+		return x.Source
+	}
+	return nil
+}
+
+func (x *WashTradeRequest) GetTrade() *v1.VenueTrade {
+	if x != nil {
+		if x, ok := x.Source.(*WashTradeRequest_Trade); ok {
+			return x.Trade
+		}
+	}
+	return nil
+}
+
+func (x *WashTradeRequest) GetBook() *v1.VenueBook {
+	if x != nil {
+		if x, ok := x.Source.(*WashTradeRequest_Book); ok {
+			return x.Book
+		}
+	}
+	return nil
+}
+
+type isWashTradeRequest_Source interface {
+	isWashTradeRequest_Source()
+}
+
+type WashTradeRequest_Trade struct {
+	Trade *v1.VenueTrade `protobuf:"bytes,7,opt,name=trade,proto3,oneof"`
+}
+
+type WashTradeRequest_Book struct {
+	Book *v1.VenueBook `protobuf:"bytes,8,opt,name=book,proto3,oneof"`
+}
+
+func (*WashTradeRequest_Trade) isWashTradeRequest_Source() {}
+
+func (*WashTradeRequest_Book) isWashTradeRequest_Source() {}
+
 type QuotePlan struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Scope              *v1.VenueScope         `protobuf:"bytes,1,opt,name=scope,proto3" json:"scope,omitempty"`
@@ -37,7 +168,7 @@ type QuotePlan struct {
 
 func (x *QuotePlan) Reset() {
 	*x = QuotePlan{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[0]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -49,7 +180,7 @@ func (x *QuotePlan) String() string {
 func (*QuotePlan) ProtoMessage() {}
 
 func (x *QuotePlan) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[0]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -62,7 +193,7 @@ func (x *QuotePlan) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuotePlan.ProtoReflect.Descriptor instead.
 func (*QuotePlan) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{0}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *QuotePlan) GetScope() *v1.VenueScope {
@@ -126,7 +257,7 @@ type QuoteResult struct {
 
 func (x *QuoteResult) Reset() {
 	*x = QuoteResult{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[1]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -138,7 +269,7 @@ func (x *QuoteResult) String() string {
 func (*QuoteResult) ProtoMessage() {}
 
 func (x *QuoteResult) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[1]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -151,7 +282,7 @@ func (x *QuoteResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuoteResult.ProtoReflect.Descriptor instead.
 func (*QuoteResult) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{1}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *QuoteResult) GetPlaced() uint32 {
@@ -193,7 +324,7 @@ type CancelInstanceRequest struct {
 
 func (x *CancelInstanceRequest) Reset() {
 	*x = CancelInstanceRequest{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -205,7 +336,7 @@ func (x *CancelInstanceRequest) String() string {
 func (*CancelInstanceRequest) ProtoMessage() {}
 
 func (x *CancelInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -218,7 +349,7 @@ func (x *CancelInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelInstanceRequest.ProtoReflect.Descriptor instead.
 func (*CancelInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{2}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CancelInstanceRequest) GetId() int64 {
@@ -246,7 +377,17 @@ var File_deer_proto_execution_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a$deer/proto/common/v1/synthetic.proto\"\xed\x02\n" +
+	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a$deer/proto/common/v1/synthetic.proto\"\xc6\x02\n" +
+	"\x10WashTradeRequest\x120\n" +
+	"\x14strategy_instance_id\x18\x01 \x01(\x03R\x12strategyInstanceId\x12+\n" +
+	"\x11strategy_revision\x18\x02 \x01(\x03R\x10strategyRevision\x12\x16\n" +
+	"\x06symbol\x18\x03 \x01(\tR\x06symbol\x12\x12\n" +
+	"\x04side\x18\x04 \x01(\tR\x04side\x12\x14\n" +
+	"\x05price\x18\x05 \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\x06 \x01(\tR\bquantity\x126\n" +
+	"\x05trade\x18\a \x01(\v2\x1e.muskdeer.common.v1.VenueTradeH\x00R\x05trade\x123\n" +
+	"\x04book\x18\b \x01(\v2\x1d.muskdeer.common.v1.VenueBookH\x00R\x04bookB\b\n" +
+	"\x06source\"\xed\x02\n" +
 	"\tQuotePlan\x124\n" +
 	"\x05scope\x18\x01 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x121\n" +
 	"\x04book\x18\x02 \x01(\v2\x1d.muskdeer.common.v1.VenueBookR\x04book\x12>\n" +
@@ -265,13 +406,14 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\x03R\brevision\x12\x1d\n" +
 	"\n" +
-	"cancel_all\x18\x03 \x01(\bR\tcancelAll2\x8a\x04\n" +
+	"cancel_all\x18\x03 \x01(\bR\tcancelAll2\xef\x04\n" +
 	"\tExecution\x12r\n" +
 	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12P\n" +
 	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12t\n" +
 	"\x14CancelInstanceOrders\x122.muskdeer.execution.venue.v1.CancelInstanceRequest\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12]\n" +
 	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12b\n" +
-	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResultB>Z<github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1b\x06proto3"
+	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResult\x12c\n" +
+	"\tWashTrade\x12-.muskdeer.execution.venue.v1.WashTradeRequest\x1a'.muskdeer.common.v1.SyntheticTapeResultB>Z<github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1b\x06proto3"
 
 var (
 	file_deer_proto_execution_venue_v1_runtime_proto_rawDescOnce sync.Once
@@ -285,41 +427,47 @@ func file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescData
 }
 
-var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
-	(*QuotePlan)(nil),                        // 0: muskdeer.execution.venue.v1.QuotePlan
-	(*QuoteResult)(nil),                      // 1: muskdeer.execution.venue.v1.QuoteResult
-	(*CancelInstanceRequest)(nil),            // 2: muskdeer.execution.venue.v1.CancelInstanceRequest
-	(*v1.VenueScope)(nil),                    // 3: muskdeer.common.v1.VenueScope
-	(*v1.VenueBook)(nil),                     // 4: muskdeer.common.v1.VenueBook
-	(*v1.VenueAuthority)(nil),                // 5: muskdeer.common.v1.VenueAuthority
-	(*v1.VenueTarget)(nil),                   // 6: muskdeer.common.v1.VenueTarget
-	(*v1.VenueInstanceInventoryRequest)(nil), // 7: muskdeer.common.v1.VenueInstanceInventoryRequest
-	(*v1.SyntheticTapePlan)(nil),             // 8: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.VenueInstanceInventory)(nil),        // 9: muskdeer.common.v1.VenueInstanceInventory
-	(*v1.VenueSnapshot)(nil),                 // 10: muskdeer.common.v1.VenueSnapshot
-	(*v1.SyntheticTapeResult)(nil),           // 11: muskdeer.common.v1.SyntheticTapeResult
+	(*WashTradeRequest)(nil),                 // 0: muskdeer.execution.venue.v1.WashTradeRequest
+	(*QuotePlan)(nil),                        // 1: muskdeer.execution.venue.v1.QuotePlan
+	(*QuoteResult)(nil),                      // 2: muskdeer.execution.venue.v1.QuoteResult
+	(*CancelInstanceRequest)(nil),            // 3: muskdeer.execution.venue.v1.CancelInstanceRequest
+	(*v1.VenueTrade)(nil),                    // 4: muskdeer.common.v1.VenueTrade
+	(*v1.VenueBook)(nil),                     // 5: muskdeer.common.v1.VenueBook
+	(*v1.VenueScope)(nil),                    // 6: muskdeer.common.v1.VenueScope
+	(*v1.VenueAuthority)(nil),                // 7: muskdeer.common.v1.VenueAuthority
+	(*v1.VenueTarget)(nil),                   // 8: muskdeer.common.v1.VenueTarget
+	(*v1.VenueInstanceInventoryRequest)(nil), // 9: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*v1.SyntheticTapePlan)(nil),             // 10: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.VenueInstanceInventory)(nil),        // 11: muskdeer.common.v1.VenueInstanceInventory
+	(*v1.VenueSnapshot)(nil),                 // 12: muskdeer.common.v1.VenueSnapshot
+	(*v1.SyntheticTapeResult)(nil),           // 13: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_execution_venue_v1_runtime_proto_depIdxs = []int32{
-	3,  // 0: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
-	4,  // 1: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
-	5,  // 2: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
-	6,  // 3: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
-	7,  // 4: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
-	3,  // 5: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
-	2,  // 6: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
-	0,  // 7: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
-	8,  // 8: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	9,  // 9: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
-	10, // 10: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
-	1,  // 11: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	1,  // 12: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	11, // 13: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	9,  // [9:14] is the sub-list for method output_type
-	4,  // [4:9] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	4,  // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
+	5,  // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	6,  // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
+	5,  // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	7,  // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	8,  // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
+	9,  // 6: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
+	6,  // 7: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	3,  // 8: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
+	1,  // 9: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
+	10, // 10: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	0,  // 11: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
+	11, // 12: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	12, // 13: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	2,  // 14: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	2,  // 15: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	13, // 16: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	13, // 17: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_execution_venue_v1_runtime_proto_init() }
@@ -327,13 +475,17 @@ func file_deer_proto_execution_venue_v1_runtime_proto_init() {
 	if File_deer_proto_execution_venue_v1_runtime_proto != nil {
 		return
 	}
+	file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[0].OneofWrappers = []any{
+		(*WashTradeRequest_Trade)(nil),
+		(*WashTradeRequest_Book)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc), len(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

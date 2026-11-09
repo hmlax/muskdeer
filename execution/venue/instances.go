@@ -128,12 +128,18 @@ func (r *Instances) run(ctx context.Context) (result error) {
 				return ErrInvalidConfig
 			}
 		}
+		if child.cfg.Template == domain.StrategyTemplateWashTrade {
+			if _, ok := client.(gateway.WashClient); !ok {
+				return ErrInvalidConfig
+			}
+		}
 	}
 	if err := client.Ping(ctx); err != nil {
 		return err
 	}
 	r.ordered[0].client.Store(&gatewaySession{Client: client})
 	group, work := errgroup.WithContext(ctx)
+	group.Go(func() error { return r.watchWashControls(work) })
 	for _, child := range r.ordered {
 		group.Go(func() error { return child.maintainInstance(work) })
 	}
@@ -161,22 +167,22 @@ func (r *Instances) run(ctx context.Context) (result error) {
 }
 
 func (r *Runtime) maintainInstance(ctx context.Context) error {
+	if r.cfg.Template == domain.StrategyTemplateWashTrade {
+		<-ctx.Done()
+		return ctx.Err()
+	}
 	failed := false
 	for ctx.Err() == nil {
 		var err error
-		if r.cfg.Template == domain.StrategyTemplateWashTrade {
-			err = r.renewSyntheticScopes(ctx)
-		} else {
-			for _, profile := range r.cfg.Venue.Profiles {
-				gate := r.gates[AccountID(profile.UserId, profile.FundId)]
-				select {
-				case gate <- struct{}{}:
-					op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
-					err = r.protect(op, profile)
-					cancel()
-					<-gate
-				default:
-				}
+		for _, profile := range r.cfg.Venue.Profiles {
+			gate := r.gates[AccountID(profile.UserId, profile.FundId)]
+			select {
+			case gate <- struct{}{}:
+				op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
+				err = r.protect(op, profile)
+				cancel()
+				<-gate
+			default:
 			}
 		}
 		if err != nil && !failed && ctx.Err() == nil {
@@ -211,13 +217,18 @@ func (r *Instances) Reconcile(ctx context.Context, p *executionv1.QuotePlan) (*e
 	return child.Reconcile(ctx, p)
 }
 
-// PublishSynthetic routes only a current development WashTrade instance.
-func (r *Instances) PublishSynthetic(ctx context.Context, p *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapeResult, error) {
+// PublishSynthetic rejects the retired batch protocol on the current server.
+func (r *Instances) PublishSynthetic(_ context.Context, _ *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapeResult, error) {
+	return nil, status.Error(codes.Unimplemented, native.MessageInvalid)
+}
+
+// WashTrade publishes only from current immutable WashTrade settings.
+func (r *Instances) WashTrade(ctx context.Context, p *executionv1.WashTradeRequest) (*commonv1.SyntheticTapeResult, error) {
 	child, err := r.selected(p.GetStrategyInstanceId(), p.GetStrategyRevision(), true)
 	if err != nil {
 		return nil, err
 	}
-	return child.PublishSynthetic(ctx, p)
+	return child.WashTrade(ctx, p)
 }
 
 // GetSnapshot selects a configured observation scope.

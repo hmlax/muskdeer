@@ -25,7 +25,7 @@ func InstancesData(ctx context.Context, cfg *configv1.ServiceConfig, owner *deer
 	if err := schemaformat.Check(ctx, db); err != nil {
 		return nil, "", nil, err
 	}
-	instances, err := instanceconfig.LoadAll(ctx, db, cfg.VenueConnection)
+	instances, err := instanceconfig.LoadConfigured(ctx, db)
 	if err != nil {
 		return nil, "", nil, err
 	}

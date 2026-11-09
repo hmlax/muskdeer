@@ -97,6 +97,7 @@ func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
 		}
 		r.mu.Lock()
 		r.trades[symbol] = proto.CloneOf(trade)
+		r.tradeReaders.publish(r.trades[symbol])
 		r.mu.Unlock()
 		return nil
 	})

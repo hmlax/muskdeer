@@ -17,6 +17,20 @@ func (c *Client) PublishSynthetic(ctx context.Context, input *gateway.SyntheticR
 	if c == nil || c.sdk == nil || c.guard == nil || input == nil {
 		return nil, ErrInvalidSubmit
 	}
+	return c.WashTrade(ctx, input)
+}
+
+// WashTrade sends one development publication without any persistence guard.
+func (c *Client) WashTrade(ctx context.Context, input *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
+	if c == nil || c.sdk == nil || ctx == nil || input == nil || !validSymbol(input.Symbol) {
+		return nil, ErrInvalidSubmit
+	}
+	if _, err := native.Value(input.Price, false, false); err != nil {
+		return nil, ErrInvalidSubmit
+	}
+	if _, err := native.Value(input.Quantity, false, false); err != nil {
+		return nil, ErrInvalidSubmit
+	}
 	var side int32
 	switch input.Side {
 	case domain.SideBuy:

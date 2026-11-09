@@ -83,7 +83,7 @@ func testSDKRefusedStream(t *testing.T, synthetic bool) {
 		}
 	})
 	if synthetic {
-		if _, err := client.PublishSynthetic(t.Context(), &gateway.SyntheticRequest{
+		if _, err := client.WashTrade(t.Context(), &gateway.SyntheticRequest{
 			Symbol:   "BTCUSDT",
 			Side:     domain.SideBuy,
 			Quantity: "0.001",

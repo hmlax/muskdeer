@@ -29,15 +29,17 @@ import (
 type Runtime struct {
 	inventory []*commonv1.VenueInstanceRevision
 	marketvenuev1.UnimplementedMarketServer
-	children map[string]*Runtime
-	db       *gorm.DB
-	owner    string
-	cfg      *venueconfig.RuntimeConfig
-	leases   domain.LeaseRepository
-	mu       sync.RWMutex
-	books    map[string]*commonv1.VenueBook
-	trades   map[string]*commonv1.VenueTrade
-	logger   *logging.Logger
+	children     map[string]*Runtime
+	db           *gorm.DB
+	owner        string
+	cfg          *venueconfig.RuntimeConfig
+	leases       domain.LeaseRepository
+	mu           sync.RWMutex
+	books        map[string]*commonv1.VenueBook
+	trades       map[string]*commonv1.VenueTrade
+	bookReaders  subscriptions[*commonv1.VenueBook]
+	tradeReaders subscriptions[*commonv1.VenueTrade]
+	logger       *logging.Logger
 }
 
 // NewRuntime borrows dependencies without starting sockets or tasks.
@@ -170,6 +172,7 @@ func (r *Runtime) session(ctx context.Context, symbol string) error {
 		}
 		r.mu.Lock()
 		r.books[symbol] = proto.CloneOf(book)
+		r.bookReaders.publish(r.books[symbol])
 		r.mu.Unlock()
 		return nil
 	})

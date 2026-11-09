@@ -118,11 +118,13 @@ const file_deer_proto_market_venue_v1_runtime_proto_rawDesc = "" +
 	"\vBookRequest\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\"&\n" +
 	"\fTradeRequest\x12\x16\n" +
-	"\x06symbol\x18\x01 \x01(\tR\x06symbol2\xa1\x02\n" +
+	"\x06symbol\x18\x01 \x01(\tR\x06symbol2\xd8\x03\n" +
 	"\x06Market\x12r\n" +
 	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12O\n" +
 	"\aGetBook\x12%.muskdeer.market.venue.v1.BookRequest\x1a\x1d.muskdeer.common.v1.VenueBook\x12R\n" +
-	"\bGetTrade\x12&.muskdeer.market.venue.v1.TradeRequest\x1a\x1e.muskdeer.common.v1.VenueTradeB;Z9github.com/hmlax/muskdeer/deer/pb/market/venue/v1;venuev1b\x06proto3"
+	"\bGetTrade\x12&.muskdeer.market.venue.v1.TradeRequest\x1a\x1e.muskdeer.common.v1.VenueTrade\x12X\n" +
+	"\x0eSubscribeBooks\x12%.muskdeer.market.venue.v1.BookRequest\x1a\x1d.muskdeer.common.v1.VenueBook0\x01\x12[\n" +
+	"\x0fSubscribeTrades\x12&.muskdeer.market.venue.v1.TradeRequest\x1a\x1e.muskdeer.common.v1.VenueTrade0\x01B;Z9github.com/hmlax/muskdeer/deer/pb/market/venue/v1;venuev1b\x06proto3"
 
 var (
 	file_deer_proto_market_venue_v1_runtime_proto_rawDescOnce sync.Once
@@ -149,11 +151,15 @@ var file_deer_proto_market_venue_v1_runtime_proto_depIdxs = []int32{
 	2, // 0: muskdeer.market.venue.v1.Market.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
 	0, // 1: muskdeer.market.venue.v1.Market.GetBook:input_type -> muskdeer.market.venue.v1.BookRequest
 	1, // 2: muskdeer.market.venue.v1.Market.GetTrade:input_type -> muskdeer.market.venue.v1.TradeRequest
-	3, // 3: muskdeer.market.venue.v1.Market.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
-	4, // 4: muskdeer.market.venue.v1.Market.GetBook:output_type -> muskdeer.common.v1.VenueBook
-	5, // 5: muskdeer.market.venue.v1.Market.GetTrade:output_type -> muskdeer.common.v1.VenueTrade
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
+	0, // 3: muskdeer.market.venue.v1.Market.SubscribeBooks:input_type -> muskdeer.market.venue.v1.BookRequest
+	1, // 4: muskdeer.market.venue.v1.Market.SubscribeTrades:input_type -> muskdeer.market.venue.v1.TradeRequest
+	3, // 5: muskdeer.market.venue.v1.Market.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	4, // 6: muskdeer.market.venue.v1.Market.GetBook:output_type -> muskdeer.common.v1.VenueBook
+	5, // 7: muskdeer.market.venue.v1.Market.GetTrade:output_type -> muskdeer.common.v1.VenueTrade
+	4, // 8: muskdeer.market.venue.v1.Market.SubscribeBooks:output_type -> muskdeer.common.v1.VenueBook
+	5, // 9: muskdeer.market.venue.v1.Market.SubscribeTrades:output_type -> muskdeer.common.v1.VenueTrade
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name

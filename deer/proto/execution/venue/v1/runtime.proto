@@ -13,6 +13,21 @@ service Execution {
   rpc CancelInstanceOrders(CancelInstanceRequest) returns (QuoteResult);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
+  rpc WashTrade(WashTradeRequest) returns (muskdeer.common.v1.SyntheticTapeResult);
+}
+
+// Current development publication has no local batch or persistence identity.
+message WashTradeRequest {
+  int64 strategy_instance_id = 1;
+  int64 strategy_revision = 2;
+  string symbol = 3;
+  string side = 4;
+  string price = 5;
+  string quantity = 6;
+  oneof source {
+    muskdeer.common.v1.VenueTrade trade = 7;
+    muskdeer.common.v1.VenueBook book = 8;
+  }
 }
 
 message QuotePlan {
