@@ -16,11 +16,11 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func TestReservationIndexUpgradeRetainsAllThreeHistoricalLedgerRows(t *testing.T) {
+func TestMatchingAuthorityUpgradeRetainsAllFourHistoricalLedgerRows(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	db, _ := baselineDatabase(ctx, t)
-	for i, name := range []string{"0002_unlimited_synthetic.sql", "0003_console_instance_identity.sql"} {
+	for i, name := range []string{"0002_unlimited_synthetic.sql", "0003_console_instance_identity.sql", "0004_current_reservation_index.sql"} {
 		definition, err := os.ReadFile("../schemaformat/" + name)
 		if err != nil {
 			t.Fatal(err)
@@ -35,6 +35,14 @@ func TestReservationIndexUpgradeRetainsAllThreeHistoricalLedgerRows(t *testing.T
 		}).Error; err != nil {
 			t.Fatal(err)
 		}
+	}
+	audit := &model.ExecutionShardLease{
+		AccountId: "historical-owner",
+		OwnerId:   "original-process",
+		Epoch:     7,
+	}
+	if err := db.WithContext(ctx).Model(&model.ExecutionShardLease{}).Create(audit).Error; err != nil {
+		t.Fatal(err)
 	}
 	var before []*model.SchemaMigration
 	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Find(&before).Error; err != nil {
@@ -55,13 +63,17 @@ func TestReservationIndexUpgradeRetainsAllThreeHistoricalLedgerRows(t *testing.T
 	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Find(&after).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(after) != 4 {
-		t.Fatalf("ledger rows=%d, want 4", len(after))
+	if len(after) != 5 {
+		t.Fatalf("ledger rows=%d, want 5", len(after))
 	}
 	for i, old := range before {
 		if !proto.Equal(old, after[i]) {
 			t.Fatalf("historical ledger %d changed", i+1)
 		}
+	}
+	var preserved model.ExecutionShardLease
+	if err := db.WithContext(ctx).Model(&model.ExecutionShardLease{}).Where("id = ?", audit.Id).Take(&preserved).Error; err != nil || !proto.Equal(audit, &preserved) {
+		t.Fatalf("historical process authority changed during upgrade: %v", err)
 	}
 	if !db.WithContext(ctx).Migrator().HasIndex(&execution.VenueOrderIntent{}, "idx_venue_intent_current_reservation") {
 		t.Fatal("covering index missing")

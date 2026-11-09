@@ -4,6 +4,7 @@ package venue
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"os"
 	"strconv"
@@ -18,6 +19,7 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer/migrate/schemaformat"
+	"github.com/hmlax/muskdeer/deer/migrate/testschema"
 	"github.com/hmlax/muskdeer/deer/ownerid"
 	config "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	model "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
@@ -133,6 +135,7 @@ type currentStateTest struct {
 
 func newCurrentStateTest(ctx context.Context, t *testing.T) *currentStateTest {
 	t.Helper()
+	schema := "muskdeer_test_" + strings.ToLower(rand.Text())
 	database := os.Getenv("MUSKDEER_TEST_POSTGRES_DATABASE")
 	port, err := strconv.ParseUint(os.Getenv("MUSKDEER_TEST_POSTGRES_PORT"), 10, 16)
 	if err != nil || !strings.HasPrefix(database, "muskdeer_test_") {
@@ -145,7 +148,7 @@ func newCurrentStateTest(ctx context.Context, t *testing.T) *currentStateTest {
 		Username:         os.Getenv("MUSKDEER_TEST_POSTGRES_USERNAME"),
 		PasswordEnv:      "MUSKDEER_TEST_POSTGRES_PASSWORD",
 		SslMode:          postgres.SSLModeDisable,
-		Schema:           "public",
+		Schema:           schema,
 		MaxOpenConns:     4,
 		MaxIdleConns:     2,
 		ConnectTimeout:   durationpb.New(time.Second),
@@ -162,6 +165,16 @@ func newCurrentStateTest(ctx context.Context, t *testing.T) *currentStateTest {
 		}
 	})
 	db := connection.GORM()
+	if err := testschema.Create(ctx, db, schema); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		cleanup, stop := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer stop()
+		if err := testschema.Drop(cleanup, db, schema); err != nil {
+			t.Error(err)
+		}
+	})
 	if err := schemaformat.Install(ctx, db); err != nil {
 		t.Fatal(err)
 	}

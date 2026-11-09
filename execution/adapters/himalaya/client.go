@@ -140,7 +140,8 @@ func (*outcomeFailure) Error() string { return domain.MessageOutcomeUnknown }
 func (e *outcomeFailure) Unwrap() error { return errors.Join(domain.ErrOutcomeUnknown, e.cause) }
 
 func sdkInput(request SubmitRequest) (*pb.PlaceRequest, error) {
-	if request.IntentID <= 0 || request.Epoch == 0 || !validIdentity(request.OwnerID) || request.UserID <= 0 || request.FundID <= 0 ||
+	identityValid := request.OwnerID == "" && request.Epoch == 0 || validIdentity(request.OwnerID) && request.Epoch > 0
+	if request.IntentID <= 0 || !identityValid || request.UserID <= 0 || request.FundID <= 0 ||
 		!validSymbol(request.Symbol) || !validIdentity(request.ClientID) || request.Leverage == 0 || request.Leverage > 150 {
 		return nil, ErrInvalidSubmit
 	}

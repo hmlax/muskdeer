@@ -189,6 +189,11 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 }
 
 func (r *Runtime) acquire(ctx context.Context, profile *commonv1.VenueProfilePolicy) (domain.LeaseToken, error) {
+	if r.store.matching {
+		// Only the account scope is carried through the legacy helper signature.
+		// This zero token grants no process permission and is never persisted.
+		return domain.LeaseToken{Key: domain.LeaseKey{AccountID: AccountID(profile.UserId, profile.FundId)}}, ctx.Err()
+	}
 	return native.KeepLease(ctx, r.leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: AccountID(profile.UserId, profile.FundId),

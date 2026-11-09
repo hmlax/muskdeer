@@ -41,7 +41,7 @@ func (s *Store) PublishSynthetic(ctx context.Context, execution domain.LeaseToke
 	// single attempt completes.
 	var response *gateway.SyntheticResult
 	err = s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
-		_, left, err := lockSyntheticAuthorities(ctx, tx, execution, row.Plan)
+		_, left, err := s.syntheticControls(ctx, tx, execution, row.Plan)
 		if err != nil {
 			return err
 		}
@@ -97,9 +97,16 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 	var result *executionmodelv1.SyntheticTapeIntent
 	fresh := false
 	err := s.db.WithContext(ctx).Model(&executionmodelv1.SyntheticTapeIntent{}).Transaction(func(tx *gorm.DB) error {
-		_, _, err := lockSDKLease(ctx, tx, execution.Key.AccountID, execution.OwnerID, uint64(execution.Epoch))
-		if err != nil {
-			return err
+		if s.matching {
+			// Serialize durable slots on the existing logical instance, without
+			// recording a process owner, epoch, or lease expiry.
+			if err := lockCurrentInstance(ctx, tx, plan.GetStrategyInstanceId(), plan.GetStrategyRevision(), "", plan.Symbol, plan.Book.Source, domain.StrategyTemplateWashTrade); err != nil {
+				return err
+			}
+		} else {
+			if _, _, err := lockSDKLease(ctx, tx, execution.Key.AccountID, execution.OwnerID, uint64(execution.Epoch)); err != nil {
+				return err
+			}
 		}
 		history, err := readSyntheticHistory(ctx, tx, cfg, plan, digest)
 		if err != nil {
@@ -118,7 +125,7 @@ func (s *Store) claimSynthetic(ctx context.Context, execution domain.LeaseToken,
 				return ErrInvalidSubmit
 			}
 		}
-		now, _, err := lockSyntheticAuthorities(ctx, tx, execution, plan)
+		now, _, err := s.syntheticControls(ctx, tx, execution, plan)
 		if err != nil {
 			return err
 		}
@@ -216,6 +223,31 @@ func lockSyntheticAuthorities(ctx context.Context, tx *gorm.DB, execution domain
 		return 0, 0, domain.ErrLeaseLost
 	}
 	return now, remaining, nil
+}
+
+func (s *Store) syntheticControls(ctx context.Context, tx *gorm.DB, execution domain.LeaseToken, plan *commonv1.SyntheticTapePlan) (int64, time.Duration, error) {
+	if !s.matching {
+		return lockSyntheticAuthorities(ctx, tx, execution, plan)
+	}
+	if plan.GetStrategyInstanceId() <= 0 || plan.GetStrategyRevision() <= 0 {
+		return 0, 0, ErrInvalidSubmit
+	}
+	if err := lockCurrentInstance(ctx, tx, plan.StrategyInstanceId, plan.StrategyRevision, "", plan.Symbol, plan.GetBook().GetSource(), domain.StrategyTemplateWashTrade); err != nil {
+		return 0, 0, err
+	}
+	now := time.Now().UnixMilli()
+	until := plan.GetBook().GetValidUntilMs()
+	if plan.SourceTrade != nil {
+		if native.ValidateTrade(plan.SourceTrade, plan.Symbol, time.Now()) != nil {
+			return 0, 0, ErrInvalidSubmit
+		}
+		until = min(until, plan.SourceTrade.ValidUntilMs)
+	}
+	left := min(time.Duration(until-now)*time.Millisecond-50*time.Millisecond, maximumOperationTimeout)
+	if left <= 0 {
+		return 0, 0, native.ErrInvalid
+	}
+	return now, left, nil
 }
 
 func validSyntheticReceipt(plan *commonv1.SyntheticTapePlan, response *gateway.SyntheticResult) bool {

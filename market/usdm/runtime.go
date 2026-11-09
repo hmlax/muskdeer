@@ -107,7 +107,7 @@ func (r *Runtime) GetBook(ctx context.Context, request *marketvenuev1.BookReques
 	r.mu.RLock()
 	book := proto.CloneOf(r.books[request.GetSymbol()])
 	r.mu.RUnlock()
-	if book == nil || book.ValidUntilMs <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, book.Publisher) != nil {
+	if book == nil || book.ValidUntilMs <= time.Now().UnixMilli() || r.cfg.InstanceID == 0 && repository.CheckNativeAuthority(ctx, r.db, book.Publisher) != nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
 	return book, nil
@@ -131,21 +131,25 @@ func (r *Runtime) run(ctx context.Context, symbol string) error {
 }
 
 func (r *Runtime) session(ctx context.Context, symbol string) error {
-	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
-	token, err := r.leases.Acquire(op, domain.LeaseKey{
-		Kind:      domain.LeaseKindExecution,
-		AccountID: native.MarketKey(symbol),
-	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
-	cancel()
-	if err != nil {
-		return err
+	var token domain.LeaseToken
+	if r.cfg.InstanceID == 0 {
+		op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
+		var err error
+		token, err = r.leases.Acquire(op, domain.LeaseKey{
+			Kind:      domain.LeaseKindExecution,
+			AccountID: native.MarketKey(symbol),
+		}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
+		cancel()
+		if err != nil {
+			return err
+		}
 	}
 	feed, err := NewFeed(symbol)
 	if err != nil {
 		return err
 	}
 	return feed.Run(ctx, func(work context.Context, book *commonv1.VenueBook) error {
-		if time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {
+		if r.cfg.InstanceID == 0 && time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {
 			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout)
 			defer cancel()
 			token, err = r.leases.Renew(bounded, token, r.cfg.Venue.LeaseTtl.AsDuration())
@@ -156,8 +160,11 @@ func (r *Runtime) session(ctx context.Context, symbol string) error {
 		if err := work.Err(); err != nil {
 			return err
 		}
-		book.Publisher = native.Authority(token)
-		book.ValidUntilMs = min(book.ValidUntilMs, token.ExpiresAt.UnixMilli()-50)
+		book.Publisher = &commonv1.VenueAuthority{AccountId: native.MarketKey(symbol)}
+		if r.cfg.InstanceID == 0 {
+			book.Publisher = native.Authority(token)
+			book.ValidUntilMs = min(book.ValidUntilMs, token.ExpiresAt.UnixMilli()-50)
+		}
 		if book.ValidUntilMs <= time.Now().UnixMilli() {
 			return domain.ErrLeaseLost
 		}

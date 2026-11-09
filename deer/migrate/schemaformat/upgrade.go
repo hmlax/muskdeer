@@ -21,6 +21,19 @@ var consoleDefinition string
 //go:embed 0004_current_reservation_index.sql
 var reservationDefinition string
 
+//go:embed 0005_matching_authority.sql
+var matchingDefinition string
+
+const matchingName = "0005_matching_authority.sql"
+
+func matchingChecksum() string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(matchingDefinition)))
+}
+
+func matchReservation(rows []*model.SchemaMigration) bool {
+	return len(rows) == 4 && matchConsole(rows[:3]) && rows[3].Version == 4 && rows[3].Name == reservationName && rows[3].Checksum == reservationChecksum() && rows[3].DeleteAt == nil
+}
+
 const reservationName = "0004_current_reservation_index.sql"
 
 func reservationChecksum() string {
@@ -43,7 +56,9 @@ const unlimitedName = "0002_unlimited_synthetic.sql"
 func unlimitedChecksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(unlimitedDefinition))) }
 
 // Upgrade is explicit offline maintenance. It retains the immutable baseline
-// and every consumed slot, and never runs from service startup.
+// and every consumed slot, and never runs from service startup. All four cores
+// must be stopped explicitly; absence of old leases cannot prove quiescence
+// after the matching-authority deployment.
 func Upgrade(ctx context.Context, db *gorm.DB) error {
 	if ctx == nil || db == nil || ctx.Err() != nil {
 		return ErrHistory
@@ -56,13 +71,13 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 		var rows []*model.SchemaMigration
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(5).Find(&rows).Error; err != nil {
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(6).Find(&rows).Error; err != nil {
 			return err
 		}
 		if Match(rows) {
 			return nil
 		}
-		if !matchConsole(rows) && !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
+		if !matchReservation(rows) && !matchConsole(rows) && !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
 			return ErrHistory
 		}
 		var active int64
@@ -98,13 +113,25 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 		}
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(reservationDefinition).Error; err != nil {
+		if len(rows) < 4 {
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(reservationDefinition).Error; err != nil {
+				return err
+			}
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
+				Version:  4,
+				Name:     reservationName,
+				Checksum: reservationChecksum(),
+			}).Error; err != nil {
+				return err
+			}
+		}
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(matchingDefinition).Error; err != nil {
 			return err
 		}
 		return schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
-			Version:  4,
-			Name:     reservationName,
-			Checksum: reservationChecksum(),
+			Version:  5,
+			Name:     matchingName,
+			Checksum: matchingChecksum(),
 		}).Error
 	})
 }

@@ -51,6 +51,14 @@ func (r *Runtime) validatePlanAuthority(ctx context.Context, profile *commonv1.V
 	if plan.GetStrategyInstanceId() != r.cfg.InstanceID || plan.GetStrategyRevision() != r.cfg.Revision {
 		return domain.ErrLeaseLost
 	}
+	if r.store.matching {
+		if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
+			plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.GetPublisher().GetAccountId() != native.MarketKey(profile.Symbol) ||
+			plan.Book.GetPublisher().GetAccountId() != native.MarketKey(profile.Symbol) || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.UserId, profile.FundId) {
+			return native.ErrInvalid
+		}
+		return nil
+	}
 	if plan.Book.GetSource() != native.Source || plan.Book.GetSegment() != native.Segment || plan.Book.GetSymbol() != profile.Symbol ||
 		plan.Book.GetValidUntilMs() <= time.Now().UnixMilli() || book.Publisher.OwnerId != plan.Book.GetPublisher().GetOwnerId() || book.Publisher.Epoch != plan.Book.Publisher.Epoch ||
 		plan.Strategy.AccountId != native.StrategyKey(profile.UserId, profile.FundId) || repository.CheckNativeAuthority(ctx, r.db, plan.Strategy) != nil {

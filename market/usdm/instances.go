@@ -11,7 +11,6 @@ import (
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
 func sortedDependencyKeys[V any](values map[string]V) []string {
@@ -26,12 +25,11 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	leases, err := repository.NewLeases(db)
-	if err != nil {
-		return nil, err
-	}
 	parent := &Runtime{children: make(map[string]*Runtime)}
 	for _, instance := range instances {
+		if instance == nil || instance.ID <= 0 {
+			return nil, instanceconfig.ErrInvalid
+		}
 		parent.inventory = append(parent.inventory, &commonv1.VenueInstanceRevision{
 			Id:       instance.ID,
 			Revision: instance.Revision,
@@ -50,7 +48,6 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 				db:     db,
 				owner:  owner,
 				cfg:    settings,
-				leases: leases,
 				books:  make(map[string]*commonv1.VenueBook),
 				trades: make(map[string]*commonv1.VenueTrade),
 				logger: logger,

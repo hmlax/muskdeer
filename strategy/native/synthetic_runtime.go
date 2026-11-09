@@ -64,12 +64,16 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if !active {
 		return errInstancePaused
 	}
-	token, err := values.KeepLease(ctx, leases, domain.LeaseKey{
-		Kind:      domain.LeaseKindExecution,
-		AccountID: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol),
-	}, owner, cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return err
+	descriptor := &commonv1.VenueAuthority{AccountId: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol)}
+	if cfg.InstanceID == 0 {
+		token, err := values.KeepLease(ctx, leases, domain.LeaseKey{
+			Kind:      domain.LeaseKindExecution,
+			AccountID: values.SyntheticStrategyKey(cfg.Venue.SyntheticTape.RunId, symbol),
+		}, owner, cfg.Venue.LeaseTtl.AsDuration())
+		if err != nil {
+			return err
+		}
+		descriptor = values.Authority(token)
 	}
 	market, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceMarket})
 	if err != nil {
@@ -86,7 +90,7 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 		StrategyInstanceId: cfg.InstanceID,
 		StrategyRevision:   cfg.Revision,
 		Book:               book,
-		Strategy:           values.Authority(token),
+		Strategy:           descriptor,
 	}
 	if cfg.Venue.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
 		proposal.SourceTrade, err = marketvenuev1.NewMarketClient(market).GetTrade(ctx, &marketvenuev1.TradeRequest{Symbol: symbol})
@@ -98,9 +102,12 @@ func syntheticTick(ctx context.Context, db *gorm.DB, leases domain.LeaseReposito
 	if err != nil {
 		return err
 	}
-	instance, err := repository.NativeExecutionInstance(ctx, db, values.SyntheticExecutionKey(plan.RunId, symbol))
-	if err != nil {
-		return err
+	var instance string
+	if cfg.InstanceID == 0 {
+		instance, err = repository.NativeExecutionInstance(ctx, db, values.SyntheticExecutionKey(plan.RunId, symbol))
+		if err != nil {
+			return err
+		}
 	}
 	execution, err := factory.Client(rpcclient.Target{
 		Service:    rpcsecurity.ServiceExecution,

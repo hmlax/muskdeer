@@ -20,6 +20,9 @@ import (
 // Filled gross notional remains conservatively reserved; it is not silently
 // netted against an independently observed position or a later opposite fill.
 func (s *Store) Observe(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot) error {
+	if s.matching {
+		return s.observeMatching(ctx, snapshot)
+	}
 	if !validStoreContext(ctx) || snapshot.GetScope() == nil || lease.Key.AccountID != native.ScopeKey(snapshot.Scope.UserId, snapshot.Scope.FundId) {
 		return ErrInvalidSnapshot
 	}
@@ -110,15 +113,17 @@ func observeIntent(ctx context.Context, tx *gorm.DB, budget *commonmodelv1.Tradi
 	}
 	row.OrderId, row.State = order.OrderId, IntentAcknowledged
 	if native.Terminal(order.Status) {
-		reserved, err := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)
-		if err != nil {
-			return err
+		if budget != nil {
+			reserved, err := domain.ParseLedgerDecimal(budget.ReservedNotional, false, true)
+			if err != nil {
+				return err
+			}
+			release := quantity.Sub(executed).Mul(price)
+			if reserved.LessThan(release) {
+				return ErrInvalidSnapshot
+			}
+			budget.ReservedNotional = reserved.Sub(release).String()
 		}
-		release := quantity.Sub(executed).Mul(price)
-		if reserved.LessThan(release) {
-			return ErrInvalidSnapshot
-		}
-		budget.ReservedNotional = reserved.Sub(release).String()
 		row.State = IntentTerminal
 	}
 	return tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ?", row.Id).
@@ -176,6 +181,9 @@ func (s *Store) SyncBudget(ctx context.Context, lease domain.LeaseToken, snapsho
 }
 
 func (s *Store) syncBudget(ctx context.Context, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, observed decimal.Decimal, current bool) error {
+	if s.matching {
+		return s.syncMatchingBudget(ctx, snapshot, observed)
+	}
 	return s.db.WithContext(ctx).Model(&commonmodelv1.TradingAccountPolicy{}).Transaction(func(tx *gorm.DB) error {
 		if _, _, err := lockSDKLease(ctx, tx, lease.Key.AccountID, lease.OwnerID, uint64(lease.Epoch)); err != nil {
 			return err

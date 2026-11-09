@@ -21,12 +21,11 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	"github.com/hmlax/muskdeer/deer/trading/native"
-	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
 // Instances dispatches immutable per-instance settings through one SDK session.
-// Fund gates and durable budgets are shared even when algorithms differ.
+// Fund gates and current matching observations are shared across algorithms.
 type Instances struct {
 	inventory []*commonv1.VenueInstanceRevision
 	executionv1.UnimplementedExecutionServer
@@ -42,11 +41,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 	if ctx == nil || deps.Connection == nil || deps.DB == nil || deps.OwnerID == "" || deps.Gateway == nil {
 		return nil, ErrInvalidConfig
 	}
-	store, err := NewStore(deps.DB, deps.Gateway)
-	if err != nil {
-		return nil, err
-	}
-	leases, err := repository.NewLeases(deps.DB)
+	store, err := NewMatchingStore(deps.DB, deps.Gateway)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +79,6 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 			logger:  deps.Logger,
 			gateway: deps.Gateway,
 			store:   store,
-			leases:  leases,
 			client:  client,
 			closing: closing,
 			gates:   gates,
@@ -210,7 +204,7 @@ func (r *Instances) Reconcile(ctx context.Context, p *executionv1.QuotePlan) (*e
 	return child.Reconcile(ctx, p)
 }
 
-// PublishSynthetic routes only a current finite WashTrade instance.
+// PublishSynthetic routes only a current development WashTrade instance.
 func (r *Instances) PublishSynthetic(ctx context.Context, p *commonv1.SyntheticTapePlan) (*commonv1.SyntheticTapeResult, error) {
 	child, err := r.selected(p.GetStrategyInstanceId(), p.GetStrategyRevision(), true)
 	if err != nil {

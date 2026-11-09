@@ -109,7 +109,7 @@ func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapeP
 	if ValidateSyntheticConfig(h) != nil || !h.GetSyntheticTape().GetEnabled() || !SyntheticSlotAvailable(h.SyntheticTape, input.Sequence) ||
 		book.GetSource() != Source || book.GetSegment() != Segment || book.GetSymbol() != input.Symbol || book.GetValidUntilMs() <= time.Now().UnixMilli() ||
 		ValidateTrade(trade, input.Symbol, time.Now()) != nil || trade.GetPublisher().GetAccountId() != TradeKey(input.Symbol) ||
-		trade.Publisher.GetOwnerId() == "" || trade.Publisher.GetEpoch() <= 0 || trade.Publisher.ExpiresAtMs < trade.ValidUntilMs {
+		!validTradePublisher(input) {
 		return nil, ErrInvalid
 	}
 	target, err := SyntheticTradeTarget(h, trade)
@@ -135,4 +135,12 @@ func SyntheticSourcePlan(h *commonv1.VenuePolicy, input *commonv1.SyntheticTapeP
 		StrategyInstanceId: input.StrategyInstanceId,
 		StrategyRevision:   input.StrategyRevision,
 	}, nil
+}
+
+func validTradePublisher(input *commonv1.SyntheticTapePlan) bool {
+	publisher := input.GetSourceTrade().GetPublisher()
+	if input.GetStrategyInstanceId() > 0 && input.GetStrategyRevision() > 0 {
+		return publisher.GetOwnerId() == "" && publisher.GetEpoch() == 0 && publisher.GetExpiresAtMs() == 0
+	}
+	return publisher.GetOwnerId() != "" && publisher.GetEpoch() > 0 && publisher.GetExpiresAtMs() >= input.GetSourceTrade().GetValidUntilMs()
 }

@@ -85,6 +85,22 @@ func TestSDKWireUsesExistingPlaceAndProtocolAuthentication(t *testing.T) {
 	}
 }
 
+func TestSDKCurrentIntentWithoutProcessLeaseStillUsesDurableAdmission(t *testing.T) {
+	t.Parallel()
+	peer := &sdkPeer{}
+	gate := &testAdmission{}
+	client := sdkClient(t, peer, gate)
+	request := sdkOrder()
+	request.OwnerID, request.Epoch = "", 0
+	response, err := client.Submit(t.Context(), request)
+	if err != nil || response.GetOrderID() != 42 || peer.count() != 1 {
+		t.Fatalf("current durable SDK request = %v, %v; sends=%d", response, err, peer.count())
+	}
+	if gate.seen.IntentID != request.IntentID || gate.seen.OwnerID != "" || gate.seen.Epoch != 0 || gate.seen.Digest == [32]byte{} {
+		t.Fatal("current request bypassed durable admission or invented process authority")
+	}
+}
+
 func TestSDKInvalidAmountNeverReachesAdmissionOrExchange(t *testing.T) {
 	t.Parallel()
 	peer := &sdkPeer{}

@@ -1,8 +1,10 @@
 # Muskdeer
 
+2026-11-09：当前通道实例已按用户要求改为以撮合实时状态为准，取消数据库进程执行权/续租及历史资金预留汇总；保留请求去重、实例启停和行情新鲜度。版本5的迁移与运行边界见[撮合权威说明](docs/MATCHING_AUTHORITY.md)。
+
 连接既有交易所的自营做市与策略交易项目。当前交付 market、strategy、execution、portfolio 四个独立交易核心服务，以及具备 gRPC 健康检查的独立 cron 基础进程，使用 gRPC 和 Nacos 通信，继续共用一个 Go module。
 
-管理 HTTP、前端、管理开户命令及 OpenAPI/浏览器工具已按当前需求移除。核心服务的 mTLS、风控、幂等、状态机、租约与最终 fencing 保持；已存在的数据库迁移和历史验收记录保留。
+管理 HTTP、前端、管理开户命令及 OpenAPI/浏览器工具已按当前需求移出本仓库。核心服务保留 mTLS、参数检查、幂等和状态机；当前通道取消数据库进程租约及历史预留汇总，历史迁移和审计记录保留。
 
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)。Go module：`github.com/hmlax/muskdeer`。
 

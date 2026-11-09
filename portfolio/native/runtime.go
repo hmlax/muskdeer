@@ -104,12 +104,16 @@ func (r *Runtime) Workers() []deer.Worker {
 }
 
 func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
-	token, err := values.KeepLease(ctx, r.leases, domain.LeaseKey{
-		Kind:      domain.LeaseKindExecution,
-		AccountID: values.PortfolioKey(profile.UserId, profile.FundId),
-	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return err
+	var token domain.LeaseToken
+	if r.cfg.InstanceID == 0 {
+		var err error
+		token, err = values.KeepLease(ctx, r.leases, domain.LeaseKey{
+			Kind:      domain.LeaseKindExecution,
+			AccountID: values.PortfolioKey(profile.UserId, profile.FundId),
+		}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
+		if err != nil {
+			return err
+		}
 	}
 	connection, err := r.factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceExecution})
 	if err != nil {
@@ -123,8 +127,10 @@ func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy
 		return values.ErrInvalid
 	}
 	return r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Transaction(func(tx *gorm.DB) error {
-		if _, err := repository.LockNativeAuthority(ctx, tx, values.Authority(token)); err != nil {
-			return err
+		if r.cfg.InstanceID == 0 {
+			if _, err := repository.LockNativeAuthority(ctx, tx, values.Authority(token)); err != nil {
+				return err
+			}
 		}
 		var row portfoliomodelv1.VenueAccountSnapshot
 		err := tx.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("account_id = ?", values.ScopeKey(profile.UserId, profile.FundId)).First(&row).Error
@@ -163,7 +169,7 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (
 	if err := r.db.WithContext(ctx).Model(&portfoliomodelv1.VenueAccountSnapshot{}).Where("account_id = ? AND delete_at IS NULL", values.ScopeKey(scope.UserId, scope.FundId)).First(&row).Error; err != nil {
 		return nil, status.Error(codes.Unavailable, values.MessageInvalid)
 	}
-	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || repository.CheckNativeAuthority(ctx, r.db, &commonv1.VenueAuthority{
+	if row.Snapshot.GetValidUntilMs() <= time.Now().UnixMilli() || r.cfg.InstanceID == 0 && repository.CheckNativeAuthority(ctx, r.db, &commonv1.VenueAuthority{
 		AccountId: values.PortfolioKey(scope.UserId, scope.FundId),
 		OwnerId:   row.PublisherOwnerId,
 		Epoch:     row.PublisherEpoch,

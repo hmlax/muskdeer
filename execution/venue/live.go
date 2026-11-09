@@ -32,6 +32,9 @@ func (s *Store) PrepareLive(ctx context.Context, execution domain.LeaseToken, re
 		authority.Book.GetPublisher().GetAccountId() != native.MarketKey(request.Symbol) {
 		return Prepared{}, ErrInvalidSubmit
 	}
+	if s.matching {
+		return s.prepareMatching(ctx, request, authority)
+	}
 	return s.prepare(ctx, execution, request, &authority)
 }
 

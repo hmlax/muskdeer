@@ -38,6 +38,9 @@ func Workers(ctx context.Context, db *gorm.DB, owner string, input *configv1.Bus
 func InstanceWorkers(db *gorm.DB, owner string, instances []*instanceconfig.Instance, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
 	var result []deer.Worker
 	for _, instance := range instances {
+		if instance == nil || instance.ID <= 0 {
+			return nil, instanceconfig.ErrInvalid
+		}
 		settings, err := instance.Settings()
 		if err != nil {
 			return nil, err
@@ -55,9 +58,13 @@ func InstanceWorkers(db *gorm.DB, owner string, instances []*instanceconfig.Inst
 }
 
 func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, logger *logging.Logger) ([]deer.Worker, error) {
-	leases, err := repository.NewLeases(db)
-	if err != nil {
-		return nil, err
+	var leases domain.LeaseRepository
+	if cfg.InstanceID == 0 {
+		var err error
+		leases, err = repository.NewLeases(db)
+		if err != nil {
+			return nil, err
+		}
 	}
 	var workers []deer.Worker
 	for _, profile := range cfg.Venue.Profiles {
@@ -93,12 +100,16 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if active, err := instanceconfig.Active(ctx, db, cfg.InstanceID, cfg.Revision); err != nil || !active {
 		return err
 	}
-	token, err := values.KeepLease(ctx, leases, domain.LeaseKey{
-		Kind:      domain.LeaseKindExecution,
-		AccountID: values.StrategyKey(profile.UserId, profile.FundId),
-	}, owner, cfg.Venue.LeaseTtl.AsDuration())
-	if err != nil {
-		return err
+	descriptor := &commonv1.VenueAuthority{AccountId: values.StrategyKey(profile.UserId, profile.FundId)}
+	if cfg.InstanceID == 0 {
+		token, err := values.KeepLease(ctx, leases, domain.LeaseKey{
+			Kind:      domain.LeaseKindExecution,
+			AccountID: values.StrategyKey(profile.UserId, profile.FundId),
+		}, owner, cfg.Venue.LeaseTtl.AsDuration())
+		if err != nil {
+			return err
+		}
+		descriptor = values.Authority(token)
 	}
 	market, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceMarket})
 	if err != nil {
@@ -120,9 +131,12 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	instance, err := repository.NativeExecutionInstance(ctx, db, values.ScopeKey(profile.UserId, profile.FundId))
-	if err != nil {
-		return err
+	var instance string
+	if cfg.InstanceID == 0 {
+		instance, err = repository.NativeExecutionInstance(ctx, db, values.ScopeKey(profile.UserId, profile.FundId))
+		if err != nil {
+			return err
+		}
 	}
 	execution, err := factory.Client(rpcclient.Target{
 		Service:    rpcsecurity.ServiceExecution,
@@ -134,7 +148,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	_, err = executionvenuev1.NewExecutionClient(execution).Reconcile(ctx, &executionvenuev1.QuotePlan{
 		Scope:              values.Scope(profile),
 		Book:               book,
-		Strategy:           values.Authority(token),
+		Strategy:           descriptor,
 		Targets:            targets,
 		RequestId:          rand.Text(),
 		StrategyInstanceId: cfg.InstanceID,

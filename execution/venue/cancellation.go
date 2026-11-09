@@ -20,6 +20,9 @@ const CancelConfirmed = "CONFIRMED"
 // PrepareCancel follows a fresh native active-order observation. Only cancellation
 // by its immutable native ID may be retried after querying; it never places again.
 func (s *Store) PrepareCancel(ctx context.Context, lease domain.LeaseToken, request CancelRequest) (CancelAdmission, error) {
+	if s.matching {
+		return s.prepareMatchingCancel(ctx, request)
+	}
 	digest, err := s.gateway.CancelDigest(request)
 	account := AccountID(request.Scope.UserID, request.Scope.FundID)
 	if err != nil || !validStoreContext(ctx) || lease.Key.AccountID != account || lease.Epoch <= 0 {
@@ -71,6 +74,9 @@ func (s *Store) PrepareCancel(ctx context.Context, lease domain.LeaseToken, requ
 // WithCancellation commits the attempt before the SDK call and retains the
 // execution row lock through its bounded effect. Market/strategy loss allows it.
 func (s *Store) WithCancellation(ctx context.Context, admission CancelAdmission, send func(context.Context) error) error {
+	if s.matching {
+		return s.withMatchingCancellation(ctx, admission, send)
+	}
 	if !validStoreContext(ctx) || send == nil || admission.ID <= 0 {
 		return ErrInvalidSubmit
 	}

@@ -12,8 +12,8 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-// CancelInstanceOrders retains the normal execution lease, account gate and
-// SDK cancellation journal. An instance must be stopped to prevent replenishment.
+// CancelInstanceOrders uses the account gate and durable cancellation journal.
+// An instance must be stopped to prevent replenishment; no process lease is used.
 func (r *Instances) CancelInstanceOrders(ctx context.Context, in *pb.CancelInstanceRequest) (*pb.QuoteResult, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)

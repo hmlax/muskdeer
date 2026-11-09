@@ -19,7 +19,8 @@ type syntheticHistory struct {
 	replay     *model.SyntheticTapeIntent
 }
 
-// The execution lease is already locked. Read every consumed slot, including
+// The logical instance (or legacy execution lease) is already locked.
+// Read every consumed slot, including
 // unknown outcomes, in bounded pages without limiting a run's total length.
 func readSyntheticHistory(ctx context.Context, tx *gorm.DB, cfg *common.VenuePolicy, plan *common.SyntheticTapePlan, digest string) (*syntheticHistory, error) {
 	const pageSize = 256

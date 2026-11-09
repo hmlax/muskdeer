@@ -13,7 +13,6 @@ import (
 	pb "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
-	"github.com/hmlax/muskdeer/deer/trading/repository"
 )
 
 func (s *Server) account(ctx context.Context, actor *pb.Actor, id string) (*commonmodel.TradingAccountPolicy, error) {
@@ -30,14 +29,9 @@ func (s *Server) account(ctx context.Context, actor *pb.Actor, id string) (*comm
 	return &row, nil
 }
 
-func (s *Server) execution(ctx context.Context, account string) (execution.ExecutionClient, error) {
-	owner, err := repository.NativeExecutionInstance(ctx, s.db, account)
-	if err != nil {
-		return nil, s.fail(ctx, err)
-	}
+func (s *Server) execution(ctx context.Context) (execution.ExecutionClient, error) {
 	conn, err := s.factory.Client(rpcclient.Target{
-		Service:    rpcsecurity.ServiceExecution,
-		InstanceID: owner,
+		Service: rpcsecurity.ServiceExecution,
 	})
 	if err != nil {
 		return nil, s.fail(ctx, err)
@@ -55,7 +49,7 @@ func (s *Server) GetAccountSnapshot(ctx context.Context, in *pb.AccountRequest) 
 		return nil, err
 	}
 
-	// Portfolio owns the current gateway observation and rejects stale/unfenced
+	// Portfolio owns the current gateway observation and rejects stale
 	// snapshots. Reusing it avoids taking the execution admission gate from quotes.
 	conn, err := s.factory.Client(rpcclient.Target{Service: rpcsecurity.ServicePortfolio})
 	if err != nil {
@@ -114,7 +108,7 @@ func (s *Server) CancelInstanceOrders(ctx context.Context, in *pb.CancelRequest)
 	if row.Revision != in.ExpectedRevision || row.DesiredRunning {
 		return nil, status.Error(codes.FailedPrecondition, "stop the current instance revision before cancellation")
 	}
-	client, err := s.execution(ctx, row.AccountId)
+	client, err := s.execution(ctx)
 	if err != nil {
 		return nil, err
 	}

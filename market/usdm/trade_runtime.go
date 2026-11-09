@@ -34,7 +34,7 @@ func (r *Runtime) GetTrade(ctx context.Context, request *marketvenuev1.TradeRequ
 	r.mu.RLock()
 	trade := proto.CloneOf(r.trades[request.GetSymbol()])
 	r.mu.RUnlock()
-	if trade == nil || native.ValidateTrade(trade, request.GetSymbol(), time.Now()) != nil || repository.CheckNativeAuthority(ctx, r.db, trade.Publisher) != nil {
+	if trade == nil || native.ValidateTrade(trade, request.GetSymbol(), time.Now()) != nil || r.cfg.InstanceID == 0 && repository.CheckNativeAuthority(ctx, r.db, trade.Publisher) != nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
 	return trade, nil
@@ -58,21 +58,25 @@ func (r *Runtime) runTrades(ctx context.Context, symbol string) error {
 }
 
 func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
-	op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
-	token, err := r.leases.Acquire(op, domain.LeaseKey{
-		Kind:      domain.LeaseKindExecution,
-		AccountID: native.TradeKey(symbol),
-	}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
-	cancel()
-	if err != nil {
-		return err
+	var token domain.LeaseToken
+	if r.cfg.InstanceID == 0 {
+		op, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
+		var err error
+		token, err = r.leases.Acquire(op, domain.LeaseKey{
+			Kind:      domain.LeaseKindExecution,
+			AccountID: native.TradeKey(symbol),
+		}, r.owner, r.cfg.Venue.LeaseTtl.AsDuration())
+		cancel()
+		if err != nil {
+			return err
+		}
 	}
 	feed, err := NewTradeFeed(symbol)
 	if err != nil {
 		return err
 	}
 	return feed.Run(ctx, func(work context.Context, trade *commonv1.VenueTrade) error {
-		if time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {
+		if r.cfg.InstanceID == 0 && time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {
 			bounded, cancel := context.WithTimeout(work, r.cfg.OperationTimeout)
 			defer cancel()
 			token, err = r.leases.Renew(bounded, token, r.cfg.Venue.LeaseTtl.AsDuration())
@@ -83,8 +87,11 @@ func (r *Runtime) tradeSession(ctx context.Context, symbol string) error {
 		if err := work.Err(); err != nil {
 			return err
 		}
-		trade.Publisher = native.Authority(token)
-		trade.ValidUntilMs = min(trade.ValidUntilMs, token.ExpiresAt.UnixMilli()-50)
+		trade.Publisher = &commonv1.VenueAuthority{AccountId: native.TradeKey(symbol)}
+		if r.cfg.InstanceID == 0 {
+			trade.Publisher = native.Authority(token)
+			trade.ValidUntilMs = min(trade.ValidUntilMs, token.ExpiresAt.UnixMilli()-50)
+		}
 		if native.ValidateTrade(trade, symbol, time.Now()) != nil {
 			return native.ErrInvalid
 		}

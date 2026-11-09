@@ -19,6 +19,9 @@ import (
 )
 
 func (r *Runtime) acquireSynthetic(ctx context.Context, symbol string) (domain.LeaseToken, error) {
+	if r.store.matching {
+		return domain.LeaseToken{Key: domain.LeaseKey{AccountID: native.SyntheticExecutionKey(r.cfg.Venue.SyntheticTape.RunId, symbol)}}, ctx.Err()
+	}
 	return native.KeepLease(ctx, r.leases, domain.LeaseKey{
 		Kind:      domain.LeaseKindExecution,
 		AccountID: native.SyntheticExecutionKey(r.cfg.Venue.SyntheticTape.RunId, symbol),
@@ -111,6 +114,9 @@ func (r *Runtime) syntheticPlan(ctx context.Context, proposal *commonv1.Syntheti
 }
 
 func (r *Runtime) renewSyntheticScopes(ctx context.Context) error {
+	if r.store.matching {
+		return ctx.Err()
+	}
 	if !r.cfg.Venue.GetSyntheticTape().GetEnabled() {
 		return nil
 	}

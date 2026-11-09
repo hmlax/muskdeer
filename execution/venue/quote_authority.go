@@ -32,7 +32,11 @@ func (r *Runtime) rememberQuotePlan(profile *common.VenueProfilePolicy, plan *ex
 			strategy: proto.CloneOf(plan.Strategy),
 			source:   proto.CloneOf(book.Publisher),
 		})
-		until = min(plan.Strategy.ExpiresAtMs, time.Now().Add(r.cfg.Venue.LeaseTtl.AsDuration()).UnixMilli())
+		if r.store.matching {
+			until = time.Now().Add(maximumOperationTimeout).UnixMilli()
+		} else {
+			until = min(plan.Strategy.ExpiresAtMs, time.Now().Add(r.cfg.Venue.LeaseTtl.AsDuration()).UnixMilli())
+		}
 	}
 	r.plans[AccountID(profile.UserId, profile.FundId)].Store(until)
 }
@@ -45,6 +49,10 @@ func (r *Runtime) currentQuotePlan(ctx context.Context, book *common.VenueBook, 
 		return true
 	}
 	plan := r.quotePlan.Load()
+	if r.store.matching {
+		return plan != nil && book.GetValidUntilMs() > time.Now().UnixMilli() && len(book.Bids) > 0 && len(book.Asks) > 0 &&
+			plan.source.GetAccountId() == book.GetPublisher().GetAccountId()
+	}
 	return plan != nil && book.GetValidUntilMs() > time.Now().UnixMilli() && len(book.Bids) > 0 && len(book.Asks) > 0 &&
 		plan.source.GetAccountId() == book.Publisher.GetAccountId() &&
 		plan.source.GetOwnerId() == book.Publisher.GetOwnerId() && plan.source.GetEpoch() == book.Publisher.GetEpoch() &&

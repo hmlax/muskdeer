@@ -33,8 +33,9 @@ var ErrRiskLimit = errors.New(messageRiskLimit)
 
 // Store borrows the process database; it does not open pools or start tasks.
 type Store struct {
-	db      *gorm.DB
-	gateway gateway.Codec
+	db       *gorm.DB
+	gateway  gateway.Codec
+	matching bool
 }
 
 // Prepared binds the immutable SDK request to its durable admission identity.
@@ -62,6 +63,9 @@ func AccountID(userID, fundID int64) string {
 // Prepare reserves gross notional and persists the exact intent atomically.
 // It does not dispatch or authorize a later call without another epoch check.
 func (s *Store) Prepare(ctx context.Context, lease domain.LeaseToken, request SubmitRequest) (Prepared, error) {
+	if s != nil && s.matching {
+		return Prepared{}, ErrInvalidSubmit // Current sends require explicit live instance controls.
+	}
 	return s.prepare(ctx, lease, request, nil)
 }
 
@@ -168,6 +172,9 @@ func (s *Store) prepare(ctx context.Context, lease domain.LeaseToken, request Su
 // the bounded callback. A crash leaves DISPATCHED and its full reservation.
 // This cannot revoke a packet already accepted by the unchanged native server.
 func (s *Store) WithSubmission(ctx context.Context, admission Admission, send func(context.Context) error) error {
+	if s != nil && s.matching {
+		return s.withMatchingSubmission(ctx, admission, send)
+	}
 	if s == nil || s.db == nil || !validStoreContext(ctx) || send == nil || admission.IntentID <= 0 {
 		return ErrInvalidSubmit
 	}
@@ -243,10 +250,15 @@ func (s *Store) Acknowledge(ctx context.Context, admission Admission, response *
 	if s == nil || s.db == nil || !validStoreContext(ctx) || response.GetOrderID() == 0 || response.GetClientID() != admission.ClientID {
 		return ErrInvalidSubmit
 	}
+	if s.matching && (admission.OwnerID != "" || admission.Epoch != 0) {
+		return ErrInvalidSubmit
+	}
 	return s.db.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Transaction(func(tx *gorm.DB) error {
 		account := AccountID(admission.UserID, admission.FundID)
-		if _, _, err := lockSDKLease(ctx, tx, account, admission.OwnerID, admission.Epoch); err != nil {
-			return err
+		if !s.matching {
+			if _, _, err := lockSDKLease(ctx, tx, account, admission.OwnerID, admission.Epoch); err != nil {
+				return err
+			}
 		}
 		var row executionmodelv1.VenueOrderIntent
 		if err := tx.WithContext(ctx).Model(&executionmodelv1.VenueOrderIntent{}).Where("id = ? AND delete_at IS NULL", admission.IntentID).
