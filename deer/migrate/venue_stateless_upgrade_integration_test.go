@@ -43,13 +43,8 @@ func TestVenueStatelessHistoryUpgradeAppendsWithoutRewritingExistingData(t *test
 	if err := db.WithContext(ctx).Model(&commonmodelv1.VenueSchemaMigration{}).Order("version").Find(&rows).Error; err != nil || len(rows) != 11 {
 		t.Fatalf("stateless upgrade history = %d rows, %v, want 11 including unlimited synthetic slots", len(rows), err)
 	}
-	unlimited, err := os.ReadFile("venue/sql/0010_unlimited_synthetic.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if rows[10].Version != 11 || rows[10].Checksum != fmt.Sprintf("%x", sha256.Sum256(unlimited)) {
-		t.Fatal("unlimited synthetic migration missing or changed")
-	}
+	assertUnlimitedVenueLedger(t, rows[10])
+
 	for i, old := range before {
 		if !proto.Equal(old, rows[i]) {
 			t.Errorf("stateless upgrade changed historical migration %d", old.Version)
@@ -135,4 +130,15 @@ func statelessHistoryFixture(ctx context.Context, t *testing.T, db *gorm.DB) ([]
 		t.Fatal(err)
 	}
 	return before, account
+}
+
+func assertUnlimitedVenueLedger(t *testing.T, row *commonmodelv1.VenueSchemaMigration) {
+	t.Helper()
+	unlimited, err := os.ReadFile("venue/sql/0010_unlimited_synthetic.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if row.Version != 11 || row.Checksum != fmt.Sprintf("%x", sha256.Sum256(unlimited)) {
+		t.Fatal("unlimited synthetic migration missing or changed")
+	}
 }

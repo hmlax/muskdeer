@@ -89,6 +89,7 @@ services:
         condition: service_healthy
   execution:
     <<: *runtime
+    cpus: "${MUSKDEER_EXECUTION_CPUS:-3.0}"
     image: muskdeer-execution:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"

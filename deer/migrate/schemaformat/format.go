@@ -28,7 +28,7 @@ func checksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(definitio
 
 // Match checks the complete consolidated ledger identity.
 func Match(rows []*model.SchemaMigration) bool {
-	return len(rows) == 3 && matchUnlimited(rows[:2]) && rows[2].Version == 3 && rows[2].Name == consoleName && rows[2].Checksum == consoleChecksum() && rows[2].DeleteAt == nil
+	return len(rows) == 4 && matchConsole(rows[:3]) && rows[3].Version == 4 && rows[3].Name == reservationName && rows[3].Checksum == reservationChecksum() && rows[3].DeleteAt == nil
 }
 
 func matchBaseline(row *model.SchemaMigration) bool {
@@ -44,7 +44,7 @@ func Check(ctx context.Context, db *gorm.DB) error {
 		return ErrHistory
 	}
 	var rows []*model.SchemaMigration
-	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Limit(4).Find(&rows).Error; err != nil {
+	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Limit(5).Find(&rows).Error; err != nil {
 		return errors.Join(ErrHistory, err)
 	}
 	if !Match(rows) {

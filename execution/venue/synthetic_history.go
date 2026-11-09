@@ -30,6 +30,11 @@ func readSyntheticHistory(ctx context.Context, tx *gorm.DB, cfg *common.VenuePol
 			NewDB:   true,
 			Context: ctx,
 		}).Model(&model.SyntheticTapeIntent{}).
+			// Historical validation uses the pricing/slot/source-trade fields,
+			// not the former live book or strategy lease. Exclude those large
+			// snapshots at the storage boundary; stored audit stays complete.
+			// A replay returns Result only, never this partial egress authority.
+			Select("id, create_at, update_at, delete_at, run_id, symbol, sequence, policy_digest, (plan - 'book' - 'strategy') AS plan, notional, result").
 			Where("run_id = ? AND symbol = ?", plan.RunId, plan.Symbol)
 		if history.count > 0 {
 			query = query.Where("sequence >= ?", history.count)

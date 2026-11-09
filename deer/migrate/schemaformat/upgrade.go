@@ -18,6 +18,19 @@ var unlimitedDefinition string
 //go:embed 0003_console_instance_identity.sql
 var consoleDefinition string
 
+//go:embed 0004_current_reservation_index.sql
+var reservationDefinition string
+
+const reservationName = "0004_current_reservation_index.sql"
+
+func reservationChecksum() string {
+	return fmt.Sprintf("%x", sha256.Sum256([]byte(reservationDefinition)))
+}
+
+func matchConsole(rows []*model.SchemaMigration) bool {
+	return len(rows) == 3 && matchUnlimited(rows[:2]) && rows[2].Version == 3 && rows[2].Name == consoleName && rows[2].Checksum == consoleChecksum() && rows[2].DeleteAt == nil
+}
+
 const consoleName = "0003_console_instance_identity.sql"
 
 func consoleChecksum() string { return fmt.Sprintf("%x", sha256.Sum256([]byte(consoleDefinition))) }
@@ -43,13 +56,13 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 		var rows []*model.SchemaMigration
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(4).Find(&rows).Error; err != nil {
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(5).Find(&rows).Error; err != nil {
 			return err
 		}
 		if Match(rows) {
 			return nil
 		}
-		if !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
+		if !matchConsole(rows) && !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
 			return ErrHistory
 		}
 		var active int64
@@ -73,13 +86,25 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 		}
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(consoleDefinition).Error; err != nil {
+		if len(rows) < 3 {
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(consoleDefinition).Error; err != nil {
+				return err
+			}
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
+				Version:  3,
+				Name:     consoleName,
+				Checksum: consoleChecksum(),
+			}).Error; err != nil {
+				return err
+			}
+		}
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(reservationDefinition).Error; err != nil {
 			return err
 		}
 		return schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
-			Version:  3,
-			Name:     consoleName,
-			Checksum: consoleChecksum(),
+			Version:  4,
+			Name:     reservationName,
+			Checksum: reservationChecksum(),
 		}).Error
 	})
 }
