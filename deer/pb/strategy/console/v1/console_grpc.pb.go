@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	Console_GetOverview_FullMethodName          = "/muskdeer.strategy.console.v1.Console/GetOverview"
 	Console_ListTemplates_FullMethodName        = "/muskdeer.strategy.console.v1.Console/ListTemplates"
+	Console_ListGateways_FullMethodName         = "/muskdeer.strategy.console.v1.Console/ListGateways"
 	Console_ListInstances_FullMethodName        = "/muskdeer.strategy.console.v1.Console/ListInstances"
 	Console_GetInstance_FullMethodName          = "/muskdeer.strategy.console.v1.Console/GetInstance"
 	Console_CreateInstance_FullMethodName       = "/muskdeer.strategy.console.v1.Console/CreateInstance"
@@ -44,6 +45,7 @@ const (
 type ConsoleClient interface {
 	GetOverview(ctx context.Context, in *ActorRequest, opts ...grpc.CallOption) (*Overview, error)
 	ListTemplates(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*TemplatePage, error)
+	ListGateways(ctx context.Context, in *ActorRequest, opts ...grpc.CallOption) (*GatewayPage, error)
 	ListInstances(ctx context.Context, in *InstanceListRequest, opts ...grpc.CallOption) (*InstancePage, error)
 	GetInstance(ctx context.Context, in *InstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
@@ -80,6 +82,16 @@ func (c *consoleClient) ListTemplates(ctx context.Context, in *ListRequest, opts
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TemplatePage)
 	err := c.cc.Invoke(ctx, Console_ListTemplates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleClient) ListGateways(ctx context.Context, in *ActorRequest, opts ...grpc.CallOption) (*GatewayPage, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewayPage)
+	err := c.cc.Invoke(ctx, Console_ListGateways_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -215,6 +227,7 @@ func (c *consoleClient) CancelInstanceOrders(ctx context.Context, in *CancelRequ
 type ConsoleServer interface {
 	GetOverview(context.Context, *ActorRequest) (*Overview, error)
 	ListTemplates(context.Context, *ListRequest) (*TemplatePage, error)
+	ListGateways(context.Context, *ActorRequest) (*GatewayPage, error)
 	ListInstances(context.Context, *InstanceListRequest) (*InstancePage, error)
 	GetInstance(context.Context, *InstanceRequest) (*Instance, error)
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
@@ -242,6 +255,9 @@ func (UnimplementedConsoleServer) GetOverview(context.Context, *ActorRequest) (*
 }
 func (UnimplementedConsoleServer) ListTemplates(context.Context, *ListRequest) (*TemplatePage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTemplates not implemented")
+}
+func (UnimplementedConsoleServer) ListGateways(context.Context, *ActorRequest) (*GatewayPage, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGateways not implemented")
 }
 func (UnimplementedConsoleServer) ListInstances(context.Context, *InstanceListRequest) (*InstancePage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListInstances not implemented")
@@ -332,6 +348,24 @@ func _Console_ListTemplates_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConsoleServer).ListTemplates(ctx, req.(*ListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Console_ListGateways_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ActorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServer).ListGateways(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Console_ListGateways_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServer).ListGateways(ctx, req.(*ActorRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -566,6 +600,10 @@ var Console_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListTemplates",
 			Handler:    _Console_ListTemplates_Handler,
+		},
+		{
+			MethodName: "ListGateways",
+			Handler:    _Console_ListGateways_Handler,
 		},
 		{
 			MethodName: "ListInstances",

@@ -7,6 +7,7 @@ option go_package = "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1;conso
 service Console {
  rpc GetOverview(ActorRequest) returns (Overview);
  rpc ListTemplates(ListRequest) returns (TemplatePage);
+ rpc ListGateways(ActorRequest) returns (GatewayPage);
  rpc ListInstances(InstanceListRequest) returns (InstancePage);
  rpc GetInstance(InstanceRequest) returns (Instance);
  rpc CreateInstance(CreateInstanceRequest) returns (Instance);
@@ -72,6 +73,12 @@ message Template {
  repeated string parameter_fields = 12;
 }
 message TemplatePage { repeated Template items = 1; uint64 total = 2; }
+// Infrastructure metadata only: authentication values and token references are absent.
+message Gateway {
+ string key = 1; string execution_venue = 2; string protocol = 3;
+ string target = 4; bool configured = 5;
+}
+message GatewayPage { repeated Gateway items = 1; uint64 total = 2; }
 message Instance {
  int64 id = 1; string instance_key = 2; string strategy_type = 3;
  string implementation = 4; int64 template_id = 5; int64 template_revision = 6;
