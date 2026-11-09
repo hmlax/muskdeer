@@ -24,17 +24,24 @@ type deadlineTestStream struct {
 func (s deadlineTestStream) Context() context.Context { return s.ctx }
 func TestOnlyAuthenticatedMarketSubscriptionsMayOutliveUnaryDeadline(t *testing.T) {
 	authenticated := peer.NewContext(t.Context(), &peer.Peer{AuthInfo: credentials.TLSInfo{State: tls.ConnectionState{
-		VerifiedChains: [][]*x509.Certificate{{{}}}, PeerCertificates: []*x509.Certificate{{DNSNames: []string{rpcsecurity.ServiceStrategy}}},
+		VerifiedChains:   [][]*x509.Certificate{{{}}},
+		PeerCertificates: []*x509.Certificate{{DNSNames: []string{rpcsecurity.ServiceStrategy}}},
 	}}})
 	interceptor := streamDeadlineInterceptor(time.Second)
 	for _, method := range []string{market.Market_SubscribeBooks_FullMethodName, market.Market_SubscribeTrades_FullMethodName} {
 		called := false
 		handler := func(any, grpc.ServerStream) error { called = true; return nil }
-		if err := interceptor(nil, deadlineTestStream{ctx: authenticated}, &grpc.StreamServerInfo{FullMethod: method, IsServerStream: true}, handler); err != nil || !called {
+		if err := interceptor(nil, deadlineTestStream{ctx: authenticated}, &grpc.StreamServerInfo{
+			FullMethod:     method,
+			IsServerStream: true,
+		}, handler); err != nil || !called {
 			t.Fatalf("authenticated subscription rejected: %v", err)
 		}
 		called = false
-		if err := interceptor(nil, deadlineTestStream{ctx: t.Context()}, &grpc.StreamServerInfo{FullMethod: method, IsServerStream: true}, handler); status.Code(err) != codes.InvalidArgument || called {
+		if err := interceptor(nil, deadlineTestStream{ctx: t.Context()}, &grpc.StreamServerInfo{
+			FullMethod:     method,
+			IsServerStream: true,
+		}, handler); status.Code(err) != codes.InvalidArgument || called {
 			t.Fatalf("unauthenticated exception: %v", err)
 		}
 	}

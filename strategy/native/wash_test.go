@@ -31,7 +31,10 @@ type washTradeStream struct {
 }
 
 func (c *washMarket) SubscribeTrades(ctx context.Context, _ *market.TradeRequest, _ ...grpc.CallOption) (grpc.ServerStreamingClient[common.VenueTrade], error) {
-	return &washTradeStream{ctx: ctx, incoming: c.incoming}, nil
+	return &washTradeStream{
+		ctx:      ctx,
+		incoming: c.incoming,
+	}, nil
 }
 func (s *washTradeStream) Recv() (*common.VenueTrade, error) {
 	select {
@@ -43,7 +46,10 @@ func (s *washTradeStream) Recv() (*common.VenueTrade, error) {
 }
 func TestWashSubscriptionCalculatesLatestTradeAndJoinsReceiver(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		logger, err := logging.New(t.Context(), nil, logging.Identity{Service: "strategy", Instance: "wash-test"}, io.Discard)
+		logger, err := logging.New(t.Context(), nil, logging.Identity{
+			Service:  "strategy",
+			Instance: "wash-test",
+		}, io.Discard)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -53,12 +59,25 @@ func TestWashSubscriptionCalculatesLatestTradeAndJoinsReceiver(t *testing.T) {
 			}
 		})
 		cfg := &venueconfig.RuntimeConfig{
-			InstanceID: 7, Revision: 3, OperationTimeout: time.Second,
+			InstanceID:       7,
+			Revision:         3,
+			OperationTimeout: time.Second,
 			Venue: &common.VenuePolicy{
-				QuantityFraction: "0.1", Profiles: []*common.VenueProfilePolicy{{Symbol: "BTCUSDT", PriceTick: "0.1", QuantityStep: "0.001"}},
+				QuantityFraction: "0.1",
+				Profiles: []*common.VenueProfilePolicy{{
+					Symbol:       "BTCUSDT",
+					PriceTick:    "0.1",
+					QuantityStep: "0.001",
+				}},
 				SyntheticTape: &config.SyntheticTape{
-					Enabled: true, DevelopmentOnly: true, Mode: config.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE,
-					Interval: durationpb.New(100 * time.Millisecond), Profiles: []*config.SyntheticTapeProfile{{Symbol: "BTCUSDT", Quantity: "0.01"}},
+					Enabled:         true,
+					DevelopmentOnly: true,
+					Mode:            config.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE,
+					Interval:        durationpb.New(100 * time.Millisecond),
+					Profiles: []*config.SyntheticTapeProfile{{
+						Symbol:   "BTCUSDT",
+						Quantity: "0.01",
+					}},
 				},
 			},
 		}
@@ -74,9 +93,18 @@ func TestWashSubscriptionCalculatesLatestTradeAndJoinsReceiver(t *testing.T) {
 		for _, id := range []string{"40", "41", "42"} {
 			now := time.Now().UnixMilli()
 			marketClient.incoming <- &common.VenueTrade{
-				Symbol: "BTCUSDT", Source: values.Source, Segment: values.Segment, EventId: id, Side: string(domain.SideSell), Price: "100.43", Quantity: "0.079",
-				EventAtMs: now, TradeAtMs: now, ReceivedAtMs: now, ValidUntilMs: now + values.TradeAge.Milliseconds(),
-				Publisher: &common.VenueAuthority{AccountId: values.TradeKey("BTCUSDT")},
+				Symbol:       "BTCUSDT",
+				Source:       values.Source,
+				Segment:      values.Segment,
+				EventId:      id,
+				Side:         string(domain.SideSell),
+				Price:        "100.43",
+				Quantity:     "0.079",
+				EventAtMs:    now,
+				TradeAtMs:    now,
+				ReceivedAtMs: now,
+				ValidUntilMs: now + values.TradeAge.Milliseconds(),
+				Publisher:    &common.VenueAuthority{AccountId: values.TradeKey("BTCUSDT")},
 			}
 		}
 		synctest.Wait()

@@ -24,15 +24,25 @@ func TestConfiguredWashLoadsAndControlsWithoutHistoryQueries(t *testing.T) {
 	setup := newCurrentStateTest(ctx, t)
 	forbidden := denyWashHistory(t, setup.db)
 	row, err := instanceconfig.ManageConfigured(ctx, setup.db, instanceconfig.ManagementWrite{
-		Operation: instanceconfig.ManagementCreate, Subject: "wash-test", RequestID: "wash-create-request-0001",
+		Operation: instanceconfig.ManagementCreate,
+		Subject:   "wash-test",
+		RequestID: "wash-create-request-0001",
 		Input: &common.StrategyInstanceInput{
-			InstanceKey: "direct-wash", TemplateId: strategyregistry.WashTradeTemplateID, TemplateRevision: 1,
-			AccountId: setup.instance.AccountId, InstrumentId: setup.instance.InstrumentId, MarketDataSource: native.Source,
+			InstanceKey:      "direct-wash",
+			TemplateId:       strategyregistry.WashTradeTemplateID,
+			TemplateRevision: 1,
+			AccountId:        setup.instance.AccountId,
+			InstrumentId:     setup.instance.InstrumentId,
+			MarketDataSource: native.Source,
 			Parameters: &common.StrategyInstanceParameters{
-				SchemaVersion: 1, Execution: proto.CloneOf(setup.instance.Parameters.Execution),
+				SchemaVersion: 1,
+				Execution:     proto.CloneOf(setup.instance.Parameters.Execution),
 				WashTrade: &common.WashTradeParameters{
-					DevelopmentOnly: true, Mode: common.WashTradeMode_WASH_TRADE_MODE_AGG_TRADE,
-					IntervalMs: 100, Quantity: "0.01", QuantityFraction: "0.1",
+					DevelopmentOnly:  true,
+					Mode:             common.WashTradeMode_WASH_TRADE_MODE_AGG_TRADE,
+					IntervalMs:       100,
+					Quantity:         "0.01",
+					QuantityFraction: "0.1",
 				},
 			},
 		},
@@ -42,7 +52,11 @@ func TestConfiguredWashLoadsAndControlsWithoutHistoryQueries(t *testing.T) {
 	}
 	// Retired digests can disagree with current parameters. Preserve these audit
 	// columns in storage without treating them as execution requirements.
-	if err := setup.db.WithContext(ctx).Model(&strategy.StrategyInstance{}).Where("id = ?", row.Id).Updates(&strategy.StrategyInstance{TapePolicyDigest: "historical-policy", TapeParametersDigest: "historical-parameters", Revision: row.Revision + 1}).Error; err != nil {
+	if err := setup.db.WithContext(ctx).Model(&strategy.StrategyInstance{}).Where("id = ?", row.Id).Updates(&strategy.StrategyInstance{
+		TapePolicyDigest:     "historical-policy",
+		TapeParametersDigest: "historical-parameters",
+		Revision:             row.Revision + 1,
+	}).Error; err != nil {
 		t.Fatal(err)
 	}
 	row.Revision++
@@ -70,7 +84,12 @@ func TestConfiguredWashLoadsAndControlsWithoutHistoryQueries(t *testing.T) {
 	command := func(operation, request string) {
 		t.Helper()
 		row, err = instanceconfig.ManageConfigured(ctx, setup.db, instanceconfig.ManagementWrite{
-			Operation: operation, Subject: "wash-test", RequestID: request, ID: row.Id, ExpectedRevision: row.Revision, ExpectedControlVersion: row.RequestedConfigVersion,
+			Operation:              operation,
+			Subject:                "wash-test",
+			RequestID:              request,
+			ID:                     row.Id,
+			ExpectedRevision:       row.Revision,
+			ExpectedControlVersion: row.RequestedConfigVersion,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -90,8 +109,13 @@ func TestConfiguredWashLoadsAndControlsWithoutHistoryQueries(t *testing.T) {
 	parameters := proto.CloneOf(row.Parameters)
 	parameters.WashTrade.Quantity = "0.02"
 	row, err = instanceconfig.ManageConfigured(ctx, setup.db, instanceconfig.ManagementWrite{
-		Operation: instanceconfig.ManagementUpdate, Subject: "wash-test", RequestID: "wash-update-request-0001", ID: row.Id, ExpectedRevision: row.Revision, ExpectedControlVersion: row.RequestedConfigVersion,
-		Input: &common.StrategyInstanceInput{Parameters: parameters},
+		Operation:              instanceconfig.ManagementUpdate,
+		Subject:                "wash-test",
+		RequestID:              "wash-update-request-0001",
+		ID:                     row.Id,
+		ExpectedRevision:       row.Revision,
+		ExpectedControlVersion: row.RequestedConfigVersion,
+		Input:                  &common.StrategyInstanceInput{Parameters: parameters},
 	})
 	if err != nil {
 		t.Fatal(err)

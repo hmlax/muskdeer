@@ -317,7 +317,11 @@ func (p *rpcFactoryProbe) Multiply(ctx context.Context, _ *probev1.MultiplyReque
 func TestRPCSubscriptionsDoNotConsumeUnarySlotsAndCloseJoins(t *testing.T) {
 	ca := testcert.New(t)
 	node := runRPCFactoryNode(t, ca, &identityProbe{observed: make(chan identitySnapshot, 1)})
-	factory := newRPCFactory(t, ca, &rpcDiscoveryFixture{instances: []nacos.Instance{{ID: "execution-a", Service: "execution.grpc", Address: node.GRPCAddress()}}}, time.Second)
+	factory := newRPCFactory(t, ca, &rpcDiscoveryFixture{instances: []nacos.Instance{{
+		ID:      "execution-a",
+		Service: "execution.grpc",
+		Address: node.GRPCAddress(),
+	}}}, time.Second)
 	started := make(chan struct{}, 3)
 	done := make(chan error, 3)
 	for range 3 {
@@ -351,7 +355,10 @@ func TestRPCSubscriptionsDoNotConsumeUnarySlotsAndCloseJoins(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := probev1.NewArithmeticProbeClient(conn).Multiply(t.Context(), &probev1.MultiplyRequest{Price: "2", Quantity: "3"}); err != nil {
+	if _, err := probev1.NewArithmeticProbeClient(conn).Multiply(t.Context(), &probev1.MultiplyRequest{
+		Price:    "2",
+		Quantity: "3",
+	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := factory.Close(); err != nil {

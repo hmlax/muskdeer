@@ -22,10 +22,18 @@ func TestWashTargetUsesFreshTradeWithoutBatchOrLimits(t *testing.T) {
 	input := &execution.WashTradeRequest{
 		Symbol: "BTCUSDT",
 		Source: &execution.WashTradeRequest_Trade{Trade: &common.VenueTrade{
-			Symbol: "BTCUSDT", Source: Source, Segment: Segment, EventId: "42",
-			Side: string(domain.SideSell), Price: "100.43", Quantity: "0.079",
-			EventAtMs: now, TradeAtMs: now, ReceivedAtMs: now, ValidUntilMs: now + TradeAge.Milliseconds(),
-			Publisher: &common.VenueAuthority{AccountId: TradeKey("BTCUSDT")},
+			Symbol:       "BTCUSDT",
+			Source:       Source,
+			Segment:      Segment,
+			EventId:      "42",
+			Side:         string(domain.SideSell),
+			Price:        "100.43",
+			Quantity:     "0.079",
+			EventAtMs:    now,
+			TradeAtMs:    now,
+			ReceivedAtMs: now,
+			ValidUntilMs: now + TradeAge.Milliseconds(),
+			Publisher:    &common.VenueAuthority{AccountId: TradeKey("BTCUSDT")},
 		}},
 	}
 	target, err := WashTarget(policy, input)
@@ -59,7 +67,9 @@ func TestWashBookTargetAlternatesAndEnforcesLot(t *testing.T) {
 	policy.SyntheticTape.RunId = ""
 	book.Publisher = &common.VenueAuthority{AccountId: MarketKey(book.Symbol)}
 	input := &execution.WashTradeRequest{
-		Symbol: book.Symbol, Side: string(domain.SideBuy), Source: &execution.WashTradeRequest_Book{Book: book},
+		Symbol: book.Symbol,
+		Side:   string(domain.SideBuy),
+		Source: &execution.WashTradeRequest_Book{Book: book},
 	}
 	target, err := WashTarget(policy, input)
 	if err != nil || target.GetPrice() != "100.2" || target.GetQuantity() != "0.01" {

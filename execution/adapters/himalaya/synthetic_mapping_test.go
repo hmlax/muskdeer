@@ -45,7 +45,10 @@ func TestDirectWashAdapterWorksWithoutPersistenceAdmission(t *testing.T) {
 	peer := &sdkPeer{}
 	client := sdkClient(t, peer, nil)
 	result, err := client.WashTrade(t.Context(), &gateway.SyntheticRequest{
-		Symbol: "BTCUSDT", Side: domain.SideBuy, Price: "100.1", Quantity: "0.001",
+		Symbol:   "BTCUSDT",
+		Side:     domain.SideBuy,
+		Price:    "100.1",
+		Quantity: "0.001",
 	})
 	if err != nil || result.GetTradeID() != "adapter-tape-test" {
 		t.Fatalf("direct SDK = %v, %v", result, err)

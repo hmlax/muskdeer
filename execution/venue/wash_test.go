@@ -39,7 +39,12 @@ func (c *washTestClient) WashTrade(_ context.Context, request *gateway.Synthetic
 	if c.failure {
 		return nil, errors.New("lost reply")
 	}
-	return &gateway.SyntheticResult{TradeID: "wash-test", Price: request.Price, Quantity: request.Quantity, TimestampMS: uint64(time.Now().UnixMilli())}, nil
+	return &gateway.SyntheticResult{
+		TradeID:     "wash-test",
+		Price:       request.Price,
+		Quantity:    request.Quantity,
+		TimestampMS: uint64(time.Now().UnixMilli()),
+	}, nil
 }
 func washTestContext(ctx context.Context) context.Context {
 	return peer.NewContext(ctx, &peer.Peer{AuthInfo: credentials.TLSInfo{State: tls.ConnectionState{
@@ -49,7 +54,10 @@ func washTestContext(ctx context.Context) context.Context {
 }
 func TestWashEventNeedsNoDatabaseAndNeverReplaysUnknown(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		logger, err := logging.New(t.Context(), nil, logging.Identity{Service: "execution", Instance: "wash-test"}, io.Discard)
+		logger, err := logging.New(t.Context(), nil, logging.Identity{
+			Service:  "execution",
+			Instance: "wash-test",
+		}, io.Discard)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -61,28 +69,54 @@ func TestWashEventNeedsNoDatabaseAndNeverReplaysUnknown(t *testing.T) {
 		client := &washTestClient{}
 		runtime := &Runtime{
 			cfg: &venueconfig.RuntimeConfig{
-				InstanceID: 7, Revision: 3, Template: domain.StrategyTemplateWashTrade, OperationTimeout: time.Second,
+				InstanceID:       7,
+				Revision:         3,
+				Template:         domain.StrategyTemplateWashTrade,
+				OperationTimeout: time.Second,
 				Venue: &common.VenuePolicy{
-					Profiles: []*common.VenueProfilePolicy{{Symbol: "BTCUSDT", PriceTick: "0.1", QuantityStep: "0.001"}},
+					Profiles: []*common.VenueProfilePolicy{{
+						Symbol:       "BTCUSDT",
+						PriceTick:    "0.1",
+						QuantityStep: "0.001",
+					}},
 					SyntheticTape: &config.SyntheticTape{
-						Enabled: true, DevelopmentOnly: true, Mode: config.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK,
-						Interval: durationpb.New(100 * time.Millisecond),
-						Profiles: []*config.SyntheticTapeProfile{{Symbol: "BTCUSDT", Quantity: "0.01"}},
+						Enabled:         true,
+						DevelopmentOnly: true,
+						Mode:            config.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK,
+						Interval:        durationpb.New(100 * time.Millisecond),
+						Profiles: []*config.SyntheticTapeProfile{{
+							Symbol:   "BTCUSDT",
+							Quantity: "0.01",
+						}},
 					},
 				},
 			},
-			client: &atomic.Pointer[gatewaySession]{}, closing: &atomic.Bool{}, logger: logger,
+			client:  &atomic.Pointer[gatewaySession]{},
+			closing: &atomic.Bool{},
+			logger:  logger,
 			// db, store and lease repositories deliberately remain nil.
 		}
 		runtime.client.Store(&gatewaySession{Client: client})
-		runtime.washControl.Store(&washControl{active: true, observed: time.Now()})
+		runtime.washControl.Store(&washControl{
+			active:   true,
+			observed: time.Now(),
+		})
 		input := &execution.WashTradeRequest{
-			StrategyInstanceId: 7, StrategyRevision: 3, Symbol: "BTCUSDT", Side: string(domain.SideBuy), Price: "101", Quantity: "0.01",
+			StrategyInstanceId: 7,
+			StrategyRevision:   3,
+			Symbol:             "BTCUSDT",
+			Side:               string(domain.SideBuy),
+			Price:              "101",
+			Quantity:           "0.01",
 			Source: &execution.WashTradeRequest_Book{Book: &common.VenueBook{
-				Symbol: "BTCUSDT", Source: native.Source, Segment: native.Segment, Sequence: 42,
+				Symbol:       "BTCUSDT",
+				Source:       native.Source,
+				Segment:      native.Segment,
+				Sequence:     42,
 				ValidUntilMs: time.Now().Add(native.BookAge).UnixMilli(),
 				Publisher:    &common.VenueAuthority{AccountId: native.MarketKey("BTCUSDT")},
-				Bids:         []*common.VenueLevel{{Price: "99"}}, Asks: []*common.VenueLevel{{Price: "101"}},
+				Bids:         []*common.VenueLevel{{Price: "99"}},
+				Asks:         []*common.VenueLevel{{Price: "101"}},
 			}},
 		}
 		ctx := washTestContext(t.Context())
@@ -123,7 +157,10 @@ func TestWashEventNeedsNoDatabaseAndNeverReplaysUnknown(t *testing.T) {
 		if _, err := runtime.WashTrade(ctx, input); err == nil || client.calls != 2 {
 			t.Fatal("stopped instance sent a request")
 		}
-		runtime.washControl.Store(&washControl{active: true, observed: time.Now().Add(-washControlAge - time.Second)})
+		runtime.washControl.Store(&washControl{
+			active:   true,
+			observed: time.Now().Add(-washControlAge - time.Second),
+		})
 		if _, err := runtime.WashTrade(ctx, input); err == nil || client.calls != 2 {
 			t.Fatal("stale controls accepted")
 		}

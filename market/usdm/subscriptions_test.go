@@ -31,17 +31,23 @@ func TestBookSubscriptionOwnsNoDatabaseAndCleansUp(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
-		stream := &bookTestStream{ctx: ctx, sent: make(chan *common.VenueBook, 2)}
+		stream := &bookTestStream{
+			ctx:  ctx,
+			sent: make(chan *common.VenueBook, 2),
+		}
 		runtime := &Runtime{books: map[string]*common.VenueBook{"BTCUSDT": {
-			Symbol: "BTCUSDT", Sequence: 1, ValidUntilMs: time.Now().Add(time.Second).UnixMilli(),
-			Bids: []*common.VenueLevel{{Price: "99"}},
+			Symbol:       "BTCUSDT",
+			Sequence:     1,
+			ValidUntilMs: time.Now().Add(time.Second).UnixMilli(),
+			Bids:         []*common.VenueLevel{{Price: "99"}},
 		}}}
 		request := &market.BookRequest{Symbol: "BTCUSDT"}
 		if err := runtime.SubscribeBooks(request, stream); status.Code(err) != codes.PermissionDenied {
 			t.Fatalf("unauthenticated = %v", err)
 		}
 		stream.ctx = peer.NewContext(ctx, &peer.Peer{AuthInfo: credentials.TLSInfo{State: tls.ConnectionState{
-			VerifiedChains: [][]*x509.Certificate{{{}}}, PeerCertificates: []*x509.Certificate{{DNSNames: []string{rpcsecurity.ServiceStrategy}}},
+			VerifiedChains:   [][]*x509.Certificate{{{}}},
+			PeerCertificates: []*x509.Certificate{{DNSNames: []string{rpcsecurity.ServiceStrategy}}},
 		}}})
 		done := make(chan error, 1)
 		go func() { done <- runtime.SubscribeBooks(request, stream) }()
@@ -53,7 +59,11 @@ func TestBookSubscriptionOwnsNoDatabaseAndCleansUp(t *testing.T) {
 			t.Fatal("subscriber mutated cached book")
 		}
 		for sequence := int64(2); sequence <= 100; sequence++ {
-			runtime.bookReaders.publish(&common.VenueBook{Symbol: "BTCUSDT", Sequence: sequence, ValidUntilMs: time.Now().Add(time.Second).UnixMilli()})
+			runtime.bookReaders.publish(&common.VenueBook{
+				Symbol:       "BTCUSDT",
+				Sequence:     sequence,
+				ValidUntilMs: time.Now().Add(time.Second).UnixMilli(),
+			})
 		}
 		runtime.mu.Unlock()
 		synctest.Wait()
