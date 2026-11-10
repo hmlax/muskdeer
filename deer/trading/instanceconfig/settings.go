@@ -39,6 +39,11 @@ func (i *Instance) Settings() (*venueconfig.RuntimeConfig, error) {
 		settings.ReplacementFraction = decimal.RequireFromString(p.MarketMaker.ReplacementFraction)
 		settings.BridgeSlots = p.MarketMaker.BridgeSlots
 	case domain.StrategyTemplateGrid:
+		if p.LongGrid != nil {
+			policy.Depth = 1
+			settings.LongGrid = proto.CloneOf(p.LongGrid)
+			break
+		}
 		policy.Depth = uint32(p.Grid.GridCount)
 		settings.Grid = proto.CloneOf(p.Grid)
 		settings.ReplacementFraction = decimal.NewFromInt(1)

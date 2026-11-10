@@ -39,6 +39,8 @@ message VenueMarket {
   string mark_price = 6;
   uint32 maximum_leverage = 7;
   string worst_fee_rate = 8;
+  string best_bid = 9;
+  string best_ask = 10;
 }
 message VenueOrder {
   string order_id = 1;
@@ -54,6 +56,7 @@ message VenuePosition {
   string signed_quantity = 2;
   string entry_price = 3;
   string leverage = 4;
+  string position_id = 5;
 }
 // Separate SDK queries are observations, never an atomic ledger snapshot.
 message VenueSnapshot {

@@ -9,7 +9,7 @@ import (
 
 func TestTemplateContractsDescribeAllThreeImplementedAlgorithms(t *testing.T) {
 	templates := Templates()
-	if len(templates) != 3 {
+	if len(templates) != 4 {
 		t.Fatal("missing registered templates")
 	}
 	for _, template := range templates {

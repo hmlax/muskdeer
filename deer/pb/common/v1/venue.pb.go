@@ -328,6 +328,8 @@ type VenueMarket struct {
 	MarkPrice       string                 `protobuf:"bytes,6,opt,name=mark_price,json=markPrice,proto3" json:"mark_price,omitempty"`
 	MaximumLeverage uint32                 `protobuf:"varint,7,opt,name=maximum_leverage,json=maximumLeverage,proto3" json:"maximum_leverage,omitempty"`
 	WorstFeeRate    string                 `protobuf:"bytes,8,opt,name=worst_fee_rate,json=worstFeeRate,proto3" json:"worst_fee_rate,omitempty"`
+	BestBid         string                 `protobuf:"bytes,9,opt,name=best_bid,json=bestBid,proto3" json:"best_bid,omitempty"`
+	BestAsk         string                 `protobuf:"bytes,10,opt,name=best_ask,json=bestAsk,proto3" json:"best_ask,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -414,6 +416,20 @@ func (x *VenueMarket) GetMaximumLeverage() uint32 {
 func (x *VenueMarket) GetWorstFeeRate() string {
 	if x != nil {
 		return x.WorstFeeRate
+	}
+	return ""
+}
+
+func (x *VenueMarket) GetBestBid() string {
+	if x != nil {
+		return x.BestBid
+	}
+	return ""
+}
+
+func (x *VenueMarket) GetBestAsk() string {
+	if x != nil {
+		return x.BestAsk
 	}
 	return ""
 }
@@ -516,6 +532,7 @@ type VenuePosition struct {
 	SignedQuantity string                 `protobuf:"bytes,2,opt,name=signed_quantity,json=signedQuantity,proto3" json:"signed_quantity,omitempty"`
 	EntryPrice     string                 `protobuf:"bytes,3,opt,name=entry_price,json=entryPrice,proto3" json:"entry_price,omitempty"`
 	Leverage       string                 `protobuf:"bytes,4,opt,name=leverage,proto3" json:"leverage,omitempty"`
+	PositionId     string                 `protobuf:"bytes,5,opt,name=position_id,json=positionId,proto3" json:"position_id,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -574,6 +591,13 @@ func (x *VenuePosition) GetEntryPrice() string {
 func (x *VenuePosition) GetLeverage() string {
 	if x != nil {
 		return x.Leverage
+	}
+	return ""
+}
+
+func (x *VenuePosition) GetPositionId() string {
+	if x != nil {
+		return x.PositionId
 	}
 	return ""
 }
@@ -1036,7 +1060,7 @@ const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
 	"\x04bids\x18\b \x03(\v2\x1e.muskdeer.common.v1.VenueLevelR\x04bids\x122\n" +
 	"\x04asks\x18\t \x03(\v2\x1e.muskdeer.common.v1.VenueLevelR\x04asks\x12@\n" +
 	"\tpublisher\x18\n" +
-	" \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\tpublisher\"\xc2\x02\n" +
+	" \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\tpublisher\"\xf8\x02\n" +
 	"\vVenueMarket\x12\x1d\n" +
 	"\n" +
 	"price_tick\x18\x01 \x01(\tR\tpriceTick\x12#\n" +
@@ -1047,7 +1071,10 @@ const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
 	"\n" +
 	"mark_price\x18\x06 \x01(\tR\tmarkPrice\x12)\n" +
 	"\x10maximum_leverage\x18\a \x01(\rR\x0fmaximumLeverage\x12$\n" +
-	"\x0eworst_fee_rate\x18\b \x01(\tR\fworstFeeRate\"\xcf\x01\n" +
+	"\x0eworst_fee_rate\x18\b \x01(\tR\fworstFeeRate\x12\x19\n" +
+	"\bbest_bid\x18\t \x01(\tR\abestBid\x12\x19\n" +
+	"\bbest_ask\x18\n" +
+	" \x01(\tR\abestAsk\"\xcf\x01\n" +
 	"\n" +
 	"VenueOrder\x12\x19\n" +
 	"\border_id\x18\x01 \x01(\tR\aorderId\x12\x1b\n" +
@@ -1056,13 +1083,15 @@ const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
 	"\x05price\x18\x04 \x01(\tR\x05price\x12\x1a\n" +
 	"\bquantity\x18\x05 \x01(\tR\bquantity\x12+\n" +
 	"\x11executed_quantity\x18\x06 \x01(\tR\x10executedQuantity\x12\x16\n" +
-	"\x06status\x18\a \x01(\tR\x06status\"\x8d\x01\n" +
+	"\x06status\x18\a \x01(\tR\x06status\"\xae\x01\n" +
 	"\rVenuePosition\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12'\n" +
 	"\x0fsigned_quantity\x18\x02 \x01(\tR\x0esignedQuantity\x12\x1f\n" +
 	"\ventry_price\x18\x03 \x01(\tR\n" +
 	"entryPrice\x12\x1a\n" +
-	"\bleverage\x18\x04 \x01(\tR\bleverage\"\x85\x03\n" +
+	"\bleverage\x18\x04 \x01(\tR\bleverage\x12\x1f\n" +
+	"\vposition_id\x18\x05 \x01(\tR\n" +
+	"positionId\"\x85\x03\n" +
 	"\rVenueSnapshot\x124\n" +
 	"\x05scope\x18\x01 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x127\n" +
 	"\x06market\x18\x02 \x01(\v2\x1f.muskdeer.common.v1.VenueMarketR\x06market\x12\x1c\n" +

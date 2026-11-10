@@ -13,6 +13,7 @@ import (
 
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
+	"github.com/hmlax/muskdeer/deer/trading/longgrid"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
 	"github.com/hmlax/muskdeer/deer/trading/strategyregistry"
@@ -23,6 +24,7 @@ const (
 	ParametersSchemaVersion = strategyregistry.ParametersSchemaVersion
 	ImplementationMaker     = strategyregistry.ImplementationMaker
 	ImplementationGrid      = strategyregistry.ImplementationGrid
+	ImplementationLongGrid  = strategyregistry.ImplementationLongGrid
 	ImplementationWashTrade = strategyregistry.ImplementationWashTrade
 	messageInvalidInstance  = "strategy instance configuration is missing or invalid"
 )
@@ -43,7 +45,7 @@ type Definition struct {
 	Implementation string
 }
 
-// Definitions returns the three registered algorithms without mutable globals.
+// Definitions returns registered implementations of the three strategy types.
 func Definitions() []Definition {
 	return []Definition{
 		{
@@ -53,6 +55,10 @@ func Definitions() []Definition {
 		{
 			Type:           domain.StrategyTemplateGrid,
 			Implementation: ImplementationGrid,
+		},
+		{
+			Type:           domain.StrategyTemplateGrid,
+			Implementation: ImplementationLongGrid,
 		},
 		{
 			Type:           domain.StrategyTemplateWashTrade,
@@ -68,11 +74,17 @@ func Validate(kind domain.StrategyTemplate, implementation string, p *commonv1.S
 	}
 	switch kind {
 	case domain.StrategyTemplateMarketMaker:
-		if implementation != ImplementationMaker || p.MarketMaker == nil || p.Grid != nil || p.WashTrade != nil || !validMaker(p.MarketMaker) {
+		if implementation != ImplementationMaker || p.MarketMaker == nil || p.Grid != nil || p.WashTrade != nil || p.LongGrid != nil || !validMaker(p.MarketMaker) {
 			return ErrInvalid
 		}
 	case domain.StrategyTemplateGrid:
-		if implementation != ImplementationGrid || p.Grid == nil || p.MarketMaker != nil || p.WashTrade != nil {
+		if implementation == strategyregistry.ImplementationLongGrid {
+			if p.LongGrid == nil || p.Grid != nil || p.MarketMaker != nil || p.WashTrade != nil {
+				return ErrInvalid
+			}
+			return validLongGrid(p.LongGrid)
+		}
+		if implementation != ImplementationGrid || p.Grid == nil || p.MarketMaker != nil || p.WashTrade != nil || p.LongGrid != nil {
 			return ErrInvalid
 		}
 		_, err := strategyconfig.Decode(domain.ParametersSchemaVersion, &commonv1.StrategyParameters{
@@ -80,7 +92,7 @@ func Validate(kind domain.StrategyTemplate, implementation string, p *commonv1.S
 		})
 		return err
 	case domain.StrategyTemplateWashTrade:
-		if implementation != ImplementationWashTrade || p.WashTrade == nil || p.MarketMaker != nil || p.Grid != nil || !validWashTrade(p.WashTrade) {
+		if implementation != ImplementationWashTrade || p.WashTrade == nil || p.MarketMaker != nil || p.Grid != nil || p.LongGrid != nil || !validWashTrade(p.WashTrade) {
 			return ErrInvalid
 		}
 	default:
@@ -134,4 +146,11 @@ func validWashTrade(p *commonv1.WashTradeParameters) bool {
 	_, e1 := native.Value(p.Quantity, false, false)
 	fraction, e3 := native.Value(p.QuantityFraction, false, false)
 	return e1 == nil && e3 == nil && fraction.LessThanOrEqual(decimal.NewFromInt(1))
+}
+
+func validLongGrid(p *commonv1.LongGridParameters) error {
+	if _, err := longgrid.Parse(p); err != nil {
+		return ErrInvalid
+	}
+	return nil
 }

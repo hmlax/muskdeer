@@ -25,6 +25,7 @@ const (
 	Execution_CancelInstanceOrders_FullMethodName = "/muskdeer.execution.venue.v1.Execution/CancelInstanceOrders"
 	Execution_Reconcile_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/Reconcile"
 	Execution_PublishSynthetic_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
+	Execution_EvaluateLongGrid_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/EvaluateLongGrid"
 	Execution_WashTrade_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/WashTrade"
 )
 
@@ -37,6 +38,7 @@ type ExecutionClient interface {
 	CancelInstanceOrders(ctx context.Context, in *CancelInstanceRequest, opts ...grpc.CallOption) (*QuoteResult, error)
 	Reconcile(ctx context.Context, in *QuotePlan, opts ...grpc.CallOption) (*QuoteResult, error)
 	PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
+	EvaluateLongGrid(ctx context.Context, in *LongGridRequest, opts ...grpc.CallOption) (*LongGridResult, error)
 	WashTrade(ctx context.Context, in *WashTradeRequest, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
 }
 
@@ -98,6 +100,16 @@ func (c *executionClient) PublishSynthetic(ctx context.Context, in *v1.Synthetic
 	return out, nil
 }
 
+func (c *executionClient) EvaluateLongGrid(ctx context.Context, in *LongGridRequest, opts ...grpc.CallOption) (*LongGridResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LongGridResult)
+	err := c.cc.Invoke(ctx, Execution_EvaluateLongGrid_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *executionClient) WashTrade(ctx context.Context, in *WashTradeRequest, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(v1.SyntheticTapeResult)
@@ -117,6 +129,7 @@ type ExecutionServer interface {
 	CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error)
 	Reconcile(context.Context, *QuotePlan) (*QuoteResult, error)
 	PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error)
+	EvaluateLongGrid(context.Context, *LongGridRequest) (*LongGridResult, error)
 	WashTrade(context.Context, *WashTradeRequest) (*v1.SyntheticTapeResult, error)
 	mustEmbedUnimplementedExecutionServer()
 }
@@ -142,6 +155,9 @@ func (UnimplementedExecutionServer) Reconcile(context.Context, *QuotePlan) (*Quo
 }
 func (UnimplementedExecutionServer) PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method PublishSynthetic not implemented")
+}
+func (UnimplementedExecutionServer) EvaluateLongGrid(context.Context, *LongGridRequest) (*LongGridResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method EvaluateLongGrid not implemented")
 }
 func (UnimplementedExecutionServer) WashTrade(context.Context, *WashTradeRequest) (*v1.SyntheticTapeResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method WashTrade not implemented")
@@ -257,6 +273,24 @@ func _Execution_PublishSynthetic_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Execution_EvaluateLongGrid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LongGridRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExecutionServer).EvaluateLongGrid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Execution_EvaluateLongGrid_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExecutionServer).EvaluateLongGrid(ctx, req.(*LongGridRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Execution_WashTrade_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(WashTradeRequest)
 	if err := dec(in); err != nil {
@@ -301,6 +335,10 @@ var Execution_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PublishSynthetic",
 			Handler:    _Execution_PublishSynthetic_Handler,
+		},
+		{
+			MethodName: "EvaluateLongGrid",
+			Handler:    _Execution_EvaluateLongGrid_Handler,
 		},
 		{
 			MethodName: "WashTrade",

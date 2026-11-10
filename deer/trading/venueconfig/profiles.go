@@ -28,6 +28,7 @@ type RuntimeConfig struct {
 	Template            domain.StrategyTemplate
 	ResumeSequence      uint64
 	Grid                *commonv1.GridParameters
+	LongGrid            *commonv1.LongGridParameters
 }
 
 // LoadRuntime borrows the existing pool and rejects missing or invalid profiles.

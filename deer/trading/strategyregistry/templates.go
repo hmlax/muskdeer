@@ -16,16 +16,19 @@ const (
 	ParametersSchemaVersion       = 1
 	ImplementationMaker           = "depth_maker_v1"
 	ImplementationGrid            = "price_grid_v1"
+	ImplementationLongGrid        = "long_grid_v1"
 	ImplementationWashTrade       = "wash_trade_v1"
 	MakerTemplateID         int64 = 1
 	GridTemplateID          int64 = 2
 	WashTradeTemplateID     int64 = 3
+	LongGridTemplateID      int64 = 4
 	makerName                     = "做市铺单"
 	gridName                      = "网格"
 	washName                      = "WashTrade"
+	longGridName                  = "只做多百分比网格"
 )
 
-// Templates returns private seed records for the three compiled implementations.
+// Templates returns private seed records for the compiled implementations of three strategy types.
 func Templates() []*model.StrategyTemplate {
 	return []*model.StrategyTemplate{
 		definition(MakerTemplateID, domain.StrategyTemplateMarketMaker, ImplementationMaker, makerName, &common.DepthMakerParameters{}, &common.StrategyTemplateInputs{
@@ -39,6 +42,10 @@ func Templates() []*model.StrategyTemplate {
 		definition(WashTradeTemplateID, domain.StrategyTemplateWashTrade, ImplementationWashTrade, washName, &common.WashTradeParameters{}, &common.StrategyTemplateInputs{
 			OrderBook:          true,
 			TradesWhenWashMode: common.WashTradeMode_WASH_TRADE_MODE_AGG_TRADE,
+		}),
+		definition(LongGridTemplateID, domain.StrategyTemplateGrid, ImplementationLongGrid, longGridName, &common.LongGridParameters{}, &common.StrategyTemplateInputs{
+			OrderBook: true,
+			Account:   true,
 		}),
 	}
 }

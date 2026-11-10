@@ -1,0 +1,45 @@
+syntax = "proto3";
+package muskdeer.model.v1;
+import "deer/proto/common/v1/strategy_instance.proto";
+import "tagger/tagger.proto";
+option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/model/v1;modelv1";
+
+// LongGridRuntime is an execution cursor, not a second position/fund ledger.
+message LongGridRuntime {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 instance_id = 5 [(tagger.tags) = "gorm:\"column:instance_id;type:bigint;not null;uniqueIndex:uk_long_grid_runtime_instance\""];
+  int64 revision = 6 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  string state = 7 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+  bool started = 8 [(tagger.tags) = "gorm:\"column:started;type:boolean;not null\""];
+  string next_buy_price = 9 [(tagger.tags) = "gorm:\"column:next_buy_price;type:numeric(76,36);not null\""];
+  muskdeer.common.v1.LongGridLots lots = 10 [(tagger.tags) = "gorm:\"column:lots;type:jsonb;serializer:json;not null\""];
+  optional int64 pending_action_id = 11 [(tagger.tags) = "gorm:\"column:pending_action_id;type:bigint\""];
+  int64 next_sequence = 12 [(tagger.tags) = "gorm:\"column:next_sequence;type:bigint;not null\""];
+  optional int64 stop_action_id = 14 [(tagger.tags) = "gorm:\"column:stop_action_id;type:bigint\""];
+  int64 halted_control_version = 13 [(tagger.tags) = "gorm:\"column:halted_control_version;type:bigint;not null\""];
+}
+
+// LongGridAction is persisted before one SDK send. DISPATCHED/UNKNOWN is not resent.
+message LongGridAction {
+  int64 id = 1 [(tagger.tags) = "gorm:\"column:id;type:bigint;primaryKey;autoIncrement\""];
+  int64 create_at = 2 [(tagger.tags) = "gorm:\"column:create_at;type:bigint;not null;autoCreateTime:milli\""];
+  int64 update_at = 3 [(tagger.tags) = "gorm:\"column:update_at;type:bigint;not null;autoUpdateTime:milli\""];
+  optional int64 delete_at = 4 [(tagger.tags) = "gorm:\"column:delete_at;type:bigint\""];
+  int64 instance_id = 5 [(tagger.tags) = "gorm:\"column:instance_id;type:bigint;not null;uniqueIndex:uk_long_grid_action_sequence\""];
+  int64 revision = 6 [(tagger.tags) = "gorm:\"column:revision;type:bigint;not null\""];
+  int64 sequence = 7 [(tagger.tags) = "gorm:\"column:sequence;type:bigint;not null;uniqueIndex:uk_long_grid_action_sequence\""];
+  string client_id = 8 [(tagger.tags) = "gorm:\"column:client_id;type:varchar(128);not null;uniqueIndex:uk_long_grid_action_client\""];
+  string kind = 9 [(tagger.tags) = "gorm:\"column:kind;type:varchar(16);not null\""];
+  string side = 10 [(tagger.tags) = "gorm:\"column:side;type:varchar(8);not null\""];
+  string price = 11 [(tagger.tags) = "gorm:\"column:price;type:numeric(76,36);not null\""];
+  string quantity = 12 [(tagger.tags) = "gorm:\"column:quantity;type:numeric(76,36);not null\""];
+  string position_id = 13 [(tagger.tags) = "gorm:\"column:position_id;type:varchar(128);not null\""];
+  int64 lot_sequence = 14 [(tagger.tags) = "gorm:\"column:lot_sequence;type:bigint;not null\""];
+  string state = 15 [(tagger.tags) = "gorm:\"column:state;type:varchar(16);not null\""];
+  string order_id = 16 [(tagger.tags) = "gorm:\"column:order_id;type:varchar(20);not null\""];
+  string executed_quantity = 17 [(tagger.tags) = "gorm:\"column:executed_quantity;type:numeric(76,36);not null\""];
+  string executed_notional = 18 [(tagger.tags) = "gorm:\"column:executed_notional;type:numeric(76,36);not null\""];
+}

@@ -82,6 +82,7 @@ type StrategyInstanceParameters struct {
 	WashTrade     *WashTradeParameters         `protobuf:"bytes,5,opt,name=wash_trade,json=washTrade,proto3" json:"wash_trade,omitempty"`
 	// Historical audit only; rejected in current instance parameters.
 	ManagementChange *StrategyManagementChange `protobuf:"bytes,6,opt,name=management_change,json=managementChange,proto3" json:"management_change,omitempty"`
+	LongGrid         *LongGridParameters       `protobuf:"bytes,7,opt,name=long_grid,json=longGrid,proto3" json:"long_grid,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -154,6 +155,13 @@ func (x *StrategyInstanceParameters) GetWashTrade() *WashTradeParameters {
 func (x *StrategyInstanceParameters) GetManagementChange() *StrategyManagementChange {
 	if x != nil {
 		return x.ManagementChange
+	}
+	return nil
+}
+
+func (x *StrategyInstanceParameters) GetLongGrid() *LongGridParameters {
+	if x != nil {
+		return x.LongGrid
 	}
 	return nil
 }
@@ -783,11 +791,201 @@ func (x *StrategyManagementChange) GetExpectedControlVersion() int64 {
 	return 0
 }
 
+// LongGridParameters selects the long-only percentage grid implementation.
+// Fractions are decimal ratios: 0.01 = 1%, 0.005 = 0.5%.
+type LongGridParameters struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	SpacingFraction         string                 `protobuf:"bytes,1,opt,name=spacing_fraction,json=spacingFraction,proto3" json:"spacing_fraction,omitempty"`
+	StopLossFraction        string                 `protobuf:"bytes,2,opt,name=stop_loss_fraction,json=stopLossFraction,proto3" json:"stop_loss_fraction,omitempty"`
+	OrderNotional           string                 `protobuf:"bytes,3,opt,name=order_notional,json=orderNotional,proto3" json:"order_notional,omitempty"`
+	MaximumPositionNotional string                 `protobuf:"bytes,4,opt,name=maximum_position_notional,json=maximumPositionNotional,proto3" json:"maximum_position_notional,omitempty"`
+	OpenOnStart             bool                   `protobuf:"varint,5,opt,name=open_on_start,json=openOnStart,proto3" json:"open_on_start,omitempty"`
+	HaltAfterStopLoss       bool                   `protobuf:"varint,6,opt,name=halt_after_stop_loss,json=haltAfterStopLoss,proto3" json:"halt_after_stop_loss,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *LongGridParameters) Reset() {
+	*x = LongGridParameters{}
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LongGridParameters) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LongGridParameters) ProtoMessage() {}
+
+func (x *LongGridParameters) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LongGridParameters.ProtoReflect.Descriptor instead.
+func (*LongGridParameters) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_strategy_instance_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *LongGridParameters) GetSpacingFraction() string {
+	if x != nil {
+		return x.SpacingFraction
+	}
+	return ""
+}
+
+func (x *LongGridParameters) GetStopLossFraction() string {
+	if x != nil {
+		return x.StopLossFraction
+	}
+	return ""
+}
+
+func (x *LongGridParameters) GetOrderNotional() string {
+	if x != nil {
+		return x.OrderNotional
+	}
+	return ""
+}
+
+func (x *LongGridParameters) GetMaximumPositionNotional() string {
+	if x != nil {
+		return x.MaximumPositionNotional
+	}
+	return ""
+}
+
+func (x *LongGridParameters) GetOpenOnStart() bool {
+	if x != nil {
+		return x.OpenOnStart
+	}
+	return false
+}
+
+func (x *LongGridParameters) GetHaltAfterStopLoss() bool {
+	if x != nil {
+		return x.HaltAfterStopLoss
+	}
+	return false
+}
+
+type LongGridLot struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sequence      int64                  `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	EntryPrice    string                 `protobuf:"bytes,2,opt,name=entry_price,json=entryPrice,proto3" json:"entry_price,omitempty"`
+	Quantity      string                 `protobuf:"bytes,3,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LongGridLot) Reset() {
+	*x = LongGridLot{}
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LongGridLot) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LongGridLot) ProtoMessage() {}
+
+func (x *LongGridLot) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LongGridLot.ProtoReflect.Descriptor instead.
+func (*LongGridLot) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_strategy_instance_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *LongGridLot) GetSequence() int64 {
+	if x != nil {
+		return x.Sequence
+	}
+	return 0
+}
+
+func (x *LongGridLot) GetEntryPrice() string {
+	if x != nil {
+		return x.EntryPrice
+	}
+	return ""
+}
+
+func (x *LongGridLot) GetQuantity() string {
+	if x != nil {
+		return x.Quantity
+	}
+	return ""
+}
+
+type LongGridLots struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*LongGridLot         `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LongGridLots) Reset() {
+	*x = LongGridLots{}
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LongGridLots) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LongGridLots) ProtoMessage() {}
+
+func (x *LongGridLots) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_v1_strategy_instance_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LongGridLots.ProtoReflect.Descriptor instead.
+func (*LongGridLots) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_v1_strategy_instance_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *LongGridLots) GetItems() []*LongGridLot {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
 var File_deer_proto_common_v1_strategy_instance_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_v1_strategy_instance_proto_rawDesc = "" +
 	"\n" +
-	",deer/proto/common/v1/strategy_instance.proto\x12\x12muskdeer.common.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\"\xba\x03\n" +
+	",deer/proto/common/v1/strategy_instance.proto\x12\x12muskdeer.common.v1\x1a.deer/proto/common/v1/strategy_parameters.proto\"\xff\x03\n" +
 	"\x1aStrategyInstanceParameters\x12%\n" +
 	"\x0eschema_version\x18\x01 \x01(\rR\rschemaVersion\x12M\n" +
 	"\texecution\x18\x02 \x01(\v2/.muskdeer.common.v1.StrategyExecutionParametersR\texecution\x12K\n" +
@@ -795,7 +993,8 @@ const file_deer_proto_common_v1_strategy_instance_proto_rawDesc = "" +
 	"\x04grid\x18\x04 \x01(\v2\".muskdeer.common.v1.GridParametersR\x04grid\x12F\n" +
 	"\n" +
 	"wash_trade\x18\x05 \x01(\v2'.muskdeer.common.v1.WashTradeParametersR\twashTrade\x12Y\n" +
-	"\x11management_change\x18\x06 \x01(\v2,.muskdeer.common.v1.StrategyManagementChangeR\x10managementChange\"\xb7\x01\n" +
+	"\x11management_change\x18\x06 \x01(\v2,.muskdeer.common.v1.StrategyManagementChangeR\x10managementChange\x12C\n" +
+	"\tlong_grid\x18\a \x01(\v2&.muskdeer.common.v1.LongGridParametersR\blongGrid\"\xb7\x01\n" +
 	"\x1bStrategyExecutionParameters\x12(\n" +
 	"\x10poll_interval_ms\x18\x01 \x01(\x03R\x0epollIntervalMs\x120\n" +
 	"\x14operation_timeout_ms\x18\x02 \x01(\x03R\x12operationTimeoutMs\x12 \n" +
@@ -854,7 +1053,21 @@ const file_deer_proto_common_v1_strategy_instance_proto_rawDesc = "" +
 	"request_id\x18\x03 \x01(\tR\trequestId\x12+\n" +
 	"\x11expected_revision\x18\x04 \x01(\x03R\x10expectedRevision\x128\n" +
 	"\x18expected_control_version\x18\x05 \x01(\x03R\x16expectedControlVersionB\x12\n" +
-	"\x10_desired_running*i\n" +
+	"\x10_desired_running\"\xa5\x02\n" +
+	"\x12LongGridParameters\x12)\n" +
+	"\x10spacing_fraction\x18\x01 \x01(\tR\x0fspacingFraction\x12,\n" +
+	"\x12stop_loss_fraction\x18\x02 \x01(\tR\x10stopLossFraction\x12%\n" +
+	"\x0eorder_notional\x18\x03 \x01(\tR\rorderNotional\x12:\n" +
+	"\x19maximum_position_notional\x18\x04 \x01(\tR\x17maximumPositionNotional\x12\"\n" +
+	"\ropen_on_start\x18\x05 \x01(\bR\vopenOnStart\x12/\n" +
+	"\x14halt_after_stop_loss\x18\x06 \x01(\bR\x11haltAfterStopLoss\"f\n" +
+	"\vLongGridLot\x12\x1a\n" +
+	"\bsequence\x18\x01 \x01(\x03R\bsequence\x12\x1f\n" +
+	"\ventry_price\x18\x02 \x01(\tR\n" +
+	"entryPrice\x12\x1a\n" +
+	"\bquantity\x18\x03 \x01(\tR\bquantity\"E\n" +
+	"\fLongGridLots\x125\n" +
+	"\x05items\x18\x01 \x03(\v2\x1f.muskdeer.common.v1.LongGridLotR\x05items*i\n" +
 	"\rWashTradeMode\x12\x1f\n" +
 	"\x1bWASH_TRADE_MODE_UNSPECIFIED\x10\x00\x12\x18\n" +
 	"\x14WASH_TRADE_MODE_BOOK\x10\x01\x12\x1d\n" +
@@ -873,7 +1086,7 @@ func file_deer_proto_common_v1_strategy_instance_proto_rawDescGZIP() []byte {
 }
 
 var file_deer_proto_common_v1_strategy_instance_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_deer_proto_common_v1_strategy_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_deer_proto_common_v1_strategy_instance_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_deer_proto_common_v1_strategy_instance_proto_goTypes = []any{
 	(WashTradeMode)(0),                  // 0: muskdeer.common.v1.WashTradeMode
 	(*StrategyInstanceParameters)(nil),  // 1: muskdeer.common.v1.StrategyInstanceParameters
@@ -885,23 +1098,28 @@ var file_deer_proto_common_v1_strategy_instance_proto_goTypes = []any{
 	(*StrategyTemplateInputs)(nil),      // 7: muskdeer.common.v1.StrategyTemplateInputs
 	(*StrategyTemplateContract)(nil),    // 8: muskdeer.common.v1.StrategyTemplateContract
 	(*StrategyManagementChange)(nil),    // 9: muskdeer.common.v1.StrategyManagementChange
-	(*GridParameters)(nil),              // 10: muskdeer.common.v1.GridParameters
+	(*LongGridParameters)(nil),          // 10: muskdeer.common.v1.LongGridParameters
+	(*LongGridLot)(nil),                 // 11: muskdeer.common.v1.LongGridLot
+	(*LongGridLots)(nil),                // 12: muskdeer.common.v1.LongGridLots
+	(*GridParameters)(nil),              // 13: muskdeer.common.v1.GridParameters
 }
 var file_deer_proto_common_v1_strategy_instance_proto_depIdxs = []int32{
 	2,  // 0: muskdeer.common.v1.StrategyInstanceParameters.execution:type_name -> muskdeer.common.v1.StrategyExecutionParameters
 	3,  // 1: muskdeer.common.v1.StrategyInstanceParameters.market_maker:type_name -> muskdeer.common.v1.DepthMakerParameters
-	10, // 2: muskdeer.common.v1.StrategyInstanceParameters.grid:type_name -> muskdeer.common.v1.GridParameters
+	13, // 2: muskdeer.common.v1.StrategyInstanceParameters.grid:type_name -> muskdeer.common.v1.GridParameters
 	4,  // 3: muskdeer.common.v1.StrategyInstanceParameters.wash_trade:type_name -> muskdeer.common.v1.WashTradeParameters
 	9,  // 4: muskdeer.common.v1.StrategyInstanceParameters.management_change:type_name -> muskdeer.common.v1.StrategyManagementChange
-	0,  // 5: muskdeer.common.v1.WashTradeParameters.mode:type_name -> muskdeer.common.v1.WashTradeMode
-	6,  // 6: muskdeer.common.v1.StrategyInstanceImport.instances:type_name -> muskdeer.common.v1.StrategyInstanceInput
-	1,  // 7: muskdeer.common.v1.StrategyInstanceInput.parameters:type_name -> muskdeer.common.v1.StrategyInstanceParameters
-	0,  // 8: muskdeer.common.v1.StrategyTemplateInputs.trades_when_wash_mode:type_name -> muskdeer.common.v1.WashTradeMode
-	9,  // [9:9] is the sub-list for method output_type
-	9,  // [9:9] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	10, // 5: muskdeer.common.v1.StrategyInstanceParameters.long_grid:type_name -> muskdeer.common.v1.LongGridParameters
+	0,  // 6: muskdeer.common.v1.WashTradeParameters.mode:type_name -> muskdeer.common.v1.WashTradeMode
+	6,  // 7: muskdeer.common.v1.StrategyInstanceImport.instances:type_name -> muskdeer.common.v1.StrategyInstanceInput
+	1,  // 8: muskdeer.common.v1.StrategyInstanceInput.parameters:type_name -> muskdeer.common.v1.StrategyInstanceParameters
+	0,  // 9: muskdeer.common.v1.StrategyTemplateInputs.trades_when_wash_mode:type_name -> muskdeer.common.v1.WashTradeMode
+	11, // 10: muskdeer.common.v1.LongGridLots.items:type_name -> muskdeer.common.v1.LongGridLot
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_v1_strategy_instance_proto_init() }
@@ -917,7 +1135,7 @@ func file_deer_proto_common_v1_strategy_instance_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_v1_strategy_instance_proto_rawDesc), len(file_deer_proto_common_v1_strategy_instance_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -71,13 +71,13 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 		var rows []*model.SchemaMigration
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(6).Find(&rows).Error; err != nil {
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(7).Find(&rows).Error; err != nil {
 			return err
 		}
 		if Match(rows) {
 			return nil
 		}
-		if !matchReservation(rows) && !matchConsole(rows) && !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
+		if !matchMatching(rows) && !matchReservation(rows) && !matchConsole(rows) && !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
 			return ErrHistory
 		}
 		var active int64
@@ -125,14 +125,21 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 		}
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(matchingDefinition).Error; err != nil {
-			return err
+
+		if len(rows) < 5 {
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Exec(matchingDefinition).Error; err != nil {
+				return err
+			}
+			if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
+				Version:  5,
+				Name:     matchingName,
+				Checksum: matchingChecksum(),
+			}).Error; err != nil {
+				return err
+			}
 		}
-		return schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Create(&model.SchemaMigration{
-			Version:  5,
-			Name:     matchingName,
-			Checksum: matchingChecksum(),
-		}).Error
+		return upgradeLongGrid(ctx, tx)
+
 	})
 }
 

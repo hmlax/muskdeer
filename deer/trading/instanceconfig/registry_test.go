@@ -12,13 +12,24 @@ import (
 func TestThreeImplementationsRequireTheirOwnConcreteParameters(t *testing.T) {
 	t.Parallel()
 	definitions := Definitions()
-	if len(definitions) != 3 {
-		t.Fatalf("Definitions() = %d entries, want maker/grid/WashTrade", len(definitions))
+	if len(definitions) != 4 {
+		t.Fatalf("Definitions() = %d entries, want maker/two grid implementations/WashTrade", len(definitions))
 	}
 	for _, definition := range definitions {
 		t.Run(string(definition.Type), func(t *testing.T) {
 			t.Parallel()
 			p := parameterFixture(definition.Type)
+			if definition.Implementation == ImplementationLongGrid {
+				p.Grid = nil
+				p.LongGrid = &commonv1.LongGridParameters{
+					SpacingFraction:         "0.01",
+					StopLossFraction:        "0.005",
+					OrderNotional:           "100",
+					MaximumPositionNotional: "100",
+					OpenOnStart:             true,
+					HaltAfterStopLoss:       true,
+				}
+			}
 			if err := Validate(definition.Type, definition.Implementation, p); err != nil {
 				t.Fatalf("Validate(%s) = %v, want valid complete parameters", definition.Type, err)
 			}

@@ -484,7 +484,7 @@ func TestDatabaseTemplatesAreRequiredAndExplicitlyVersionBound(t *testing.T) {
 	if err := target.WithContext(ctx).Model(&strategy.StrategyTemplate{}).Order("id").Find(&templates).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(templates) != 3 {
+	if len(templates) != 4 {
 		t.Fatal("three database strategy templates were not created")
 	}
 	for _, template := range templates {

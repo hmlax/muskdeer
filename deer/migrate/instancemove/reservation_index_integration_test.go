@@ -63,8 +63,8 @@ func TestMatchingAuthorityUpgradeRetainsAllFourHistoricalLedgerRows(t *testing.T
 	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Find(&after).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(after) != 5 {
-		t.Fatalf("ledger rows=%d, want 5", len(after))
+	if len(after) != 6 {
+		t.Fatalf("ledger rows=%d, want 6", len(after))
 	}
 	for i, old := range before {
 		if !proto.Equal(old, after[i]) {

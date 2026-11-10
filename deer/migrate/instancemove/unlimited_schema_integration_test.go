@@ -96,7 +96,7 @@ func TestUnlimitedSchemaUpgradePreservesBaselineAndRejectsActiveOwners(t *testin
 		t.Fatal(err)
 	}
 	var ledger []*common.SchemaMigration
-	if err := db.WithContext(ctx).Model(&common.SchemaMigration{}).Order("version").Find(&ledger).Error; err != nil || len(ledger) != 5 || !proto.Equal(before, ledger[0]) {
+	if err := db.WithContext(ctx).Model(&common.SchemaMigration{}).Order("version").Find(&ledger).Error; err != nil || len(ledger) != 6 || !proto.Equal(before, ledger[0]) {
 		t.Fatalf("Upgrade changed baseline or duplicated history: count=%d err=%v", len(ledger), err)
 	}
 	if !db.WithContext(ctx).Migrator().HasIndex(&execution.VenueOrderIntent{}, "idx_venue_intent_current_reservation") {

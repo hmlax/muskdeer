@@ -17,6 +17,7 @@ message StrategyInstanceParameters {
   WashTradeParameters wash_trade = 5;
   // Historical audit only; rejected in current instance parameters.
   StrategyManagementChange management_change = 6;
+  LongGridParameters long_grid = 7;
 }
 
 message StrategyExecutionParameters {
@@ -98,3 +99,21 @@ message StrategyManagementChange {
   int64 expected_revision = 4;
   int64 expected_control_version = 5;
 }
+
+// LongGridParameters selects the long-only percentage grid implementation.
+// Fractions are decimal ratios: 0.01 = 1%, 0.005 = 0.5%.
+message LongGridParameters {
+  string spacing_fraction = 1;
+  string stop_loss_fraction = 2;
+  string order_notional = 3;
+  string maximum_position_notional = 4;
+  bool open_on_start = 5;
+  bool halt_after_stop_loss = 6;
+}
+
+message LongGridLot {
+  int64 sequence = 1;
+  string entry_price = 2;
+  string quantity = 3;
+}
+message LongGridLots { repeated LongGridLot items = 1; }
