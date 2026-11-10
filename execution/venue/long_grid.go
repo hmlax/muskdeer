@@ -192,7 +192,7 @@ func (r *Runtime) sendGridAction(ctx context.Context, action *model.LongGridActi
 }
 
 func definitiveGridRejection(err error) bool {
-	if err == nil {
+	if err == nil || errors.Is(err, domain.ErrOutcomeUnknown) {
 		return false
 	}
 	if errors.Is(err, gateway.ErrNotDispatched) {

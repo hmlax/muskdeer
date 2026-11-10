@@ -2,6 +2,7 @@ package himalaya
 
 import (
 	"context"
+	"errors"
 	"math"
 
 	"github.com/shopspring/decimal"
@@ -73,11 +74,15 @@ func (c *Client) SubmitGrid(ctx context.Context, request gateway.GridRequest) (*
 	op, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	if err := op.Err(); err != nil {
-		return nil, err
+		return nil, errors.Join(gateway.ErrNotDispatched, err)
 	}
-	response, err := c.sdk.Place(op, input)
+	trace := &sdkDispatchTrace{}
+	response, err := c.sdk.Place(context.WithValue(op, sdkDispatchContextKey{}, trace), input)
 	if err != nil {
-		return submitResult(response), err
+		if trace.entered.Load() && !trace.body.Load() {
+			return submitResult(response), errors.Join(gateway.ErrNotDispatched, err)
+		}
+		return submitResult(response), &outcomeFailure{cause: err}
 	}
 	if response.GetOrderId() == 0 || response.GetClientId() != request.ClientID {
 		return submitResult(response), domain.ErrOutcomeUnknown

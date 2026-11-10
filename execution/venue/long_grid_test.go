@@ -1,6 +1,7 @@
 package venue
 
 import (
+	"errors"
 	"testing"
 
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
@@ -32,5 +33,12 @@ func TestLongGridRPCRejectsWrongRoleRevisionAndLegacyQuote(t *testing.T) {
 	}
 	if _, err := child.Reconcile(washTestContext(t.Context()), &pb.QuotePlan{}); status.Code(err) != codes.FailedPrecondition {
 		t.Fatalf("legacy quote entered long-only runtime: %v", err)
+	}
+}
+
+func TestGridAmbiguousBodyErrorIsNeverReleasedAsARejection(t *testing.T) {
+	err := errors.Join(domain.ErrOutcomeUnknown, status.Error(codes.FailedPrecondition, "reply after request body"))
+	if definitiveGridRejection(err) {
+		t.Fatal("ambiguous send was treated as safe to replace")
 	}
 }

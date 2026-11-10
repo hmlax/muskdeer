@@ -93,7 +93,7 @@ func TestLongGridSDKDoesNotRetryLostReply(t *testing.T) {
 		Quantity: decimal.RequireFromString("0.1"),
 		Leverage: 10,
 	})
-	if err == nil || peer.count() != 1 {
+	if err == nil || !errors.Is(err, domain.ErrOutcomeUnknown) || peer.count() != 1 {
 		t.Fatalf("lost reply replayed: calls=%d, err=%v", peer.count(), err)
 	}
 }
