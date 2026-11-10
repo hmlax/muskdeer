@@ -53,31 +53,21 @@ func (c *Client) SubmitGrid(ctx context.Context, request gateway.GridRequest) (*
 		kind = pb.OrderKind_ORDER_KIND_MARKET
 		price = "0"
 	}
-	input := &pb.PlaceRequest{
-		UserId:       request.Scope.UserID,
-		FundId:       request.Scope.FundID,
-		Symbol:       request.Scope.Symbol,
-		Side:         pb.Side_SIDE_BUY,
-		OrderKind:    kind,
-		Price:        price,
-		Quantity:     request.Quantity.String(),
-		TimeInForce:  pb.TimeInForce_TIME_IN_FORCE_IOC,
-		ReduceOnly:   request.ReduceOnly,
-		Leverage:     int32(request.Leverage),
-		PositionType: pb.PositionType_POSITION_TYPE_CROSS,
-		PositionId:   request.PositionID,
-		ClientId:     request.ClientID,
-	}
-	if request.ReduceOnly {
-		input.Side = pb.Side_SIDE_SELL
-	}
 	op, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	if err := op.Err(); err != nil {
 		return nil, errors.Join(gateway.ErrNotDispatched, err)
 	}
+	var makerFee, takerFee int64
+	if !request.ReduceOnly {
+		var err error
+		makerFee, takerFee, err = c.gridFees(op, request.Scope.Symbol)
+		if err != nil {
+			return nil, errors.Join(gateway.ErrNotDispatched, err)
+		}
+	}
 	trace := &sdkDispatchTrace{}
-	response, err := c.sdk.Place(context.WithValue(op, sdkDispatchContextKey{}, trace), input)
+	response, err := c.sendGrid(context.WithValue(op, sdkDispatchContextKey{}, trace), request, kind, price, makerFee, takerFee)
 	if err != nil {
 		if trace.entered.Load() && !trace.body.Load() {
 			return submitResult(response), errors.Join(gateway.ErrNotDispatched, err)
@@ -88,6 +78,68 @@ func (c *Client) SubmitGrid(ctx context.Context, request gateway.GridRequest) (*
 		return submitResult(response), domain.ErrOutcomeUnknown
 	}
 	return submitResult(response), nil
+}
+
+// OpenPosition/ClosePosition support the existing hedge mode, whereas Place
+// rejects it before dispatch. ClosePosition can only reduce the supplied ID.
+func (c *Client) sendGrid(ctx context.Context, request gateway.GridRequest, kind pb.OrderKind, price string, makerFee, takerFee int64) (*pb.PlaceOrderResponse, error) {
+	if request.ReduceOnly {
+		return c.sdk.ClosePosition(ctx, &pb.ClosePositionRequest{
+			UserId:      request.Scope.UserID,
+			FundId:      request.Scope.FundID,
+			Symbol:      request.Scope.Symbol,
+			OrderKind:   kind,
+			Price:       price,
+			Quantity:    request.Quantity.String(),
+			TimeInForce: pb.TimeInForce_TIME_IN_FORCE_IOC,
+			PositionId:  request.PositionID,
+			ClientId:    request.ClientID,
+		})
+	}
+	return c.sdk.OpenPosition(ctx, &pb.OpenPositionRequest{
+		UserId:          request.Scope.UserID,
+		FundId:          request.Scope.FundID,
+		Symbol:          request.Scope.Symbol,
+		Side:            pb.Side_SIDE_BUY,
+		OrderKind:       kind,
+		Price:           price,
+		Quantity:        request.Quantity.String(),
+		TimeInForce:     pb.TimeInForce_TIME_IN_FORCE_IOC,
+		Leverage:        int32(request.Leverage),
+		PositionType:    pb.PositionType_POSITION_TYPE_CROSS,
+		PositionId:      request.PositionID,
+		ClientId:        request.ClientID,
+		MakerFeeRatePpm: makerFee,
+		TakerFeeRatePpm: takerFee,
+	})
+}
+
+func (c *Client) gridFees(ctx context.Context, symbol string) (int64, int64, error) {
+	market, err := c.sdk.Raw().GetMarket(ctx, &pb.GetMarketRequest{Symbol: symbol})
+	if err != nil {
+		return 0, 0, err
+	}
+	if market.GetMarket().GetSymbol() != symbol {
+		return 0, 0, ErrInvalidSnapshot
+	}
+	maker, e1 := gridFeePPM(market.GetMarket().GetMakerFeeRate())
+	taker, e2 := gridFeePPM(market.GetMarket().GetTakerFeeRate())
+	if e1 != nil || e2 != nil || taker < 0 {
+		return 0, 0, ErrInvalidSnapshot
+	}
+	return maker, taker, nil
+}
+
+func gridFeePPM(value string) (int64, error) {
+	rate, err := native.Value(value, true, true)
+	if err != nil || rate.Abs().GreaterThan(decimal.NewFromInt(1)) {
+		return 0, ErrInvalidSnapshot
+	}
+	ppm := rate.Mul(decimal.NewFromInt(1000000))
+	if !ppm.Equal(ppm.Truncate(0)) {
+		return 0, ErrInvalidSnapshot
+	}
+	return ppm.IntPart(), nil
 }
 
 // FindGridOrder never treats missing history as proof of rejection. ACK IDs use

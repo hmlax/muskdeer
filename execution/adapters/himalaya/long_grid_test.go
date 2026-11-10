@@ -11,7 +11,7 @@ import (
 )
 
 func TestLongGridSDKForcesCrossIOCAndSellReduceOnly(t *testing.T) {
-	peer := &sdkPeer{}
+	peer := &sdkPeer{rejectPlace: true}
 	client := sdkClient(t, peer, nil)
 	input := gateway.GridRequest{
 		Scope: Scope{
@@ -28,8 +28,8 @@ func TestLongGridSDKForcesCrossIOCAndSellReduceOnly(t *testing.T) {
 	if _, err := client.SubmitGrid(t.Context(), input); err != nil {
 		t.Fatal(err)
 	}
-	if peer.received.ReduceOnly || peer.received.Side != pb.Side_SIDE_BUY || peer.received.OrderKind != pb.OrderKind_ORDER_KIND_LIMIT || peer.received.TimeInForce != pb.TimeInForce_TIME_IN_FORCE_IOC || peer.received.PositionType != pb.PositionType_POSITION_TYPE_CROSS || peer.received.Leverage != 10 {
-		t.Fatalf("initial request: %v", peer.received)
+	if peer.gridOpen == nil || peer.gridOpen.Side != pb.Side_SIDE_BUY || peer.gridOpen.OrderKind != pb.OrderKind_ORDER_KIND_LIMIT || peer.gridOpen.TimeInForce != pb.TimeInForce_TIME_IN_FORCE_IOC || peer.gridOpen.PositionType != pb.PositionType_POSITION_TYPE_CROSS || peer.gridOpen.Leverage != 10 || peer.gridOpen.MakerFeeRatePpm != 200 || peer.gridOpen.TakerFeeRatePpm != 500 {
+		t.Fatalf("initial request: %v", peer.gridOpen)
 	}
 	input.Side = domain.SideSell
 	if _, err := client.SubmitGrid(t.Context(), input); !errors.Is(err, ErrInvalidSubmit) {
@@ -37,16 +37,36 @@ func TestLongGridSDKForcesCrossIOCAndSellReduceOnly(t *testing.T) {
 	}
 	input.ReduceOnly = true
 	input.PositionID = "actual-long-position"
+	if _, err := client.SubmitGrid(t.Context(), input); err != nil {
+		t.Fatal(err)
+	}
+	if peer.gridClose == nil || peer.gridClose.PositionId != input.PositionID || peer.gridClose.OrderKind != pb.OrderKind_ORDER_KIND_LIMIT || peer.gridClose.TimeInForce != pb.TimeInForce_TIME_IN_FORCE_IOC {
+		t.Fatalf("profit close request: %v", peer.gridClose)
+	}
 	input.Market = true
 	input.Price = decimal.Zero
 	if _, err := client.SubmitGrid(t.Context(), input); err != nil {
 		t.Fatal(err)
 	}
-	if !peer.received.ReduceOnly || peer.received.PositionId != input.PositionID || peer.received.OrderKind != pb.OrderKind_ORDER_KIND_MARKET || peer.received.Quantity != "0.1" {
-		t.Fatalf("stop request: %v", peer.received)
+	if peer.gridClose == nil || peer.gridClose.PositionId != input.PositionID || peer.gridClose.OrderKind != pb.OrderKind_ORDER_KIND_MARKET || peer.gridClose.Quantity != "0.1" || peer.gridClose.TimeInForce != pb.TimeInForce_TIME_IN_FORCE_IOC {
+		t.Fatalf("stop request: %v", peer.gridClose)
 	}
-	if peer.count() != 2 {
+	if peer.count() != 3 {
 		t.Fatalf("SDK calls %d", peer.count())
+	}
+}
+
+func TestGridFeeConversionKeepsRebatesAndRejectsTruncation(t *testing.T) {
+	t.Parallel()
+	ppm, err := gridFeePPM("-0.0002")
+	if err != nil || ppm != -200 {
+		t.Fatalf("gridFeePPM(rebate) = %d, %v; want -200, nil", ppm, err)
+	}
+	if _, err := gridFeePPM("0.0000001"); err == nil {
+		t.Fatal("sub-ppm fee was silently rounded")
+	}
+	if _, err := gridFeePPM(""); err == nil {
+		t.Fatal("missing venue fee was silently changed to zero")
 	}
 }
 

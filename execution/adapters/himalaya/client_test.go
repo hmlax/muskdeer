@@ -153,6 +153,9 @@ type sdkPeer struct {
 	mu                sync.Mutex
 	calls             int
 	received          *pb.PlaceRequest
+	gridOpen          *pb.OpenPositionRequest
+	gridClose         *pb.ClosePositionRequest
+	rejectPlace       bool
 	fail              bool
 	protocol          string
 	token             string
@@ -170,6 +173,29 @@ func (p *sdkPeer) Place(ctx context.Context, request *pb.PlaceRequest) (*pb.Plac
 	defer p.mu.Unlock()
 	p.calls++
 	p.received = proto.CloneOf(request)
+	if p.rejectPlace {
+		return nil, status.Error(codes.FailedPrecondition, "Place is only available in ONE_WAY account position mode")
+	}
+	return p.placeReply(ctx, request.ClientId)
+}
+
+func (p *sdkPeer) OpenPosition(ctx context.Context, request *pb.OpenPositionRequest) (*pb.PlaceOrderResponse, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls++
+	p.gridOpen = proto.CloneOf(request)
+	return p.placeReply(ctx, request.ClientId)
+}
+
+func (p *sdkPeer) ClosePosition(ctx context.Context, request *pb.ClosePositionRequest) (*pb.PlaceOrderResponse, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.calls++
+	p.gridClose = proto.CloneOf(request)
+	return p.placeReply(ctx, request.ClientId)
+}
+
+func (p *sdkPeer) placeReply(ctx context.Context, clientID string) (*pb.PlaceOrderResponse, error) {
 	headers, _ := metadata.FromIncomingContext(ctx)
 	versions, tokens := headers.Get("x-orderbook-protocol"), headers.Get("authorization")
 	if len(versions) != 1 || len(tokens) != 1 {
@@ -182,12 +208,16 @@ func (p *sdkPeer) Place(ctx context.Context, request *pb.PlaceRequest) (*pb.Plac
 	}
 	return &pb.PlaceOrderResponse{
 		OrderId:  42,
-		ClientId: request.ClientId,
+		ClientId: clientID,
 	}, nil
 }
 
 func (*sdkPeer) GetMarket(_ context.Context, request *pb.GetMarketRequest) (*pb.GetMarketResponse, error) {
-	return &pb.GetMarketResponse{Market: &pb.MarketView{Symbol: request.Symbol}}, nil
+	return &pb.GetMarketResponse{Market: &pb.MarketView{
+		Symbol:       request.Symbol,
+		MakerFeeRate: "0.0002",
+		TakerFeeRate: "0.0005",
+	}}, nil
 }
 
 func (*sdkPeer) GetAccount(_ context.Context, request *pb.GetAccountRequest) (*pb.GetAccountResponse, error) {
