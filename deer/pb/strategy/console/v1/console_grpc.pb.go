@@ -29,6 +29,7 @@ const (
 	Console_SetInstanceRunning_FullMethodName   = "/muskdeer.strategy.console.v1.Console/SetInstanceRunning"
 	Console_ListInstruments_FullMethodName      = "/muskdeer.strategy.console.v1.Console/ListInstruments"
 	Console_ListAccounts_FullMethodName         = "/muskdeer.strategy.console.v1.Console/ListAccounts"
+	Console_CreateAccount_FullMethodName        = "/muskdeer.strategy.console.v1.Console/CreateAccount"
 	Console_ListOrderRecords_FullMethodName     = "/muskdeer.strategy.console.v1.Console/ListOrderRecords"
 	Console_ListCancellations_FullMethodName    = "/muskdeer.strategy.console.v1.Console/ListCancellations"
 	Console_ListSyntheticRecords_FullMethodName = "/muskdeer.strategy.console.v1.Console/ListSyntheticRecords"
@@ -53,6 +54,7 @@ type ConsoleClient interface {
 	SetInstanceRunning(ctx context.Context, in *RunningRequest, opts ...grpc.CallOption) (*Instance, error)
 	ListInstruments(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*InstrumentPage, error)
 	ListAccounts(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*AccountPage, error)
+	CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*Account, error)
 	ListOrderRecords(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*OrderPage, error)
 	ListCancellations(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*CancellationPage, error)
 	ListSyntheticRecords(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*SyntheticPage, error)
@@ -168,6 +170,16 @@ func (c *consoleClient) ListAccounts(ctx context.Context, in *ListRequest, opts 
 	return out, nil
 }
 
+func (c *consoleClient) CreateAccount(ctx context.Context, in *CreateAccountRequest, opts ...grpc.CallOption) (*Account, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Account)
+	err := c.cc.Invoke(ctx, Console_CreateAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *consoleClient) ListOrderRecords(ctx context.Context, in *RecordListRequest, opts ...grpc.CallOption) (*OrderPage, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(OrderPage)
@@ -235,6 +247,7 @@ type ConsoleServer interface {
 	SetInstanceRunning(context.Context, *RunningRequest) (*Instance, error)
 	ListInstruments(context.Context, *ListRequest) (*InstrumentPage, error)
 	ListAccounts(context.Context, *ListRequest) (*AccountPage, error)
+	CreateAccount(context.Context, *CreateAccountRequest) (*Account, error)
 	ListOrderRecords(context.Context, *RecordListRequest) (*OrderPage, error)
 	ListCancellations(context.Context, *RecordListRequest) (*CancellationPage, error)
 	ListSyntheticRecords(context.Context, *RecordListRequest) (*SyntheticPage, error)
@@ -279,6 +292,9 @@ func (UnimplementedConsoleServer) ListInstruments(context.Context, *ListRequest)
 }
 func (UnimplementedConsoleServer) ListAccounts(context.Context, *ListRequest) (*AccountPage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAccounts not implemented")
+}
+func (UnimplementedConsoleServer) CreateAccount(context.Context, *CreateAccountRequest) (*Account, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAccount not implemented")
 }
 func (UnimplementedConsoleServer) ListOrderRecords(context.Context, *RecordListRequest) (*OrderPage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListOrderRecords not implemented")
@@ -496,6 +512,24 @@ func _Console_ListAccounts_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Console_CreateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServer).CreateAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Console_CreateAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServer).CreateAccount(ctx, req.(*CreateAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Console_ListOrderRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RecordListRequest)
 	if err := dec(in); err != nil {
@@ -632,6 +666,10 @@ var Console_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAccounts",
 			Handler:    _Console_ListAccounts_Handler,
+		},
+		{
+			MethodName: "CreateAccount",
+			Handler:    _Console_CreateAccount_Handler,
 		},
 		{
 			MethodName: "ListOrderRecords",

@@ -10,6 +10,8 @@ option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev
 service Execution {
   rpc DescribeInstances(muskdeer.common.v1.VenueInstanceInventoryRequest) returns (muskdeer.common.v1.VenueInstanceInventory);
   rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
+  // Read-only enrollment verification, including funds without a strategy yet.
+  rpc InspectAccount(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
   rpc CancelInstanceOrders(CancelInstanceRequest) returns (QuoteResult);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);

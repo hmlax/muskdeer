@@ -15,6 +15,7 @@ service Console {
  rpc SetInstanceRunning(RunningRequest) returns (Instance);
  rpc ListInstruments(ListRequest) returns (InstrumentPage);
  rpc ListAccounts(ListRequest) returns (AccountPage);
+ rpc CreateAccount(CreateAccountRequest) returns (Account);
  rpc ListOrderRecords(RecordListRequest) returns (OrderPage);
  rpc ListCancellations(RecordListRequest) returns (CancellationPage);
  rpc ListSyntheticRecords(RecordListRequest) returns (SyntheticPage);
@@ -128,6 +129,13 @@ message Account {
  int64 snapshot_expires_at_ms = 13;
 }
 message AccountPage { repeated Account items = 1; uint64 total = 2; }
+// IDs use exact decimal strings at the browser boundary; no floating conversion.
+message AccountDraft {
+ string user_id = 1; string fund_id = 2; string instrument_id = 3;
+ string market_data_source = 4; string maximum_notional = 5;
+ string maximum_order_notional = 6; uint32 leverage = 7;
+}
+message CreateAccountRequest { Actor actor = 1; AccountDraft data = 2; }
 message OrderRecord {
  int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;
  string account_id = 4; string symbol = 5; string client_id = 6;

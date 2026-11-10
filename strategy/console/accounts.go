@@ -44,23 +44,27 @@ func (s *Server) ListAccounts(ctx context.Context, in *pb.ListRequest) (*pb.Acco
 		Total: uint64(total),
 	}
 	for _, row := range rows {
-		result.Items = append(result.Items, &pb.Account{
-			Id:                   row.Id,
-			AccountId:            row.AccountId,
-			UserId:               row.UserId,
-			FundId:               row.FundId,
-			Symbol:               row.Symbol,
-			MaximumNotional:      row.MaximumNotional,
-			MaximumOrderNotional: row.MaximumOrderNotional,
-			Leverage:             row.Leverage,
-			Enabled:              row.Enabled,
-			ObservedNotional:     row.ObservedNotional,
-			ReservedNotional:     row.ReservedNotional,
-			AvailableQuote:       row.AvailableQuote,
-			SnapshotExpiresAtMs:  row.SnapshotExpiresAt,
-		})
+		result.Items = append(result.Items, accountDTO(row))
 	}
 	return result, nil
+}
+
+func accountDTO(row *common.TradingAccountPolicy) *pb.Account {
+	return &pb.Account{
+		Id:                   row.Id,
+		AccountId:            row.AccountId,
+		UserId:               row.UserId,
+		FundId:               row.FundId,
+		Symbol:               row.Symbol,
+		MaximumNotional:      row.MaximumNotional,
+		MaximumOrderNotional: row.MaximumOrderNotional,
+		Leverage:             row.Leverage,
+		Enabled:              row.Enabled,
+		ObservedNotional:     row.ObservedNotional,
+		ReservedNotional:     row.ReservedNotional,
+		AvailableQuote:       row.AvailableQuote,
+		SnapshotExpiresAtMs:  row.SnapshotExpiresAt,
+	}
 }
 
 // GetOverview counts records within the verified account scope.

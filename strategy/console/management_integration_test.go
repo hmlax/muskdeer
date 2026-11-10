@@ -63,7 +63,12 @@ func testDatabase(ctx context.Context, t *testing.T) *gorm.DB {
 		}
 	})
 	db := connection.GORM()
-	if err := schemaformat.Install(ctx, db); err != nil {
+	if !db.WithContext(ctx).Migrator().HasTable(&model.SchemaMigration{}) {
+		if err := schemaformat.Install(ctx, db); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := schemaformat.Check(ctx, db); err != nil {
 		t.Fatal(err)
 	}
 	return db

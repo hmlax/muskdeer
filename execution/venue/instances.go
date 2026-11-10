@@ -34,6 +34,9 @@ type Instances struct {
 	connection *configv1.VenueConnection
 	gateway    gateway.Factory
 	timeout    time.Duration
+	client     *atomic.Pointer[gatewaySession]
+	closing    *atomic.Bool
+	store      *Store
 }
 
 // NewInstances assembles one shared SDK session without starting work.
@@ -52,6 +55,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 		timeout:    time.Second,
 	}
 	client, closing := &atomic.Pointer[gatewaySession]{}, &atomic.Bool{}
+	result.client, result.closing, result.store = client, closing, store
 	gates := make(map[string]chan struct{})
 	for _, instance := range instances {
 		result.inventory = append(result.inventory, &commonv1.VenueInstanceRevision{
@@ -105,15 +109,11 @@ func (r *Instances) Workers() []deer.Worker {
 }
 
 func (r *Instances) run(ctx context.Context) (result error) {
-	if len(r.ordered) == 0 {
-		<-ctx.Done()
-		return ctx.Err()
-	}
 	client, err := r.gateway.Dial(ctx, Config{
 		Target:  r.connection.Target,
 		Token:   os.Getenv(r.connection.TokenEnv),
 		Timeout: r.timeout,
-	}, r.ordered[0].store)
+	}, r.store)
 	if err != nil {
 		return err
 	}
@@ -142,14 +142,14 @@ func (r *Instances) run(ctx context.Context) (result error) {
 	if err := client.Ping(ctx); err != nil {
 		return err
 	}
-	r.ordered[0].client.Store(&gatewaySession{Client: client})
+	r.client.Store(&gatewaySession{Client: client})
 	group, work := errgroup.WithContext(ctx)
 	group.Go(func() error { return r.watchWashControls(work) })
 	for _, child := range r.ordered {
 		group.Go(func() error { return child.maintainInstance(work) })
 	}
 	result = group.Wait() // Join all children before cancellation cleanup or Close.
-	r.ordered[0].closing.Store(true)
+	r.closing.Store(true)
 	cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
 	defer cancel()
 	for _, child := range r.ordered {

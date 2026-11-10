@@ -2396,6 +2396,151 @@ func (x *AccountPage) GetTotal() uint64 {
 	return 0
 }
 
+// IDs use exact decimal strings at the browser boundary; no floating conversion.
+type AccountDraft struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	UserId               string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	FundId               string                 `protobuf:"bytes,2,opt,name=fund_id,json=fundId,proto3" json:"fund_id,omitempty"`
+	InstrumentId         string                 `protobuf:"bytes,3,opt,name=instrument_id,json=instrumentId,proto3" json:"instrument_id,omitempty"`
+	MarketDataSource     string                 `protobuf:"bytes,4,opt,name=market_data_source,json=marketDataSource,proto3" json:"market_data_source,omitempty"`
+	MaximumNotional      string                 `protobuf:"bytes,5,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	MaximumOrderNotional string                 `protobuf:"bytes,6,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty"`
+	Leverage             uint32                 `protobuf:"varint,7,opt,name=leverage,proto3" json:"leverage,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *AccountDraft) Reset() {
+	*x = AccountDraft{}
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountDraft) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountDraft) ProtoMessage() {}
+
+func (x *AccountDraft) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountDraft.ProtoReflect.Descriptor instead.
+func (*AccountDraft) Descriptor() ([]byte, []int) {
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *AccountDraft) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AccountDraft) GetFundId() string {
+	if x != nil {
+		return x.FundId
+	}
+	return ""
+}
+
+func (x *AccountDraft) GetInstrumentId() string {
+	if x != nil {
+		return x.InstrumentId
+	}
+	return ""
+}
+
+func (x *AccountDraft) GetMarketDataSource() string {
+	if x != nil {
+		return x.MarketDataSource
+	}
+	return ""
+}
+
+func (x *AccountDraft) GetMaximumNotional() string {
+	if x != nil {
+		return x.MaximumNotional
+	}
+	return ""
+}
+
+func (x *AccountDraft) GetMaximumOrderNotional() string {
+	if x != nil {
+		return x.MaximumOrderNotional
+	}
+	return ""
+}
+
+func (x *AccountDraft) GetLeverage() uint32 {
+	if x != nil {
+		return x.Leverage
+	}
+	return 0
+}
+
+type CreateAccountRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Actor         *Actor                 `protobuf:"bytes,1,opt,name=actor,proto3" json:"actor,omitempty"`
+	Data          *AccountDraft          `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateAccountRequest) Reset() {
+	*x = CreateAccountRequest{}
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAccountRequest) ProtoMessage() {}
+
+func (x *CreateAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAccountRequest.ProtoReflect.Descriptor instead.
+func (*CreateAccountRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *CreateAccountRequest) GetActor() *Actor {
+	if x != nil {
+		return x.Actor
+	}
+	return nil
+}
+
+func (x *CreateAccountRequest) GetData() *AccountDraft {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 type OrderRecord struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Id               int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -2419,7 +2564,7 @@ type OrderRecord struct {
 
 func (x *OrderRecord) Reset() {
 	*x = OrderRecord{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[29]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2431,7 +2576,7 @@ func (x *OrderRecord) String() string {
 func (*OrderRecord) ProtoMessage() {}
 
 func (x *OrderRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[29]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2444,7 +2589,7 @@ func (x *OrderRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderRecord.ProtoReflect.Descriptor instead.
 func (*OrderRecord) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{29}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *OrderRecord) GetId() int64 {
@@ -2562,7 +2707,7 @@ type OrderPage struct {
 
 func (x *OrderPage) Reset() {
 	*x = OrderPage{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[30]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2574,7 +2719,7 @@ func (x *OrderPage) String() string {
 func (*OrderPage) ProtoMessage() {}
 
 func (x *OrderPage) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[30]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2587,7 +2732,7 @@ func (x *OrderPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OrderPage.ProtoReflect.Descriptor instead.
 func (*OrderPage) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{30}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *OrderPage) GetItems() []*OrderRecord {
@@ -2619,7 +2764,7 @@ type Cancellation struct {
 
 func (x *Cancellation) Reset() {
 	*x = Cancellation{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[31]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2631,7 +2776,7 @@ func (x *Cancellation) String() string {
 func (*Cancellation) ProtoMessage() {}
 
 func (x *Cancellation) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[31]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2644,7 +2789,7 @@ func (x *Cancellation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Cancellation.ProtoReflect.Descriptor instead.
 func (*Cancellation) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{31}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *Cancellation) GetId() int64 {
@@ -2706,7 +2851,7 @@ type CancellationPage struct {
 
 func (x *CancellationPage) Reset() {
 	*x = CancellationPage{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[32]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2718,7 +2863,7 @@ func (x *CancellationPage) String() string {
 func (*CancellationPage) ProtoMessage() {}
 
 func (x *CancellationPage) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[32]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2731,7 +2876,7 @@ func (x *CancellationPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancellationPage.ProtoReflect.Descriptor instead.
 func (*CancellationPage) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{32}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *CancellationPage) GetItems() []*Cancellation {
@@ -2769,7 +2914,7 @@ type SyntheticRecord struct {
 
 func (x *SyntheticRecord) Reset() {
 	*x = SyntheticRecord{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[33]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2781,7 +2926,7 @@ func (x *SyntheticRecord) String() string {
 func (*SyntheticRecord) ProtoMessage() {}
 
 func (x *SyntheticRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[33]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2794,7 +2939,7 @@ func (x *SyntheticRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyntheticRecord.ProtoReflect.Descriptor instead.
 func (*SyntheticRecord) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{33}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *SyntheticRecord) GetId() int64 {
@@ -2898,7 +3043,7 @@ type SyntheticPage struct {
 
 func (x *SyntheticPage) Reset() {
 	*x = SyntheticPage{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[34]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2910,7 +3055,7 @@ func (x *SyntheticPage) String() string {
 func (*SyntheticPage) ProtoMessage() {}
 
 func (x *SyntheticPage) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[34]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2923,7 +3068,7 @@ func (x *SyntheticPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyntheticPage.ProtoReflect.Descriptor instead.
 func (*SyntheticPage) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{34}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *SyntheticPage) GetItems() []*SyntheticRecord {
@@ -2957,7 +3102,7 @@ type AccountSnapshot struct {
 
 func (x *AccountSnapshot) Reset() {
 	*x = AccountSnapshot{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[35]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2969,7 +3114,7 @@ func (x *AccountSnapshot) String() string {
 func (*AccountSnapshot) ProtoMessage() {}
 
 func (x *AccountSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[35]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2982,7 +3127,7 @@ func (x *AccountSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountSnapshot.ProtoReflect.Descriptor instead.
 func (*AccountSnapshot) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{35}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *AccountSnapshot) GetAccountId() string {
@@ -3056,7 +3201,7 @@ type ActiveOrder struct {
 
 func (x *ActiveOrder) Reset() {
 	*x = ActiveOrder{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[36]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3068,7 +3213,7 @@ func (x *ActiveOrder) String() string {
 func (*ActiveOrder) ProtoMessage() {}
 
 func (x *ActiveOrder) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[36]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3081,7 +3226,7 @@ func (x *ActiveOrder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActiveOrder.ProtoReflect.Descriptor instead.
 func (*ActiveOrder) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{36}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *ActiveOrder) GetOrderId() string {
@@ -3145,7 +3290,7 @@ type Position struct {
 
 func (x *Position) Reset() {
 	*x = Position{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[37]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3157,7 +3302,7 @@ func (x *Position) String() string {
 func (*Position) ProtoMessage() {}
 
 func (x *Position) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[37]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3170,7 +3315,7 @@ func (x *Position) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Position.ProtoReflect.Descriptor instead.
 func (*Position) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{37}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *Position) GetSymbol() string {
@@ -3215,7 +3360,7 @@ type LongGridParameters struct {
 
 func (x *LongGridParameters) Reset() {
 	*x = LongGridParameters{}
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[38]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3227,7 +3372,7 @@ func (x *LongGridParameters) String() string {
 func (*LongGridParameters) ProtoMessage() {}
 
 func (x *LongGridParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[38]
+	mi := &file_deer_proto_strategy_console_v1_console_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3240,7 +3385,7 @@ func (x *LongGridParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongGridParameters.ProtoReflect.Descriptor instead.
 func (*LongGridParameters) Descriptor() ([]byte, []int) {
-	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{38}
+	return file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *LongGridParameters) GetSpacingFraction() string {
@@ -3514,7 +3659,18 @@ const file_deer_proto_strategy_console_v1_console_proto_rawDesc = "" +
 	"\x16snapshot_expires_at_ms\x18\r \x01(\x03R\x13snapshotExpiresAtMs\"`\n" +
 	"\vAccountPage\x12;\n" +
 	"\x05items\x18\x01 \x03(\v2%.muskdeer.strategy.console.v1.AccountR\x05items\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x04R\x05total\"\xb6\x03\n" +
+	"\x05total\x18\x02 \x01(\x04R\x05total\"\x90\x02\n" +
+	"\fAccountDraft\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x17\n" +
+	"\afund_id\x18\x02 \x01(\tR\x06fundId\x12#\n" +
+	"\rinstrument_id\x18\x03 \x01(\tR\finstrumentId\x12,\n" +
+	"\x12market_data_source\x18\x04 \x01(\tR\x10marketDataSource\x12)\n" +
+	"\x10maximum_notional\x18\x05 \x01(\tR\x0fmaximumNotional\x124\n" +
+	"\x16maximum_order_notional\x18\x06 \x01(\tR\x14maximumOrderNotional\x12\x1a\n" +
+	"\bleverage\x18\a \x01(\rR\bleverage\"\x91\x01\n" +
+	"\x14CreateAccountRequest\x129\n" +
+	"\x05actor\x18\x01 \x01(\v2#.muskdeer.strategy.console.v1.ActorR\x05actor\x12>\n" +
+	"\x04data\x18\x02 \x01(\v2*.muskdeer.strategy.console.v1.AccountDraftR\x04data\"\xb6\x03\n" +
 	"\vOrderRecord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\"\n" +
 	"\rcreated_at_ms\x18\x02 \x01(\x03R\vcreatedAtMs\x12\"\n" +
@@ -3599,7 +3755,7 @@ const file_deer_proto_strategy_console_v1_console_proto_rawDesc = "" +
 	"\x0eorder_notional\x18\x03 \x01(\tR\rorderNotional\x12:\n" +
 	"\x19maximum_position_notional\x18\x04 \x01(\tR\x17maximumPositionNotional\x12\"\n" +
 	"\ropen_on_start\x18\x05 \x01(\bR\vopenOnStart\x12/\n" +
-	"\x14halt_after_stop_loss\x18\x06 \x01(\bR\x11haltAfterStopLoss2\xea\f\n" +
+	"\x14halt_after_stop_loss\x18\x06 \x01(\bR\x11haltAfterStopLoss2\xd6\r\n" +
 	"\aConsole\x12a\n" +
 	"\vGetOverview\x12*.muskdeer.strategy.console.v1.ActorRequest\x1a&.muskdeer.strategy.console.v1.Overview\x12f\n" +
 	"\rListTemplates\x12).muskdeer.strategy.console.v1.ListRequest\x1a*.muskdeer.strategy.console.v1.TemplatePage\x12e\n" +
@@ -3610,7 +3766,8 @@ const file_deer_proto_strategy_console_v1_console_proto_rawDesc = "" +
 	"\x0eUpdateInstance\x123.muskdeer.strategy.console.v1.UpdateInstanceRequest\x1a&.muskdeer.strategy.console.v1.Instance\x12j\n" +
 	"\x12SetInstanceRunning\x12,.muskdeer.strategy.console.v1.RunningRequest\x1a&.muskdeer.strategy.console.v1.Instance\x12j\n" +
 	"\x0fListInstruments\x12).muskdeer.strategy.console.v1.ListRequest\x1a,.muskdeer.strategy.console.v1.InstrumentPage\x12d\n" +
-	"\fListAccounts\x12).muskdeer.strategy.console.v1.ListRequest\x1a).muskdeer.strategy.console.v1.AccountPage\x12l\n" +
+	"\fListAccounts\x12).muskdeer.strategy.console.v1.ListRequest\x1a).muskdeer.strategy.console.v1.AccountPage\x12j\n" +
+	"\rCreateAccount\x122.muskdeer.strategy.console.v1.CreateAccountRequest\x1a%.muskdeer.strategy.console.v1.Account\x12l\n" +
 	"\x10ListOrderRecords\x12/.muskdeer.strategy.console.v1.RecordListRequest\x1a'.muskdeer.strategy.console.v1.OrderPage\x12t\n" +
 	"\x11ListCancellations\x12/.muskdeer.strategy.console.v1.RecordListRequest\x1a..muskdeer.strategy.console.v1.CancellationPage\x12t\n" +
 	"\x14ListSyntheticRecords\x12/.muskdeer.strategy.console.v1.RecordListRequest\x1a+.muskdeer.strategy.console.v1.SyntheticPage\x12q\n" +
@@ -3629,7 +3786,7 @@ func file_deer_proto_strategy_console_v1_console_proto_rawDescGZIP() []byte {
 	return file_deer_proto_strategy_console_v1_console_proto_rawDescData
 }
 
-var file_deer_proto_strategy_console_v1_console_proto_msgTypes = make([]protoimpl.MessageInfo, 39)
+var file_deer_proto_strategy_console_v1_console_proto_msgTypes = make([]protoimpl.MessageInfo, 41)
 var file_deer_proto_strategy_console_v1_console_proto_goTypes = []any{
 	(*Actor)(nil),                 // 0: muskdeer.strategy.console.v1.Actor
 	(*ActorRequest)(nil),          // 1: muskdeer.strategy.console.v1.ActorRequest
@@ -3660,16 +3817,18 @@ var file_deer_proto_strategy_console_v1_console_proto_goTypes = []any{
 	(*InstrumentPage)(nil),        // 26: muskdeer.strategy.console.v1.InstrumentPage
 	(*Account)(nil),               // 27: muskdeer.strategy.console.v1.Account
 	(*AccountPage)(nil),           // 28: muskdeer.strategy.console.v1.AccountPage
-	(*OrderRecord)(nil),           // 29: muskdeer.strategy.console.v1.OrderRecord
-	(*OrderPage)(nil),             // 30: muskdeer.strategy.console.v1.OrderPage
-	(*Cancellation)(nil),          // 31: muskdeer.strategy.console.v1.Cancellation
-	(*CancellationPage)(nil),      // 32: muskdeer.strategy.console.v1.CancellationPage
-	(*SyntheticRecord)(nil),       // 33: muskdeer.strategy.console.v1.SyntheticRecord
-	(*SyntheticPage)(nil),         // 34: muskdeer.strategy.console.v1.SyntheticPage
-	(*AccountSnapshot)(nil),       // 35: muskdeer.strategy.console.v1.AccountSnapshot
-	(*ActiveOrder)(nil),           // 36: muskdeer.strategy.console.v1.ActiveOrder
-	(*Position)(nil),              // 37: muskdeer.strategy.console.v1.Position
-	(*LongGridParameters)(nil),    // 38: muskdeer.strategy.console.v1.LongGridParameters
+	(*AccountDraft)(nil),          // 29: muskdeer.strategy.console.v1.AccountDraft
+	(*CreateAccountRequest)(nil),  // 30: muskdeer.strategy.console.v1.CreateAccountRequest
+	(*OrderRecord)(nil),           // 31: muskdeer.strategy.console.v1.OrderRecord
+	(*OrderPage)(nil),             // 32: muskdeer.strategy.console.v1.OrderPage
+	(*Cancellation)(nil),          // 33: muskdeer.strategy.console.v1.Cancellation
+	(*CancellationPage)(nil),      // 34: muskdeer.strategy.console.v1.CancellationPage
+	(*SyntheticRecord)(nil),       // 35: muskdeer.strategy.console.v1.SyntheticRecord
+	(*SyntheticPage)(nil),         // 36: muskdeer.strategy.console.v1.SyntheticPage
+	(*AccountSnapshot)(nil),       // 37: muskdeer.strategy.console.v1.AccountSnapshot
+	(*ActiveOrder)(nil),           // 38: muskdeer.strategy.console.v1.ActiveOrder
+	(*Position)(nil),              // 39: muskdeer.strategy.console.v1.Position
+	(*LongGridParameters)(nil),    // 40: muskdeer.strategy.console.v1.LongGridParameters
 }
 var file_deer_proto_strategy_console_v1_console_proto_depIdxs = []int32{
 	0,  // 0: muskdeer.strategy.console.v1.ActorRequest.actor:type_name -> muskdeer.strategy.console.v1.Actor
@@ -3693,49 +3852,53 @@ var file_deer_proto_strategy_console_v1_console_proto_depIdxs = []int32{
 	22, // 18: muskdeer.strategy.console.v1.InstanceParameters.market_maker:type_name -> muskdeer.strategy.console.v1.DepthParameters
 	23, // 19: muskdeer.strategy.console.v1.InstanceParameters.grid:type_name -> muskdeer.strategy.console.v1.GridParameters
 	24, // 20: muskdeer.strategy.console.v1.InstanceParameters.wash_trade:type_name -> muskdeer.strategy.console.v1.WashParameters
-	38, // 21: muskdeer.strategy.console.v1.InstanceParameters.long_grid:type_name -> muskdeer.strategy.console.v1.LongGridParameters
+	40, // 21: muskdeer.strategy.console.v1.InstanceParameters.long_grid:type_name -> muskdeer.strategy.console.v1.LongGridParameters
 	25, // 22: muskdeer.strategy.console.v1.InstrumentPage.items:type_name -> muskdeer.strategy.console.v1.Instrument
 	27, // 23: muskdeer.strategy.console.v1.AccountPage.items:type_name -> muskdeer.strategy.console.v1.Account
-	29, // 24: muskdeer.strategy.console.v1.OrderPage.items:type_name -> muskdeer.strategy.console.v1.OrderRecord
-	31, // 25: muskdeer.strategy.console.v1.CancellationPage.items:type_name -> muskdeer.strategy.console.v1.Cancellation
-	33, // 26: muskdeer.strategy.console.v1.SyntheticPage.items:type_name -> muskdeer.strategy.console.v1.SyntheticRecord
-	36, // 27: muskdeer.strategy.console.v1.AccountSnapshot.orders:type_name -> muskdeer.strategy.console.v1.ActiveOrder
-	37, // 28: muskdeer.strategy.console.v1.AccountSnapshot.positions:type_name -> muskdeer.strategy.console.v1.Position
-	1,  // 29: muskdeer.strategy.console.v1.Console.GetOverview:input_type -> muskdeer.strategy.console.v1.ActorRequest
-	2,  // 30: muskdeer.strategy.console.v1.Console.ListTemplates:input_type -> muskdeer.strategy.console.v1.ListRequest
-	1,  // 31: muskdeer.strategy.console.v1.Console.ListGateways:input_type -> muskdeer.strategy.console.v1.ActorRequest
-	3,  // 32: muskdeer.strategy.console.v1.Console.ListInstances:input_type -> muskdeer.strategy.console.v1.InstanceListRequest
-	4,  // 33: muskdeer.strategy.console.v1.Console.GetInstance:input_type -> muskdeer.strategy.console.v1.InstanceRequest
-	5,  // 34: muskdeer.strategy.console.v1.Console.CreateInstance:input_type -> muskdeer.strategy.console.v1.CreateInstanceRequest
-	6,  // 35: muskdeer.strategy.console.v1.Console.UpdateInstance:input_type -> muskdeer.strategy.console.v1.UpdateInstanceRequest
-	7,  // 36: muskdeer.strategy.console.v1.Console.SetInstanceRunning:input_type -> muskdeer.strategy.console.v1.RunningRequest
-	2,  // 37: muskdeer.strategy.console.v1.Console.ListInstruments:input_type -> muskdeer.strategy.console.v1.ListRequest
-	2,  // 38: muskdeer.strategy.console.v1.Console.ListAccounts:input_type -> muskdeer.strategy.console.v1.ListRequest
-	9,  // 39: muskdeer.strategy.console.v1.Console.ListOrderRecords:input_type -> muskdeer.strategy.console.v1.RecordListRequest
-	9,  // 40: muskdeer.strategy.console.v1.Console.ListCancellations:input_type -> muskdeer.strategy.console.v1.RecordListRequest
-	9,  // 41: muskdeer.strategy.console.v1.Console.ListSyntheticRecords:input_type -> muskdeer.strategy.console.v1.RecordListRequest
-	8,  // 42: muskdeer.strategy.console.v1.Console.GetAccountSnapshot:input_type -> muskdeer.strategy.console.v1.AccountRequest
-	10, // 43: muskdeer.strategy.console.v1.Console.CancelInstanceOrders:input_type -> muskdeer.strategy.console.v1.CancelRequest
-	12, // 44: muskdeer.strategy.console.v1.Console.GetOverview:output_type -> muskdeer.strategy.console.v1.Overview
-	14, // 45: muskdeer.strategy.console.v1.Console.ListTemplates:output_type -> muskdeer.strategy.console.v1.TemplatePage
-	16, // 46: muskdeer.strategy.console.v1.Console.ListGateways:output_type -> muskdeer.strategy.console.v1.GatewayPage
-	19, // 47: muskdeer.strategy.console.v1.Console.ListInstances:output_type -> muskdeer.strategy.console.v1.InstancePage
-	17, // 48: muskdeer.strategy.console.v1.Console.GetInstance:output_type -> muskdeer.strategy.console.v1.Instance
-	17, // 49: muskdeer.strategy.console.v1.Console.CreateInstance:output_type -> muskdeer.strategy.console.v1.Instance
-	17, // 50: muskdeer.strategy.console.v1.Console.UpdateInstance:output_type -> muskdeer.strategy.console.v1.Instance
-	17, // 51: muskdeer.strategy.console.v1.Console.SetInstanceRunning:output_type -> muskdeer.strategy.console.v1.Instance
-	26, // 52: muskdeer.strategy.console.v1.Console.ListInstruments:output_type -> muskdeer.strategy.console.v1.InstrumentPage
-	28, // 53: muskdeer.strategy.console.v1.Console.ListAccounts:output_type -> muskdeer.strategy.console.v1.AccountPage
-	30, // 54: muskdeer.strategy.console.v1.Console.ListOrderRecords:output_type -> muskdeer.strategy.console.v1.OrderPage
-	32, // 55: muskdeer.strategy.console.v1.Console.ListCancellations:output_type -> muskdeer.strategy.console.v1.CancellationPage
-	34, // 56: muskdeer.strategy.console.v1.Console.ListSyntheticRecords:output_type -> muskdeer.strategy.console.v1.SyntheticPage
-	35, // 57: muskdeer.strategy.console.v1.Console.GetAccountSnapshot:output_type -> muskdeer.strategy.console.v1.AccountSnapshot
-	11, // 58: muskdeer.strategy.console.v1.Console.CancelInstanceOrders:output_type -> muskdeer.strategy.console.v1.CancelReply
-	44, // [44:59] is the sub-list for method output_type
-	29, // [29:44] is the sub-list for method input_type
-	29, // [29:29] is the sub-list for extension type_name
-	29, // [29:29] is the sub-list for extension extendee
-	0,  // [0:29] is the sub-list for field type_name
+	0,  // 24: muskdeer.strategy.console.v1.CreateAccountRequest.actor:type_name -> muskdeer.strategy.console.v1.Actor
+	29, // 25: muskdeer.strategy.console.v1.CreateAccountRequest.data:type_name -> muskdeer.strategy.console.v1.AccountDraft
+	31, // 26: muskdeer.strategy.console.v1.OrderPage.items:type_name -> muskdeer.strategy.console.v1.OrderRecord
+	33, // 27: muskdeer.strategy.console.v1.CancellationPage.items:type_name -> muskdeer.strategy.console.v1.Cancellation
+	35, // 28: muskdeer.strategy.console.v1.SyntheticPage.items:type_name -> muskdeer.strategy.console.v1.SyntheticRecord
+	38, // 29: muskdeer.strategy.console.v1.AccountSnapshot.orders:type_name -> muskdeer.strategy.console.v1.ActiveOrder
+	39, // 30: muskdeer.strategy.console.v1.AccountSnapshot.positions:type_name -> muskdeer.strategy.console.v1.Position
+	1,  // 31: muskdeer.strategy.console.v1.Console.GetOverview:input_type -> muskdeer.strategy.console.v1.ActorRequest
+	2,  // 32: muskdeer.strategy.console.v1.Console.ListTemplates:input_type -> muskdeer.strategy.console.v1.ListRequest
+	1,  // 33: muskdeer.strategy.console.v1.Console.ListGateways:input_type -> muskdeer.strategy.console.v1.ActorRequest
+	3,  // 34: muskdeer.strategy.console.v1.Console.ListInstances:input_type -> muskdeer.strategy.console.v1.InstanceListRequest
+	4,  // 35: muskdeer.strategy.console.v1.Console.GetInstance:input_type -> muskdeer.strategy.console.v1.InstanceRequest
+	5,  // 36: muskdeer.strategy.console.v1.Console.CreateInstance:input_type -> muskdeer.strategy.console.v1.CreateInstanceRequest
+	6,  // 37: muskdeer.strategy.console.v1.Console.UpdateInstance:input_type -> muskdeer.strategy.console.v1.UpdateInstanceRequest
+	7,  // 38: muskdeer.strategy.console.v1.Console.SetInstanceRunning:input_type -> muskdeer.strategy.console.v1.RunningRequest
+	2,  // 39: muskdeer.strategy.console.v1.Console.ListInstruments:input_type -> muskdeer.strategy.console.v1.ListRequest
+	2,  // 40: muskdeer.strategy.console.v1.Console.ListAccounts:input_type -> muskdeer.strategy.console.v1.ListRequest
+	30, // 41: muskdeer.strategy.console.v1.Console.CreateAccount:input_type -> muskdeer.strategy.console.v1.CreateAccountRequest
+	9,  // 42: muskdeer.strategy.console.v1.Console.ListOrderRecords:input_type -> muskdeer.strategy.console.v1.RecordListRequest
+	9,  // 43: muskdeer.strategy.console.v1.Console.ListCancellations:input_type -> muskdeer.strategy.console.v1.RecordListRequest
+	9,  // 44: muskdeer.strategy.console.v1.Console.ListSyntheticRecords:input_type -> muskdeer.strategy.console.v1.RecordListRequest
+	8,  // 45: muskdeer.strategy.console.v1.Console.GetAccountSnapshot:input_type -> muskdeer.strategy.console.v1.AccountRequest
+	10, // 46: muskdeer.strategy.console.v1.Console.CancelInstanceOrders:input_type -> muskdeer.strategy.console.v1.CancelRequest
+	12, // 47: muskdeer.strategy.console.v1.Console.GetOverview:output_type -> muskdeer.strategy.console.v1.Overview
+	14, // 48: muskdeer.strategy.console.v1.Console.ListTemplates:output_type -> muskdeer.strategy.console.v1.TemplatePage
+	16, // 49: muskdeer.strategy.console.v1.Console.ListGateways:output_type -> muskdeer.strategy.console.v1.GatewayPage
+	19, // 50: muskdeer.strategy.console.v1.Console.ListInstances:output_type -> muskdeer.strategy.console.v1.InstancePage
+	17, // 51: muskdeer.strategy.console.v1.Console.GetInstance:output_type -> muskdeer.strategy.console.v1.Instance
+	17, // 52: muskdeer.strategy.console.v1.Console.CreateInstance:output_type -> muskdeer.strategy.console.v1.Instance
+	17, // 53: muskdeer.strategy.console.v1.Console.UpdateInstance:output_type -> muskdeer.strategy.console.v1.Instance
+	17, // 54: muskdeer.strategy.console.v1.Console.SetInstanceRunning:output_type -> muskdeer.strategy.console.v1.Instance
+	26, // 55: muskdeer.strategy.console.v1.Console.ListInstruments:output_type -> muskdeer.strategy.console.v1.InstrumentPage
+	28, // 56: muskdeer.strategy.console.v1.Console.ListAccounts:output_type -> muskdeer.strategy.console.v1.AccountPage
+	27, // 57: muskdeer.strategy.console.v1.Console.CreateAccount:output_type -> muskdeer.strategy.console.v1.Account
+	32, // 58: muskdeer.strategy.console.v1.Console.ListOrderRecords:output_type -> muskdeer.strategy.console.v1.OrderPage
+	34, // 59: muskdeer.strategy.console.v1.Console.ListCancellations:output_type -> muskdeer.strategy.console.v1.CancellationPage
+	36, // 60: muskdeer.strategy.console.v1.Console.ListSyntheticRecords:output_type -> muskdeer.strategy.console.v1.SyntheticPage
+	37, // 61: muskdeer.strategy.console.v1.Console.GetAccountSnapshot:output_type -> muskdeer.strategy.console.v1.AccountSnapshot
+	11, // 62: muskdeer.strategy.console.v1.Console.CancelInstanceOrders:output_type -> muskdeer.strategy.console.v1.CancelReply
+	47, // [47:63] is the sub-list for method output_type
+	31, // [31:47] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_strategy_console_v1_console_proto_init() }
@@ -3755,7 +3918,7 @@ func file_deer_proto_strategy_console_v1_console_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_strategy_console_v1_console_proto_rawDesc), len(file_deer_proto_strategy_console_v1_console_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   39,
+			NumMessages:   41,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

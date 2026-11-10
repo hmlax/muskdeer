@@ -14,6 +14,7 @@ import (
 
 	"github.com/hmlax/muskdeer/deer/logging"
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
@@ -32,12 +33,13 @@ const (
 // connects to the administration database or provisions users/permissions.
 type Server struct {
 	pb.UnimplementedConsoleServer
-	db         *gorm.DB
-	factory    *rpcclient.Factory
-	logger     *logging.Logger
-	controls   bool
-	connection *configv1.VenueConnection
-	revisions  map[int64]int64
+	db               *gorm.DB
+	factory          *rpcclient.Factory
+	logger           *logging.Logger
+	controls         bool
+	connection       *configv1.VenueConnection
+	revisions        map[int64]int64
+	accountInspector func(context.Context, *common.VenueScope) (*common.VenueSnapshot, error)
 }
 
 // Dependencies borrows one database, logger and service-client owner.
