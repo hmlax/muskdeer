@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"strings"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -82,7 +82,7 @@ func (r *Runtime) Workers() []deer.Worker {
 	var result []deer.Worker
 	for _, profile := range r.cfg.Venue.Profiles {
 		result = append(result, deer.Worker{
-			Name: "portfolio.native." + strings.ToLower(profile.Symbol),
+			Name: "portfolio.native." + strconv.FormatInt(profile.UserId, 10) + "." + strconv.FormatInt(profile.FundId, 10),
 			Run: func(ctx context.Context) error {
 				failed := false
 				for ctx.Err() == nil {
