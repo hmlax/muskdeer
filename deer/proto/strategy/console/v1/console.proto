@@ -92,7 +92,7 @@ message RuntimeVersion { string service = 1; int64 revision = 2; bool available 
 message InstancePage { repeated Instance items = 1; uint64 total = 2; }
 message InstanceParameters {
  ExecutionParameters execution = 1;
- oneof algorithm { DepthParameters market_maker = 2; GridParameters grid = 3; WashParameters wash_trade = 4; }
+ oneof algorithm { DepthParameters market_maker = 2; GridParameters grid = 3; WashParameters wash_trade = 4; LongGridParameters long_grid = 5; }
 }
 message ExecutionParameters {
  int64 poll_interval_ms = 1; int64 operation_timeout_ms = 2;
@@ -161,4 +161,10 @@ message ActiveOrder {
 message Position {
  string symbol = 1; string signed_quantity = 2; string entry_price = 3;
  string leverage = 4;
+}
+
+message LongGridParameters {
+ string spacing_fraction = 1; string stop_loss_fraction = 2;
+ string order_notional = 3; string maximum_position_notional = 4;
+ bool open_on_start = 5; bool halt_after_stop_loss = 6;
 }

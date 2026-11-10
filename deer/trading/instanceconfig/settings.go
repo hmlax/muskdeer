@@ -42,6 +42,13 @@ func (i *Instance) Settings() (*venueconfig.RuntimeConfig, error) {
 		if p.LongGrid != nil {
 			policy.Depth = 1
 			settings.LongGrid = proto.CloneOf(p.LongGrid)
+			order, e1 := domain.ParseLedgerDecimal(i.Profile.MaximumOrderNotional, false, false)
+			maximum, e2 := domain.ParseLedgerDecimal(i.Profile.MaximumNotional, false, false)
+			requested, e3 := domain.ParseLedgerDecimal(p.LongGrid.OrderNotional, false, false)
+			requestedMax, e4 := domain.ParseLedgerDecimal(p.LongGrid.MaximumPositionNotional, false, false)
+			if e1 != nil || e2 != nil || e3 != nil || e4 != nil || requested.GreaterThan(order) || requestedMax.GreaterThan(maximum) {
+				return nil, ErrInvalid
+			}
 			break
 		}
 		policy.Depth = uint32(p.Grid.GridCount)

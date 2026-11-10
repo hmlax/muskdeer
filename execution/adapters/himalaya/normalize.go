@@ -14,7 +14,11 @@ import (
 // Normalize translates raw SDK integer ticks at the boundary and rejects
 // non-ONE_WAY/non-normal funds and positions outside the configured instrument.
 func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.VenueSnapshot, error) {
-	if err := validateNativeSnapshot(input, scope); err != nil {
+	return normalizeSDK(input, scope, false)
+}
+
+func normalizeSDK(input *SDKSnapshot, scope Scope, grid bool) (*commonv1.VenueSnapshot, error) {
+	if err := validateNativeSnapshotMode(input, scope, grid); err != nil {
 		return nil, err
 	}
 	market := input.Market.Market
@@ -36,6 +40,8 @@ func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.VenueSnapshot, error)
 			MarkPrice:       decimal.NewFromUint64(input.Market.Health.MarkPriceTicks).Shift(quote).String(),
 			MaximumLeverage: uint32(market.MaxLeverage),
 			WorstFeeRate:    decimal.Max(decimal.Zero, maker, taker).String(),
+			BestBid:         decimal.NewFromUint64(input.Market.Health.BestBidTicks).Shift(quote).String(),
+			BestAsk:         decimal.NewFromUint64(input.Market.Health.BestAskTicks).Shift(quote).String(),
 		},
 		Available:    input.Account.Available,
 		StartedAtMs:  input.StartedAt.UnixMilli(),
@@ -51,6 +57,9 @@ func Normalize(input *SDKSnapshot, scope Scope) (*commonv1.VenueSnapshot, error)
 	}
 	for _, row := range input.Orders {
 		order, err := normalizeOrder(row, scope, base)
+		if grid {
+			order, err = normalizeGridOrder(row, scope, base, result.Market.MarkPrice)
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -111,15 +120,20 @@ func normalizePosition(row *pb.PositionRow, scope Scope) (*commonv1.VenuePositio
 	return &commonv1.VenuePosition{
 		Symbol:         row.Symbol,
 		SignedQuantity: quantity.String(),
+		PositionId:     row.PositionId,
 		EntryPrice:     row.EntryPrice,
 		Leverage:       row.Leverage,
 	}, nil
 }
 
 func validateNativeSnapshot(input *SDKSnapshot, scope Scope) error {
+	return validateNativeSnapshotMode(input, scope, false)
+}
+
+func validateNativeSnapshotMode(input *SDKSnapshot, scope Scope, grid bool) error {
 	if scope.UserID <= 0 || scope.FundID <= 0 || !native.Symbol(scope.Symbol) || input == nil || input.Account == nil || input.Market == nil || input.Market.Market == nil ||
 		input.Account.UserId != scope.UserID || input.Account.FundId != scope.FundID ||
-		input.Account.PositionMode != pb.AccountPositionMode_ACCOUNT_POSITION_MODE_ONE_WAY || input.Account.Status != pb.AccountStatus_ACCOUNT_STATUS_NORMAL ||
+		!validGridAccountMode(input.Account.PositionMode, grid) || input.Account.Status != pb.AccountStatus_ACCOUNT_STATUS_NORMAL ||
 		!input.Market.GetHealth().GetOk() || input.Market.Market.Symbol != scope.Symbol {
 		return ErrInvalidSnapshot
 	}
@@ -145,4 +159,8 @@ func validNativeMarket(market *pb.MarketView) bool {
 		market.PriceTickTicks > 0 && market.BaseIncrement > 0 && market.Status == 1 &&
 		market.MaxLeverage > 0 && market.MaxLeverage <= 150 &&
 		market.BaseMinSize >= 0 && market.BaseMaxSize >= 0 && market.QuoteMinSize >= 0
+}
+
+func validGridAccountMode(mode pb.AccountPositionMode, grid bool) bool {
+	return mode == pb.AccountPositionMode_ACCOUNT_POSITION_MODE_ONE_WAY || grid && mode == pb.AccountPositionMode_ACCOUNT_POSITION_MODE_HEDGE_DUAL_SINGLE
 }

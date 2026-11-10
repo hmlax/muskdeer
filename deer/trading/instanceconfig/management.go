@@ -152,6 +152,9 @@ func applyManagement(ctx context.Context, tx *gorm.DB, row *model.StrategyInstan
 			return err
 		}
 	case ManagementUpdate:
+		if err := guardLongGridEdit(ctx, tx, row); err != nil {
+			return err
+		}
 		if row.DesiredRunning || row.Revision == math.MaxInt64 || command.Input == nil {
 			return ErrConflict
 		}

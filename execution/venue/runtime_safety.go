@@ -208,6 +208,14 @@ func (r *Runtime) protectObserved(ctx context.Context, profile *commonv1.VenuePr
 }
 
 func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
+	if r.cfg.LongGrid != nil {
+		_, snapshot, err := r.read(ctx, profile)
+		if err != nil {
+			return err
+		}
+		_, err = r.cancelGridOrders(ctx, snapshot)
+		return err
+	}
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return err

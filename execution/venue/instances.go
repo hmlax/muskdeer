@@ -128,6 +128,11 @@ func (r *Instances) run(ctx context.Context) (result error) {
 				return ErrInvalidConfig
 			}
 		}
+		if child.cfg.LongGrid != nil {
+			if _, ok := client.(gateway.LongGridClient); !ok {
+				return ErrInvalidConfig
+			}
+		}
 		if child.cfg.Template == domain.StrategyTemplateWashTrade {
 			if _, ok := client.(gateway.WashClient); !ok {
 				return ErrInvalidConfig
@@ -167,6 +172,9 @@ func (r *Instances) run(ctx context.Context) (result error) {
 }
 
 func (r *Runtime) maintainInstance(ctx context.Context) error {
+	if r.cfg.LongGrid != nil {
+		return r.maintainLongGrid(ctx)
+	}
 	if r.cfg.Template == domain.StrategyTemplateWashTrade {
 		<-ctx.Done()
 		return ctx.Err()

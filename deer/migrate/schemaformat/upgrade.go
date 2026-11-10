@@ -71,13 +71,13 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 			return err
 		}
 		var rows []*model.SchemaMigration
-		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(7).Find(&rows).Error; err != nil {
+		if err := schemaDB(ctx, tx).Model(&model.SchemaMigration{}).Order("version").Limit(8).Find(&rows).Error; err != nil {
 			return err
 		}
 		if Match(rows) {
 			return nil
 		}
-		if !matchMatching(rows) && !matchReservation(rows) && !matchConsole(rows) && !matchUnlimited(rows) && (len(rows) != 1 || !matchBaseline(rows[0])) {
+		if !supportedUpgradeHistory(rows) {
 			return ErrHistory
 		}
 		var active int64
@@ -138,7 +138,12 @@ func Upgrade(ctx context.Context, db *gorm.DB) error {
 				return err
 			}
 		}
-		return upgradeLongGrid(ctx, tx)
+		if len(rows) < 6 {
+			if err := upgradeLongGrid(ctx, tx); err != nil {
+				return err
+			}
+		}
+		return upgradeLongGridParameters(ctx, tx)
 
 	})
 }
@@ -148,4 +153,8 @@ func schemaDB(ctx context.Context, db *gorm.DB) *gorm.DB {
 		NewDB:   true,
 		Context: ctx,
 	})
+}
+
+func supportedUpgradeHistory(rows []*model.SchemaMigration) bool {
+	return matchLongGrid(rows) || matchMatching(rows) || matchReservation(rows) || matchConsole(rows) || matchUnlimited(rows) || len(rows) == 1 && matchBaseline(rows[0])
 }

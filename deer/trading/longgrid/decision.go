@@ -99,7 +99,11 @@ func Decide(r Rules, lots *common.LongGridLots, nextBuy decimal.Decimal, started
 	if err != nil {
 		return Decision{}, err
 	}
-	if quantity.IsPositive() && (stopping || mark.LessThanOrEqual(entry.Mul(decimal.NewFromInt(1).Sub(r.Stop)))) {
+	stopPrice := mark
+	if bid, err := native.Value(bidText, false, false); err == nil {
+		stopPrice = bid
+	}
+	if quantity.IsPositive() && (stopping || stopPrice.LessThanOrEqual(entry.Mul(decimal.NewFromInt(1).Sub(r.Stop)))) {
 		return Decision{
 			Kind:       StopLoss,
 			Side:       domain.SideSell,

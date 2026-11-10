@@ -119,6 +119,18 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
+	if cfg.LongGrid != nil {
+		conn, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceExecution})
+		if err != nil {
+			return err
+		}
+		_, err = executionvenuev1.NewExecutionClient(conn).EvaluateLongGrid(ctx, &executionvenuev1.LongGridRequest{
+			StrategyInstanceId: cfg.InstanceID,
+			StrategyRevision:   cfg.Revision,
+			Book:               book,
+		})
+		return err
+	}
 	portfolio, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServicePortfolio})
 	if err != nil {
 		return err

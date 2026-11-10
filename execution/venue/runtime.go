@@ -250,7 +250,17 @@ func (r *Runtime) read(ctx context.Context, profile *commonv1.VenueProfilePolicy
 		FundID: profile.FundId,
 		Symbol: profile.Symbol,
 	}
-	raw, err := r.client.Load().Read(ctx, scope)
+	var raw *gateway.Observation
+	var err error
+	if r.cfg.LongGrid != nil {
+		client, ok := r.client.Load().Client.(gateway.LongGridClient)
+		if !ok {
+			return nil, nil, ErrInvalidConfig
+		}
+		raw, err = client.ReadGrid(ctx, scope)
+	} else {
+		raw, err = r.client.Load().Read(ctx, scope)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -274,6 +284,10 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
 		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
 	}
+	if r.cfg.LongGrid != nil {
+		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
+	}
+
 	profile, err := native.Profile(r.cfg.Venue, plan.GetScope())
 	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > r.maximumTargets() || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)

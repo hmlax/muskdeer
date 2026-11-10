@@ -36,6 +36,16 @@ func parametersToWire(p *common.StrategyInstanceParameters) *pb.InstanceParamete
 			ReplacementFraction: v.ReplacementFraction,
 			BridgeSlots:         v.BridgeSlots,
 		}}
+	case p.LongGrid != nil:
+		v := p.LongGrid
+		result.Algorithm = &pb.InstanceParameters_LongGrid{LongGrid: &pb.LongGridParameters{
+			SpacingFraction:         v.SpacingFraction,
+			StopLossFraction:        v.StopLossFraction,
+			OrderNotional:           v.OrderNotional,
+			MaximumPositionNotional: v.MaximumPositionNotional,
+			OpenOnStart:             v.OpenOnStart,
+			HaltAfterStopLoss:       v.HaltAfterStopLoss,
+		}}
 	case p.Grid != nil:
 		v := p.Grid
 		result.Algorithm = &pb.InstanceParameters_Grid{Grid: &pb.GridParameters{
@@ -91,6 +101,18 @@ func parametersFromWire(p *pb.InstanceParameters) (*common.StrategyInstanceParam
 			QuantityFraction:    v.MarketMaker.QuantityFraction,
 			ReplacementFraction: v.MarketMaker.ReplacementFraction,
 			BridgeSlots:         v.MarketMaker.BridgeSlots,
+		}
+	case *pb.InstanceParameters_LongGrid:
+		if v.LongGrid == nil {
+			return nil, status.Error(codes.InvalidArgument, messageInvalid)
+		}
+		result.LongGrid = &common.LongGridParameters{
+			SpacingFraction:         v.LongGrid.SpacingFraction,
+			StopLossFraction:        v.LongGrid.StopLossFraction,
+			OrderNotional:           v.LongGrid.OrderNotional,
+			MaximumPositionNotional: v.LongGrid.MaximumPositionNotional,
+			OpenOnStart:             v.LongGrid.OpenOnStart,
+			HaltAfterStopLoss:       v.LongGrid.HaltAfterStopLoss,
 		}
 	case *pb.InstanceParameters_Grid:
 		if v.Grid == nil {

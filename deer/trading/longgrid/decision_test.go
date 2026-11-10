@@ -125,3 +125,16 @@ func TestLongGridOnePercentBuybackAndFixedNotional(t *testing.T) {
 		t.Fatalf("above grid trigger: %+v, %v", decision, err)
 	}
 }
+
+func TestFreshSelectedBidStopsBeforeAddEvenIfVenueMarkHasNotMoved(t *testing.T) {
+	snapshot := testSnapshot("1", "100", "100")
+	lots := &common.LongGridLots{Items: []*common.LongGridLot{{
+		Sequence:   1,
+		EntryPrice: "100",
+		Quantity:   "1",
+	}}}
+	decision, err := Decide(testRules(), lots, decimal.NewFromInt(99), true, snapshot, "99.4", "99.5", true, false)
+	if err != nil || decision.Kind != StopLoss {
+		t.Fatalf("fresh selected source was ignored: %+v, %v", decision, err)
+	}
+}

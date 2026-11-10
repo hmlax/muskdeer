@@ -62,7 +62,7 @@ func TestLongGridUpgradePreservesFiveLedgerRowsAndExistingTemplates(t *testing.T
 	if err := db.WithContext(ctx).Model(&model.SchemaMigration{}).Order("version").Find(&after).Error; err != nil {
 		t.Fatal(err)
 	}
-	if len(after) != 6 {
+	if len(after) != 7 {
 		t.Fatalf("ledger length %d", len(after))
 	}
 	for index, old := range before {

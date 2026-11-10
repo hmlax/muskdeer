@@ -45,7 +45,7 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 		}
 		key := native.ScopeKey(instance.Profile.UserId, instance.Profile.FundId)
 		if child := parent.children[key]; child != nil {
-			child.memoryOnly = child.memoryOnly || instance.Type == domain.StrategyTemplateMarketMaker
+			child.memoryOnly = child.memoryOnly || (instance.Type == domain.StrategyTemplateMarketMaker || settings.LongGrid != nil)
 			if child.cfg.Venue.Profiles[0].Symbol != instance.Profile.Symbol {
 				return nil, instanceconfig.ErrInvalid
 			}
@@ -61,7 +61,7 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 			cfg:        settings,
 			factory:    factory,
 			logger:     logger,
-			memoryOnly: instance.Type == domain.StrategyTemplateMarketMaker,
+			memoryOnly: (instance.Type == domain.StrategyTemplateMarketMaker || settings.LongGrid != nil),
 		}
 	}
 	return parent, nil

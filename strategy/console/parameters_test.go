@@ -45,3 +45,39 @@ func TestTypedParametersPreservePrecisionAndUnlimitedZero(t *testing.T) {
 		t.Fatal("unknown wash mode silently changed")
 	}
 }
+
+func TestLongGridConcreteParametersRoundtrip(t *testing.T) {
+	p := &common.StrategyInstanceParameters{
+		SchemaVersion: 1,
+		Execution: &common.StrategyExecutionParameters{
+			PollIntervalMs:     200,
+			OperationTimeoutMs: 2000,
+			LeaseTtlMs:         10000,
+			Leverage:           10,
+		},
+		LongGrid: &common.LongGridParameters{
+			SpacingFraction:         "0.01",
+			StopLossFraction:        "0.005",
+			OrderNotional:           "100",
+			MaximumPositionNotional: "100",
+			OpenOnStart:             true,
+			HaltAfterStopLoss:       true,
+		},
+	}
+	input := parametersToWire(p)
+	encoded, err := proto.Marshal(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var decoded pb.InstanceParameters
+	if err := proto.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	output, err := parametersFromWire(&decoded)
+	if err != nil || !proto.Equal(p, output) {
+		t.Fatalf("long grid lost typed fields: %v, %v", output, err)
+	}
+	if err := instanceconfig.Validate(domain.StrategyTemplateGrid, instanceconfig.ImplementationLongGrid, output); err != nil {
+		t.Fatal(err)
+	}
+}
