@@ -19,6 +19,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
 // ErrNotFound distinguishes a missing cache entry from dependency failure.
@@ -95,6 +96,7 @@ func New(ctx context.Context, cfg *configv1.Redis, application string) (*Client,
 			Mode: maintnotifications.ModeDisabled,
 		},
 	})
+	conn.AddHook(tracing.RedisHook{})
 	client := &Client{
 		conn:    conn,
 		prefix:  cfg.KeyPrefix,

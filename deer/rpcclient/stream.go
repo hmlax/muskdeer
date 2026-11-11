@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 
+	"github.com/hmlax/muskdeer/deer/tracing"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/connectivity"
@@ -57,6 +58,7 @@ func (f *Factory) Subscribe(ctx context.Context, target Target, consume func(con
 	conn, err := grpc.NewClient("passthrough:///"+instance.Address,
 		grpc.WithTransportCredentials(credentials.NewTLS(f.security[target.Service])),
 		grpc.WithNoProxy(), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(),
+		grpc.WithStatsHandler(tracing.ClientHandler(f.provider)),
 		grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "tcp", address)
 		}),

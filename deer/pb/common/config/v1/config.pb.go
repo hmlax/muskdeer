@@ -973,6 +973,7 @@ type ServiceSettings struct {
 	Monitoring      *Listener              `protobuf:"bytes,15,opt,name=monitoring,proto3" json:"monitoring,omitempty"`
 	AdminHttp       *AdminHTTP             `protobuf:"bytes,17,opt,name=admin_http,json=adminHttp,proto3" json:"admin_http,omitempty"`
 	DataSha256      string                 `protobuf:"bytes,18,opt,name=data_sha256,json=dataSha256,proto3" json:"data_sha256,omitempty"`
+	Tracing         *Tracing               `protobuf:"bytes,19,opt,name=tracing,proto3" json:"tracing,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1105,6 +1106,13 @@ func (x *ServiceSettings) GetDataSha256() string {
 	return ""
 }
 
+func (x *ServiceSettings) GetTracing() *Tracing {
+	if x != nil {
+		return x.Tracing
+	}
+	return nil
+}
+
 // ServiceConfig is the composed in-memory Deer snapshot, never a source document.
 type ServiceConfig struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
@@ -1129,6 +1137,7 @@ type ServiceConfig struct {
 	// Explicit management HTTP opt-in. No identity is provisioned at startup.
 	AdminHttp       *AdminHTTP       `protobuf:"bytes,17,opt,name=admin_http,json=adminHttp,proto3" json:"admin_http,omitempty"`
 	VenueConnection *VenueConnection `protobuf:"bytes,18,opt,name=venue_connection,json=venueConnection,proto3" json:"venue_connection,omitempty"`
+	Tracing         *Tracing         `protobuf:"bytes,19,opt,name=tracing,proto3" json:"tracing,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1285,6 +1294,13 @@ func (x *ServiceConfig) GetAdminHttp() *AdminHTTP {
 func (x *ServiceConfig) GetVenueConnection() *VenueConnection {
 	if x != nil {
 		return x.VenueConnection
+	}
+	return nil
+}
+
+func (x *ServiceConfig) GetTracing() *Tracing {
+	if x != nil {
+		return x.Tracing
 	}
 	return nil
 }
@@ -2422,6 +2438,91 @@ func (x *RuntimePolicyInput) GetParameters() *BusinessRuntime {
 	return nil
 }
 
+// Tracing exports bounded asynchronous OTLP/gRPC spans; env only bootstraps Nacos.
+type Tracing struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Enabled            bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Endpoint           string                 `protobuf:"bytes,2,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Insecure           bool                   `protobuf:"varint,3,opt,name=insecure,proto3" json:"insecure,omitempty"`
+	RootCertFile       string                 `protobuf:"bytes,4,opt,name=root_cert_file,json=rootCertFile,proto3" json:"root_cert_file,omitempty"`
+	SamplingPerMillion uint32                 `protobuf:"varint,5,opt,name=sampling_per_million,json=samplingPerMillion,proto3" json:"sampling_per_million,omitempty"`
+	ExportTimeout      *durationpb.Duration   `protobuf:"bytes,6,opt,name=export_timeout,json=exportTimeout,proto3" json:"export_timeout,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *Tracing) Reset() {
+	*x = Tracing{}
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Tracing) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Tracing) ProtoMessage() {}
+
+func (x *Tracing) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_common_config_v1_config_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Tracing.ProtoReflect.Descriptor instead.
+func (*Tracing) Descriptor() ([]byte, []int) {
+	return file_deer_proto_common_config_v1_config_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *Tracing) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *Tracing) GetEndpoint() string {
+	if x != nil {
+		return x.Endpoint
+	}
+	return ""
+}
+
+func (x *Tracing) GetInsecure() bool {
+	if x != nil {
+		return x.Insecure
+	}
+	return false
+}
+
+func (x *Tracing) GetRootCertFile() string {
+	if x != nil {
+		return x.RootCertFile
+	}
+	return ""
+}
+
+func (x *Tracing) GetSamplingPerMillion() uint32 {
+	if x != nil {
+		return x.SamplingPerMillion
+	}
+	return 0
+}
+
+func (x *Tracing) GetExportTimeout() *durationpb.Duration {
+	if x != nil {
+		return x.ExportTimeout
+	}
+	return nil
+}
+
 var File_deer_proto_common_config_v1_config_proto protoreflect.FileDescriptor
 
 const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
@@ -2519,7 +2620,7 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\fmax_lifetime\x18\v \x01(\v2\x19.google.protobuf.DurationR\vmaxLifetime\x12=\n" +
 	"\rmax_idle_time\x18\f \x01(\v2\x19.google.protobuf.DurationR\vmaxIdleTime\x12B\n" +
 	"\x0fconnect_timeout\x18\r \x01(\v2\x19.google.protobuf.DurationR\x0econnectTimeout\x12F\n" +
-	"\x11statement_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x10statementTimeout\"\xfe\x05\n" +
+	"\x11statement_timeout\x18\x0e \x01(\v2\x19.google.protobuf.DurationR\x10statementTimeout\"\xb5\x06\n" +
 	"\x0fServiceSettings\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -2539,7 +2640,8 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\n" +
 	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\x12\x1f\n" +
 	"\vdata_sha256\x18\x12 \x01(\tR\n" +
-	"dataSha256\"\xfa\a\n" +
+	"dataSha256\x125\n" +
+	"\atracing\x18\x13 \x01(\v2\x1b.muskdeer.config.v1.TracingR\atracing\"\xb1\b\n" +
 	"\rServiceConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1f\n" +
 	"\vinstance_id\x18\x02 \x01(\tR\n" +
@@ -2563,7 +2665,8 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\bbusiness\x18\x10 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\bbusiness\x12<\n" +
 	"\n" +
 	"admin_http\x18\x11 \x01(\v2\x1d.muskdeer.config.v1.AdminHTTPR\tadminHttp\x12N\n" +
-	"\x10venue_connection\x18\x12 \x01(\v2#.muskdeer.config.v1.VenueConnectionR\x0fvenueConnection\"\xb2\x02\n" +
+	"\x10venue_connection\x18\x12 \x01(\v2#.muskdeer.config.v1.VenueConnectionR\x0fvenueConnection\x125\n" +
+	"\atracing\x18\x13 \x01(\v2\x1b.muskdeer.config.v1.TracingR\atracing\"\xb2\x02\n" +
 	"\tAdminHTTP\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12#\n" +
 	"\rpublic_origin\x18\x02 \x01(\tR\fpublicOrigin\x126\n" +
@@ -2654,7 +2757,14 @@ const file_deer_proto_common_config_v1_config_proto_rawDesc = "" +
 	"\x11expected_revision\x18\x02 \x01(\x03R\x10expectedRevision\x12C\n" +
 	"\n" +
 	"parameters\x18\x03 \x01(\v2#.muskdeer.config.v1.BusinessRuntimeR\n" +
-	"parameters*T\n" +
+	"parameters\"\xf5\x01\n" +
+	"\aTracing\x12\x18\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x1a\n" +
+	"\bendpoint\x18\x02 \x01(\tR\bendpoint\x12\x1a\n" +
+	"\binsecure\x18\x03 \x01(\bR\binsecure\x12$\n" +
+	"\x0eroot_cert_file\x18\x04 \x01(\tR\frootCertFile\x120\n" +
+	"\x14sampling_per_million\x18\x05 \x01(\rR\x12samplingPerMillion\x12@\n" +
+	"\x0eexport_timeout\x18\x06 \x01(\v2\x19.google.protobuf.DurationR\rexportTimeout*T\n" +
 	"\x11SyntheticTapeMode\x12\x1c\n" +
 	"\x18SYNTHETIC_TAPE_MODE_BOOK\x10\x00\x12!\n" +
 	"\x1dSYNTHETIC_TAPE_MODE_AGG_TRADE\x10\x01B=Z;github.com/hmlax/muskdeer/deer/pb/common/config/v1;configv1b\x06proto3"
@@ -2672,7 +2782,7 @@ func file_deer_proto_common_config_v1_config_proto_rawDescGZIP() []byte {
 }
 
 var file_deer_proto_common_config_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_deer_proto_common_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_deer_proto_common_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_deer_proto_common_config_v1_config_proto_goTypes = []any{
 	(SyntheticTapeMode)(0),           // 0: muskdeer.config.v1.SyntheticTapeMode
 	(*DataConfig)(nil),               // 1: muskdeer.config.v1.DataConfig
@@ -2702,39 +2812,40 @@ var file_deer_proto_common_config_v1_config_proto_goTypes = []any{
 	(*VenueConnection)(nil),          // 25: muskdeer.config.v1.VenueConnection
 	(*RuntimePolicyImport)(nil),      // 26: muskdeer.config.v1.RuntimePolicyImport
 	(*RuntimePolicyInput)(nil),       // 27: muskdeer.config.v1.RuntimePolicyInput
-	(*durationpb.Duration)(nil),      // 28: google.protobuf.Duration
+	(*Tracing)(nil),                  // 28: muskdeer.config.v1.Tracing
+	(*durationpb.Duration)(nil),      // 29: google.protobuf.Duration
 }
 var file_deer_proto_common_config_v1_config_proto_depIdxs = []int32{
 	8,  // 0: muskdeer.config.v1.DataConfig.postgres:type_name -> muskdeer.config.v1.Postgres
 	7,  // 1: muskdeer.config.v1.DataConfig.redis:type_name -> muskdeer.config.v1.Redis
 	6,  // 2: muskdeer.config.v1.DataConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
 	25, // 3: muskdeer.config.v1.DataConfig.venue_connection:type_name -> muskdeer.config.v1.VenueConnection
-	28, // 4: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
-	28, // 5: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
+	29, // 4: muskdeer.config.v1.BusinessRuntime.poll_interval:type_name -> google.protobuf.Duration
+	29, // 5: muskdeer.config.v1.BusinessRuntime.operation_timeout:type_name -> google.protobuf.Duration
 	20, // 6: muskdeer.config.v1.BusinessRuntime.market:type_name -> muskdeer.config.v1.MarketRuntime
 	24, // 7: muskdeer.config.v1.BusinessRuntime.risk:type_name -> muskdeer.config.v1.RiskRuntime
-	28, // 8: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
+	29, // 8: muskdeer.config.v1.BusinessRuntime.execution_lease_ttl:type_name -> google.protobuf.Duration
 	23, // 9: muskdeer.config.v1.BusinessRuntime.simulator:type_name -> muskdeer.config.v1.SimulatorScenarioRuntime
 	22, // 10: muskdeer.config.v1.BusinessRuntime.strategy:type_name -> muskdeer.config.v1.StrategyRuntime
 	3,  // 11: muskdeer.config.v1.BusinessRuntime.venue:type_name -> muskdeer.config.v1.VenueRuntime
-	28, // 12: muskdeer.config.v1.VenueRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	29, // 12: muskdeer.config.v1.VenueRuntime.lease_ttl:type_name -> google.protobuf.Duration
 	4,  // 13: muskdeer.config.v1.VenueRuntime.synthetic_tape:type_name -> muskdeer.config.v1.SyntheticTape
-	28, // 14: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
+	29, // 14: muskdeer.config.v1.SyntheticTape.interval:type_name -> google.protobuf.Duration
 	5,  // 15: muskdeer.config.v1.SyntheticTape.profiles:type_name -> muskdeer.config.v1.SyntheticTapeProfile
 	0,  // 16: muskdeer.config.v1.SyntheticTape.mode:type_name -> muskdeer.config.v1.SyntheticTapeMode
-	28, // 17: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
-	28, // 18: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
-	28, // 19: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
-	28, // 20: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
-	28, // 21: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
-	28, // 22: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
-	28, // 23: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
-	28, // 24: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
-	28, // 25: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
-	28, // 26: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
-	28, // 27: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
-	28, // 28: muskdeer.config.v1.ServiceSettings.startup_timeout:type_name -> google.protobuf.Duration
-	28, // 29: muskdeer.config.v1.ServiceSettings.shutdown_timeout:type_name -> google.protobuf.Duration
+	29, // 17: muskdeer.config.v1.JetStream.connect_timeout:type_name -> google.protobuf.Duration
+	29, // 18: muskdeer.config.v1.JetStream.command_timeout:type_name -> google.protobuf.Duration
+	29, // 19: muskdeer.config.v1.Redis.connect_timeout:type_name -> google.protobuf.Duration
+	29, // 20: muskdeer.config.v1.Redis.command_timeout:type_name -> google.protobuf.Duration
+	29, // 21: muskdeer.config.v1.Redis.pool_timeout:type_name -> google.protobuf.Duration
+	29, // 22: muskdeer.config.v1.Redis.max_idle_time:type_name -> google.protobuf.Duration
+	29, // 23: muskdeer.config.v1.Redis.max_lifetime:type_name -> google.protobuf.Duration
+	29, // 24: muskdeer.config.v1.Postgres.max_lifetime:type_name -> google.protobuf.Duration
+	29, // 25: muskdeer.config.v1.Postgres.max_idle_time:type_name -> google.protobuf.Duration
+	29, // 26: muskdeer.config.v1.Postgres.connect_timeout:type_name -> google.protobuf.Duration
+	29, // 27: muskdeer.config.v1.Postgres.statement_timeout:type_name -> google.protobuf.Duration
+	29, // 28: muskdeer.config.v1.ServiceSettings.startup_timeout:type_name -> google.protobuf.Duration
+	29, // 29: muskdeer.config.v1.ServiceSettings.shutdown_timeout:type_name -> google.protobuf.Duration
 	19, // 30: muskdeer.config.v1.ServiceSettings.grpc:type_name -> muskdeer.config.v1.Listener
 	19, // 31: muskdeer.config.v1.ServiceSettings.http:type_name -> muskdeer.config.v1.Listener
 	17, // 32: muskdeer.config.v1.ServiceSettings.logging:type_name -> muskdeer.config.v1.Logging
@@ -2743,43 +2854,46 @@ var file_deer_proto_common_config_v1_config_proto_depIdxs = []int32{
 	12, // 35: muskdeer.config.v1.ServiceSettings.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
 	19, // 36: muskdeer.config.v1.ServiceSettings.monitoring:type_name -> muskdeer.config.v1.Listener
 	11, // 37: muskdeer.config.v1.ServiceSettings.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	28, // 38: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
-	28, // 39: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
-	19, // 40: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
-	19, // 41: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
-	17, // 42: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
-	8,  // 43: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
-	7,  // 44: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
-	6,  // 45: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
-	15, // 46: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
-	14, // 47: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
-	12, // 48: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
-	19, // 49: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
-	2,  // 50: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
-	11, // 51: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
-	25, // 52: muskdeer.config.v1.ServiceConfig.venue_connection:type_name -> muskdeer.config.v1.VenueConnection
-	13, // 53: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	28, // 54: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
-	28, // 55: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
-	13, // 56: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
-	28, // 57: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
-	28, // 58: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
-	16, // 59: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
-	28, // 60: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
-	18, // 61: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
-	28, // 62: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
-	21, // 63: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
-	28, // 64: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	28, // 65: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
-	28, // 66: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
-	28, // 67: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
-	27, // 68: muskdeer.config.v1.RuntimePolicyImport.policies:type_name -> muskdeer.config.v1.RuntimePolicyInput
-	2,  // 69: muskdeer.config.v1.RuntimePolicyInput.parameters:type_name -> muskdeer.config.v1.BusinessRuntime
-	70, // [70:70] is the sub-list for method output_type
-	70, // [70:70] is the sub-list for method input_type
-	70, // [70:70] is the sub-list for extension type_name
-	70, // [70:70] is the sub-list for extension extendee
-	0,  // [0:70] is the sub-list for field type_name
+	28, // 38: muskdeer.config.v1.ServiceSettings.tracing:type_name -> muskdeer.config.v1.Tracing
+	29, // 39: muskdeer.config.v1.ServiceConfig.startup_timeout:type_name -> google.protobuf.Duration
+	29, // 40: muskdeer.config.v1.ServiceConfig.shutdown_timeout:type_name -> google.protobuf.Duration
+	19, // 41: muskdeer.config.v1.ServiceConfig.grpc:type_name -> muskdeer.config.v1.Listener
+	19, // 42: muskdeer.config.v1.ServiceConfig.http:type_name -> muskdeer.config.v1.Listener
+	17, // 43: muskdeer.config.v1.ServiceConfig.logging:type_name -> muskdeer.config.v1.Logging
+	8,  // 44: muskdeer.config.v1.ServiceConfig.postgres:type_name -> muskdeer.config.v1.Postgres
+	7,  // 45: muskdeer.config.v1.ServiceConfig.redis:type_name -> muskdeer.config.v1.Redis
+	6,  // 46: muskdeer.config.v1.ServiceConfig.jetstream:type_name -> muskdeer.config.v1.JetStream
+	15, // 47: muskdeer.config.v1.ServiceConfig.nacos:type_name -> muskdeer.config.v1.Nacos
+	14, // 48: muskdeer.config.v1.ServiceConfig.grpc_security:type_name -> muskdeer.config.v1.GRPCServerSecurity
+	12, // 49: muskdeer.config.v1.ServiceConfig.grpc_clients:type_name -> muskdeer.config.v1.GRPCClients
+	19, // 50: muskdeer.config.v1.ServiceConfig.monitoring:type_name -> muskdeer.config.v1.Listener
+	2,  // 51: muskdeer.config.v1.ServiceConfig.business:type_name -> muskdeer.config.v1.BusinessRuntime
+	11, // 52: muskdeer.config.v1.ServiceConfig.admin_http:type_name -> muskdeer.config.v1.AdminHTTP
+	25, // 53: muskdeer.config.v1.ServiceConfig.venue_connection:type_name -> muskdeer.config.v1.VenueConnection
+	28, // 54: muskdeer.config.v1.ServiceConfig.tracing:type_name -> muskdeer.config.v1.Tracing
+	13, // 55: muskdeer.config.v1.GRPCClients.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	29, // 56: muskdeer.config.v1.GRPCClients.connect_timeout:type_name -> google.protobuf.Duration
+	29, // 57: muskdeer.config.v1.GRPCClients.request_timeout:type_name -> google.protobuf.Duration
+	13, // 58: muskdeer.config.v1.GRPCServerSecurity.mtls:type_name -> muskdeer.config.v1.MutualTLS
+	29, // 59: muskdeer.config.v1.Nacos.connect_timeout:type_name -> google.protobuf.Duration
+	29, // 60: muskdeer.config.v1.Nacos.command_timeout:type_name -> google.protobuf.Duration
+	16, // 61: muskdeer.config.v1.Nacos.registration:type_name -> muskdeer.config.v1.NacosRegistration
+	29, // 62: muskdeer.config.v1.NacosRegistration.heartbeat_interval:type_name -> google.protobuf.Duration
+	18, // 63: muskdeer.config.v1.Logging.file:type_name -> muskdeer.config.v1.LogFile
+	29, // 64: muskdeer.config.v1.Listener.request_timeout:type_name -> google.protobuf.Duration
+	21, // 65: muskdeer.config.v1.MarketRuntime.feeds:type_name -> muskdeer.config.v1.MarketFeedRuntime
+	29, // 66: muskdeer.config.v1.MarketRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	29, // 67: muskdeer.config.v1.MarketFeedRuntime.replay_interval:type_name -> google.protobuf.Duration
+	29, // 68: muskdeer.config.v1.StrategyRuntime.lease_ttl:type_name -> google.protobuf.Duration
+	29, // 69: muskdeer.config.v1.SimulatorScenarioRuntime.cancel_delay:type_name -> google.protobuf.Duration
+	27, // 70: muskdeer.config.v1.RuntimePolicyImport.policies:type_name -> muskdeer.config.v1.RuntimePolicyInput
+	2,  // 71: muskdeer.config.v1.RuntimePolicyInput.parameters:type_name -> muskdeer.config.v1.BusinessRuntime
+	29, // 72: muskdeer.config.v1.Tracing.export_timeout:type_name -> google.protobuf.Duration
+	73, // [73:73] is the sub-list for method output_type
+	73, // [73:73] is the sub-list for method input_type
+	73, // [73:73] is the sub-list for extension type_name
+	73, // [73:73] is the sub-list for extension extendee
+	0,  // [0:73] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_common_config_v1_config_proto_init() }
@@ -2796,7 +2910,7 @@ func file_deer_proto_common_config_v1_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_common_config_v1_config_proto_rawDesc), len(file_deer_proto_common_config_v1_config_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   27,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

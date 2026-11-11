@@ -76,7 +76,7 @@ Go 命令统一通过 `python3 scripts/go.py` 使用固定工具链；例如 `py
 - [Deer 与依赖所有权](docs/DEER.md)
 - [Wire 装配](docs/WIRING.md)
 - [Proto 与模型规范](docs/PROTO_AND_MODEL.md)
-- [Nacos 配置](docs/NACOS_CONFIG.md)
+- [Nacos 配置与 Jaeger 追踪](docs/NACOS_CONFIG.md)
 - [交易与接口合同](docs/TRADING_CONTRACT.md)
 - [开发测试成交策略](docs/SYNTHETIC_TAPE.md)
 - [实施计划](docs/IMPLEMENTATION_PLAN.md)

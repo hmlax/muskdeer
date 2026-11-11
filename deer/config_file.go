@@ -113,6 +113,9 @@ func resolveConfigPaths(cfg *configv1.ServiceConfig, base string) {
 	if file := cfg.Logging.GetFile(); file != nil {
 		file.Filename = resolve(file.Filename)
 	}
+	if cfg.Tracing != nil {
+		cfg.Tracing.RootCertFile = resolve(cfg.Tracing.RootCertFile)
+	}
 	if cfg.Postgres != nil {
 		cfg.Postgres.RootCertFile = resolve(cfg.Postgres.RootCertFile)
 	}

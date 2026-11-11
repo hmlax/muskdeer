@@ -10,6 +10,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/redis"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
+	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
 // Option injects an initialized dependency borrowed for the entire Deer lifetime.
@@ -20,6 +21,7 @@ type Option interface {
 }
 
 type options struct {
+	tracing    *tracing.Runtime
 	logger     *logging.Logger
 	database   *postgres.Client
 	cache      *redis.Client

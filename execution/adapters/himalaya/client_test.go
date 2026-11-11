@@ -158,6 +158,7 @@ type sdkPeer struct {
 	rejectPlace       bool
 	fail              bool
 	protocol          string
+	traceparent       string
 	token             string
 	wrongFund         bool
 	historyOrder      *pb.OrderRow
@@ -200,6 +201,9 @@ func (p *sdkPeer) placeReply(ctx context.Context, clientID string) (*pb.PlaceOrd
 	versions, tokens := headers.Get("x-orderbook-protocol"), headers.Get("authorization")
 	if len(versions) != 1 || len(tokens) != 1 {
 		return nil, status.Error(codes.Unauthenticated, "missing SDK protocol or authentication")
+	}
+	if values := headers.Get("traceparent"); len(values) == 1 {
+		p.traceparent = values[0]
 	}
 	p.protocol = versions[0]
 	p.token = tokens[0]

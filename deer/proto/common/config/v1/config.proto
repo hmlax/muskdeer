@@ -150,6 +150,7 @@ message ServiceSettings {
   Listener monitoring = 15;
   AdminHTTP admin_http = 17;
   string data_sha256 = 18;
+  Tracing tracing = 19;
 }
 
 // ServiceConfig is the composed in-memory Deer snapshot, never a source document.
@@ -175,6 +176,7 @@ message ServiceConfig {
   // Explicit management HTTP opt-in. No identity is provisioned at startup.
   AdminHTTP admin_http = 17;
   VenueConnection venue_connection = 18;
+  Tracing tracing = 19;
 }
 
 // AdminHTTP pins the browser origin independently of request/proxy headers.
@@ -310,4 +312,14 @@ message RuntimePolicyInput {
   string service_name = 1;
   int64 expected_revision = 2;
   BusinessRuntime parameters = 3;
+}
+
+// Tracing exports bounded asynchronous OTLP/gRPC spans; env only bootstraps Nacos.
+message Tracing {
+ bool enabled = 1;
+ string endpoint = 2;
+ bool insecure = 3;
+ string root_cert_file = 4;
+ uint32 sampling_per_million = 5;
+ google.protobuf.Duration export_timeout = 6;
 }

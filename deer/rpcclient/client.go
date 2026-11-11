@@ -27,6 +27,9 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/tracing"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 const (
@@ -54,6 +57,7 @@ type Target struct {
 // It retains no caller context, endpoint cache, resolver watch or background loop.
 type Factory struct {
 	cfg       *configv1.GRPCClients
+	provider  trace.TracerProvider
 	discovery Discovery
 	security  map[string]*tls.Config
 	slots     chan struct{}
@@ -73,7 +77,7 @@ type connection struct {
 }
 
 // New validates and snapshots credentials without discovering or opening a socket.
-func New(ctx context.Context, cfg *configv1.GRPCClients, service string, discovery Discovery) (*Factory, error) {
+func New(ctx context.Context, cfg *configv1.GRPCClients, service string, discovery Discovery, providers ...trace.TracerProvider) (*Factory, error) {
 	if ctx == nil {
 		return nil, errors.New("RPC factory context is required")
 	}
@@ -104,8 +108,13 @@ func New(ctx context.Context, cfg *configv1.GRPCClients, service string, discove
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
+	provider := trace.TracerProvider(noop.NewTracerProvider())
+	if len(providers) > 0 && providers[0] != nil {
+		provider = providers[0]
+	}
 	return &Factory{
 		cfg:       cfg,
+		provider:  provider,
 		discovery: discovery,
 		security:  security,
 		slots:     make(chan struct{}, cfg.MaxInflight),
@@ -216,6 +225,7 @@ func (c *connection) Invoke(ctx context.Context, method string, request, reply a
 	conn, err := grpc.NewClient("passthrough:///"+instance.Address,
 		grpc.WithTransportCredentials(credentials.NewTLS(f.security[c.target.Service])),
 		grpc.WithNoProxy(), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(),
+		grpc.WithStatsHandler(tracing.ClientHandler(f.provider)),
 		grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
 			return dialer.DialContext(ctx, "tcp", address)
 		}),
@@ -377,4 +387,13 @@ func validInstanceID(id string) bool {
 	return strings.IndexFunc(id, func(ch rune) bool {
 		return ch != '-' && ch != '_' && ch != '.' && (ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z') && (ch < '0' || ch > '9')
 	}) == -1
+}
+
+// StartOperation groups one bounded business operation and its downstream calls.
+func (f *Factory) StartOperation(ctx context.Context, name string) (context.Context, trace.Span) {
+	provider := trace.TracerProvider(noop.NewTracerProvider())
+	if f != nil && f.provider != nil {
+		provider = f.provider
+	}
+	return provider.Tracer("muskdeer.worker").Start(ctx, name)
 }

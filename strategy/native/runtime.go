@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"gorm.io/gorm"
 
 	"github.com/hmlax/muskdeer/deer"
@@ -18,6 +20,7 @@ import (
 	portfoliovenuev1 "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/tracing"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
@@ -96,7 +99,10 @@ func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig
 	return append(workers, syntheticWorkers(db, owner, cfg, factory, logger, leases)...), nil
 }
 
-func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProfilePolicy) error {
+func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProfilePolicy) (result error) {
+	ctx, span := factory.StartOperation(ctx, "strategy.quote")
+	span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
+	defer func() { tracing.RecordError(ctx, result); span.End() }()
 	if active, err := instanceconfig.Active(ctx, db, cfg.InstanceID, cfg.Revision); err != nil || !active {
 		return err
 	}

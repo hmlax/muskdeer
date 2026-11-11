@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/shopspring/decimal"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/hmlax/muskdeer/deer/requestid"
 )
@@ -41,9 +42,16 @@ func (h *identityHandler) Handle(ctx context.Context, record slog.Record) error 
 		return true
 	})
 	next := h.next
+	attrs := []slog.Attr{}
 	if id := requestid.FromContext(ctx); id.String() != "" {
+		attrs = append(attrs, slog.String(requestid.Attribute, id.String()))
+	}
+	if sc := trace.SpanContextFromContext(ctx); sc.IsValid() {
+		attrs = append(attrs, slog.String("trace_id", sc.TraceID().String()), slog.String("span_id", sc.SpanID().String()))
+	}
+	if len(attrs) > 0 {
 		// Insert trusted metadata before group operations, keeping it at root.
-		next = h.root.WithAttrs([]slog.Attr{slog.String(requestid.Attribute, id.String())})
+		next = h.root.WithAttrs(attrs)
 		for _, operation := range h.ops {
 			if operation.group != "" {
 				next = next.WithGroup(operation.group)
@@ -111,7 +119,7 @@ func (h *identityHandler) WithGroup(name string) slog.Handler {
 
 func protectedKey(key string) bool {
 	switch strings.ToLower(key) {
-	case "service", "instance", slog.TimeKey, slog.LevelKey, slog.MessageKey, requestid.Attribute:
+	case "service", "instance", "trace_id", "span_id", slog.TimeKey, slog.LevelKey, slog.MessageKey, requestid.Attribute:
 		return true
 	default:
 		return false

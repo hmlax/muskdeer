@@ -18,6 +18,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/redis"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
 func validateConfig(cfg *configv1.ServiceConfig) (*configv1.ServiceConfig, error) {
@@ -98,6 +99,9 @@ func validateConfig(cfg *configv1.ServiceConfig) (*configv1.ServiceConfig, error
 }
 
 func validateInfrastructure(cfg *configv1.ServiceConfig) error {
+	if err := tracing.Validate(tracingSettings(cfg.Tracing)); err != nil {
+		return err
+	}
 	if _, err := logging.Validate(cfg.Logging); err != nil {
 		return err
 	}
@@ -133,4 +137,15 @@ func validateDuration(name string, duration *durationpb.Duration) error {
 		return fmt.Errorf("%s must be a positive Go duration", name)
 	}
 	return nil
+}
+
+func tracingSettings(cfg *configv1.Tracing) tracing.Config {
+	return tracing.Config{
+		Enabled:            cfg.GetEnabled(),
+		Endpoint:           cfg.GetEndpoint(),
+		Insecure:           cfg.GetInsecure(),
+		RootCertFile:       cfg.GetRootCertFile(),
+		SamplingPerMillion: cfg.GetSamplingPerMillion(),
+		ExportTimeout:      cfg.GetExportTimeout().AsDuration(),
+	}
 }

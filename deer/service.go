@@ -26,6 +26,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/redis"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
 // ErrPostgresNotConfigured reports a required database missing from service configuration.
@@ -90,6 +91,7 @@ type Deer struct {
 	publication       *nacos.Publication
 	rpcClients        *rpcclient.Factory
 	metrics           *metrics.Registry
+	tracing           *tracing.Runtime
 }
 
 // NewDeer constructs a service with an optional gRPC listener. Acquisition and
@@ -265,6 +267,7 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		discovery:   settings.discovery,
 		rpcClients:  settings.rpcClients,
 		metrics:     metrics.New(),
+		tracing:     settings.tracing,
 	}
 	if err := d.addWorkers(startup, spec.Workers); err != nil {
 		return nil, nil, errors.Join(err, d.cleanup(ctx))
@@ -311,8 +314,8 @@ func (d *Deer) addGRPC(ctx context.Context, register func(context.Context, *Deer
 		kratosgrpc.Timeout(d.cfg.Grpc.RequestTimeout.AsDuration()),
 		kratosgrpc.DisableReflection(),
 		kratosgrpc.CustomHealth(),
-		kratosgrpc.UnaryInterceptor(d.measureUnary, requestUnaryInterceptor),
-		kratosgrpc.Options(grpc.WaitForHandlers(true)),
+		kratosgrpc.UnaryInterceptor(tracing.UnaryErrors, d.measureUnary, requestUnaryInterceptor),
+		kratosgrpc.Options(grpc.WaitForHandlers(true), grpc.StatsHandler(tracing.ServerHandler(d.tracing.Provider()))),
 		kratosgrpc.StreamInterceptor(d.measureStream, requestStreamInterceptor, streamDeadlineInterceptor(d.cfg.Grpc.RequestTimeout.AsDuration())),
 	)
 	d.servers = append(d.servers, newManagedTransport(server, accepting, "grpc", d.requestStop))

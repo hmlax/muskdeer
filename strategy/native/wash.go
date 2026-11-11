@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,6 +22,7 @@ import (
 	market "github.com/hmlax/muskdeer/deer/pb/market/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/tracing"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
@@ -42,15 +45,24 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 				for ctx.Err() == nil {
 					err := factory.Subscribe(ctx, rpcclient.Target{Service: rpcsecurity.ServiceMarket}, func(work context.Context, conn grpc.ClientConnInterface) error {
 						return subscribeWash(work, cfg, profile.Symbol, market.NewMarketClient(conn), func(send context.Context, input *execution.WashTradeRequest) error {
+							send, span := factory.StartOperation(send, "strategy.washtrade")
+							span.SetAttributes(attribute.String("market.symbol", profile.Symbol), attribute.Int64("strategy.instance_id", cfg.InstanceID))
+							defer span.End()
 							client, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceExecution})
 							if err != nil {
+								tracing.RecordError(send, err)
 								return err
 							}
 							reply, err := execution.NewExecutionClient(client).WashTrade(send, input)
 							if err != nil {
+								tracing.RecordError(send, err)
 								return err
 							}
+							if reply.GetState() == values.SyntheticUnknown {
+								tracing.RecordError(send, domain.ErrOutcomeUnknown)
+							}
 							if reply.GetState() != values.SyntheticPublished && reply.GetState() != values.SyntheticUnknown {
+								tracing.RecordError(send, values.ErrInvalid)
 								return values.ErrInvalid
 							}
 							return nil

@@ -1,5 +1,13 @@
 # 当前进度
 
+## 2026-11-11 Jaeger / OTLP 核心追踪
+
+- 新增共享Proto的service.yaml tracing基础设施设置，env继续只引导Nacos，原data.yaml配对哈希和数据库业务参数保持；OTEL环境不覆盖端点、身份或采样。四核心各由Deer拥有一个独立provider/连接，无全局provider替换；使用整数ppm采样并保留W3C父决策。
+- gRPC在实际传输层追踪unary及stream，覆盖原单次发送路径、内部客户端、行情/执行/持仓RPC，额外标记业务校验错误；常规健康轮询不产生span。报价、持仓观察及每次开发发布使用短操作span，长期订阅在结束时关闭自身RPC span，不为每个行情事件创建无界事件。
+- SDK在原防重发拦截器内增加子span和W3C头，原认证/单次发送语义保留。PostgreSQL和Redis只记录操作与耗时，结构化日志加入受保护trace_id/span_id；导出边界清理SQL及异常原文，不收集正文、密钥、Redis键值或SQL参数。
+- 每进程非阻塞2048个span队列、256批量、1秒发送与显式导出期限，停机在业务排空后有界flush并关闭连接。新增回归验证跨服务父子关系/错误/耗时、整数采样、Nacos与OTEL环境隔离、真实OTLP接收及停机flush、异常脱敏、队列满不阻塞业务、日志防伪及SDK认证/单发保持。
+- 验证：全库单元、相关race、完整execution/venue隔离PostgreSQL race、86份Proto/Wire生成一致性、格式、lint零问题及全部入口构建通过。数据库schema不变，无业务参数/开关/历史变更；后台配套与真实部署/Jaeger查询另记。
+
 ## 2026-11-10 账户接入接口配套发布验收
 
 - f6a0a506767b 的 strategy/execution 与独立后台190e5c6bd3d7配套发布；管理库先完整备份，未执行DDL或迁移，业务结构版本仍7。market/portfolio保留原版本，四核心健康检查通过；原40实例具体配置和控制开关、21账户策略及归属、模板/品种、七条迁移账本和旧订单/撤单/开发历史摘要核对保持。

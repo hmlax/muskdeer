@@ -9,6 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -24,6 +26,7 @@ import (
 	portfoliovenuev1 "github.com/hmlax/muskdeer/deer/pb/portfolio/venue/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/tracing"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	values "github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
@@ -106,7 +109,10 @@ func (r *Runtime) Workers() []deer.Worker {
 	return result
 }
 
-func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
+func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy) (result error) {
+	ctx, span := r.factory.StartOperation(ctx, "portfolio.observe")
+	span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
+	defer func() { tracing.RecordError(ctx, result); span.End() }()
 	var token domain.LeaseToken
 	if r.cfg.InstanceID == 0 {
 		var err error

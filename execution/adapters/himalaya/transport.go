@@ -5,6 +5,9 @@ import (
 	"io"
 	"sync/atomic"
 
+	"github.com/hmlax/muskdeer/deer/tracing"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -27,7 +30,9 @@ const (
 // invokeSDKOnce uses the provided SDK's dial/interceptor extension point.
 // Commit the stream before SendMsg, as in deer/rpcclient, to prevent transparent
 // replay of a business request; WithDisableRetry alone does not prevent it.
-func invokeSDKOnce(ctx context.Context, method string, request, reply any, conn *grpc.ClientConn, _ grpc.UnaryInvoker, options ...grpc.CallOption) error {
+func invokeSDKOnce(ctx context.Context, method string, request, reply any, conn *grpc.ClientConn, _ grpc.UnaryInvoker, options ...grpc.CallOption) (result error) {
+	ctx, span := tracing.StartChild(ctx, method, trace.WithSpanKind(trace.SpanKindClient))
+	defer func() { tracing.RecordError(ctx, result); span.End() }()
 	trace, _ := ctx.Value(sdkDispatchContextKey{}).(*sdkDispatchTrace)
 	if trace != nil {
 		trace.entered.Store(true)
@@ -39,6 +44,11 @@ func invokeSDKOnce(ctx context.Context, method string, request, reply any, conn 
 	headers = headers.Copy()
 	headers.Delete(sdkAuthorizationHeader)
 	headers.Delete(sdkProtocolHeader)
+	carrier := propagation.MapCarrier{}
+	tracing.Propagator().Inject(ctx, carrier)
+	for key, value := range carrier {
+		headers.Set(key, value)
+	}
 	ctx = metadata.NewOutgoingContext(ctx, headers)
 	options = append(options, grpc.MaxRetryRPCBufferSize(0), grpc.WaitForReady(false),
 		grpc.MaxCallSendMsgSize(64*1024), grpc.MaxCallRecvMsgSize(4*1024*1024))

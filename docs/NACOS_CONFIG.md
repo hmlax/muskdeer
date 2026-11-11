@@ -50,3 +50,26 @@ docker compose --env-file .cache/compose/compose.env exec -T strategy /readychec
 显式迁移、coreinit 和 policyinit 默认同样从 Nacos 读取连接。`migrate -apply` 保留防误执行开关；`policyinit -schema-only` 显式升级参数结构，`policyinit -policies FILE` 离线导入审核后的业务参数，核心启动只读数据库。历史测试使用的维护工具 `-config` 不存在于核心服务入口。tools profile 的一次性维护容器只连接 infra 网络，避免与正在运行的核心容器争用固定 IP。
 
 `make core-test` 在隔离测试数据库准备参数，为每个真实进程发布不含业务参数的临时 YAML 配对，再无参数启动核心二进制；停止后删除两项，测试命名空间与持久配置隔离。镜像测试同样使用真实 Nacos 双文档，没有本地配置挂载或启动参数，不部署额外基础服务。历史模块夹具仍使用显式统一 JSON，核心启动没有此回退。
+
+
+## Jaeger / OTLP tracing
+
+Tracing is infrastructure configuration in the paired `service.yaml`, defined by the shared config Proto. Core commands still read only the existing Nacos connection environment variables; `OTEL_*` environment variables do not override these settings. Omission or `enabled: false` disables export.
+
+```yaml
+tracing:
+  enabled: true
+  endpoint: jaeger.internal.example:4317
+  insecure: false
+  root_cert_file: /run/certs/telemetry-ca.pem
+  sampling_per_million: 100000
+  export_timeout: 3s
+```
+
+Use `insecure: true` and omit `root_cert_file` only when the configured collector accepts plaintext on the private deployment network. Sampling is an integer between 0 and 1000000; 100000 samples 10% of new root traces, and a valid W3C parent sampling decision is preserved across services. Each process owns one provider/export connection, a nonblocking 2048-span queue, batches up to 256 spans, a one-second batch interval and a bounded export timeout. Ended spans flush after workers/listeners drain and before the connection closes; overflow is best effort and does not hold a trading request waiting for telemetry.
+
+Service names are `muskdeer-market`, `muskdeer-strategy`, `muskdeer-execution`, and `muskdeer-portfolio`. RPC stats handlers cover actual gRPC streams, including the existing single-dispatch unary transport; health polling is excluded. Strategy quote operations group market/portfolio/execution calls; portfolio observations and individual development publications use short traces. Long-lived subscriptions finish their RPC span on termination, rather than emitting an unbounded stream of per-message events. Subscription lifetime and independent publication operations are separate traces.
+
+Execution SDK calls propagate W3C headers through the existing single-dispatch boundary without enabling any retry. PostgreSQL and Redis spans retain operation names and duration, not query arguments, keys, values or request bodies. Driver exception text and status descriptions are sanitized at export; gRPC status codes remain searchable. JSON logs include trusted `trace_id` and `span_id` whenever a request has a span.
+
+Configuration changes require explicit restarts; they do not modify strategy parameters, runtime control switches, business schema or historical records.

@@ -10,6 +10,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/postgres"
 	"github.com/hmlax/muskdeer/deer/redis"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
+	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
 // initialize acquires only missing dependencies and checks borrowed clients.
@@ -40,6 +41,21 @@ func (o *options) initialize(ctx context.Context, cfg *configv1.ServiceConfig, s
 			},
 		})
 	}
+	plan = append(plan, Initializer{
+		Name: "deer.tracing",
+		Open: func(ctx context.Context) (Cleanup, error) {
+			var err error
+			o.tracing, err = tracing.New(ctx, tracingSettings(cfg.Tracing), tracing.Identity{
+				Service:  "muskdeer-" + cfg.Name,
+				Instance: cfg.InstanceId,
+				Version:  cfg.Version,
+			})
+			if err != nil {
+				return nil, err
+			}
+			return o.tracing.Close, nil
+		},
+	})
 	if o.database != nil {
 		plan = append(plan, borrowedResource("deer.postgres", o.database.Ping))
 	} else if cfg.Postgres != nil {
@@ -107,7 +123,7 @@ func (o *options) initialize(ctx context.Context, cfg *configv1.ServiceConfig, s
 			Name: "deer.grpc-clients",
 			Open: func(ctx context.Context) (Cleanup, error) {
 				var err error
-				o.rpcClients, err = rpcclient.New(ctx, cfg.GrpcClients, cfg.Name+grpcServiceSuffix, o.discovery)
+				o.rpcClients, err = rpcclient.New(ctx, cfg.GrpcClients, cfg.Name+grpcServiceSuffix, o.discovery, o.tracing.Provider())
 				if err != nil {
 					return nil, err
 				}

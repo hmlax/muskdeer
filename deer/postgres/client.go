@@ -23,6 +23,7 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
+	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
 // TLS modes accepted by the connection configuration.
@@ -74,6 +75,7 @@ func New(ctx context.Context, cfg *configv1.Postgres, application string) (*Clie
 			cause:     err,
 		}
 	}
+	parsed.Tracer = tracing.PostgresTracer{}
 	pool := stdlib.OpenDB(*parsed)
 	pool.SetMaxOpenConns(int(cfg.MaxOpenConns))
 	pool.SetMaxIdleConns(int(cfg.MaxIdleConns))
