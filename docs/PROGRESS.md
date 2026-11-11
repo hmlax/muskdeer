@@ -1,5 +1,14 @@
 # 当前进度
 
+## 2026-11-11 Jaeger 六服务实际部署与链路验收
+
+- 核心1dc8daf687eb、独立后台46fa0e135f3f已从干净、已推送提交构建并发布。管理库及原Nacos文档先备份；仅增加service tracing及后台数据库追踪设置，业务schema仍7，没有迁移。原env引导、业务mTLS、SDK令牌、执行CPU/内存配置、两端前端容器与配套登录构建均保留。
+- Nacos确认首次发布后存在短暂读回延迟，发布脚本在重启前停止；只读确认内容最终与候选完全相同后，增加有界读回等待及同一候选的幂等识别，再继续。没有以未知读回结果重启、修改业务配置或重发交易请求。
+- 原账号经双端代理登录和商户40实例/21账户查询通过，平台业务访问仍拒绝，四核心均healthy、装载修订一致。真实HTTP请求在一个Trace ID下连接admin/operator/strategy/market/execution/portfolio六个服务，共138个span，非HTTP根节点均验证父引用存在，包含PostgreSQL/Redis耗时。
+- 无浏览器traceparent时服务生成并返回X-Trace-ID；真实只读404沿后台和核心产生5个错误span。实时quote trace还包含订单服务及撮合引擎，SDK父子传播并非仅停留在客户端模拟；执行JSON日志观察到287条带trace_id/span_id的回执。
+- 实际Nacos逐文档读回一致；实例参数、启停/控制版本、账户/模板/品种、归属绑定及schema账本摘要保持，旧订单/撤单/开发历史的数量、最大ID及最后更新时间保持。后台请求全量，高频核心根trace采样10%，继承父采样决定保持所选链路完整；长期订阅在结束后导出其RPC span。既有Jaeger为共享内存存储，本次没有修改其存储或共享基础容器。
+- 原始trace、查询与备份仅保存在私有部署记录；公开仓库不包含实际账户、凭据或链路详情。代码/生成/构建、单元/race及隔离PostgreSQL验证见上一条；本次补充真实部署验收。
+
 ## 2026-11-11 Jaeger / OTLP 核心追踪
 
 - 新增共享Proto的service.yaml tracing基础设施设置，env继续只引导Nacos，原data.yaml配对哈希和数据库业务参数保持；OTEL环境不覆盖端点、身份或采样。四核心各由Deer拥有一个独立provider/连接，无全局provider替换；使用整数ppm采样并保留W3C父决策。
