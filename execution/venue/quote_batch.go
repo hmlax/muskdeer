@@ -26,6 +26,15 @@ var errQuoteRefreshBusy = errors.New("quote refresh transport busy")
 // Count only venue-visible, unique, own, non-crossing levels; acknowledgements
 // and other instances' orders cannot turn a shallow side into a full side.
 func (cycle *quoteCycle) needsQuoteDepth() bool {
+	desired := make(map[domain.Side]int)
+	for _, target := range cycle.targets {
+		desired[domain.Side(target.Side)]++
+	}
+	visible := cycle.visibleQuoteDepth()
+	return visible[domain.SideBuy] < desired[domain.SideBuy] || visible[domain.SideSell] < desired[domain.SideSell]
+}
+
+func (cycle *quoteCycle) visibleQuoteDepth() map[domain.Side]int {
 	best := make(map[domain.Side]decimal.Decimal)
 	for _, target := range cycle.targets {
 		price, _ := native.Value(target.Price, false, false)
@@ -34,14 +43,11 @@ func (cycle *quoteCycle) needsQuoteDepth() bool {
 			best[side] = price
 		}
 	}
-	desired, visible := make(map[domain.Side]int), make(map[domain.Side]int)
-	for _, target := range cycle.targets {
-		desired[domain.Side(target.Side)]++
-	}
+	visible := make(map[domain.Side]int)
 	seen := make(map[string]bool)
 	limit, err := native.Value(cycle.profile.MaximumOrderNotional, false, false)
 	if err != nil {
-		return true
+		return nil
 	}
 	for _, order := range cycle.snapshot.Orders {
 		if !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
@@ -56,11 +62,11 @@ func (cycle *quoteCycle) needsQuoteDepth() bool {
 			seen[key] = true
 		}
 	}
-	return visible[domain.SideBuy] < desired[domain.SideBuy] || visible[domain.SideSell] < desired[domain.SideSell]
+	return visible
 }
 
 func (r *Runtime) fillDirectQuoteDepth(ctx context.Context, cycle *quoteCycle) error {
-	cycle.targets = quoteMakerMaintenanceOrder(cycle.targets, cycle.snapshot)
+	cycle.targets = cycle.quoteMakerMaintenanceOrder()
 	for cursor := 0; cursor < len(cycle.targets); {
 		reserved := len(cycle.admitted)
 		requests := make([]gateway.QuoteRequest, 0, maximumQuoteWave)

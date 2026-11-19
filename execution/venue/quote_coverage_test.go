@@ -27,7 +27,12 @@ func TestMissingQuoteRefillCoversBothPriceEdgesBeforeSizeRefresh(t *testing.T) {
 			})
 		}
 	}
-	ordered := quoteMakerMaintenanceOrder(targets, &common.VenueSnapshot{})
+	cycle := &quoteCycle{
+		profile:  &common.VenueProfilePolicy{MaximumOrderNotional: "500"},
+		targets:  targets,
+		snapshot: &common.VenueSnapshot{},
+	}
+	ordered := cycle.quoteMakerMaintenanceOrder()
 	for index, want := range []string{"98", "102", "99.9", "100.1"} {
 		if ordered[index].Price != want {
 			t.Fatalf("refill[%d] = %s, want %s: first wave must cover both the outer edge and best price", index, ordered[index].Price, want)
@@ -57,6 +62,55 @@ func TestMissingQuoteRefillCoversBothPriceEdgesBeforeSizeRefresh(t *testing.T) {
 	}
 	if _, safe := bridgePrice(ask, best, decimal.NewFromInt(100)); !safe {
 		t.Fatal("first ask replacement was lost before deeper refill could begin")
+	}
+}
+
+func TestRefillUsesFirstWaveForShallowSideBeforeFullSidePriceRefresh(t *testing.T) {
+	t.Parallel()
+	cycle := &quoteCycle{
+		profile: &common.VenueProfilePolicy{
+			Symbol:               "BTCUSDT",
+			StrategyInstanceId:   1,
+			MaximumOrderNotional: "500",
+		},
+		snapshot: &common.VenueSnapshot{},
+	}
+	for level := range 20 {
+		for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
+			price := decimal.NewFromInt(100).Sub(decimal.NewFromInt(int64(level + 1)).Shift(-1))
+			if side == domain.SideSell {
+				price = decimal.NewFromInt(100).Add(decimal.NewFromInt(int64(level + 1)).Shift(-1))
+			}
+			cycle.targets = append(cycle.targets, &common.VenueTarget{
+				Side:     string(side),
+				Price:    price.String(),
+				Quantity: "0.1",
+			})
+		}
+		cycle.snapshot.Orders = append(cycle.snapshot.Orders, &common.VenueOrder{
+			OrderId:          strconv.Itoa(level + 1),
+			ClientId:         native.InstanceClientPrefix(cycle.profile) + strconv.Itoa(level),
+			Side:             string(domain.SideBuy),
+			Price:            decimal.NewFromInt(97).Sub(decimal.NewFromInt(int64(level)).Shift(-1)).String(),
+			Quantity:         "0.1",
+			ExecutedQuantity: "0",
+			Status:           native.StatusOpen,
+		})
+	}
+	cycle.snapshot.Orders = append(cycle.snapshot.Orders, &common.VenueOrder{
+		OrderId:          "100",
+		ClientId:         native.InstanceClientPrefix(cycle.profile) + "last_ask",
+		Side:             string(domain.SideSell),
+		Price:            "103",
+		Quantity:         "0.1",
+		ExecutedQuantity: "0",
+		Status:           native.StatusOpen,
+	})
+	ordered := cycle.quoteMakerMaintenanceOrder()
+	for _, target := range ordered[:4] {
+		if target.Side != string(domain.SideSell) {
+			t.Fatal("first refill wave spent capacity refreshing a full bid side while asks were shallow")
+		}
 	}
 }
 

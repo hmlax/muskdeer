@@ -114,9 +114,30 @@ func quoteMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.V
 	return append(missing, refresh...)
 }
 
-func quoteMakerMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) []*commonv1.VenueTarget {
-	missing, refresh := quoteMaintenanceTargets(targets, snapshot)
-	return append(quoteCoverageOrder(missing), refresh...)
+func (cycle *quoteCycle) quoteMakerMaintenanceOrder() []*commonv1.VenueTarget {
+	missing, refresh := quoteMaintenanceTargets(cycle.targets, cycle.snapshot)
+	queues := make(map[domain.Side][]*commonv1.VenueTarget)
+	for _, target := range quoteCoverageOrder(missing) {
+		side := domain.Side(target.Side)
+		queues[side] = append(queues[side], target)
+	}
+	depth := cycle.visibleQuoteDepth()
+	if depth == nil {
+		depth = make(map[domain.Side]int)
+	}
+	ordered := make([]*commonv1.VenueTarget, 0, len(cycle.targets))
+	for len(ordered) < len(missing) {
+		side := domain.SideBuy
+		if len(queues[side]) == 0 || len(queues[domain.SideSell]) > 0 && depth[domain.SideSell] < depth[side] {
+			side = domain.SideSell
+		}
+		ordered = append(ordered, queues[side][0])
+		queues[side] = queues[side][1:]
+		// Allocate scarce first-wave requests to the shallow side before
+		// spending a bridge slot refreshing an already populated side.
+		depth[side]++
+	}
+	return append(ordered, refresh...)
 }
 
 func quoteMaintenanceTargets(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) ([]*commonv1.VenueTarget, []*commonv1.VenueTarget) {
