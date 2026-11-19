@@ -3,9 +3,13 @@ package venue
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/shopspring/decimal"
+
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
@@ -16,7 +20,47 @@ const (
 	maximumConcurrentQuoteSends = 16
 )
 
+var errQuoteRefreshBusy = errors.New("quote refresh transport busy")
+
+// Optional refreshes must not queue ahead of a fund that is losing safe depth.
+// Count only venue-visible, unique, own, non-crossing levels; acknowledgements
+// and other instances' orders cannot turn a shallow side into a full side.
+func (cycle *quoteCycle) needsQuoteDepth() bool {
+	best := make(map[domain.Side]decimal.Decimal)
+	for _, target := range cycle.targets {
+		price, _ := native.Value(target.Price, false, false)
+		side := domain.Side(target.Side)
+		if previous := best[side]; previous.IsZero() || side == domain.SideBuy && price.GreaterThan(previous) || side == domain.SideSell && price.LessThan(previous) {
+			best[side] = price
+		}
+	}
+	desired, visible := make(map[domain.Side]int), make(map[domain.Side]int)
+	for _, target := range cycle.targets {
+		desired[domain.Side(target.Side)]++
+	}
+	seen := make(map[string]bool)
+	limit, err := native.Value(cycle.profile.MaximumOrderNotional, false, false)
+	if err != nil {
+		return true
+	}
+	for _, order := range cycle.snapshot.Orders {
+		if !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+			continue
+		}
+		if _, safe := bridgePrice(order, best, limit); !safe {
+			continue
+		}
+		key, _, err := orderKey(order)
+		if err == nil && !seen[key] {
+			visible[domain.Side(order.Side)]++
+			seen[key] = true
+		}
+	}
+	return visible[domain.SideBuy] < desired[domain.SideBuy] || visible[domain.SideSell] < desired[domain.SideSell]
+}
+
 func (r *Runtime) fillDirectQuoteDepth(ctx context.Context, cycle *quoteCycle) error {
+	cycle.targets = quoteMakerMaintenanceOrder(cycle.targets, cycle.snapshot)
 	for cursor := 0; cursor < len(cycle.targets); {
 		reserved := len(cycle.admitted)
 		requests := make([]gateway.QuoteRequest, 0, maximumQuoteWave)
@@ -64,10 +108,17 @@ func (r *Runtime) sendQuoteWave(ctx context.Context, cycle *quoteCycle, requests
 	// A failure cannot release the fund writer while siblings still send. Never
 	// retry an ambiguous send; the next cycle starts from a new venue observation.
 	group.Wait()
+	var failures []error
 	for _, err := range results {
 		if err == nil {
 			cycle.result.Placed++
+			continue
 		}
+		if errors.Is(err, errQuoteRefreshBusy) {
+			cycle.retained.pending = true
+			continue
+		}
+		failures = append(failures, err)
 	}
-	return errors.Join(results...)
+	return errors.Join(failures...)
 }

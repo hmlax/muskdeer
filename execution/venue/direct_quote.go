@@ -74,12 +74,20 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 	admit, stop := context.WithDeadline(ctx, until.Add(-minimumLiveSDKWindow))
 	defer stop()
 	if r.quoteSlots != nil {
-		select {
-		case r.quoteSlots <- struct{}{}:
-			defer func() { <-r.quoteSlots }()
-		case <-admit.Done():
-			return admit.Err()
+		if cycle.needsQuoteDepth() {
+			select {
+			case r.quoteSlots <- struct{}{}:
+			case <-admit.Done():
+				return admit.Err()
+			}
+		} else {
+			select {
+			case r.quoteSlots <- struct{}{}:
+			default:
+				return errQuoteRefreshBusy
+			}
 		}
+		defer func() { <-r.quoteSlots }()
 	}
 	if err := r.checkDirectQuoteConfig(ctx, cycle.profile); err != nil {
 		return err

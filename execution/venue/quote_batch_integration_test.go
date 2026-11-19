@@ -5,6 +5,7 @@ package venue
 import (
 	"context"
 	"errors"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -188,6 +189,38 @@ func TestMakerQuoteWavesShareTransportBound(t *testing.T) {
 	close(client.release)
 	if err := <-done; err != nil || client.maximum.Load() > 2 || cycle.result.Placed != 8 || len(runtime.quoteSlots) != 0 {
 		t.Fatalf("bounded wave err=%v concurrent=%d placed=%d occupied=%d", err, client.maximum.Load(), cycle.result.Placed, len(runtime.quoteSlots))
+	}
+}
+
+func TestFullDepthRefreshDoesNotQueueAheadOfRefill(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
+	cycle.bridgeSlots = 1
+	for index, target := range cycle.targets {
+		cycle.snapshot.Orders = append(cycle.snapshot.Orders, &common.VenueOrder{
+			OrderId:          strconv.Itoa(index + 1),
+			ClientId:         native.InstanceClientPrefix(cycle.profile) + strconv.Itoa(index),
+			Side:             target.Side,
+			Price:            target.Price,
+			Quantity:         target.Quantity,
+			ExecutedQuantity: "0",
+			Status:           native.StatusOpen,
+		})
+	}
+	runtime.quoteSlots = make(chan struct{}, 1)
+	runtime.quoteSlots <- struct{}{}
+	done := make(chan error, 1)
+	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
+	select {
+	case err := <-done:
+		if err != nil || client.calls.Load() != 0 || cycle.result.Placed != 0 || !cycle.retained.pending || len(runtime.quoteSlots) != 1 {
+			t.Fatalf("optional refresh err=%v sends=%d placed=%d pending=%t occupied=%d", err, client.calls.Load(), cycle.result.Placed, cycle.retained.pending, len(runtime.quoteSlots))
+		}
+	case <-time.After(500 * time.Millisecond):
+		cancel()
+		err := <-done
+		t.Fatalf("full-depth refresh queued behind transport congestion: %v", err)
 	}
 }
 

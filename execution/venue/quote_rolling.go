@@ -110,6 +110,16 @@ func rollingQuoteLess(left, right rollingQuote, wanted map[string]*SubmitRequest
 }
 
 func quoteMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) []*commonv1.VenueTarget {
+	missing, refresh := quoteMaintenanceTargets(targets, snapshot)
+	return append(missing, refresh...)
+}
+
+func quoteMakerMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) []*commonv1.VenueTarget {
+	missing, refresh := quoteMaintenanceTargets(targets, snapshot)
+	return append(quoteCoverageOrder(missing), refresh...)
+}
+
+func quoteMaintenanceTargets(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) ([]*commonv1.VenueTarget, []*commonv1.VenueTarget) {
 	present := make(map[string]bool)
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
@@ -129,7 +139,45 @@ func quoteMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.V
 			missing = append(missing, target)
 		}
 	}
-	return append(missing, refresh...)
+	return missing, refresh
+}
+
+// With one bridge slot, the first replacement may briefly be the only safe
+// quote on its side. Cover the outer edge before the best price so another
+// small source move cannot immediately remove that entire side again.
+func quoteCoverageOrder(targets []*commonv1.VenueTarget) []*commonv1.VenueTarget {
+	sides := make([][]*commonv1.VenueTarget, 2)
+	for _, target := range targets {
+		side := 0
+		if target.Side == string(domain.SideSell) {
+			side = 1
+		}
+		sides[side] = append(sides[side], target)
+	}
+	for side, quotes := range sides {
+		sort.SliceStable(quotes, func(i, j int) bool {
+			left, _ := native.Value(quotes[i].Price, false, false)
+			right, _ := native.Value(quotes[j].Price, false, false)
+			if side == 0 {
+				return left.GreaterThan(right)
+			}
+			return left.LessThan(right)
+		})
+	}
+	ordered := make([]*commonv1.VenueTarget, 0, len(targets))
+	for level := range max(len(sides[0]), len(sides[1])) {
+		for _, quotes := range sides {
+			if level >= len(quotes) {
+				continue
+			}
+			index := len(quotes) - 1 - level/2
+			if level%2 != 0 {
+				index = level / 2
+			}
+			ordered = append(ordered, quotes[index])
+		}
+	}
+	return ordered
 }
 
 func (cycle *quoteCycle) canPlace(target *commonv1.VenueTarget) bool {
