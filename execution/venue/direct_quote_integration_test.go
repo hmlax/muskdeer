@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,9 +22,28 @@ import (
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-type directQuoteClient struct{ *currentStateClient }
+type directQuoteClient struct {
+	*currentStateClient
+	mu         sync.Mutex
+	minimumBid int
+	watchBid   bool
+}
+
+func (c *directQuoteClient) Read(ctx context.Context, scope gateway.Scope) (*gateway.Observation, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.currentStateClient.Read(ctx, scope)
+}
+
+func (c *directQuoteClient) ReadOrders(ctx context.Context, scope gateway.Scope) ([]*common.VenueOrder, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.currentStateClient.ReadOrders(ctx, scope)
+}
 
 func (c *directQuoteClient) SubmitQuote(_ context.Context, request gateway.QuoteRequest) (*gateway.SubmitResult, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	id := 9000 + c.submissions.Add(1)
 	c.snapshot.Orders = append(c.snapshot.Orders, &common.VenueOrder{
 		OrderId:          strconv.FormatUint(id, 10),
@@ -41,11 +61,22 @@ func (c *directQuoteClient) SubmitQuote(_ context.Context, request gateway.Quote
 }
 
 func (c *directQuoteClient) CancelQuote(_ context.Context, request gateway.CancelRequest) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	c.cancellations.Add(1)
 	for _, order := range c.snapshot.Orders {
 		if order.OrderId == strconv.FormatUint(request.OrderID, 10) {
 			order.Status = native.StatusCanceled
 		}
+	}
+	if c.watchBid {
+		depth := 0
+		for _, order := range c.snapshot.Orders {
+			if native.Active(order.Status) && order.Side == string(domain.SideBuy) {
+				depth++
+			}
+		}
+		c.minimumBid = min(c.minimumBid, depth)
 	}
 	return nil
 }

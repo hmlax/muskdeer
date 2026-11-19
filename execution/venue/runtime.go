@@ -338,17 +338,17 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	if err != nil {
 		return nil, err
 	}
-	book, err := r.book(ctx, profile.Symbol)
+	book, err := r.quoteBook(ctx, profile, plan)
 	if err != nil {
 		return nil, err
 	}
-	if err := r.validatePlanAuthority(ctx, profile, plan, book); err != nil {
-		return nil, err
-	}
-	book.ValidUntilMs = min(book.ValidUntilMs, plan.Book.ValidUntilMs)
 	snapshot, recoveryErr := r.refresh(ctx, profile, lease, book)
 	if recoveryErr != nil && (!errors.Is(recoveryErr, domain.ErrOutcomeUnknown) || snapshot == nil) {
 		return nil, recoveryErr
+	}
+	plan, book, err = r.latestMakerIntent(ctx, profile, plan, book)
+	if err != nil {
+		return nil, err
 	}
 	budget, err := r.store.Budget(ctx, lease.Key.AccountID)
 	if err != nil || !budget.Enabled {
@@ -604,6 +604,7 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 }
 
 func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.VenueProfilePolicy, lease domain.LeaseToken, snapshot *commonv1.VenueSnapshot, retained *quoteRetention, result *executionvenuev1.QuoteResult, cutover bool) error {
+	var orders []*commonv1.VenueOrder
 	for _, order := range snapshot.Orders {
 		if !native.Active(order.Status) {
 			continue
@@ -615,10 +616,7 @@ func (r *Runtime) cancelObsolete(ctx context.Context, profile *commonv1.VenuePro
 			result.Retained++
 			continue
 		}
-		if err := r.cancelOne(ctx, lease, profile, order); err != nil {
-			return err
-		}
-		result.Cancelled++
+		orders = append(orders, order)
 	}
-	return nil
+	return r.cancelOrders(ctx, lease, profile, orders, result)
 }

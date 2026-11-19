@@ -32,6 +32,9 @@ func (r *Runtime) maintainCurrentDepth(ctx context.Context, cycle *quoteCycle, w
 			}
 		}
 	}
+	if err := r.makeQuoteRoom(ctx, cycle, wanted); err != nil {
+		return nil, err
+	}
 	if err := r.fillQuoteDepth(ctx, cycle); err != nil {
 		return nil, err
 	}
@@ -83,11 +86,8 @@ func (r *Runtime) finishQuoteDepth(ctx context.Context, cycle *quoteCycle, wante
 			break
 		}
 	}
-	for _, order := range depthRetirements(cycle, wanted, r.cfg.ReplacementFraction) {
-		if err := r.cancelOne(ctx, cycle.lease, cycle.profile, order); err != nil {
-			return nil, err
-		}
-		cycle.result.Cancelled++
+	if err := r.cancelOrders(ctx, cycle.lease, cycle.profile, depthRetirements(cycle, wanted, r.cfg.ReplacementFraction), cycle.result); err != nil {
+		return nil, err
 	}
 	if !cycle.retained.pending {
 		cycle.result.State = native.StateRunning

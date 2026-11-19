@@ -88,14 +88,6 @@ func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenuePro
 	if reconcileErr == nil || ctx.Err() != nil {
 		return reconcileErr
 	}
-	if latest := r.newerMakerIntent(plan); latest != nil {
-		// This is a separately admitted, newer target, never a replay of an SDK
-		// request. Re-read matching and all risk under the SAME writer/deadline.
-		_, reconcileErr = r.reconcile(ctx, profile, latest)
-		if reconcileErr == nil || ctx.Err() != nil {
-			return reconcileErr
-		}
-	}
 	// Failed replacement must still run risk reduction under the same writer
 	// and deadline. No source, account or configuration guard is bypassed.
 	return errors.Join(reconcileErr, r.protect(ctx, profile))
@@ -113,4 +105,45 @@ func (r *Runtime) newerMakerIntent(previous *pb.QuotePlan) *pb.QuotePlan {
 		return next
 	}
 	return nil
+}
+
+// Account observation may have waited on settlement. Select the newest accepted
+// target before computing any sends/retirements; the account timestamps stay as
+// returned by that observation and still bound every SDK send.
+func (r *Runtime) latestMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, previous *pb.QuotePlan, book *common.VenueBook) (*pb.QuotePlan, *common.VenueBook, error) {
+	if !r.directMaker() || r.newerMakerIntent(previous) == nil {
+		return previous, book, nil
+	}
+	fresh, err := r.book(ctx, profile.Symbol)
+	if err != nil {
+		return nil, nil, err
+	}
+	return r.adoptMakerIntent(ctx, profile, previous, fresh)
+}
+
+func (r *Runtime) adoptMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, previous *pb.QuotePlan, fresh *common.VenueBook) (*pb.QuotePlan, *common.VenueBook, error) {
+	next := r.newerMakerIntent(previous)
+	if next == nil {
+		next = previous
+	}
+	if fresh.GetValidUntilMs() <= time.Now().UnixMilli() {
+		return nil, nil, native.ErrInvalid
+	}
+	if err := r.validatePlanAuthority(ctx, profile, next, fresh); err != nil {
+		return nil, nil, err
+	}
+	fresh.ValidUntilMs = min(fresh.ValidUntilMs, next.Book.ValidUntilMs)
+	return next, fresh, nil
+}
+
+func (r *Runtime) quoteBook(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan) (*common.VenueBook, error) {
+	book, err := r.book(ctx, profile.Symbol)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.validatePlanAuthority(ctx, profile, plan, book); err != nil {
+		return nil, err
+	}
+	book.ValidUntilMs = min(book.ValidUntilMs, plan.Book.ValidUntilMs)
+	return book, nil
 }
