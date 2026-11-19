@@ -1,5 +1,15 @@
 .PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check sdk-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-prepare compose-up compose-down compose-status core-test
 
+# Freeze one version/build record for every binary in this Make invocation.
+# scripts/build.py injects -X main.Name, -X main.Version and -X main.Build.
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
+VERSION := $(VERSION)
+BUILD ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)@$(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+BUILD := $(BUILD)
+export NAME VERSION BUILD
+CORE_SERVICES := market strategy execution portfolio cron
+BUILD_COMMANDS := migrate coreinit policyinit readycheck venueinit venuebaseline instancemigrate instanceupgrade doctor marketprobe contractcheck
+
 doctor:
 	python3 scripts/go.py version
 	@for role in market strategy execution portfolio cron; do \
@@ -55,24 +65,20 @@ test-race:
 
 build:
 	mkdir -p .cache/bin
-	python3 scripts/go.py build -o .cache/bin/migrate ./cmd/migrate
-	python3 scripts/go.py build -o .cache/bin/coreinit ./cmd/coreinit
-	python3 scripts/go.py build -o .cache/bin/policyinit ./cmd/policyinit
-	python3 scripts/go.py build -o .cache/bin/readycheck ./cmd/readycheck
-	python3 scripts/go.py build -o .cache/bin/venueinit ./cmd/venueinit
-	python3 scripts/go.py build -o .cache/bin/venuebaseline ./cmd/venuebaseline
-	python3 scripts/go.py build -o .cache/bin/instancemigrate ./cmd/instancemigrate
-	python3 scripts/go.py build -o .cache/bin/instanceupgrade ./cmd/instanceupgrade
-	@for name in market strategy execution portfolio cron; do \
-		python3 scripts/go.py build -o .cache/bin/$$name ./$$name/cmd || exit $$?; \
+	@for name in $(BUILD_COMMANDS); do \
+		python3 scripts/build.py $$name ./cmd/$$name .cache/bin/$$name || exit $$?; \
+	done
+	@for name in $(CORE_SERVICES); do \
+		python3 scripts/build.py $$name ./$$name/cmd .cache/bin/$$name || exit $$?; \
 	done
 
 verify: doctor contract-check generate-check sdk-check fmt-check lint policy-test test-tooling test test-race build
 
 build-fixtures: build
 	@for role in market strategy execution portfolio; do \
-		python3 scripts/go.py build -o .cache/bin/module-$$role ./$$role/testservice || exit $$?; \
+		python3 scripts/build.py module-$$role ./$$role/testservice .cache/bin/module-$$role || exit $$?; \
 	done
+	python3 scripts/build.py testinfra ./deer/testinfra .cache/bin/testinfra
 
 integration: build-fixtures
 	python3 scripts/integration.py
@@ -90,8 +96,8 @@ dev-test: build
 	python3 scripts/dev-smoke.py
 
 image:
-	@for name in market strategy execution portfolio cron; do \
-		docker build --target runtime-$$name -t muskdeer-$$name:local . || exit $$?; \
+	@for name in $(CORE_SERVICES); do \
+		docker build --build-arg VERSION --build-arg BUILD --target runtime-$$name -t muskdeer-$$name:local . || exit $$?; \
 	done
 
 image-test: image
@@ -110,7 +116,7 @@ compose-prepare:
 	python3 scripts/compose.py prepare
 
 compose-up: compose-prepare
-	docker compose --env-file .cache/compose/compose.env build
+	docker compose --env-file .cache/compose/compose.env build --build-arg VERSION --build-arg BUILD
 	python3 scripts/compose.py bootstrap
 	docker compose --env-file .cache/compose/compose.env up -d --remove-orphans --wait --wait-timeout 60
 

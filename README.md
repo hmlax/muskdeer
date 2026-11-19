@@ -32,6 +32,20 @@ Proto 按所属服务放在 `deer/proto/<service>`，RPC、模型分别在 `v1`�
 
 各项目的 `business` 拥有自身业务装配；执行、策略、持仓用例分别在各自 `usecase`。行情订单簿、接入、质量和工作器归 `market`；报价与策略适配归 `strategy`；订单适配、outbox 和模拟执行归 `execution`。公共交易领域与跨服务事务仓储位于 `deer/trading`，迁移位于 `deer/migrate`；单份共用，不复制资金、幂等与 fencing 逻辑。顶层不再保留 `internal`，各项目自己的 `internal/app` 继续负责生命周期和 Wire 装配。详见 [项目目录与依赖边界](docs/PROJECT_LAYOUT.md)。
 
+## 编译信息
+
+所有自有 Go 可执行入口统一声明 `Name`、`Version`、`Build` 和运行时 `os.Hostname()` 获取的 `ID`。五个核心服务通过已有 JSON 日志记录 `build.info`，编译信息不改写 Nacos 配对版本、配置名称或实例身份，探针和维护命令保留原输出合同。
+
+```sh
+make build VERSION=v1.2.3 BUILD=release-20261119
+make build-fixtures VERSION=v1.2.3 BUILD=release-20261119
+make image VERSION=v1.2.3 BUILD=release-20261119
+```
+
+Makefile 为每个二进制注入 `main.Name`、`main.Version`、`main.Build`，同一次 make 使用相同版本和构建记录。默认版本来自 `git describe --tags --always --dirty`，构建记录为提交摘要加 UTC 时间；`NAME` 可显式覆盖编译名称，`ID` 始终在运行主机获取。注入值使用无空白的字母、数字及 `._+:/@-` 标记，避免 shell 或 linker 参数歧义。
+
+Docker 和 Compose 构建接收 `VERSION`、`BUILD`；直接 Docker 构建未传参数时记录 `dev`/`unknown`。CI 沿用相同的 make 构建路径。普通 `go build` 仍可编译，但不会自动注入这些值。
+
 ## 本地启动
 
 复用已运行的 PostgreSQL、Redis、Nacos、NATS 及 infra-network。需要 Docker Compose、Python 3.11+、PyYAML（tools/python-requirements.txt 固定版本）和 OpenSSL；Go 工具链固定为 1.27.3，Wire 固定为 v0.7.0。

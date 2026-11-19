@@ -269,6 +269,9 @@ func newDeer(ctx context.Context, cfg *configv1.ServiceConfig, spec ServiceSpec,
 		metrics:     metrics.New(),
 		tracing:     settings.tracing,
 	}
+	if err := d.logBuildInfo(startup, settings.buildInfo); err != nil {
+		return nil, nil, errors.Join(err, d.cleanup(ctx))
+	}
 	if err := d.addWorkers(startup, spec.Workers); err != nil {
 		return nil, nil, errors.Join(err, d.cleanup(ctx))
 	}

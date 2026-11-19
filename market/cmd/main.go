@@ -26,7 +26,12 @@ func run() int {
 	if err != nil {
 		return exitCode(err)
 	}
-	application, err := wireApp(ctx, cfg, os.Stdout, nil)
+	application, err := wireApp(ctx, cfg, os.Stdout, []deer.Option{deer.WithBuildInfo(deer.BuildInfo{
+		Name:    Name,
+		Version: Version,
+		Build:   Build,
+		ID:      ID,
+	})})
 	if err != nil {
 		return exitCode(err)
 	}

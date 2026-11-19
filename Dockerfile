@@ -4,6 +4,8 @@ WORKDIR /workspace
 RUN test "$(go env GOVERSION)" = "go1.27.3"
 
 FROM toolchain AS build
+ARG VERSION=dev
+ARG BUILD=unknown
 COPY go.mod go.sum ./
 COPY deer/third_party/lukla-go ./deer/third_party/lukla-go
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
@@ -15,11 +17,13 @@ COPY portfolio ./portfolio
 COPY cron ./cron
 COPY deer ./deer
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    test -n "$VERSION" && test -n "$BUILD" && \
+    case "$VERSION/$BUILD" in *[!A-Za-z0-9._+:/@-]*) exit 2 ;; esac && \
     for name in market strategy execution portfolio cron; do \
-      go build -mod=readonly -trimpath -o /out/$name ./$name/cmd || exit $?; \
+      go build -mod=readonly -trimpath -ldflags="-X main.Name=$name -X main.Version=$VERSION -X main.Build=$BUILD" -o /out/$name ./$name/cmd || exit $?; \
     done && \
     for name in migrate coreinit policyinit readycheck venueinit venuebaseline instancemigrate instanceupgrade; do \
-      go build -mod=readonly -trimpath -o /out/$name ./cmd/$name || exit $?; \
+      go build -mod=readonly -trimpath -ldflags="-X main.Name=$name -X main.Version=$VERSION -X main.Build=$BUILD" -o /out/$name ./cmd/$name || exit $?; \
     done
 RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
     go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./market/cmd ./strategy/cmd ./execution/cmd ./portfolio/cmd ./cron/cmd ./cmd/migrate ./cmd/coreinit ./cmd/policyinit ./cmd/readycheck ./cmd/venuebaseline ./cmd/instancemigrate ./cmd/instanceupgrade > /tmp/module-dirs && \

@@ -13,7 +13,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/tracing"
 )
 
-// Option injects an initialized dependency borrowed for the entire Deer lifetime.
+// Option supplies executable metadata or injects an initialized dependency.
 // The caller closes injected dependencies after Deer cleanup, including on failure.
 // Without an option, Deer creates and owns the dependency from configuration.
 type Option interface {
@@ -21,6 +21,7 @@ type Option interface {
 }
 
 type options struct {
+	buildInfo  *BuildInfo
 	tracing    *tracing.Runtime
 	logger     *logging.Logger
 	database   *postgres.Client

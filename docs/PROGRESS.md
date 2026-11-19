@@ -1,5 +1,11 @@
 # 当前进度
 
+## 2026-11-19 全项目编译信息
+
+- 按用户示例为五个核心服务、维护命令/探针及回归入口共 21 个自有 main 包增加 Name、Version、Build 与运行时 os.Hostname() ID；五个服务将这些值传入 Deer 的 owned logger，输出独立 build.info，保留 Nacos 配对版本与服务/实例身份。未更改核心或 readycheck 的无参数合同。
+- Makefile 的 build/build-fixtures 通过固定工具链注入三个 main 字符串，VERSION、BUILD 支持覆盖并在一次 make 中固定，默认 Git 版本与提交/UTC 构建记录；Docker 与 Compose 构建同步传入。构建参数经独立 argv 传递并校验标记格式，不把版本字符串当作 shell 代码。个人 go-build-metadata skill 已安装并通过 skill validator。
+- 五个入口的声明经实际链接与运行核对注入值及主机名；21 个入口构建、全库单元、Deer/五入口 race、格式/布局、lint、合同与生成一致性通过。工具链 55 项回归覆盖标记注入、主机名不在编译机注入、名称覆盖、参数拒绝、Git 缺失的开发构建及错误传播；完整 tooling 使用符合仓库要求且已有 PyYAML 的 Python 3.13 验证。容器构建完成五个 Linux 核心及镜像维护工具的注入，生成隔离 cron 验证镜像，Compose 四核心构建参数读回一致；编译信息改动不用于隐式重启交易服务。
+
 ## 2026-11-19 SUN 发布后实际验收（连续性未完全通过）
 
 - fa8e43f 已构建并发布 market，先受控排空挂单并备份业务库，配置及八份 Nacos 摘要前后保持；策略恢复原实例、原参数。最终观察为 03:43:07–03:53:07 UTC 共六百秒，四核心 healthy、容器身份/启动时间保持，自动重启零。

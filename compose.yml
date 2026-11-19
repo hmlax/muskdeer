@@ -37,6 +37,9 @@ services:
     image: muskdeer-market:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      args:
+        VERSION: "${VERSION:-dev}"
+        BUILD: "${BUILD:-unknown}"
       target: runtime-market
     environment:
       NACOS_DATA_CONFIG_ID: market.data.yaml
@@ -62,6 +65,9 @@ services:
     image: muskdeer-strategy:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      args:
+        VERSION: "${VERSION:-dev}"
+        BUILD: "${BUILD:-unknown}"
       target: runtime-strategy
     environment:
       NACOS_DATA_CONFIG_ID: strategy.data.yaml
@@ -93,6 +99,9 @@ services:
     image: muskdeer-execution:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      args:
+        VERSION: "${VERSION:-dev}"
+        BUILD: "${BUILD:-unknown}"
       target: runtime-execution
     environment:
       NACOS_DATA_CONFIG_ID: execution.data.yaml
@@ -119,6 +128,9 @@ services:
     image: muskdeer-portfolio:infra-local
     build:
       context: "${MUSKDEER_BUILD_CONTEXT:-.}"
+      args:
+        VERSION: "${VERSION:-dev}"
+        BUILD: "${BUILD:-unknown}"
       target: runtime-portfolio
     environment:
       NACOS_DATA_CONFIG_ID: portfolio.data.yaml
