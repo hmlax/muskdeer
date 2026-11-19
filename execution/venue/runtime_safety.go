@@ -175,6 +175,9 @@ func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePol
 
 func (r *Runtime) protectObserved(ctx context.Context, profile *commonv1.VenueProfilePolicy, observation quoteObservation) error {
 	lease, book, snapshot := observation.lease, observation.book, observation.snapshot
+	if r.directMaker() {
+		r.pendingQuoteCancellations(snapshot)
+	}
 	budget, err := r.store.Budget(ctx, lease.Key.AccountID)
 	if err != nil {
 		return err

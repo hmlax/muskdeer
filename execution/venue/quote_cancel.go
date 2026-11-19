@@ -10,6 +10,29 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
+func (r *Runtime) cancelQuoteRetirements(ctx context.Context, cycle *quoteCycle, orders []*common.VenueOrder) error {
+	if !r.directMaker() {
+		return r.cancelOrders(ctx, cycle.lease, cycle.profile, orders, cycle.result)
+	}
+	for cursor := 0; cursor < len(orders); cursor += maximumQuoteWave {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		deferRetirement, err := r.deferQuoteRetirement(cycle)
+		if err != nil {
+			return err
+		}
+		if deferRetirement {
+			cycle.retained.pending = true
+			return nil
+		}
+		if err := r.cancelQuoteWave(ctx, cycle.lease, cycle.profile, orders[cursor:min(cursor+maximumQuoteWave, len(orders))], cycle.result); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *Runtime) cancelOrders(ctx context.Context, lease domain.LeaseToken, profile *common.VenueProfilePolicy, orders []*common.VenueOrder, result *pb.QuoteResult) error {
 	if r.directMaker() {
 		for cursor := 0; cursor < len(orders); cursor += maximumQuoteWave {

@@ -1,6 +1,7 @@
 package himalaya
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -53,5 +54,36 @@ func TestDirectMakerSDKReplyLossDoesNotRetry(t *testing.T) {
 	}
 	if server.count() != 1 {
 		t.Fatalf("direct quote sent %d times", server.count())
+	}
+}
+
+func TestDirectCancellationBeforeDispatchIsDistinguishable(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []string{"invalid", "cancelled"} {
+		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
+			server := &sdkPeer{}
+			client := sdkClient(t, server, nil)
+			request := gateway.CancelRequest{
+				Scope:   directOrder().Scope,
+				OrderID: 42,
+			}
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			if kind == "invalid" {
+				request.OrderID = 0
+			} else {
+				cancel()
+			}
+			err := client.CancelQuote(ctx, request)
+			if !errors.Is(err, gateway.ErrNotDispatched) || errors.Is(err, domain.ErrOutcomeUnknown) {
+				t.Fatalf("pre-dispatch failure became an ambiguous cancel: %v", err)
+			}
+			server.mu.Lock()
+			defer server.mu.Unlock()
+			if server.cancelCalls != 0 {
+				t.Fatal("pre-dispatch failure reached SDK")
+			}
+		})
 	}
 }

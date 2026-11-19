@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -35,24 +36,25 @@ type Runtime struct {
 	washControl atomic.Pointer[washControl]
 	washNext    atomic.Int64
 	executionvenuev1.UnimplementedExecutionServer
-	db                *gorm.DB
-	owner             string
-	cfg               *venueconfig.RuntimeConfig
-	factory           *rpcclient.Factory
-	logger            *logging.Logger
-	gateway           gateway.Factory
-	store             *Store
-	leases            domain.LeaseRepository
-	client            *atomic.Pointer[gatewaySession]
-	closing           *atomic.Bool
-	gates             map[string]chan struct{}
-	quoteSlots        chan struct{}
-	quoteRefreshSlots chan struct{}
-	plans             map[string]*atomic.Int64
-	quotePlan         atomic.Pointer[quotePlanAuthority]
-	cutover           atomic.Bool
-	lastObservation   atomic.Int64
-	mailbox           *quoteMailbox
+	db                 *gorm.DB
+	owner              string
+	cfg                *venueconfig.RuntimeConfig
+	factory            *rpcclient.Factory
+	logger             *logging.Logger
+	gateway            gateway.Factory
+	store              *Store
+	leases             domain.LeaseRepository
+	client             *atomic.Pointer[gatewaySession]
+	closing            *atomic.Bool
+	gates              map[string]chan struct{}
+	quoteSlots         chan struct{}
+	quoteRefreshSlots  chan struct{}
+	quoteCancellations sync.Map
+	plans              map[string]*atomic.Int64
+	quotePlan          atomic.Pointer[quotePlanAuthority]
+	cutover            atomic.Bool
+	lastObservation    atomic.Int64
+	mailbox            *quoteMailbox
 }
 
 // Dependencies are borrowed once; the worker owns only the adapter connection it dials.
@@ -370,7 +372,8 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	if err != nil {
 		return nil, quoteFailed(quoteStepTargets, err)
 	}
-	retained, err := retainQuoteOrders(profile, snapshot, wanted, cutover, r.cfg.ReplacementFraction)
+	cancelling := r.pendingQuoteCancellations(snapshot)
+	retained, err := retainQuoteOrders(profile, quoteRetentionSnapshot(snapshot, cancelling), wanted, cutover, r.cfg.ReplacementFraction)
 	if err != nil {
 		return nil, err
 	}
@@ -388,10 +391,11 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 			InstanceID: r.cfg.InstanceID,
 			Revision:   r.cfg.Revision,
 		},
-		targets:  quoteMaintenanceOrder(plan.Targets, snapshot),
-		snapshot: snapshot,
-		retained: retained,
-		result:   result,
+		targets:    quoteMaintenanceOrder(plan.Targets, snapshot),
+		snapshot:   snapshot,
+		cancelling: cancelling,
+		retained:   retained,
+		result:     result,
 	}
 	if r.cfg.InstanceID > 0 {
 		return r.maintainCurrentDepth(ctx, cycle, wanted, cutover)
@@ -583,7 +587,10 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 		if !ok {
 			return ErrInvalidConfig
 		}
-		return client.CancelQuote(ctx, CancelRequest{
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		err := client.CancelQuote(ctx, CancelRequest{
 			Scope: Scope{
 				UserID: profile.UserId,
 				FundID: profile.FundId,
@@ -591,6 +598,10 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 			},
 			OrderID: id,
 		})
+		if !errors.Is(err, gateway.ErrNotDispatched) {
+			r.quoteCancellations.Store(order.OrderId, &quoteCancellationMark{observedAtMs: time.Now().UnixMilli()})
+		}
+		return err
 	}
 	admission, err := r.store.PrepareCancel(ctx, lease, CancelRequest{
 		Scope: Scope{

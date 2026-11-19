@@ -47,16 +47,16 @@ func (c *Client) SubmitQuote(ctx context.Context, request gateway.QuoteRequest) 
 // CancelQuote addresses the venue order ID directly and sends once.
 func (c *Client) CancelQuote(ctx context.Context, request gateway.CancelRequest) error {
 	if c == nil || c.sdk == nil || ctx == nil {
-		return ErrInvalidSubmit
+		return errors.Join(errSDKNotDispatched, ErrInvalidSubmit)
 	}
 	input, _, err := cancelInput(request)
 	if err != nil {
-		return err
+		return errors.Join(errSDKNotDispatched, err)
 	}
 	op, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	if err := op.Err(); err != nil {
-		return err
+		return errors.Join(errSDKNotDispatched, err)
 	}
 	response, err := c.sdk.CancelOrder(op, input)
 	if err != nil {

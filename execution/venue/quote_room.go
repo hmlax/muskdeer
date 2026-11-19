@@ -10,8 +10,8 @@ import (
 )
 
 // A preceding bridge may occupy the last slot when the source moves again.
-// Retire a small unsafe subset, OBSERVE the freed slots, then run the ordinary
-// fill-before-drain path. Never assume a cancel acknowledgement freed capacity.
+// Retire a small unsafe or still-visible pending subset, OBSERVE the freed slots,
+// then run fill-before-drain. Never assume an acknowledgement freed capacity.
 func (r *Runtime) makeQuoteRoom(ctx context.Context, cycle *quoteCycle, wanted map[string]*SubmitRequest) error {
 	if !r.directMaker() {
 		return nil
@@ -27,7 +27,8 @@ func (r *Runtime) makeQuoteRoom(ctx context.Context, cycle *quoteCycle, wanted m
 	if err != nil {
 		return err
 	}
-	retained, err := retainQuoteOrders(cycle.profile, snapshot, wanted, true, r.cfg.ReplacementFraction)
+	cycle.cancelling = r.pendingQuoteCancellations(snapshot)
+	retained, err := retainQuoteOrders(cycle.profile, quoteRetentionSnapshot(snapshot, cycle.cancelling), wanted, true, r.cfg.ReplacementFraction)
 	if err != nil {
 		return err
 	}
@@ -42,12 +43,17 @@ func quoteRoomRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest) (
 		return nil, err
 	}
 	active := make(map[domain.Side]int)
+	stable := make(map[domain.Side]int)
 	for _, order := range cycle.snapshot.Orders {
 		if native.Active(order.Status) {
 			active[domain.Side(order.Side)]++
+			if !cycle.cancelling[order.OrderId] && strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+				stable[domain.Side(order.Side)]++
+			}
 		}
 	}
 	selected := make(map[domain.Side]int)
+	retiring := make(map[domain.Side]int)
 	var orders []*common.VenueOrder
 	for _, order := range cycle.snapshot.Orders {
 		side := domain.Side(order.Side)
@@ -56,11 +62,17 @@ func quoteRoomRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest) (
 			selected[side] >= min(maximumQuoteWave/2, active[side]-1) {
 			continue
 		}
-		if _, safe := bridgePrice(order, best, limit); safe {
+		if _, safe := bridgePrice(order, best, limit); safe && !cycle.cancelling[order.OrderId] {
+			continue
+		}
+		if !cycle.cancelling[order.OrderId] && stable[side]-retiring[side] <= 1 {
 			continue
 		}
 		orders = append(orders, order)
 		selected[side]++
+		if !cycle.cancelling[order.OrderId] {
+			retiring[side]++
+		}
 	}
 	return orders, nil
 }

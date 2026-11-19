@@ -71,7 +71,7 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 		span.SetAttributes(attribute.String("quote.step", quoteFailureStep(err)), attribute.String("quote.reason", safeReason(err)))
 		tracing.RecordError(work, err)
 		if err != nil && !failed && ctx.Err() == nil {
-			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err)), slog.String("step", quoteFailureStep(err))); logErr != nil {
+			if logErr := r.logger.LogAttrs(context.WithoutCancel(work), slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err)), slog.String("step", quoteFailureStep(err))); logErr != nil {
 				return logErr
 			}
 		}

@@ -75,7 +75,8 @@ func (r *Runtime) finishQuoteDepth(ctx context.Context, cycle *quoteCycle, wante
 			return nil, err
 		}
 		cycle.snapshot, cycle.admitted = snapshot, nil
-		retained, err := retainQuoteOrders(cycle.profile, snapshot, wanted, true, r.cfg.ReplacementFraction)
+		cycle.cancelling = r.pendingQuoteCancellations(snapshot)
+		retained, err := retainQuoteOrders(cycle.profile, quoteRetentionSnapshot(snapshot, cycle.cancelling), wanted, true, r.cfg.ReplacementFraction)
 		if err != nil {
 			return nil, err
 		}
@@ -87,11 +88,23 @@ func (r *Runtime) finishQuoteDepth(ctx context.Context, cycle *quoteCycle, wante
 			break
 		}
 	}
-	selected := depthRetirements(cycle, wanted, r.cfg.ReplacementFraction)
+	var selected []*common.VenueOrder
+	deferRetirement, err := r.deferQuoteRetirement(cycle)
+	if err != nil {
+		return nil, err
+	}
+	if deferRetirement {
+		// A newer accepted price invalidates this old retirement set. Hand
+		// back to the same writer's pending intent; it observes and checks
+		// funds/source again before sending anything for that new target.
+		cycle.retained.pending = true
+	} else {
+		selected = depthRetirements(cycle, wanted, r.cfg.ReplacementFraction)
+	}
 	if err := r.warnQuoteDrain(ctx, cycle, selected); err != nil {
 		return nil, err
 	}
-	if err := r.cancelOrders(ctx, cycle.lease, cycle.profile, selected, cycle.result); err != nil {
+	if err := r.cancelQuoteRetirements(ctx, cycle, selected); err != nil {
 		return nil, err
 	}
 	if !cycle.retained.pending {
@@ -110,7 +123,7 @@ func depthRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest, repla
 	limit := decimal.RequireFromString(cycle.profile.MaximumOrderNotional)
 	counts, depth := make(map[string]int), make(map[domain.Side]int)
 	for _, order := range cycle.snapshot.Orders {
-		if !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+		if cycle.cancelling[order.OrderId] || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
 			continue
 		}
 		key, _, err := orderKey(order)
@@ -124,7 +137,7 @@ func depthRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest, repla
 	}
 	var selected []*common.VenueOrder
 	for _, order := range cycle.snapshot.Orders {
-		if !native.Active(order.Status) || cycle.retained.orders[order.OrderId] || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+		if cycle.cancelling[order.OrderId] || !native.Active(order.Status) || cycle.retained.orders[order.OrderId] || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
 			continue
 		}
 		key, _, err := orderKey(order)

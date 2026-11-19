@@ -22,6 +22,7 @@ type quoteCycle struct {
 	authority   LiveAuthority
 	targets     []*commonv1.VenueTarget
 	snapshot    *commonv1.VenueSnapshot
+	cancelling  map[string]bool
 	retained    *quoteRetention
 	result      *executionvenuev1.QuoteResult
 	admitted    []*commonv1.VenueTarget

@@ -45,7 +45,7 @@ func (cycle *quoteCycle) needsQuoteTouch(request gateway.QuoteRequest) bool {
 		return false
 	}
 	for _, order := range cycle.snapshot.Orders {
-		if !native.Active(order.Status) || order.Side != string(request.Side) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+		if cycle.cancelling[order.OrderId] || !native.Active(order.Status) || order.Side != string(request.Side) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
 			continue
 		}
 		_, quantity, e1 := orderKey(order)
@@ -73,7 +73,7 @@ func (cycle *quoteCycle) visibleQuoteDepth() map[domain.Side]int {
 		return nil
 	}
 	for _, order := range cycle.snapshot.Orders {
-		if !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+		if cycle.cancelling[order.OrderId] || !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
 			continue
 		}
 		if _, safe := bridgePrice(order, best, limit); !safe {
