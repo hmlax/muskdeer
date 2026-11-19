@@ -68,8 +68,15 @@ func TestBookSubscriptionOwnsNoDatabaseAndCleansUp(t *testing.T) {
 		runtime.mu.Unlock()
 		synctest.Wait()
 		var last int64
-		for len(stream.sent) > 0 {
-			last = (<-stream.sent).Sequence
+		deadline := time.NewTimer(time.Second)
+		defer deadline.Stop()
+		for last < 100 {
+			select {
+			case book := <-stream.sent:
+				last = book.Sequence
+			case <-deadline.C:
+				t.Fatalf("coalesced source = %d, want 100", last)
+			}
 		}
 		if last != 100 {
 			t.Fatalf("coalesced source = %d, want 100", last)

@@ -203,19 +203,22 @@ func (x *VenueAuthority) GetExpiresAtMs() int64 {
 }
 
 type VenueBook struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Symbol        string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
-	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
-	Segment       string                 `protobuf:"bytes,3,opt,name=segment,proto3" json:"segment,omitempty"`
-	Sequence      int64                  `protobuf:"varint,4,opt,name=sequence,proto3" json:"sequence,omitempty"`
-	EventAtMs     int64                  `protobuf:"varint,5,opt,name=event_at_ms,json=eventAtMs,proto3" json:"event_at_ms,omitempty"`
-	ReceivedAtMs  int64                  `protobuf:"varint,6,opt,name=received_at_ms,json=receivedAtMs,proto3" json:"received_at_ms,omitempty"`
-	ValidUntilMs  int64                  `protobuf:"varint,7,opt,name=valid_until_ms,json=validUntilMs,proto3" json:"valid_until_ms,omitempty"`
-	Bids          []*VenueLevel          `protobuf:"bytes,8,rep,name=bids,proto3" json:"bids,omitempty"`
-	Asks          []*VenueLevel          `protobuf:"bytes,9,rep,name=asks,proto3" json:"asks,omitempty"`
-	Publisher     *VenueAuthority        `protobuf:"bytes,10,opt,name=publisher,proto3" json:"publisher,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Symbol       string                 `protobuf:"bytes,1,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Source       string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	Segment      string                 `protobuf:"bytes,3,opt,name=segment,proto3" json:"segment,omitempty"`
+	Sequence     int64                  `protobuf:"varint,4,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	EventAtMs    int64                  `protobuf:"varint,5,opt,name=event_at_ms,json=eventAtMs,proto3" json:"event_at_ms,omitempty"`
+	ReceivedAtMs int64                  `protobuf:"varint,6,opt,name=received_at_ms,json=receivedAtMs,proto3" json:"received_at_ms,omitempty"`
+	ValidUntilMs int64                  `protobuf:"varint,7,opt,name=valid_until_ms,json=validUntilMs,proto3" json:"valid_until_ms,omitempty"`
+	Bids         []*VenueLevel          `protobuf:"bytes,8,rep,name=bids,proto3" json:"bids,omitempty"`
+	Asks         []*VenueLevel          `protobuf:"bytes,9,rep,name=asks,proto3" json:"asks,omitempty"`
+	Publisher    *VenueAuthority        `protobuf:"bytes,10,opt,name=publisher,proto3" json:"publisher,omitempty"`
+	// Nonzero only for an authoritative same-source snapshot request. Freshness
+	// starts when the request began; event_at_ms retains the exchange event time.
+	SnapshotStartedAtMs int64 `protobuf:"varint,11,opt,name=snapshot_started_at_ms,json=snapshotStartedAtMs,proto3" json:"snapshot_started_at_ms,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *VenueBook) Reset() {
@@ -316,6 +319,13 @@ func (x *VenueBook) GetPublisher() *VenueAuthority {
 		return x.Publisher
 	}
 	return nil
+}
+
+func (x *VenueBook) GetSnapshotStartedAtMs() int64 {
+	if x != nil {
+		return x.SnapshotStartedAtMs
+	}
+	return 0
 }
 
 type VenueMarket struct {
@@ -1048,7 +1058,7 @@ const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
 	"account_id\x18\x01 \x01(\tR\taccountId\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\tR\aownerId\x12\x14\n" +
 	"\x05epoch\x18\x03 \x01(\x03R\x05epoch\x12\"\n" +
-	"\rexpires_at_ms\x18\x04 \x01(\x03R\vexpiresAtMs\"\x87\x03\n" +
+	"\rexpires_at_ms\x18\x04 \x01(\x03R\vexpiresAtMs\"\xbc\x03\n" +
 	"\tVenueBook\x12\x16\n" +
 	"\x06symbol\x18\x01 \x01(\tR\x06symbol\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12\x18\n" +
@@ -1060,7 +1070,8 @@ const file_deer_proto_common_v1_venue_proto_rawDesc = "" +
 	"\x04bids\x18\b \x03(\v2\x1e.muskdeer.common.v1.VenueLevelR\x04bids\x122\n" +
 	"\x04asks\x18\t \x03(\v2\x1e.muskdeer.common.v1.VenueLevelR\x04asks\x12@\n" +
 	"\tpublisher\x18\n" +
-	" \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\tpublisher\"\xf8\x02\n" +
+	" \x01(\v2\".muskdeer.common.v1.VenueAuthorityR\tpublisher\x123\n" +
+	"\x16snapshot_started_at_ms\x18\v \x01(\x03R\x13snapshotStartedAtMs\"\xf8\x02\n" +
 	"\vVenueMarket\x12\x1d\n" +
 	"\n" +
 	"price_tick\x18\x01 \x01(\tR\tpriceTick\x12#\n" +

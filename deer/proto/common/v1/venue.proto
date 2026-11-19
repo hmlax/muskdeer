@@ -29,6 +29,9 @@ message VenueBook {
   repeated VenueLevel bids = 8;
   repeated VenueLevel asks = 9;
   VenueAuthority publisher = 10;
+  // Nonzero only for an authoritative same-source snapshot request. Freshness
+  // starts when the request began; event_at_ms retains the exchange event time.
+  int64 snapshot_started_at_ms = 11;
 }
 message VenueMarket {
   string price_tick = 1;

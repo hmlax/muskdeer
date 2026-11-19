@@ -1,5 +1,12 @@
 # 当前进度
 
+## 2026-11-19 SUN 静默行情与同源快照
+
+- 用户报告 SUN-USDT 空档卡住。三分钟实际撮合读取 360 次，其中买卖侧均为空各 183 次；原始 Binance 深度连接三十秒只收到三十帧，最大间隔 8862 毫秒，事件本身新鲜且序号未重复。旧两秒读超时反复结束健康的低活跃连接，事件帧超过 1.5 秒后拒绝报价；不能用加盖旧帧时间解决。
+- 深度流静默 750 毫秒时实际读取同一 Binance USDm 的二十档 REST 快照；保留 E 事件时间与 lastUpdateId，VenueBook 新增 snapshot_started_at_ms 明示真实请求开始，观察有效期从请求开始计算至多 1.5 秒，整个请求含排队至多 500 毫秒。未读取成功不续期，倒退序号不覆盖新观察；没有隐式换行情源。共享每秒八次请求预算及跨品种 429/418 Retry-After 退避，不限制实例数量。
+- WebSocket 活性独立于报价新鲜度，按服务器三分钟 ping 使用四分钟读期限，显式响应 pong；停止仍取消并加入 socket reader。成交流保持原事件/交易时间及 TradeAge，不生成静默成交。官方合同见 [连接](https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect)、[深度流](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/ws-streams/public#partial-book-depth-streams)、[REST 深度](https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data#order-book)。
+- 新回归先复现静默两秒后断开且无快照，再验证真实快照续接、原事件时间不改、HTTP 失败不产生新鲜度、共享限流和取消退出。修正既有订阅测试的缓冲区排空等待，保留最终必须收到序号100的断言。market/usdm、strategy/native、execution/venue、公共 native race，格式/布局、lint 零问题、合同及 86 份 Proto/五 Wire 比较通过；无数据库结构或业务参数变更。发布后实际 SUN 采样另记。
+
 ## 2026-11-19 实际发布及 BTC/ETH 连续性验收（未通过）
 
 - 已逐步提交并推送 d361b9e（Nacos 有界恢复）、07c4075（做市只读观察）、0b4ecc8（有界补单）、ccd3c44（覆盖与拥塞让位）、e5f3557（单侧缺档优先）。四核心发布 Nacos 修复，execution 最终运行 e5f3557；每次受控维护先停止策略、撤到零并备份业务库，保留前版镜像。没有迁移、清库或修改实例参数；最终再次核对全部实例配置及八份 Nacos 文档摘要一致。

@@ -29,17 +29,18 @@ import (
 type Runtime struct {
 	inventory []*commonv1.VenueInstanceRevision
 	marketvenuev1.UnimplementedMarketServer
-	children     map[string]*Runtime
-	db           *gorm.DB
-	owner        string
-	cfg          *venueconfig.RuntimeConfig
-	leases       domain.LeaseRepository
-	mu           sync.RWMutex
-	books        map[string]*commonv1.VenueBook
-	trades       map[string]*commonv1.VenueTrade
-	bookReaders  subscriptions[*commonv1.VenueBook]
-	tradeReaders subscriptions[*commonv1.VenueTrade]
-	logger       *logging.Logger
+	children          map[string]*Runtime
+	db                *gorm.DB
+	owner             string
+	cfg               *venueconfig.RuntimeConfig
+	leases            domain.LeaseRepository
+	mu                sync.RWMutex
+	books             map[string]*commonv1.VenueBook
+	trades            map[string]*commonv1.VenueTrade
+	bookReaders       subscriptions[*commonv1.VenueBook]
+	tradeReaders      subscriptions[*commonv1.VenueTrade]
+	logger            *logging.Logger
+	snapshotAdmission *snapshotBudget
 }
 
 // NewRuntime borrows dependencies without starting sockets or tasks.
@@ -53,13 +54,14 @@ func NewRuntime(ctx context.Context, db *gorm.DB, owner string, cfg *configv1.Bu
 		return nil, err
 	}
 	return &Runtime{
-		db:     db,
-		owner:  owner,
-		cfg:    settings,
-		leases: leases,
-		books:  make(map[string]*commonv1.VenueBook),
-		trades: make(map[string]*commonv1.VenueTrade),
-		logger: logger,
+		db:                db,
+		owner:             owner,
+		cfg:               settings,
+		leases:            leases,
+		books:             make(map[string]*commonv1.VenueBook),
+		trades:            make(map[string]*commonv1.VenueTrade),
+		logger:            logger,
+		snapshotAdmission: newSnapshotBudget(),
 	}, nil
 }
 
@@ -149,6 +151,9 @@ func (r *Runtime) session(ctx context.Context, symbol string) error {
 	feed, err := NewFeed(symbol)
 	if err != nil {
 		return err
+	}
+	if r.snapshotAdmission != nil {
+		feed.snapshotAdmission = r.snapshotAdmission
 	}
 	return feed.Run(ctx, func(work context.Context, book *commonv1.VenueBook) error {
 		if r.cfg.InstanceID == 0 && time.Until(token.ExpiresAt) < r.cfg.Venue.LeaseTtl.AsDuration()/2 {

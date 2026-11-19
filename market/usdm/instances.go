@@ -26,6 +26,7 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 		return nil, err
 	}
 	parent := &Runtime{children: make(map[string]*Runtime)}
+	admission := newSnapshotBudget()
 	for _, instance := range instances {
 		if instance == nil || instance.ID <= 0 {
 			return nil, instanceconfig.ErrInvalid
@@ -45,12 +46,13 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 		child := parent.children[key]
 		if child == nil {
 			child = &Runtime{
-				db:     db,
-				owner:  owner,
-				cfg:    settings,
-				books:  make(map[string]*commonv1.VenueBook),
-				trades: make(map[string]*commonv1.VenueTrade),
-				logger: logger,
+				db:                db,
+				owner:             owner,
+				cfg:               settings,
+				books:             make(map[string]*commonv1.VenueBook),
+				trades:            make(map[string]*commonv1.VenueTrade),
+				logger:            logger,
+				snapshotAdmission: admission,
 			}
 			parent.children[key] = child
 		} else {
