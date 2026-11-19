@@ -24,17 +24,26 @@ func (r *Runtime) quoteCutover(configured bool) bool {
 }
 
 func (r *Runtime) submitDirectQuote(ctx context.Context, cycle *quoteCycle, target *common.VenueTarget) error {
-	client, ok := r.client.Load().Client.(gateway.QuoteClient)
-	if !ok || !validStoreContext(ctx) {
-		return ErrInvalidConfig
+	request, err := r.prepareDirectQuote(ctx, cycle, target)
+	if err != nil {
+		return err
+	}
+	if err := r.sendDirectQuote(ctx, cycle, request); err != nil {
+		return err
+	}
+	cycle.result.Placed++
+	cycle.admitted = append(cycle.admitted, target)
+	return nil
+}
+
+func (r *Runtime) prepareDirectQuote(ctx context.Context, cycle *quoteCycle, target *common.VenueTarget) (gateway.QuoteRequest, error) {
+	if !validStoreContext(ctx) {
+		return gateway.QuoteRequest{}, ErrInvalidConfig
 	}
 	price, e1 := native.Value(target.GetPrice(), false, false)
 	quantity, e2 := native.Value(target.GetQuantity(), false, false)
 	if e1 != nil || e2 != nil || cycle.authority.InstanceID != r.cfg.InstanceID || cycle.authority.Revision != r.cfg.Revision {
-		return ErrInvalidSubmit
-	}
-	if err := r.checkDirectQuoteConfig(ctx, cycle.profile); err != nil {
-		return err
+		return gateway.QuoteRequest{}, ErrInvalidSubmit
 	}
 	request := gateway.QuoteRequest{
 		Scope: Scope{
@@ -49,21 +58,40 @@ func (r *Runtime) submitDirectQuote(ctx context.Context, cycle *quoteCycle, targ
 		Leverage: cycle.profile.Leverage,
 	}
 	if err := r.checkDirectQuoteBudget(ctx, cycle, request); err != nil {
+		return gateway.QuoteRequest{}, err
+	}
+	return request, nil
+}
+
+func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, request gateway.QuoteRequest) error {
+	client, ok := r.client.Load().Client.(gateway.QuoteClient)
+	if !ok {
+		return ErrInvalidConfig
+	}
+	// Admission waits consume the original observation window. They cannot
+	// authorize a stale send or extend either freshness deadline.
+	until := time.UnixMilli(min(cycle.authority.Book.GetValidUntilMs(), cycle.snapshot.GetValidUntilMs())).Add(-50 * time.Millisecond)
+	admit, stop := context.WithDeadline(ctx, until.Add(-minimumLiveSDKWindow))
+	defer stop()
+	if r.quoteSlots != nil {
+		select {
+		case r.quoteSlots <- struct{}{}:
+			defer func() { <-r.quoteSlots }()
+		case <-admit.Done():
+			return admit.Err()
+		}
+	}
+	if err := r.checkDirectQuoteConfig(ctx, cycle.profile); err != nil {
 		return err
 	}
-	now := time.Now().UnixMilli()
-	deadline, _ := ctx.Deadline()
-	left := time.Duration(min(cycle.authority.Book.GetValidUntilMs(), cycle.snapshot.GetValidUntilMs(), deadline.UnixMilli())-now)*time.Millisecond - 50*time.Millisecond
-	if left < minimumLiveSDKWindow {
+	if deadline, ok := ctx.Deadline(); !ok || min(time.Until(deadline), time.Until(until)) < minimumLiveSDKWindow {
 		return native.ErrInvalid
 	}
-	bounded, cancel := context.WithTimeout(ctx, min(left, maximumOperationTimeout))
+	bounded, cancel := context.WithTimeout(ctx, min(time.Until(until), maximumOperationTimeout))
 	defer cancel()
 	if _, err := client.SubmitQuote(bounded, request); err != nil {
 		return err
 	}
-	cycle.result.Placed++
-	cycle.admitted = append(cycle.admitted, target)
 	return nil
 }
 

@@ -35,20 +35,21 @@ type Runtime struct {
 	washControl atomic.Pointer[washControl]
 	washNext    atomic.Int64
 	executionvenuev1.UnimplementedExecutionServer
-	db        *gorm.DB
-	owner     string
-	cfg       *venueconfig.RuntimeConfig
-	factory   *rpcclient.Factory
-	logger    *logging.Logger
-	gateway   gateway.Factory
-	store     *Store
-	leases    domain.LeaseRepository
-	client    *atomic.Pointer[gatewaySession]
-	closing   *atomic.Bool
-	gates     map[string]chan struct{}
-	plans     map[string]*atomic.Int64
-	quotePlan atomic.Pointer[quotePlanAuthority]
-	cutover   atomic.Bool
+	db         *gorm.DB
+	owner      string
+	cfg        *venueconfig.RuntimeConfig
+	factory    *rpcclient.Factory
+	logger     *logging.Logger
+	gateway    gateway.Factory
+	store      *Store
+	leases     domain.LeaseRepository
+	client     *atomic.Pointer[gatewaySession]
+	closing    *atomic.Bool
+	gates      map[string]chan struct{}
+	quoteSlots chan struct{}
+	plans      map[string]*atomic.Int64
+	quotePlan  atomic.Pointer[quotePlanAuthority]
+	cutover    atomic.Bool
 }
 
 // Dependencies are borrowed once; the worker owns only the adapter connection it dials.
@@ -86,18 +87,19 @@ func NewRuntime(ctx context.Context, cfg *configv1.BusinessRuntime, deps Depende
 		plans[AccountID(p.UserId, p.FundId)] = &atomic.Int64{}
 	}
 	return &Runtime{
-		db:      db,
-		owner:   owner,
-		cfg:     settings,
-		factory: factory,
-		logger:  logger,
-		gateway: factoryGateway,
-		store:   store,
-		leases:  leases,
-		gates:   gates,
-		plans:   plans,
-		client:  &atomic.Pointer[gatewaySession]{},
-		closing: &atomic.Bool{},
+		db:         db,
+		owner:      owner,
+		cfg:        settings,
+		factory:    factory,
+		logger:     logger,
+		gateway:    factoryGateway,
+		store:      store,
+		leases:     leases,
+		gates:      gates,
+		quoteSlots: make(chan struct{}, maximumConcurrentQuoteSends),
+		plans:      plans,
+		client:     &atomic.Pointer[gatewaySession]{},
+		closing:    &atomic.Bool{},
 	}, nil
 }
 

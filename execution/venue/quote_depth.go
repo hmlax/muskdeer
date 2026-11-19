@@ -32,6 +32,16 @@ func (r *Runtime) maintainCurrentDepth(ctx context.Context, cycle *quoteCycle, w
 			}
 		}
 	}
+	if err := r.fillQuoteDepth(ctx, cycle); err != nil {
+		return nil, err
+	}
+	return r.finishQuoteDepth(ctx, cycle, wanted)
+}
+
+func (r *Runtime) fillQuoteDepth(ctx context.Context, cycle *quoteCycle) error {
+	if r.directMaker() {
+		return r.fillDirectQuoteDepth(ctx, cycle)
+	}
 	for _, target := range cycle.targets {
 		price, _ := native.Value(target.Price, false, false)
 		if cycle.retained.targets[target.Side+"/"+price.String()] {
@@ -48,9 +58,13 @@ func (r *Runtime) maintainCurrentDepth(ctx context.Context, cycle *quoteCycle, w
 			break
 		}
 		if err := r.submitQuote(ctx, cycle, target); err != nil {
-			return nil, err
+			return err
 		}
 	}
+	return nil
+}
+
+func (r *Runtime) finishQuoteDepth(ctx context.Context, cycle *quoteCycle, wanted map[string]*SubmitRequest) (*execution.QuoteResult, error) {
 	if cycle.result.Placed > 0 {
 		snapshot, err := r.refresh(ctx, cycle.profile, cycle.lease, cycle.authority.Book)
 		if err != nil {

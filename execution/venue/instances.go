@@ -57,6 +57,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 	client, closing := &atomic.Pointer[gatewaySession]{}, &atomic.Bool{}
 	result.client, result.closing, result.store = client, closing, store
 	gates := make(map[string]chan struct{})
+	quoteSlots := make(chan struct{}, maximumConcurrentQuoteSends)
 	for _, instance := range instances {
 		result.inventory = append(result.inventory, &commonv1.VenueInstanceRevision{
 			Id:       instance.ID,
@@ -76,17 +77,18 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 			gates[key] = make(chan struct{}, 1)
 		}
 		child := &Runtime{
-			db:      deps.DB,
-			owner:   deps.OwnerID,
-			cfg:     settings,
-			factory: deps.RPC,
-			logger:  deps.Logger,
-			gateway: deps.Gateway,
-			store:   store,
-			client:  client,
-			closing: closing,
-			gates:   gates,
-			plans:   map[string]*atomic.Int64{key: {}},
+			db:         deps.DB,
+			owner:      deps.OwnerID,
+			cfg:        settings,
+			factory:    deps.RPC,
+			logger:     deps.Logger,
+			gateway:    deps.Gateway,
+			store:      store,
+			client:     client,
+			closing:    closing,
+			gates:      gates,
+			quoteSlots: quoteSlots,
+			plans:      map[string]*atomic.Int64{key: {}},
 		}
 		result.children[instance.ID] = child
 		result.ordered = append(result.ordered, child)
