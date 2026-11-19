@@ -133,19 +133,54 @@ func (cycle *quoteCycle) quoteMakerMaintenanceOrder() []*commonv1.VenueTarget {
 		side := domain.Side(target.Side)
 		queues[side] = append(queues[side], target)
 	}
+	best := quoteBestTargets(cycle.targets)
+	touch := make(map[domain.Side]*commonv1.VenueTarget)
+	for _, target := range missing {
+		side := domain.Side(target.Side)
+		if full[side] && target == best[side] {
+			touch[side] = target
+		}
+	}
 	ordered := make([]*commonv1.VenueTarget, 0, len(cycle.targets))
 	for len(ordered) < len(missing) {
-		side := domain.SideBuy
-		if len(queues[side]) == 0 || len(queues[domain.SideSell]) > 0 && depth[domain.SideSell] < depth[side] {
-			side = domain.SideSell
-		}
+		side := quoteMaintenanceSide(queues, depth, touch, len(ordered))
 		ordered = append(ordered, queues[side][0])
 		queues[side] = queues[side][1:]
-		// Allocate scarce first-wave requests to the shallow side before
-		// spending a bridge slot refreshing an already populated side.
+		// Shallow coverage comes first; the same wave also reserves a missing
+		// opposite touch before deeper levels consume the remaining requests.
 		depth[side]++
 	}
 	return append(ordered, refresh...)
+}
+
+func quoteBestTargets(targets []*commonv1.VenueTarget) map[domain.Side]*commonv1.VenueTarget {
+	best := make(map[domain.Side]*commonv1.VenueTarget)
+	prices := make(map[domain.Side]decimal.Decimal)
+	for _, target := range targets {
+		side := domain.Side(target.Side)
+		price, _ := native.Value(target.Price, false, false)
+		if best[side] == nil || side == domain.SideBuy && price.GreaterThan(prices[side]) || side == domain.SideSell && price.LessThan(prices[side]) {
+			best[side], prices[side] = target, price
+		}
+	}
+	return best
+}
+
+func quoteMaintenanceSide(queues map[domain.Side][]*commonv1.VenueTarget, depth map[domain.Side]int, touch map[domain.Side]*commonv1.VenueTarget, selected int) domain.Side {
+	// Two proposals cover the shallow side's outer edge and its best price.
+	// A full opposite side must not wait for an entire depth rebuild to touch.
+	if selected == maximumQuoteWave/2 {
+		for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
+			if len(queues[side]) > 0 && queues[side][0] == touch[side] {
+				return side
+			}
+		}
+	}
+	side := domain.SideBuy
+	if len(queues[side]) == 0 || len(queues[domain.SideSell]) > 0 && depth[domain.SideSell] < depth[side] {
+		side = domain.SideSell
+	}
+	return side
 }
 
 func quoteMaintenanceTargets(targets []*commonv1.VenueTarget, snapshot *commonv1.VenueSnapshot) ([]*commonv1.VenueTarget, []*commonv1.VenueTarget) {

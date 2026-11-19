@@ -16,7 +16,7 @@ func TestFullQuoteSideRefreshesBestPriceBeforeItsOuterEdge(t *testing.T) {
 	for _, kind := range []string{"full", "shallow_ask", "duplicate_bid", "foreign_bid", "unsafe_bid", "ack_only_bid"} {
 		t.Run(kind, func(t *testing.T) {
 			t.Parallel()
-			cycle := fullQuoteTouchCycle()
+			cycle := fullQuoteTouchCycle(3)
 			wantBid, wantAsk := "99.9", "100.1"
 			switch kind {
 			case "shallow_ask":
@@ -64,7 +64,7 @@ func TestFullQuoteSideRefreshesBestPriceBeforeItsOuterEdge(t *testing.T) {
 	}
 }
 
-func fullQuoteTouchCycle() *quoteCycle {
+func fullQuoteTouchCycle(depth int) *quoteCycle {
 	cycle := &quoteCycle{
 		profile: &common.VenueProfilePolicy{
 			Symbol:               "BTCUSDT",
@@ -75,7 +75,7 @@ func fullQuoteTouchCycle() *quoteCycle {
 		snapshot:    &common.VenueSnapshot{},
 	}
 	for sideIndex, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
-		for level := range 3 {
+		for level := range depth {
 			distance := decimal.NewFromInt(int64(level + 1)).Shift(-1)
 			price, old := decimal.NewFromInt(100).Sub(distance), decimal.NewFromInt(99).Sub(distance)
 			if side == domain.SideSell {
@@ -87,8 +87,8 @@ func fullQuoteTouchCycle() *quoteCycle {
 				Quantity: "0.1",
 			})
 			cycle.snapshot.Orders = append(cycle.snapshot.Orders, &common.VenueOrder{
-				OrderId:          strconv.Itoa(sideIndex*3 + level + 1),
-				ClientId:         native.InstanceClientPrefix(cycle.profile) + strconv.Itoa(sideIndex*3+level),
+				OrderId:          strconv.Itoa(sideIndex*depth + level + 1),
+				ClientId:         native.InstanceClientPrefix(cycle.profile) + strconv.Itoa(sideIndex*depth+level),
 				Side:             string(side),
 				Price:            old.String(),
 				Quantity:         "0.1",
@@ -98,4 +98,26 @@ func fullQuoteTouchCycle() *quoteCycle {
 		}
 	}
 	return cycle
+}
+
+func TestShallowRefillAlsoCoversMissingOppositeBestPrice(t *testing.T) {
+	t.Parallel()
+	cycle := fullQuoteTouchCycle(20)
+	cycle.snapshot.Orders = cycle.snapshot.Orders[:21]
+	ordered := cycle.quoteMakerMaintenanceOrder()
+	for index, want := range []string{"102", "100.1", "99.9"} {
+		if ordered[index].Price != want {
+			t.Fatalf("first wave[%d]=%s, want %s: shallow coverage and opposite touch must share the wave", index, ordered[index].Price, want)
+		}
+	}
+	seen := make(map[*common.VenueTarget]bool)
+	for _, target := range ordered {
+		if seen[target] {
+			t.Fatal("touch allocation duplicated a proposal")
+		}
+		seen[target] = true
+	}
+	if len(seen) != len(cycle.targets) {
+		t.Fatal("touch allocation dropped configured depth")
+	}
 }

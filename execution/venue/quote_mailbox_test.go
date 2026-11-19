@@ -111,3 +111,34 @@ func mailboxTestPlan(sequence int64) *pb.QuotePlan {
 		Targets: []*common.VenueTarget{{Price: "99"}},
 	}
 }
+
+func TestMakerHandoffRequiresANewerUnexpiredAcceptedObservation(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []string{"new_sequence", "new_snapshot", "same_observation", "reversed", "expired"} {
+		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
+			runtime := &Runtime{mailbox: newQuoteMailbox()}
+			previous := mailboxTestPlan(10)
+			next := mailboxTestPlan(11)
+			want := true
+			switch kind {
+			case "new_snapshot":
+				next.Book.Sequence = previous.Book.Sequence
+				next.Book.SnapshotStartedAtMs = previous.Book.EventAtMs + 1
+			case "same_observation":
+				next.Book.Sequence, next.Book.EventAtMs = previous.Book.Sequence, previous.Book.EventAtMs
+				want = false
+			case "reversed":
+				next.Book.Sequence = 9
+				want = false
+			case "expired":
+				next.Book.ValidUntilMs = time.Now().Add(-time.Second).UnixMilli()
+				want = false
+			}
+			runtime.mailbox.offer(next)
+			if got := runtime.newerMakerIntent(previous); (got != nil) != want {
+				t.Fatalf("new target handoff(%s) = %v, want eligible=%t", kind, got, want)
+			}
+		})
+	}
+}

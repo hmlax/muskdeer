@@ -6,11 +6,13 @@ import (
 	"log/slog"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
+	"github.com/hmlax/muskdeer/deer/tracing"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -55,7 +57,11 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 	profile := r.cfg.Venue.Profiles[0]
 	failed := false
 	return r.mailbox.run(ctx, r.cfg.OperationTimeout, func(work context.Context, plan *pb.QuotePlan) error {
+		work, span := r.factory.StartOperation(work, "execution.quote")
+		span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
 		err := r.applyMakerIntent(work, profile, plan)
+		tracing.RecordError(work, err)
+		span.End()
 		if err != nil && !failed && ctx.Err() == nil {
 			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err))); logErr != nil {
 				return logErr
@@ -82,7 +88,29 @@ func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenuePro
 	if reconcileErr == nil || ctx.Err() != nil {
 		return reconcileErr
 	}
+	if latest := r.newerMakerIntent(plan); latest != nil {
+		// This is a separately admitted, newer target, never a replay of an SDK
+		// request. Re-read matching and all risk under the SAME writer/deadline.
+		_, reconcileErr = r.reconcile(ctx, profile, latest)
+		if reconcileErr == nil || ctx.Err() != nil {
+			return reconcileErr
+		}
+	}
 	// Failed replacement must still run risk reduction under the same writer
 	// and deadline. No source, account or configuration guard is bypassed.
 	return errors.Join(reconcileErr, r.protect(ctx, profile))
+}
+
+func (r *Runtime) newerMakerIntent(previous *pb.QuotePlan) *pb.QuotePlan {
+	if r.mailbox == nil {
+		return nil
+	}
+	next := r.mailbox.pending.Load()
+	if next == nil || next == previous || next.GetBook().GetValidUntilMs() <= time.Now().UnixMilli() {
+		return nil
+	}
+	if next.Book.Sequence > previous.GetBook().GetSequence() || next.Book.Sequence == previous.GetBook().GetSequence() && quoteObservedAt(next) > quoteObservedAt(previous) {
+		return next
+	}
+	return nil
 }

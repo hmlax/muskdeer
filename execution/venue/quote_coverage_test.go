@@ -106,6 +106,9 @@ func TestRefillUsesFirstWaveForShallowSideBeforeFullSidePriceRefresh(t *testing.
 		ExecutedQuantity: "0",
 		Status:           native.StatusOpen,
 	})
+	// Its current best bid is already covered; deeper bid refreshes remain
+	// optional while the ask side has only one safe level.
+	cycle.snapshot.Orders[0].Price = cycle.targets[0].Price
 	ordered := cycle.quoteMakerMaintenanceOrder()
 	for _, target := range ordered[:4] {
 		if target.Side != string(domain.SideSell) {
