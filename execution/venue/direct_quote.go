@@ -73,8 +73,20 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 	until := time.UnixMilli(min(cycle.authority.Book.GetValidUntilMs(), cycle.snapshot.GetValidUntilMs())).Add(-50 * time.Millisecond)
 	admit, stop := context.WithDeadline(ctx, until.Add(-minimumLiveSDKWindow))
 	defer stop()
+	urgent := cycle.needsQuoteDepth() || cycle.needsQuoteTouch(request)
+	// Keep a process-wide budget for optional full-safe size refreshes. A
+	// burst of quantity changes must not occupy every transport/SDK owner
+	// while another fund needs a replacement at its new best price.
+	if !urgent && r.quoteRefreshSlots != nil {
+		select {
+		case r.quoteRefreshSlots <- struct{}{}:
+			defer func() { <-r.quoteRefreshSlots }()
+		default:
+			return errQuoteRefreshBusy
+		}
+	}
 	if r.quoteSlots != nil {
-		if cycle.needsQuoteDepth() {
+		if urgent {
 			select {
 			case r.quoteSlots <- struct{}{}:
 			case <-admit.Done():

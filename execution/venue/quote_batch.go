@@ -18,6 +18,7 @@ import (
 const (
 	maximumQuoteWave            = 4
 	maximumConcurrentQuoteSends = 16
+	maximumOptionalQuoteSends   = maximumQuoteWave
 )
 
 var errQuoteRefreshBusy = errors.New("quote refresh transport busy")
@@ -32,6 +33,28 @@ func (cycle *quoteCycle) needsQuoteDepth() bool {
 	}
 	visible := cycle.visibleQuoteDepth()
 	return visible[domain.SideBuy] < desired[domain.SideBuy] || visible[domain.SideSell] < desired[domain.SideSell]
+}
+
+// A full side can still lack its current best target. Only that missing touch
+// bypasses optional refresh admission; an existing touch with a size change
+// remains optional. Another actor's order cannot stand in for our replacement.
+func (cycle *quoteCycle) needsQuoteTouch(request gateway.QuoteRequest) bool {
+	best := quoteBestTargets(cycle.targets)[request.Side]
+	price, err := native.Value(best.GetPrice(), false, false)
+	if err != nil || !price.Equal(request.Price) {
+		return false
+	}
+	for _, order := range cycle.snapshot.Orders {
+		if !native.Active(order.Status) || order.Side != string(request.Side) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) {
+			continue
+		}
+		_, quantity, e1 := orderKey(order)
+		visible, e2 := native.Value(order.Price, false, false)
+		if e1 == nil && e2 == nil && quantity.IsPositive() && visible.Equal(price) {
+			return false
+		}
+	}
+	return true
 }
 
 func (cycle *quoteCycle) visibleQuoteDepth() map[domain.Side]int {
