@@ -119,7 +119,13 @@ func (r *Runtime) newerMakerIntent(previous *pb.QuotePlan) *pb.QuotePlan {
 // target before computing any sends/retirements; the account timestamps stay as
 // returned by that observation and still bound every SDK send.
 func (r *Runtime) latestMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, previous *pb.QuotePlan, book *common.VenueBook) (*pb.QuotePlan, *common.VenueBook, error) {
-	if !r.directMaker() || r.newerMakerIntent(previous) == nil {
+	if !r.directMaker() {
+		return previous, book, nil
+	}
+	if r.newerMakerIntent(previous) == nil {
+		if min(book.GetValidUntilMs(), previous.GetBook().GetValidUntilMs()) <= time.Now().UnixMilli() {
+			return nil, nil, native.ErrInvalid
+		}
 		return previous, book, nil
 	}
 	fresh, err := r.book(ctx, profile.Symbol)

@@ -20,9 +20,17 @@ type target struct {
 // BuildTargets preserves the requested fraction, clips finite per-order risk,
 // applies deterministic minimum lot/notional and merges identical native ticks.
 func BuildTargets(cfg *commonv1.VenuePolicy, profile *commonv1.VenueProfilePolicy, book *commonv1.VenueBook, snapshot *commonv1.VenueSnapshot) ([]*commonv1.VenueTarget, error) {
+	if snapshot.GetScope().GetSymbol() != profile.Symbol || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId {
+		return nil, values.ErrInvalid
+	}
+	return buildTargets(cfg, profile, book, snapshot.Market)
+}
+
+// buildTargets computes an unfunded proposal from source levels and market
+// rules. Current account admission belongs to the execution writer.
+func buildTargets(cfg *commonv1.VenuePolicy, profile *commonv1.VenueProfilePolicy, book *commonv1.VenueBook, market *commonv1.VenueMarket) ([]*commonv1.VenueTarget, error) {
 	if book.GetSource() != values.Source || book.GetSegment() != values.Segment || book.GetSymbol() != profile.Symbol ||
-		snapshot.GetScope().GetSymbol() != profile.Symbol || snapshot.Scope.UserId != profile.UserId || snapshot.Scope.FundId != profile.FundId ||
-		profile.PriceTick != snapshot.GetMarket().GetPriceTick() || profile.QuantityStep != snapshot.Market.QuantityStep || profile.Leverage > snapshot.Market.MaximumLeverage {
+		profile.PriceTick != market.GetPriceTick() || profile.QuantityStep != market.GetQuantityStep() || profile.Leverage > market.GetMaximumLeverage() {
 		return nil, values.ErrInvalid
 	}
 	tick, e1 := values.Value(profile.PriceTick, false, false)
@@ -68,7 +76,7 @@ func BuildTargets(cfg *commonv1.VenuePolicy, profile *commonv1.VenueProfilePolic
 	}
 	var ordered []*target
 	for _, candidate := range grouped {
-		quantity, err := constrainedQuantity(candidate, snapshot.Market, profile.MaximumOrderNotional, step)
+		quantity, err := constrainedQuantity(candidate, market, profile.MaximumOrderNotional, step)
 		if err != nil {
 			return nil, err
 		}

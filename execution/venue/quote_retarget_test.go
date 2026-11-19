@@ -7,9 +7,36 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
+
+func TestMakerCannotDrainUsingASourceThatExpiredDuringAccountRead(t *testing.T) {
+	t.Parallel()
+	for _, expired := range []string{"source", "target"} {
+		t.Run(expired, func(t *testing.T) {
+			t.Parallel()
+			runtime := &Runtime{
+				cfg: &venueconfig.RuntimeConfig{
+					InstanceID: 1,
+					Template:   domain.StrategyTemplateMarketMaker,
+				},
+				mailbox: newQuoteMailbox(),
+			}
+			plan := mailboxTestPlan(10)
+			book := proto.CloneOf(plan.Book)
+			if expired == "source" {
+				book.ValidUntilMs = time.Now().Add(-time.Second).UnixMilli()
+			} else {
+				plan.Book.ValidUntilMs = time.Now().Add(-time.Second).UnixMilli()
+			}
+			if _, _, err := runtime.latestMakerIntent(t.Context(), &common.VenueProfilePolicy{}, plan, book); err == nil {
+				t.Fatal("expired source still authorized ordinary retirement")
+			}
+		})
+	}
+}
 
 func TestMakerUsesAcceptedNewTargetAfterAccountObservation(t *testing.T) {
 	t.Parallel()

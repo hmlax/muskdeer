@@ -74,13 +74,15 @@ func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig
 		if cfg.Template == domain.StrategyTemplateWashTrade {
 			continue
 		}
+		// This metadata is owned by this worker and has no account state.
+		rules := &targetRules{}
 		workers = append(workers, deer.Worker{
 			Name: "strategy.native." + strings.ToLower(profile.Symbol),
 			Run: func(ctx context.Context) error {
 				failed := false
 				for ctx.Err() == nil {
 					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
-					err := tick(op, db, leases, factory, owner, cfg, profile)
+					err := tick(op, db, leases, factory, owner, cfg, profile, rules)
 					cancel()
 					if err != nil && !failed && ctx.Err() == nil {
 						if e := logger.LogAttrs(ctx, slog.LevelWarn, values.StateRecovering, slog.String("symbol", profile.Symbol)); e != nil {
@@ -99,7 +101,7 @@ func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig
 	return append(workers, syntheticWorkers(db, owner, cfg, factory, logger, leases)...), nil
 }
 
-func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProfilePolicy) (result error) {
+func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, factory *rpcclient.Factory, owner string, cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProfilePolicy, rules *targetRules) (result error) {
 	ctx, span := factory.StartOperation(ctx, "strategy.quote")
 	span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
 	defer func() { tracing.RecordError(ctx, result); span.End() }()
@@ -121,11 +123,11 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	book, err := marketvenuev1.NewMarketClient(market).GetBook(ctx, &marketvenuev1.BookRequest{Symbol: profile.Symbol})
-	if err != nil {
-		return err
-	}
 	if cfg.LongGrid != nil {
+		book, err := marketvenuev1.NewMarketClient(market).GetBook(ctx, &marketvenuev1.BookRequest{Symbol: profile.Symbol})
+		if err != nil {
+			return err
+		}
 		conn, err := factory.Client(rpcclient.Target{Service: rpcsecurity.ServiceExecution})
 		if err != nil {
 			return err
@@ -141,11 +143,14 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	snapshot, err := portfoliovenuev1.NewPortfolioClient(portfolio).GetSnapshot(ctx, values.Scope(profile))
+	snapshot, readErr := portfoliovenuev1.NewPortfolioClient(portfolio).GetSnapshot(ctx, values.Scope(profile))
+	// Select source prices after the account-cache RPC, so that waiting for
+	// portfolio cannot consume the source frame before producing a proposal.
+	book, err := marketvenuev1.NewMarketClient(market).GetBook(ctx, &marketvenuev1.BookRequest{Symbol: profile.Symbol})
 	if err != nil {
 		return err
 	}
-	targets, err := instanceTargets(cfg, profile, book, snapshot)
+	targets, err := rules.targets(ctx, cfg, profile, book, snapshot, readErr)
 	if err != nil {
 		return err
 	}
