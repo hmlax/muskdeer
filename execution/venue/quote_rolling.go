@@ -116,14 +116,22 @@ func quoteMaintenanceOrder(targets []*commonv1.VenueTarget, snapshot *commonv1.V
 
 func (cycle *quoteCycle) quoteMakerMaintenanceOrder() []*commonv1.VenueTarget {
 	missing, refresh := quoteMaintenanceTargets(cycle.targets, cycle.snapshot)
-	queues := make(map[domain.Side][]*commonv1.VenueTarget)
-	for _, target := range quoteCoverageOrder(missing) {
-		side := domain.Side(target.Side)
-		queues[side] = append(queues[side], target)
-	}
 	depth := cycle.visibleQuoteDepth()
 	if depth == nil {
 		depth = make(map[domain.Side]int)
+	}
+	desired := make(map[domain.Side]int)
+	for _, target := range cycle.targets {
+		desired[domain.Side(target.Side)]++
+	}
+	full := make(map[domain.Side]bool)
+	for side, count := range desired {
+		full[side] = depth[side] >= count
+	}
+	queues := make(map[domain.Side][]*commonv1.VenueTarget)
+	for _, target := range quoteCoverageOrder(missing, full) {
+		side := domain.Side(target.Side)
+		queues[side] = append(queues[side], target)
 	}
 	ordered := make([]*commonv1.VenueTarget, 0, len(cycle.targets))
 	for len(ordered) < len(missing) {
@@ -163,10 +171,10 @@ func quoteMaintenanceTargets(targets []*commonv1.VenueTarget, snapshot *commonv1
 	return missing, refresh
 }
 
-// With one bridge slot, the first replacement may briefly be the only safe
-// quote on its side. Cover the outer edge before the best price so another
-// small source move cannot immediately remove that entire side again.
-func quoteCoverageOrder(targets []*commonv1.VenueTarget) []*commonv1.VenueTarget {
+// A shallow side seeds its outer edge before the best price so another source
+// move cannot immediately remove that side. A full side already has safe outer
+// coverage and refreshes its best price first to avoid a stale, widening spread.
+func quoteCoverageOrder(targets []*commonv1.VenueTarget, full map[domain.Side]bool) []*commonv1.VenueTarget {
 	sides := make([][]*commonv1.VenueTarget, 2)
 	for _, target := range targets {
 		side := 0
@@ -187,13 +195,20 @@ func quoteCoverageOrder(targets []*commonv1.VenueTarget) []*commonv1.VenueTarget
 	}
 	ordered := make([]*commonv1.VenueTarget, 0, len(targets))
 	for level := range max(len(sides[0]), len(sides[1])) {
-		for _, quotes := range sides {
+		for side, quotes := range sides {
 			if level >= len(quotes) {
 				continue
 			}
-			index := len(quotes) - 1 - level/2
-			if level%2 != 0 {
-				index = level / 2
+			kind := domain.SideBuy
+			if side == 1 {
+				kind = domain.SideSell
+			}
+			index := level
+			if !full[kind] {
+				index = len(quotes) - 1 - level/2
+				if level%2 != 0 {
+					index = level / 2
+				}
 			}
 			ordered = append(ordered, quotes[index])
 		}
