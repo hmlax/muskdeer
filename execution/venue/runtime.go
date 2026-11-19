@@ -232,11 +232,19 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
-	leave, err := r.enter(scope)
-	if err != nil {
-		return nil, status.Error(codes.ResourceExhausted, native.MessageInvalid)
+	if r.directMaker() {
+		// Matching observations are read-only. Quote admission remains exclusive,
+		// while portfolio refreshes must not starve behind SDK acknowledgements.
+		if r.closing.Load() || r.client.Load() == nil {
+			return nil, status.Error(codes.Unavailable, native.MessageInvalid)
+		}
+	} else {
+		leave, err := r.enter(scope)
+		if err != nil {
+			return nil, status.Error(codes.ResourceExhausted, native.MessageInvalid)
+		}
+		defer leave()
 	}
-	defer leave()
 	_, snapshot, err := r.read(ctx, profile)
 	if err != nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
