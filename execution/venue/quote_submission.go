@@ -16,6 +16,7 @@ import (
 // borrowed and immutable, while retention and result belong only to that call.
 type quoteCycle struct {
 	profile     *commonv1.VenueProfilePolicy
+	plan        *executionvenuev1.QuotePlan
 	bridgeSlots uint32
 	lease       domain.LeaseToken
 	authority   LiveAuthority

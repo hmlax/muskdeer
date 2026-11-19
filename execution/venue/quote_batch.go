@@ -101,6 +101,12 @@ func (r *Runtime) fillDirectQuoteDepth(ctx context.Context, cycle *quoteCycle) e
 		if err := r.sendQuoteWave(ctx, cycle, requests); err != nil {
 			return err
 		}
+		if r.quotePriceMoved(cycle) {
+			// Finish observation/retirement for this joined wave, then let the
+			// same writer take the newest target instead of sending old depth.
+			cycle.retained.pending = true
+			break
+		}
 	}
 	return nil
 }

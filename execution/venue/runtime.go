@@ -377,6 +377,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	r.rememberQuotePlan(profile, plan, book)
 	cycle := &quoteCycle{
 		profile:     profile,
+		plan:        plan,
 		bridgeSlots: r.cfg.BridgeSlots,
 		lease:       lease,
 		authority: LiveAuthority{
