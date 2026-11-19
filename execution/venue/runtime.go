@@ -30,7 +30,7 @@ import (
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-// Runtime owns the only SDK writer, with bounded local admission and durable fencing.
+// Runtime owns scoped SDK operations and their bounded process lifecycle.
 type Runtime struct {
 	washControl atomic.Pointer[washControl]
 	washNext    atomic.Int64
@@ -51,6 +51,7 @@ type Runtime struct {
 	quotePlan       atomic.Pointer[quotePlanAuthority]
 	cutover         atomic.Bool
 	lastObservation atomic.Int64
+	mailbox         *quoteMailbox
 }
 
 // Dependencies are borrowed once; the worker owns only the adapter connection it dials.
@@ -101,6 +102,7 @@ func NewRuntime(ctx context.Context, cfg *configv1.BusinessRuntime, deps Depende
 		plans:      plans,
 		client:     &atomic.Pointer[gatewaySession]{},
 		closing:    &atomic.Bool{},
+		mailbox:    newQuoteMailbox(),
 	}, nil
 }
 
@@ -165,6 +167,9 @@ func (r *Runtime) run(ctx context.Context) (result error) {
 			}
 		}
 	}()
+	if r.directMaker() {
+		return r.maintainMaker(ctx)
+	}
 	for ctx.Err() == nil {
 		if err := r.renewSyntheticScopes(ctx); err != nil && ctx.Err() == nil {
 			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("strategy", native.SyntheticWorker)); logErr != nil {
@@ -310,17 +315,11 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > r.maximumTargets() || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
+	if r.directMaker() {
+		return r.queueMakerQuote(ctx, profile, plan)
+	}
 	leave, err := r.enter(plan.Scope)
 	if err != nil {
-		if errors.Is(err, domain.ErrLeaseHeld) && r.directMaker() && r.hasFreshObservation() && !r.closing.Load() {
-			book, err := r.book(ctx, profile.Symbol)
-			if err != nil {
-				return nil, status.Error(codes.Unavailable, native.MessageInvalid)
-			}
-			if err := r.retainPlanWhileBusy(ctx, profile, plan, book); err != nil {
-				return nil, status.Error(codes.Unavailable, native.MessageInvalid)
-			}
-		}
 		return nil, status.Error(codes.ResourceExhausted, native.MessageInvalid)
 	}
 	defer leave()

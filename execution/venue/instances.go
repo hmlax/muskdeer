@@ -89,6 +89,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 			gates:      gates,
 			quoteSlots: quoteSlots,
 			plans:      map[string]*atomic.Int64{key: {}},
+			mailbox:    newQuoteMailbox(),
 		}
 		result.children[instance.ID] = child
 		result.ordered = append(result.ordered, child)
@@ -180,6 +181,9 @@ func (r *Runtime) maintainInstance(ctx context.Context) error {
 	if r.cfg.Template == domain.StrategyTemplateWashTrade {
 		<-ctx.Done()
 		return ctx.Err()
+	}
+	if r.directMaker() {
+		return r.maintainMaker(ctx)
 	}
 	failed := false
 	for ctx.Err() == nil {

@@ -14,13 +14,7 @@ func (r *Runtime) hasFreshObservation() bool {
 	return seen > 0 && seen <= now && now-seen < native.SnapshotAge.Milliseconds()
 }
 
-// A validated intent may keep existing safe quotes while a fund writer is
-// occupied. It grants no SDK admission: normal reconciliation still re-reads
-// the venue and validates all risk under the exclusive writer gate.
-func (r *Runtime) retainPlanWhileBusy(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan, book *common.VenueBook) error {
-	if !r.hasFreshObservation() || r.closing.Load() {
-		return nil
-	}
+func (r *Runtime) validateMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan, book *common.VenueBook) error {
 	if book.GetValidUntilMs() <= time.Now().UnixMilli() {
 		return native.ErrInvalid
 	}
@@ -39,9 +33,6 @@ func (r *Runtime) retainPlanWhileBusy(ctx context.Context, profile *common.Venue
 	}
 	if !budget.Enabled || budget.UserId != profile.UserId || budget.FundId != profile.FundId || budget.Symbol != profile.Symbol {
 		return ErrRiskLimit
-	}
-	if r.hasFreshObservation() && !r.closing.Load() && book.ValidUntilMs > time.Now().UnixMilli() && plan.Book.ValidUntilMs > time.Now().UnixMilli() {
-		r.rememberQuotePlan(profile, plan, book)
 	}
 	return nil
 }
