@@ -27,7 +27,10 @@ func TestFullUnsafeSideMakesObservedRoomBeforeDrainingItsLastOrder(t *testing.T)
 	runtime.store.matching = true
 	profile.StrategyInstanceId = setup.instance.Id
 	profile.MaximumOrderNotional = "100"
-	logger, err := logging.New(ctx, nil, logging.Identity{Service: "execution", Instance: "room-test"}, io.Discard)
+	logger, err := logging.New(ctx, nil, logging.Identity{
+		Service:  "execution",
+		Instance: "room-test",
+	}, io.Discard)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -37,7 +40,11 @@ func TestFullUnsafeSideMakesObservedRoomBeforeDrainingItsLastOrder(t *testing.T)
 			t.Error(err)
 		}
 	})
-	client := &directQuoteClient{currentStateClient: setup.client, minimumBid: 21, watchBid: true}
+	client := &directQuoteClient{
+		currentStateClient: setup.client,
+		minimumBid:         21,
+		watchBid:           true,
+	}
 	client.snapshot.Orders = nil
 	for level := range 21 {
 		client.snapshot.Orders = append(client.snapshot.Orders, &common.VenueOrder{
@@ -62,7 +69,11 @@ func TestFullUnsafeSideMakesObservedRoomBeforeDrainingItsLastOrder(t *testing.T)
 			if side == domain.SideSell {
 				price = decimal.NewFromInt(100).Add(decimal.NewFromInt(int64(level)).Shift(-1))
 			}
-			plan.Targets = append(plan.Targets, &common.VenueTarget{Side: string(side), Price: price.String(), Quantity: "0.1"})
+			plan.Targets = append(plan.Targets, &common.VenueTarget{
+				Side:     string(side),
+				Price:    price.String(),
+				Quantity: "0.1",
+			})
 		}
 	}
 	wanted, err := runtime.targets(profile, plan)
@@ -84,8 +95,12 @@ func TestFullUnsafeSideMakesObservedRoomBeforeDrainingItsLastOrder(t *testing.T)
 		snapshot:    snapshot,
 		retained:    retained,
 		targets:     plan.Targets,
-		authority:   LiveAuthority{InstanceID: setup.instance.Id, Revision: setup.instance.Revision, Book: book},
-		result:      &pb.QuoteResult{},
+		authority: LiveAuthority{
+			InstanceID: setup.instance.Id,
+			Revision:   setup.instance.Revision,
+			Book:       book,
+		},
+		result: &pb.QuoteResult{},
 	}
 	if cycle.canPlace(plan.Targets[0]) {
 		t.Fatal("fixture did not fill the bounded side")
