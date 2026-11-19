@@ -15,6 +15,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
+	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
 func (r *Runtime) unresolvedCancels(ctx context.Context, account string) (bool, error) {
@@ -32,16 +33,24 @@ func (r *Runtime) unresolvedCancels(ctx context.Context, account string) (bool, 
 
 func safeReason(err error) string {
 	switch {
+	case err == nil:
+		return ""
 	case errors.Is(err, ErrRiskLimit):
 		return "RISK_LIMIT"
 	case errors.Is(err, domain.ErrLeaseLost):
 		return "LEASE_LOST"
 	case errors.Is(err, domain.ErrOutcomeUnknown):
-		return "OUTCOME_UNKNOWN"
+		return reasonOutcomeUnknown
 	case errors.Is(err, native.ErrInvalid), errors.Is(err, ErrInvalidSnapshot):
 		return "OBSERVATION_INVALID"
 	case errors.Is(err, context.DeadlineExceeded):
 		return "DEADLINE_EXCEEDED"
+	case errors.Is(err, ErrInvalidConfig):
+		return reasonInvalidConfig
+	case errors.Is(err, ErrInvalidSubmit):
+		return reasonInvalidSubmit
+	case errors.Is(err, gateway.ErrNotDispatched):
+		return reasonNotDispatched
 	default:
 		return status.Code(err).String()
 	}

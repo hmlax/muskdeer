@@ -56,14 +56,22 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 	}
 	profile := r.cfg.Venue.Profiles[0]
 	failed := false
+	hadTarget := false
 	return r.mailbox.run(ctx, r.cfg.OperationTimeout, func(work context.Context, plan *pb.QuotePlan) error {
 		work, span := r.factory.StartOperation(work, "execution.quote")
+		defer span.End()
 		span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
+		if plan == nil && hadTarget {
+			if err := r.logger.LogAttrs(work, slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", reasonQuoteTargetExpired)); err != nil {
+				return err
+			}
+		}
+		hadTarget = plan != nil
 		err := r.applyMakerIntent(work, profile, plan)
+		span.SetAttributes(attribute.String("quote.step", quoteFailureStep(err)), attribute.String("quote.reason", safeReason(err)))
 		tracing.RecordError(work, err)
-		span.End()
 		if err != nil && !failed && ctx.Err() == nil {
-			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err))); logErr != nil {
+			if logErr := r.logger.LogAttrs(ctx, slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", safeReason(err)), slog.String("step", quoteFailureStep(err))); logErr != nil {
 				return logErr
 			}
 		}
@@ -82,7 +90,7 @@ func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenuePro
 	}
 	defer leave()
 	if plan == nil {
-		return r.protect(ctx, profile)
+		return quoteFailed(quoteStepProtection, r.protect(ctx, profile))
 	}
 	_, reconcileErr := r.reconcile(ctx, profile, plan)
 	if reconcileErr == nil || ctx.Err() != nil {
@@ -90,7 +98,7 @@ func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenuePro
 	}
 	// Failed replacement must still run risk reduction under the same writer
 	// and deadline. No source, account or configuration guard is bypassed.
-	return errors.Join(reconcileErr, r.protect(ctx, profile))
+	return errors.Join(reconcileErr, quoteFailed(quoteStepProtection, r.protect(ctx, profile)))
 }
 
 func (r *Runtime) newerMakerIntent(previous *pb.QuotePlan) *pb.QuotePlan {

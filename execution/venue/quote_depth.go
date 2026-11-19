@@ -33,12 +33,13 @@ func (r *Runtime) maintainCurrentDepth(ctx context.Context, cycle *quoteCycle, w
 		}
 	}
 	if err := r.makeQuoteRoom(ctx, cycle, wanted); err != nil {
-		return nil, err
+		return nil, quoteFailed(quoteStepRoom, err)
 	}
 	if err := r.fillQuoteDepth(ctx, cycle); err != nil {
-		return nil, err
+		return nil, quoteFailed(quoteStepFill, err)
 	}
-	return r.finishQuoteDepth(ctx, cycle, wanted)
+	result, err := r.finishQuoteDepth(ctx, cycle, wanted)
+	return result, quoteFailed(quoteStepRetirement, err)
 }
 
 func (r *Runtime) fillQuoteDepth(ctx context.Context, cycle *quoteCycle) error {
@@ -86,7 +87,11 @@ func (r *Runtime) finishQuoteDepth(ctx context.Context, cycle *quoteCycle, wante
 			break
 		}
 	}
-	if err := r.cancelOrders(ctx, cycle.lease, cycle.profile, depthRetirements(cycle, wanted, r.cfg.ReplacementFraction), cycle.result); err != nil {
+	selected := depthRetirements(cycle, wanted, r.cfg.ReplacementFraction)
+	if err := r.warnQuoteDrain(ctx, cycle, selected); err != nil {
+		return nil, err
+	}
+	if err := r.cancelOrders(ctx, cycle.lease, cycle.profile, selected, cycle.result); err != nil {
 		return nil, err
 	}
 	if !cycle.retained.pending {

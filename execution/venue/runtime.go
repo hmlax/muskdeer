@@ -340,15 +340,15 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	}
 	book, err := r.quoteBook(ctx, profile, plan)
 	if err != nil {
-		return nil, err
+		return nil, quoteFailed(quoteStepSource, err)
 	}
 	snapshot, recoveryErr := r.refresh(ctx, profile, lease, book)
 	if recoveryErr != nil && (!errors.Is(recoveryErr, domain.ErrOutcomeUnknown) || snapshot == nil) {
-		return nil, recoveryErr
+		return nil, quoteFailed(quoteStepObservation, recoveryErr)
 	}
 	plan, book, err = r.latestMakerIntent(ctx, profile, plan, book)
 	if err != nil {
-		return nil, err
+		return nil, quoteFailed(quoteStepSource, err)
 	}
 	budget, err := r.store.Budget(ctx, lease.Key.AccountID)
 	if err != nil || !budget.Enabled {
@@ -366,7 +366,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	}
 	wanted, err := r.targets(profile, plan)
 	if err != nil {
-		return nil, err
+		return nil, quoteFailed(quoteStepTargets, err)
 	}
 	retained, err := retainQuoteOrders(profile, snapshot, wanted, cutover, r.cfg.ReplacementFraction)
 	if err != nil {
