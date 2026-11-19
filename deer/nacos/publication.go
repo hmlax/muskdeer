@@ -3,12 +3,18 @@ package nacos
 import (
 	"context"
 	"errors"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 )
 
 // ErrNotPublished reports a publication that has not completed registration.
 var ErrNotPublished = errors.New("nacos instance is not published")
+
+// Stay below Nacos's 15-second unhealthy threshold. A failed attempt never
+// extends the deadline established by the last successful heartbeat.
+const heartbeatFreshness = 2 * maximumBeat
 
 // Publication owns one ephemeral registration and its heartbeat. Construct it
 // before startup, Start once after listeners/dependencies are ready, and Stop
@@ -110,7 +116,7 @@ func (p *Publication) Health() error {
 	if !p.registered {
 		return ErrNotPublished
 	}
-	if time.Since(p.lastSuccess) > 2*maximumBeat {
+	if time.Since(p.lastSuccess) >= heartbeatFreshness {
 		return errors.New("nacos heartbeat freshness expired")
 	}
 	return nil
@@ -154,13 +160,23 @@ func (p *Publication) maintain(ctx context.Context) {
 			return
 		case <-timer.C:
 		}
-		recommended, err := p.client.Beat(ctx, p.record)
+		p.mu.Lock()
+		until := p.lastSuccess.Add(heartbeatFreshness)
+		p.mu.Unlock()
+		attempt, cancel := context.WithDeadline(ctx, until)
+		recommended, err := p.client.Beat(attempt, p.record)
+		cancel()
 		p.mu.Lock()
 		if p.closed || ctx.Err() != nil {
 			p.mu.Unlock()
 			return
 		}
 		if err != nil {
+			if retryHeartbeat(err) && time.Now().Before(until) {
+				p.mu.Unlock()
+				timer.Reset(min(p.interval, time.Until(until)))
+				continue
+			}
 			p.err = err
 			p.mu.Unlock()
 			p.failures <- err
@@ -170,6 +186,31 @@ func (p *Publication) maintain(ctx context.Context) {
 		p.mu.Unlock()
 		timer.Reset(min(p.interval, recommended))
 	}
+}
+
+// Only this publication owns heartbeat recovery. Authentication, a missing
+// registration and malformed protocol replies remain terminal; recovery never
+// issues a new registration or retries financial operations.
+func retryHeartbeat(err error) bool {
+	var failure *APIError
+	if errors.As(err, &failure) {
+		if failure.HTTPStatus != 0 {
+			switch failure.HTTPStatus {
+			case http.StatusInternalServerError, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
+				return true
+			default:
+				return false
+			}
+		}
+		if failure.Code != 0 {
+			return false
+		}
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	var network net.Error
+	return errors.As(err, &network) && network.Timeout()
 }
 
 func validateInterval(interval time.Duration) error {

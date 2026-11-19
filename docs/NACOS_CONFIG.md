@@ -31,6 +31,8 @@
 
 Nacos 连接和认证始终来自 env，不能写进任一文档；service.yaml 的 registration 只提供 advertise_ip/heartbeat_interval。远程覆盖 bootstrap 字段直接拒绝。证书/密钥路径指向独立挂载的文件，不携带私钥内容。
 
+注册后的心跳由单个 Publication 循环维护。单次传输超时或 HTTP 500/502/503/504 可在最后成功心跳后的原 10 秒新鲜度窗口内恢复；每次尝试与等待共用该期限，不重建注册、不延长窗口。持续故障到期仍停止服务，认证失败、注册消失和协议错误保持立即失败。此恢复只针对 Nacos 轻量心跳，不用于金融请求重试。
+
 本地持久配置位于 namespace `muskdeer-local`、group `MUSKDEER_CORE` 的八个 Data ID，四服务各有 data/service 两项。`scripts/compose.py prepare` 首次显式发布，已有完整配对保持，已有半套需显式替换，不能偷偷覆盖。草稿在 `.cache/compose/nacos-drafts/<service>/{data,service}.yaml`；容器仅挂载证书目录，不挂载启动配置。Python 准备工具使用 `tools/python-requirements.txt` 固定的 PyYAML，可用 `python3 -m pip install -r tools/python-requirements.txt` 安装。
 
 读取使用已部署 Nacos 2.4 的 [V2 配置 Open API](https://nacos.io/en/docs/v2/open-api/)：`GET /nacos/v2/cs/config`，认证放在请求头，范围由 namespaceId/group/dataId 明确指定。读取有期限和大小上限，错误不回显配置、口令或 token。Bootstrap transport 读取后关闭，服务再由自己的 Deer 管理注册发现及其他依赖。

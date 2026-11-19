@@ -18,6 +18,8 @@ type publicationFixture struct {
 	missing       atomic.Bool
 	reject        atomic.Bool
 	hold          atomic.Bool
+	beatTimeout   atomic.Bool
+	beatStatus    atomic.Int32
 	entered       chan struct{}
 	beats         chan struct{}
 }
@@ -197,9 +199,18 @@ func publicationClient(t *testing.T) (*Client, *publicationFixture) {
 			if r.Form.Has("beat") || r.Form.Get("serviceName") != "MUSKDEER_TEST@@probe.grpc" || r.Form.Get("port") != "8081" {
 				t.Error("heartbeat must be light and scoped to its registered endpoint")
 			}
+			timeout, status := fixture.beatTimeout.Swap(false), fixture.beatStatus.Load()
 			select {
 			case fixture.beats <- struct{}{}:
 			default:
+			}
+			if timeout {
+				<-r.Context().Done()
+				return
+			}
+			if status != 0 {
+				w.WriteHeader(int(status))
+				return
 			}
 			if fixture.missing.Load() {
 				writeFixture(t, w, r, `{"code":20404,"clientBeatInterval":50,"lightBeatEnabled":true}`)
