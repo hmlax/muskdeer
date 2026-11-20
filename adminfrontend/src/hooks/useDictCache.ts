@@ -7,6 +7,8 @@ import i18n from 'i18next';
 import type { DictEntry, DictType } from '@/api/generated/admin/v1';
 import { fetchListDictTypes, fetchListDictEntries } from '@/api/hooks/dict';
 import { PaginationQuery } from '@/core';
+import { canAccessApi } from '@/core/access/api-permission';
+import { useUserStore } from '@/stores/user';
 
 // ==============================
 // 字典项缓存（模块级单例）
@@ -25,6 +27,16 @@ let cacheLoaded = false;
  * 如果缓存已存在则跳过
  */
 export async function fetchAllDictEntries(): Promise<void> {
+  const { authorizationLoaded, apiPermissions } = useUserStore.getState();
+  if (
+    !authorizationLoaded ||
+    !canAccessApi(apiPermissions, 'GET', '/admin/v1/dict/types') ||
+    !canAccessApi(apiPermissions, 'GET', '/admin/v1/dict/entries')
+  ) {
+    resetDictCache();
+    return;
+  }
+
   if (cacheLoaded && Object.keys(dictEntryCache).length > 0) {
     return;
   }
