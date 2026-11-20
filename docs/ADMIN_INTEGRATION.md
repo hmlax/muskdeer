@@ -54,4 +54,6 @@ management 使用普通 bridge 网络，发布端口继续只绑定 127.0.0.1。
 
 已有部署升级时先备份管理库、交易库、现有 Nacos 文档及容器/镜像身份。使用私有 Compose override 将 operator-data 显式指向原外部数据卷，复用原证书、前端配对密钥和 Nacos 环境；若原配置引用旧 operator 容器名，为新 operator 保留该网络别名。先停止旧后台四容器，再启动合并项目的 operator/admin 和两套前端；仅指定这四个服务，不执行 bootstrap/migrate、核心重建或 remove-orphans。旧容器保留用于回退；切换后实际登录两端、比较实例参数与既有历史行、读取交易快照并观察策略运行。
 
+2026-11-20 已完成当前本机的实际切换：平台端 http://127.0.0.1:15888，商户端 http://127.0.0.1:15889，后台HTTP http://127.0.0.1:17788。既有凭据、商户范围、业务参数、账户绑定和历史保留。后台源提交809db0f，最终前端8e30570；镜像摘要与私有部署清单逐项对应，详细验证与既有策略异常见 docs/PROGRESS.md 同日上线记录。浏览器登录/页面读取、权限隔离通过；两条旧UNKNOWN网格、DOT卖侧不足及SDK调用异常不因后台切换而宣称解决。
+
 原框架文档保留在 docs/admin/framework，历史路径 backend/platform/frontend 分别对应根 admin/operator、deer/management 与 adminfrontend；当前路径以本页为准。
