@@ -48,4 +48,8 @@ make admin-dev-merchant
 
 例如在提供已有私有配置路径后，使用 `docker compose -f compose.yml -f compose.admin.yml --profile admin config` 检查完整项目。仅更新核心时，根 compose-up 不自动删除其他 profile 的容器。前端包缓存固定在忽略的 .cache/pnpm-store。独立本地 HTTP 若监听 7788，可在前端 .env.local 中显式配置 VITE_PROXY 指向该端口。
 
+management 使用普通 bridge 网络，发布端口继续只绑定 127.0.0.1。不要将只连接此网络的前端改为 internal 网络：本机 Docker 实测会省略发布端口，容器内 nginx 启动成功仍无法访问。前端通过 Docker DNS 动态解析管理 HTTP 地址，缓存5秒；后端重建换 IP 后不要求同时重建前端。平台仍清除浏览器传入的商户头，商户端固定部署商户范围，原 URI 和查询参数保持。
+
+已有部署升级时先备份管理库、交易库、现有 Nacos 文档及容器/镜像身份。使用私有 Compose override 将 operator-data 显式指向原外部数据卷，复用原证书、前端配对密钥和 Nacos 环境；若原配置引用旧 operator 容器名，为新 operator 保留该网络别名。先停止旧后台四容器，再启动合并项目的 operator/admin 和两套前端；仅指定这四个服务，不执行 bootstrap/migrate、核心重建或 remove-orphans。旧容器保留用于回退；切换后实际登录两端、比较实例参数与既有历史行、读取交易快照并观察策略运行。
+
 原框架文档保留在 docs/admin/framework，历史路径 backend/platform/frontend 分别对应根 admin/operator、deer/management 与 adminfrontend；当前路径以本页为准。

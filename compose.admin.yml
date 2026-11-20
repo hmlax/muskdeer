@@ -71,7 +71,9 @@ networks:
     external: true
     name: infra-network
   management:
-    internal: true
+    # Docker suppresses published ports for containers attached only to an
+    # internal network. Keep the UI ports reachable on their loopback bindings.
+    driver: bridge
 volumes:
   operator-data:
 secrets:

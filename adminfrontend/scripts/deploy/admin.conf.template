@@ -2,6 +2,9 @@ server {
   listen 8080;
   server_name _;
   root /usr/share/nginx/html;
+  resolver 127.0.0.11 valid=5s ipv6=off;
+  resolver_timeout 2s;
+  set $admin_api_upstream "${ADMIN_API_UPSTREAM}";
 
   add_header X-Content-Type-Options nosniff always;
   add_header X-Frame-Options DENY always;
@@ -18,7 +21,7 @@ server {
   }
 
   location /admin/ {
-    proxy_pass ${ADMIN_API_UPSTREAM};
+    proxy_pass $admin_api_upstream;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
