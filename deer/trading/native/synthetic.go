@@ -67,7 +67,8 @@ func ValidateSyntheticSettings(h *configv1.VenueRuntime) error {
 		return ErrInvalid
 	}
 	if !s.DevelopmentOnly || len(s.RunId) == 0 || len(s.RunId) > 20 ||
-		s.Interval.CheckValid() != nil || s.Interval.AsDuration() < 100*time.Millisecond || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 {
+		s.Interval.CheckValid() != nil || s.Interval.AsDuration() > time.Minute || len(s.Profiles) == 0 ||
+		!WashFollowsSource(&commonv1.VenuePolicy{SyntheticTape: s}) && s.Interval.AsDuration() < 100*time.Millisecond {
 		return ErrInvalid
 	}
 	for _, c := range s.RunId {

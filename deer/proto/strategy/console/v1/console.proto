@@ -110,6 +110,7 @@ message GridParameters {
 }
 message WashParameters {
  bool development_only = 1; string mode = 2; string run_id = 3;
+ // Zero follows aggregate-trade source frequency; positive values sample.
  int64 interval_ms = 4;
  // Zero is unlimited; no historical slot is reset or resent.
  uint32 maximum_events = 5;

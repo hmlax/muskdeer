@@ -24,12 +24,16 @@ func WashTarget(policy *common.VenuePolicy, input *pb.WashTradeRequest) (*common
 		if ValidateTrade(trade, input.Symbol, time.Now()) != nil || trade.GetPublisher().GetAccountId() != TradeKey(input.Symbol) {
 			return nil, ErrInvalid
 		}
-		return SyntheticTradeTarget(policy, trade)
+		return washTradeTarget(policy, trade)
 	case config.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_BOOK:
 		return washBookTarget(policy, input)
 	default:
 		return nil, ErrInvalid
 	}
+}
+
+func washTradeTarget(policy *common.VenuePolicy, trade *common.VenueTrade) (*common.VenueTarget, error) {
+	return syntheticTradeTarget(policy, trade, true)
 }
 
 func washBookTarget(policy *common.VenuePolicy, input *pb.WashTradeRequest) (*common.VenueTarget, error) {

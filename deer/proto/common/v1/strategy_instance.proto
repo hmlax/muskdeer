@@ -45,6 +45,7 @@ message WashTradeParameters {
   bool development_only = 1;
   WashTradeMode mode = 2;
   string run_id = 3;
+  // Zero follows each fresh aggregate-trade event; positive values sample at this interval.
   int64 interval_ms = 4;
   // Zero disables the cumulative event-count limit.
   uint32 maximum_events = 5;

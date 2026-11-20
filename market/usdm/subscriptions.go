@@ -15,9 +15,24 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
 
-// Each subscriber retains at most one pending observation. It never slows the
-// external feed or builds an unbounded queue of stale market data.
+// Book subscribers retain the latest pending observation. Trade subscribers
+// below preserve a bounded burst and explicitly report overflow.
 type subscriptions[T proto.Message] map[chan T]struct{}
+
+// Trades preserve order within a bounded burst. Overflow terminates the
+// subscriber explicitly instead of silently replacing earlier source events.
+type tradeSubscriptions map[chan *common.VenueTrade]chan struct{}
+
+func (s tradeSubscriptions) publish(trade *common.VenueTrade) {
+	for ch, overflow := range s {
+		select {
+		case ch <- trade:
+		default:
+			close(overflow)
+			delete(s, ch)
+		}
+	}
+}
 
 func (s subscriptions[T]) publish(value T) {
 	for ch := range s {
@@ -54,12 +69,13 @@ func (r *Runtime) SubscribeTrades(request *pb.TradeRequest, stream grpc.ServerSt
 	if !native.Symbol(request.GetSymbol()) {
 		return status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
-	ch := make(chan *common.VenueTrade, 1)
+	ch := make(chan *common.VenueTrade, native.WashSourceQueueCapacity)
+	overflow := make(chan struct{})
 	r.mu.Lock()
 	if r.tradeReaders == nil {
-		r.tradeReaders = make(subscriptions[*common.VenueTrade])
+		r.tradeReaders = make(tradeSubscriptions)
 	}
-	r.tradeReaders[ch] = struct{}{}
+	r.tradeReaders[ch] = overflow
 	if latest := r.trades[request.Symbol]; latest.GetValidUntilMs() > time.Now().UnixMilli() {
 		ch <- latest
 	}
@@ -67,6 +83,13 @@ func (r *Runtime) SubscribeTrades(request *pb.TradeRequest, stream grpc.ServerSt
 	defer func() { r.mu.Lock(); delete(r.tradeReaders, ch); r.mu.Unlock() }()
 	for {
 		select {
+		case <-overflow:
+			return status.Error(codes.ResourceExhausted, native.MessageInvalid)
+		default:
+		}
+		select {
+		case <-overflow:
+			return status.Error(codes.ResourceExhausted, native.MessageInvalid)
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case trade := <-ch:

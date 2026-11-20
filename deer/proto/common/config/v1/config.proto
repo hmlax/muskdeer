@@ -59,6 +59,7 @@ message SyntheticTape {
   bool enabled = 1;
   bool development_only = 2;
   string run_id = 3;
+  // Zero follows aggregate-trade events in current development instances.
   google.protobuf.Duration interval = 4;
   // Zero disables the cumulative event-count limit.
   uint32 maximum_events = 5;

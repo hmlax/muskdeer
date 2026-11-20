@@ -308,7 +308,8 @@ type WashTradeParameters struct {
 	DevelopmentOnly bool                   `protobuf:"varint,1,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
 	Mode            WashTradeMode          `protobuf:"varint,2,opt,name=mode,proto3,enum=muskdeer.common.v1.WashTradeMode" json:"mode,omitempty"`
 	RunId           string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	IntervalMs      int64                  `protobuf:"varint,4,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
+	// Zero follows each fresh aggregate-trade event; positive values sample at this interval.
+	IntervalMs int64 `protobuf:"varint,4,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
 	// Zero disables the cumulative event-count limit.
 	MaximumEvents uint32 `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
 	Quantity      string `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`

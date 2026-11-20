@@ -114,7 +114,7 @@ func TestWashSubscriptionCalculatesLatestTradeAndJoinsReceiver(t *testing.T) {
 			t.Fatalf("published %d events, want one latest source", len(sent))
 		}
 		request := <-sent
-		if request.StrategyInstanceId != 7 || request.StrategyRevision != 3 || request.GetTrade().EventId != "42" || request.Price != "100.5" || request.Quantity != "0.007" {
+		if request.StrategyInstanceId != 7 || request.StrategyRevision != 3 || request.GetTrade().EventId != "42" || request.Price != "100.5" || request.Quantity != "0.008" {
 			t.Fatalf("publication = %v", request)
 		}
 		marketClient.incoming <- request.GetTrade()

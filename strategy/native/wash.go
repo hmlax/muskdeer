@@ -60,6 +60,7 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 							}
 							if reply.GetState() == values.SyntheticUnknown {
 								tracing.RecordError(send, domain.ErrOutcomeUnknown)
+								return domain.ErrOutcomeUnknown
 							}
 							if reply.GetState() != values.SyntheticPublished && reply.GetState() != values.SyntheticUnknown {
 								tracing.RecordError(send, values.ErrInvalid)
@@ -73,7 +74,7 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 							return err
 						}
 					}
-					if err := values.Wait(ctx, cfg.Venue.SyntheticTape.Interval.AsDuration()); err != nil {
+					if err := values.Wait(ctx, max(cfg.Venue.SyntheticTape.Interval.AsDuration(), 100*time.Millisecond)); err != nil {
 						return err
 					}
 				}
@@ -87,6 +88,10 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 // Only this subscription scope owns the receiver goroutine. The one-frame
 // buffer coalesces source bursts while SDK publication is in progress.
 func subscribeWash(ctx context.Context, cfg *venueconfig.RuntimeConfig, symbol string, client market.MarketClient, send func(context.Context, *execution.WashTradeRequest) error, logger *logging.Logger) error {
+	follow := values.WashFollowsSource(cfg.Venue)
+	if cfg.Venue.SyntheticTape.Interval.AsDuration() == 0 && (!follow || cfg.InstanceID <= 0) {
+		return values.ErrInvalid
+	}
 	work, cancel := context.WithCancel(ctx)
 	defer cancel()
 	var receive func() (*washObservation, error)
@@ -103,32 +108,18 @@ func subscribeWash(ctx context.Context, cfg *venueconfig.RuntimeConfig, symbol s
 		}
 		receive = func() (*washObservation, error) { v, err := stream.Recv(); return &washObservation{book: v}, err }
 	}
-	updates := make(chan *washObservation, 1)
+	capacity := 1
+	if follow {
+		capacity = values.WashSourceQueueCapacity
+	}
+	updates := make(chan *washObservation, capacity)
 	failure := make(chan error, 1)
 	var joined sync.WaitGroup
-	joined.Go(func() {
-		for {
-			observation, err := receive()
-			if err != nil {
-				failure <- err
-				return
-			}
-			select {
-			case updates <- observation:
-			default:
-				select {
-				case <-updates:
-				default:
-				}
-				select {
-				case updates <- observation:
-				case <-work.Done():
-					return
-				}
-			}
-		}
-	})
+	joined.Go(func() { receiveWash(work, receive, updates, failure, follow) })
 	defer func() { cancel(); joined.Wait() }()
+	if follow {
+		return followWashSource(work, cfg, symbol, updates, failure, send, logger)
+	}
 	ticker := time.NewTicker(cfg.Venue.SyntheticTape.Interval.AsDuration())
 	defer ticker.Stop()
 	var last int64
@@ -187,6 +178,37 @@ func subscribeWash(ctx context.Context, cfg *venueconfig.RuntimeConfig, symbol s
 					}
 				}
 			default:
+			}
+		}
+	}
+}
+
+func receiveWash(ctx context.Context, receive func() (*washObservation, error), updates chan *washObservation, failure chan<- error, follow bool) {
+	for {
+		observation, err := receive()
+		if err != nil {
+			failure <- err
+			return
+		}
+		if follow {
+			select {
+			case updates <- observation:
+			case <-ctx.Done():
+				return
+			}
+			continue
+		}
+		select {
+		case updates <- observation:
+		default:
+			select {
+			case <-updates:
+			default:
+			}
+			select {
+			case updates <- observation:
+			case <-ctx.Done():
+				return
 			}
 		}
 	}

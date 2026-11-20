@@ -379,7 +379,8 @@ type SyntheticTape struct {
 	Enabled         bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	DevelopmentOnly bool                   `protobuf:"varint,2,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
 	RunId           string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	Interval        *durationpb.Duration   `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
+	// Zero follows aggregate-trade events in current development instances.
+	Interval *durationpb.Duration `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
 	// Zero disables the cumulative event-count limit.
 	MaximumEvents uint32                  `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
 	Profiles      []*SyntheticTapeProfile `protobuf:"bytes,6,rep,name=profiles,proto3" json:"profiles,omitempty"`

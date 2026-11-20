@@ -37,11 +37,10 @@ func TestWashTargetUsesFreshTradeWithoutBatchOrLimits(t *testing.T) {
 		}},
 	}
 	target, err := WashTarget(policy, input)
-	if err != nil || target.GetPrice() != "100.5" || target.GetQuantity() != "0.007" || target.GetSide() != string(domain.SideSell) {
+	if err != nil || target.GetPrice() != "100.5" || target.GetQuantity() != "0.008" || target.GetSide() != string(domain.SideSell) {
 		t.Fatalf("current trade calculation = %v, %v", target, err)
 	}
 	for name, change := range map[string]func(*execution.WashTradeRequest){
-		"below lot":       func(v *execution.WashTradeRequest) { v.GetTrade().Quantity = "0.00001" },
 		"stale":           func(v *execution.WashTradeRequest) { v.GetTrade().ValidUntilMs = now - 1 },
 		"wrong symbol":    func(v *execution.WashTradeRequest) { v.Symbol = "ETHUSDT" },
 		"wrong source":    func(v *execution.WashTradeRequest) { v.GetTrade().Source = "unselected" },
@@ -58,6 +57,84 @@ func TestWashTargetUsesFreshTradeWithoutBatchOrLimits(t *testing.T) {
 	policy.SyntheticTape.DevelopmentOnly = false
 	if _, err := WashTarget(policy, input); err == nil {
 		t.Fatal("non-development publication accepted")
+	}
+}
+
+func TestWashQuantityRoundsUpWithoutExceedingSingleEventCap(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name     string
+		quantity string
+		cap      string
+		want     string
+	}{
+		{
+			name:     "fractional_lot",
+			quantity: "0.079",
+			cap:      "0.01",
+			want:     "0.008",
+		},
+		{
+			name:     "below_one_lot",
+			quantity: "0.00001",
+			cap:      "0.01",
+			want:     "0.001",
+		},
+		{
+			name:     "exact_lot",
+			quantity: "0.01",
+			cap:      "0.01",
+			want:     "0.001",
+		},
+		{
+			name:     "single_event_cap",
+			quantity: "1",
+			cap:      "0.01",
+			want:     "0.01",
+		},
+		{
+			name:     "off_lot_cap",
+			quantity: "1",
+			cap:      "0.0015",
+			want:     "0.001",
+		},
+		{
+			name:     "cap_cannot_cover_one_lot",
+			quantity: "0.01",
+			cap:      "0.0001",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			policy, _ := syntheticFixture()
+			policy.QuantityFraction = "0.1"
+			policy.SyntheticTape.Profiles[0].Quantity = tc.cap
+			trade := &common.VenueTrade{
+				Symbol:   "BTCUSDT",
+				Source:   Source,
+				Segment:  Segment,
+				EventId:  "42",
+				Side:     string(domain.SideBuy),
+				Price:    "100.4",
+				Quantity: tc.quantity,
+			}
+			got, err := washTradeTarget(policy, trade)
+			if tc.want == "" {
+				if err == nil {
+					t.Fatal("minimum lot exceeded configured cap")
+				}
+				return
+			}
+			if err != nil || got.GetQuantity() != tc.want {
+				t.Fatalf("rounded quantity = %v %v, want %s", got, err, tc.want)
+			}
+			if tc.name == "fractional_lot" {
+				legacy, err := SyntheticTradeTarget(policy, trade)
+				if err != nil || legacy.GetQuantity() != "0.007" {
+					t.Fatal("historical calculation changed")
+				}
+			}
+		})
 	}
 }
 

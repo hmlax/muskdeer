@@ -55,6 +55,10 @@ func ValidateTrade(trade *commonv1.VenueTrade, symbol string, now time.Time) err
 // SyntheticTradeTarget scales source quantity within the existing single-event
 // cap and rounds down to a lot. Too-small quantities are not manufactured.
 func SyntheticTradeTarget(h *commonv1.VenuePolicy, trade *commonv1.VenueTrade) (*commonv1.VenueTarget, error) {
+	return syntheticTradeTarget(h, trade, false)
+}
+
+func syntheticTradeTarget(h *commonv1.VenuePolicy, trade *commonv1.VenueTrade, roundUp bool) (*commonv1.VenueTarget, error) {
 	profile := SyntheticProfile(h, trade.GetSymbol())
 	market := SyntheticMarket(h, trade.GetSymbol())
 	if profile == nil || market == nil || trade.GetSource() != Source || trade.GetSegment() != Segment {
@@ -78,7 +82,16 @@ func SyntheticTradeTarget(h *commonv1.VenuePolicy, trade *commonv1.VenueTrade) (
 	if err != nil || !price.IsPositive() {
 		return nil, ErrInvalid
 	}
-	quantity, err = domain.RoundQuantity(decimal.Min(quantity.Mul(fraction), capValue), step)
+	if roundUp {
+		lots, remainder := quantity.Mul(fraction).QuoRem(step, 0)
+		if !remainder.IsZero() {
+			lots = lots.Add(decimal.NewFromInt(1))
+		}
+		capLots, _ := capValue.QuoRem(step, 0)
+		quantity = decimal.Min(lots, capLots).Mul(step)
+	} else {
+		quantity, err = domain.RoundQuantity(decimal.Min(quantity.Mul(fraction), capValue), step)
+	}
 	if err != nil || !quantity.IsPositive() {
 		return nil, ErrInvalid
 	}

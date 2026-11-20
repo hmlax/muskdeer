@@ -1948,7 +1948,8 @@ type WashParameters struct {
 	DevelopmentOnly bool                   `protobuf:"varint,1,opt,name=development_only,json=developmentOnly,proto3" json:"development_only,omitempty"`
 	Mode            string                 `protobuf:"bytes,2,opt,name=mode,proto3" json:"mode,omitempty"`
 	RunId           string                 `protobuf:"bytes,3,opt,name=run_id,json=runId,proto3" json:"run_id,omitempty"`
-	IntervalMs      int64                  `protobuf:"varint,4,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
+	// Zero follows aggregate-trade source frequency; positive values sample.
+	IntervalMs int64 `protobuf:"varint,4,opt,name=interval_ms,json=intervalMs,proto3" json:"interval_ms,omitempty"`
 	// Zero is unlimited; no historical slot is reset or resent.
 	MaximumEvents    uint32 `protobuf:"varint,5,opt,name=maximum_events,json=maximumEvents,proto3" json:"maximum_events,omitempty"`
 	Quantity         string `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`

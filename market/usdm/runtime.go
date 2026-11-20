@@ -38,7 +38,7 @@ type Runtime struct {
 	books             map[string]*commonv1.VenueBook
 	trades            map[string]*commonv1.VenueTrade
 	bookReaders       subscriptions[*commonv1.VenueBook]
-	tradeReaders      subscriptions[*commonv1.VenueTrade]
+	tradeReaders      tradeSubscriptions
 	logger            *logging.Logger
 	snapshotAdmission *snapshotBudget
 }

@@ -78,6 +78,11 @@ func LoadRuntime(ctx context.Context, db *gorm.DB, cfg *configv1.BusinessRuntime
 	if err := native.ValidateSyntheticConfig(policy); err != nil {
 		return nil, err
 	}
+	// Source-following is a current instance mode. Historical batch workers
+	// still require a positive interval and must never spin on a zero wait.
+	if native.WashFollowsSource(policy) {
+		return nil, native.ErrInvalid
+	}
 	return &RuntimeConfig{
 		PollInterval:        cfg.PollInterval.AsDuration(),
 		OperationTimeout:    cfg.OperationTimeout.AsDuration(),

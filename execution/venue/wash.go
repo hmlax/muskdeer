@@ -35,9 +35,11 @@ func (r *Runtime) WashTrade(ctx context.Context, input *pb.WashTradeRequest) (*c
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
 	now := time.Now()
-	previous := r.washNext.Load()
-	if now.UnixMilli() < previous || !r.washNext.CompareAndSwap(previous, now.Add(r.cfg.Venue.SyntheticTape.Interval.AsDuration()).UnixMilli()) {
-		return nil, status.Error(codes.ResourceExhausted, native.MessageInvalid)
+	if err := ctx.Err(); err != nil {
+		return nil, status.FromContextError(err).Err()
+	}
+	if err := r.admitWashFrequency(input, now); err != nil {
+		return nil, err
 	}
 	until := input.GetBook().GetValidUntilMs()
 	if input.GetTrade() != nil {

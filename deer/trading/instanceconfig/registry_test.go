@@ -9,6 +9,31 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 )
 
+func TestZeroWashIntervalFollowsOnlyDevelopmentAggregateTrades(t *testing.T) {
+	t.Parallel()
+	p := parameterFixture(domain.StrategyTemplateWashTrade)
+	p.WashTrade.IntervalMs = 0
+	if err := Validate(domain.StrategyTemplateWashTrade, ImplementationWashTrade, p); err != nil {
+		t.Fatal(err)
+	}
+	for _, kind := range []string{"book", "negative", "below_interval_minimum", "not_development"} {
+		candidate := proto.CloneOf(p)
+		switch kind {
+		case "book":
+			candidate.WashTrade.Mode = commonv1.WashTradeMode_WASH_TRADE_MODE_BOOK
+		case "negative":
+			candidate.WashTrade.IntervalMs = -1
+		case "below_interval_minimum":
+			candidate.WashTrade.IntervalMs = 99
+		case "not_development":
+			candidate.WashTrade.DevelopmentOnly = false
+		}
+		if Validate(domain.StrategyTemplateWashTrade, ImplementationWashTrade, candidate) == nil {
+			t.Fatalf("invalid %s source-following configuration accepted", kind)
+		}
+	}
+}
+
 func TestThreeImplementationsRequireTheirOwnConcreteParameters(t *testing.T) {
 	t.Parallel()
 	definitions := Definitions()

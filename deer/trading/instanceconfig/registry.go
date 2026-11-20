@@ -137,7 +137,8 @@ func validMaker(p *commonv1.DepthMakerParameters) bool {
 }
 
 func validWashTrade(p *commonv1.WashTradeParameters) bool {
-	if !p.DevelopmentOnly || p.IntervalMs < 100 || p.IntervalMs > time.Minute.Milliseconds() {
+	if !p.DevelopmentOnly || p.IntervalMs < 0 || p.IntervalMs > time.Minute.Milliseconds() ||
+		p.IntervalMs == 0 && p.Mode != commonv1.WashTradeMode_WASH_TRADE_MODE_AGG_TRADE || p.IntervalMs > 0 && p.IntervalMs < 100 {
 		return false
 	}
 	if p.Mode != commonv1.WashTradeMode_WASH_TRADE_MODE_BOOK && p.Mode != commonv1.WashTradeMode_WASH_TRADE_MODE_AGG_TRADE {
