@@ -17,6 +17,13 @@ jobs:
         with:
           go-version-file: .go-version
           cache: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install Python tooling dependencies
+        run: python3 -m pip install -r scripts/admin/test/requirements.txt
+      - name: Install locked administration frontend dependencies
+        run: make admin-deps
       - name: Install pinned generators
         run: make tools
       - name: Verify generated code, lint, unit tests and build

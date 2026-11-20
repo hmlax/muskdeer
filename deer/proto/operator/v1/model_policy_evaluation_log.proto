@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 策略评估日志表
+message SysPolicyEvaluationLogs {
+  option (operator.v1.model) = {
+    entity: "PolicyEvaluationLog"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_policy_eval_tenant_created_at,priority:2;index:idx_policy_eval_tenant_user_permission_created_at,priority:4;index:idx_policy_eval_tenant_policy_created_at,priority:3;index:idx_policy_eval_tenant_membership_created_at,priority:3;index:idx_policy_eval_tenant_permission_result_created_at,priority:4;index:idx_policy_eval_ip_address_created_at,priority:2;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 租户ID
+  optional uint32 tenant_id = 3 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:idx_policy_eval_tenant_created_at,priority:1;index:idx_policy_eval_tenant_user_permission_created_at,priority:1;index:idx_policy_eval_tenant_policy_created_at,priority:1;index:idx_policy_eval_tenant_membership_created_at,priority:1;index:idx_policy_eval_tenant_permission_result_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 用户ID
+  optional uint32 user_id = 4 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;not null;index:idx_policy_eval_tenant_user_permission_created_at,priority:2;comment:用户ID\" json:\"user_id,omitempty\"", (operator.v1.go_name) = "UserID"];
+
+  // 成员身份ID
+  optional uint32 membership_id = 5 [(tagger.tags) = "gorm:\"column:membership_id;type:bigint;not null;index:idx_policy_eval_tenant_membership_created_at,priority:2;comment:成员身份ID\" json:\"membership_id,omitempty\"", (operator.v1.go_name) = "MembershipID"];
+
+  // 权限点ID
+  optional uint32 permission_id = 6 [(tagger.tags) = "gorm:\"column:permission_id;type:bigint;not null;index:idx_policy_eval_tenant_user_permission_created_at,priority:3;index:idx_policy_eval_tenant_permission_result_created_at,priority:2;comment:权限点ID\" json:\"permission_id,omitempty\"", (operator.v1.go_name) = "PermissionID"];
+
+  // 策略ID（可能无策略）
+  optional uint32 policy_id = 7 [(tagger.tags) = "gorm:\"column:policy_id;type:bigint;index:idx_policy_eval_tenant_policy_created_at,priority:2;comment:策略ID（可能无策略）\" json:\"policy_id,omitempty\"", (operator.v1.go_name) = "PolicyID"];
+
+  // 请求API路径
+  optional string request_path = 8 [(tagger.tags) = "gorm:\"column:request_path;type:varchar(255);index:idx_policy_eval_request_path,priority:1;comment:请求API路径\" json:\"request_path,omitempty\"", (operator.v1.go_name) = "RequestPath"];
+
+  // 请求HTTP方法
+  optional string request_method = 9 [(tagger.tags) = "gorm:\"column:request_method;type:varchar(255);index:idx_policy_eval_request_method,priority:1;comment:请求HTTP方法\" json:\"request_method,omitempty\"", (operator.v1.go_name) = "RequestMethod"];
+
+  // 是否通过
+  optional bool result = 10 [(tagger.tags) = "gorm:\"column:result;type:boolean;not null;default:false;index:idx_policy_eval_tenant_permission_result_created_at,priority:3;comment:是否通过\" json:\"result,omitempty\"", (operator.v1.go_name) = "Result"];
+
+  // 评估详情/拒绝原因
+  optional string effect_details = 11 [(tagger.tags) = "gorm:\"column:effect_details;type:varchar(255);comment:评估详情/拒绝原因\" json:\"effect_details,omitempty\"", (operator.v1.go_name) = "EffectDetails"];
+
+  // 生成的SQL条件
+  optional string scope_sql = 12 [(tagger.tags) = "gorm:\"column:scope_sql;type:varchar(255);comment:生成的SQL条件\" json:\"scope_sql,omitempty\"", (operator.v1.go_name) = "ScopeSQL"];
+
+  // 操作者IP地址
+  optional string ip_address = 13 [(tagger.tags) = "gorm:\"column:ip_address;type:varchar(255);index:idx_policy_eval_ip_address_created_at,priority:1;comment:操作者IP地址\" json:\"ip_address,omitempty\"", (operator.v1.go_name) = "IPAddress"];
+
+  // 全局链路追踪ID
+  optional string trace_id = 14 [(tagger.tags) = "gorm:\"column:trace_id;type:varchar(255);index:idx_policy_eval_trace_id,priority:1;comment:全局链路追踪ID\" json:\"trace_id,omitempty\"", (operator.v1.go_name) = "TraceID"];
+
+  // 决策上下文快照
+  optional string evaluation_context = 15 [(tagger.tags) = "gorm:\"column:evaluation_context;type:varchar(255);comment:决策上下文快照\" json:\"evaluation_context,omitempty\"", (operator.v1.go_name) = "EvaluationContext"];
+
+  // 日志内容哈希（SHA256，十六进制字符串）
+  optional string log_hash = 16 [(tagger.tags) = "gorm:\"column:log_hash;type:varchar(255);index:idx_policy_eval_log_hash,priority:1;comment:日志内容哈希（SHA256，十六进制字符串）\" json:\"log_hash,omitempty\"", (operator.v1.go_name) = "LogHash"];
+
+  // 日志数字签名
+  bytes signature = 17 [(tagger.tags) = "gorm:\"column:signature;type:bytea;comment:日志数字签名\" json:\"signature,omitempty\"", (operator.v1.go_name) = "Signature"];
+}

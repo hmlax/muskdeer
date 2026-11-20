@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+import "gnostic/openapi/v3/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+// 对象存储对象
+message StorageObject {
+  optional string bucket_name = 1 [
+    json_name = "bucketName",
+    (gnostic.openapi.v3.property) = { description: "目标文件桶名称" }
+  ];
+
+  optional string file_directory = 2 [
+    json_name = "fileDirectory",
+    (gnostic.openapi.v3.property) = {
+      description: "存储目录（如 'user/1001/avatar/'），服务端会在此目录下生成唯一文件名",
+      example: {yaml : "tenant/1001/user/avatar/"}
+    }
+  ];
+
+  optional string object_name = 3 [
+    json_name = "objectName",
+    (gnostic.openapi.v3.property) = {
+      description: "OSS 对象键（完整路径，如 'user/1001/avatar.jpg'）。若未提供，服务端将自动生成。",
+      example: {yaml : "user/1001/avatar.jpg"}
+    }
+  ]; // OSS 对象键（完整路径，如 'user/1001/avatar.jpg'）。若未提供，服务端将自动生成。
+}
+
+// 预签名选项
+message PresignOption {
+  optional string method = 1 [
+    json_name = "method",
+    (gnostic.openapi.v3.property) = { description: "预签名使用的 HTTP 方法，例如 PUT 或 POST" }
+  ];
+
+  optional int32 expire_seconds = 2 [
+    json_name = "expireSeconds",
+    (gnostic.openapi.v3.property) = { description: "预签名有效期（秒）" }
+  ];
+
+  optional string content_type = 3 [
+    json_name = "contentType",
+    (gnostic.openapi.v3.property) = { description: "预签名约束的 Content-Type（可选）" }
+  ];
+}

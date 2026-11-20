@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package operator.v1;
+
+import "google/protobuf/empty.proto";
+import "operator/v1/api_audit_log.proto";
+import "operator/v1/data_access_audit_log.proto";
+import "operator/v1/login_audit_log.proto";
+import "operator/v1/operation_audit_log.proto";
+import "operator/v1/permission_audit_log.proto";
+import "operator/v1/policy_evaluation_log.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+// Internal data access for admin; access decisions belong to the gateway.
+service GatewayService {
+  rpc ResolveTenantCode(ResolveTenantCodeRequest) returns (ResolveTenantCodeResponse);
+  rpc GetPolicies(google.protobuf.Empty) returns (PoliciesResponse);
+  rpc GetTenantAccessData(TenantAccessRequest) returns (TenantAccessData);
+  rpc WriteAudit(AuditRecord) returns (google.protobuf.Empty);
+  rpc ResolvePolicy(ResolvePolicyRequest) returns (ResolvePolicyResponse);
+  rpc Export(ExportRequest) returns (FileResponse);
+  rpc ReadMedia(MediaRequest) returns (FileResponse);
+}
+message ResolveTenantCodeRequest {
+  string code = 1;
+}
+message ResolveTenantCodeResponse {
+  uint32 tenant_id = 1;
+}
+message GatewayPermission {
+  string domain = 1;
+  string path = 2;
+  string method = 3;
+}
+message RolePolicy {
+  string role = 1;
+  repeated GatewayPermission permissions = 2;
+}
+message PoliciesResponse {
+  repeated RolePolicy policies = 1;
+}
+message TenantAccessRequest {
+  uint32 tenant_id = 1;
+  string path = 2;
+  string method = 3;
+}
+message TenantAccessData {
+  bool tenant_exists = 1;
+  optional string status = 2;
+  optional int64 expires_at = 3;
+  bool api_exists = 6;
+  reserved 4, 5, 7, 8, 9, 10, 11;
+  reserved "expiry_policy", "plan_id", "module_classified", "module_in_plan", "api_call_limit", "api_call_count";
+}
+message AuditRecord {
+  oneof record {
+    operator.v1.ApiAuditLog api = 1;
+    operator.v1.LoginAuditLog login = 2;
+    operator.v1.OperationAuditLog operation = 3;
+    operator.v1.PermissionAuditLog permission = 4;
+    operator.v1.DataAccessAuditLog data_access = 5;
+    operator.v1.PolicyEvaluationLog policy_evaluation = 6;
+  }
+}
+message ResolvePolicyRequest {
+  string subject = 1;
+  string path = 2;
+  string method = 3;
+}
+message ResolvePolicyResponse {
+  uint32 permission_id = 1;
+  uint32 policy_id = 2;
+}
+message ExportRequest {
+  enum Resource {
+    RESOURCE_UNSPECIFIED = 0;
+    AUDIT = 1;
+    reserved 2, 3;
+    reserved "AI_USAGE", "NOTIFICATION_DELIVERY";
+  }
+  Resource resource = 1;
+  string type = 2;
+  string format = 3;
+  uint32 max_rows = 4;
+  string query = 5;
+}
+
+// File bytes contain downloadable content, never serialized business DTOs.
+message FileResponse {
+  bytes content = 1;
+  string content_type = 2;
+  string disposition = 3;
+  int32 status = 4;
+  string cache_control = 5;
+}
+message MediaRequest {
+  string path = 1;
+  int64 expires = 2;
+  string signature = 3;
+}

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 240">
+  <title>Go Admin — 阵风横版组合</title>
+  <defs>
+    <linearGradient id="wg" gradientUnits="userSpaceOnUse" x1="0" y1="30" x2="0" y2="420">
+      <stop offset="0" stop-color="#70B3FF"/>
+      <stop offset=".5" stop-color="#0D74F2"/>
+      <stop offset="1" stop-color="#005AC2"/>
+    </linearGradient>
+    <linearGradient id="tg" gradientUnits="userSpaceOnUse" x1="0" y1="-12" x2="0" y2="112">
+      <stop offset="0" stop-color="#70B3FF"/>
+      <stop offset=".5" stop-color="#0D74F2"/>
+      <stop offset="1" stop-color="#005AC2"/>
+    </linearGradient>
+    <path id="cG" d="M70 22 A40 40 0 1 0 82 50 L56 50"/>
+    <circle id="cO" cx="42" cy="50" r="40"/>
+    <path id="cA" d="M0 100 L40 0 L80 100 M16 60 H64"/>
+    <path id="cD" d="M10 0 V100 M10 0 H24 A50 50 0 0 1 24 100 H10"/>
+    <path id="cM" d="M0 100 V0 L40 60 L80 0 V100"/>
+    <path id="cI" d="M10 0 V100"/>
+    <path id="cN" d="M10 100 V0 L74 100 V0"/>
+  </defs>
+  <g transform="translate(38,26) scale(0.4)" fill="none" stroke="url(#wg)" stroke-width="42" stroke-linecap="round">
+    <path d="M100 150 H280 A40 40 0 0 0 235 86"/>
+    <path d="M76 270 H330 A40 40 0 0 0 285 206"/>
+    <path d="M128 390 H260 A40 40 0 0 0 215 326"/>
+  </g>
+  <g transform="translate(248,70) scale(0.82)" fill="none" stroke="url(#tg)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <use href="#cG"/><use href="#cO" x="116"/><use href="#cA" x="254"/><use href="#cD" x="362"/><use href="#cM" x="470"/><use href="#cI" x="588"/><use href="#cN" x="642"/>
+  </g>
+</svg>

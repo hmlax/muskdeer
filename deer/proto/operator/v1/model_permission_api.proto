@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 权限点与API接口关联表
+message SysPermissionApis {
+  option (operator.v1.model) = {
+    entity: "PermissionApi"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 权限ID（关联sys_permissions.id）
+  optional uint32 permission_id = 8 [(tagger.tags) = "gorm:\"column:permission_id;type:bigint;not null;uniqueIndex:uix_perm_api_permission_api_id,priority:1;index:idx_perm_api_permission_id,priority:1;comment:权限ID（关联sys_permissions.id）\" json:\"permission_id,omitempty\"", (operator.v1.go_name) = "PermissionID"];
+
+  // API资源ID（关联sys_apis.id）
+  optional uint32 api_id = 9 [(tagger.tags) = "gorm:\"column:api_id;type:bigint;not null;uniqueIndex:uix_perm_api_permission_api_id,priority:2;index:idx_perm_api_api_id,priority:1;comment:API资源ID（关联sys_apis.id）\" json:\"api_id,omitempty\"", (operator.v1.go_name) = "APIID"];
+}

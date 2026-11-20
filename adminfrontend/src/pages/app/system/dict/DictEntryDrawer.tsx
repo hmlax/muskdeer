@@ -1,0 +1,432 @@
+import type { DictEntry as DictEntryRecord } from '@/api/generated/admin/v1';
+import { useRef, useState, useEffect } from 'react';
+import type { ProFormInstance } from '@ant-design/pro-components';
+import { DrawerForm, ProFormText, ProFormDigit, ProFormRadio } from '@ant-design/pro-components';
+import { App, Select, Form, Table, Input, Button, Space, Spin } from 'antd';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+
+import { PaginationQuery } from '@/core';
+import { useCreateDictEntry, useUpdateDictEntry } from '@/api/hooks/dict';
+import { useDrawerCloseGuard } from '@/components/common/use-drawer-close-guard';
+import { fetchListDictTypes } from '@/api/hooks/dict';
+import { fetchListLanguages } from '@/api/hooks/language';
+import { enableBoolRadioOptions } from './constants';
+
+interface I18nRow {
+  key: string;
+  languageCode: string;
+  languageName: string;
+  entryLabel: string;
+  description: string;
+}
+
+interface DictEntryDrawerProps {
+  open: boolean;
+  mode: 'create' | 'edit';
+  data?: DictEntryRecord;
+  typeId: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+/**
+ * 字典条目编辑/创建抽屉组件
+ * 含国际化（i18n）子表格
+ */
+const DictEntryDrawerContent: React.FC<DictEntryDrawerProps> = ({
+  open,
+  mode,
+  data,
+  typeId,
+  onClose,
+  onSuccess,
+}) => {
+  const { t } = useTranslation('dict-entry');
+  const formRef = useRef<ProFormInstance>(null);
+
+  // 关闭守卫：遮罩/ESC/X/取消统一，脏数据先确认（docs/form_drawer_close_guard.md）
+  const { guardClose, handleValuesChange } = useDrawerCloseGuard(open, onClose);
+  const queryClient = useQueryClient();
+  const { message } = App.useApp();
+
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // 字典类型下拉数据
+  const [typeOptions, setTypeOptions] = useState<{ label: string; value: number }[]>([]);
+
+  // i18n 子表格
+  const [i18nData, setI18nData] = useState<I18nRow[]>([]);
+  const [i18nLoading, setI18nLoading] = useState(open);
+  const [editingKey, setEditingKey] = useState<string>('');
+  // 编辑开始时的原始值快照，取消编辑时用于还原（对齐 Vue 版 _backup 机制）
+  const [i18nBackup, setI18nBackup] = useState<{
+    key: string;
+    entryLabel: string;
+    description: string;
+  } | null>(null);
+
+  // 加载字典类型下拉数据
+  useEffect(() => {
+    if (open) {
+      // is_enabled 是布尔列：传布尔值走 EQ；字符串会被序列化成 __contains，后端报 500
+      fetchListDictTypes(new PaginationQuery({ formValues: { is_enabled: true } }))
+        .then((res) => {
+          const options = (res.items || []).map((item) => ({
+            label: item.typeName ?? String(item.id),
+            value: item.id ?? 0,
+          }));
+          setTypeOptions(options);
+        })
+        .catch((error: unknown) => {
+          console.error('Load options failed:', error);
+          setTypeOptions([]);
+        });
+    }
+  }, [open]);
+
+  // 编辑模式下设置表单值
+  useEffect(() => {
+    if (!(open && mode === 'edit' && data)) return;
+    // destroyOnHidden 下，open 由 false→true 时表单刚挂载，formRef 可能尚未就绪。
+    // 这里用「轮询等待 formRef 就绪 + 取消标志位」替代裸 setTimeout(0)，
+    // 既避免 StrictMode 双调用导致的竞态，也防止组件卸载后 setState。
+    let cancelled = false;
+    let attempts = 0;
+    const applyValues = () => {
+      if (cancelled) return;
+      const form = formRef.current;
+      if (form) {
+        form.setFieldsValue({
+          typeId: data.typeId || typeId,
+          entryValue: data.entryValue || '',
+          numericValue: data.numericValue,
+          sortOrder: data.sortOrder ?? 1,
+          isEnabled: data.isEnabled ?? true,
+        });
+        return;
+      }
+      // formRef 尚未挂载，下一帧重试（最多约 ~500ms）
+      if (attempts++ < 30) {
+        requestAnimationFrame(applyValues);
+      }
+    };
+    requestAnimationFrame(applyValues);
+    return () => {
+      cancelled = true;
+    };
+  }, [open, mode, data, typeId]);
+
+  // 加载 i18n 数据（打开时加载语言列表）
+  useEffect(() => {
+    if (open) {
+      fetchListLanguages(new PaginationQuery({ orderBy: ['sortOrder'] }))
+        .then((res) => {
+          const i18nMap = (data?.i18n ?? {}) as Record<
+            string,
+            { description?: string; entryLabel?: string }
+          >;
+          const rows: I18nRow[] = (res.items || [])
+            .filter(
+              (lang): lang is typeof lang & { languageCode: string } =>
+                typeof lang.languageCode === 'string' && lang.languageCode.length > 0,
+            )
+            .map((lang) => ({
+              key: lang.languageCode,
+              languageCode: lang.languageCode,
+              languageName: lang.nativeName || '',
+              entryLabel: i18nMap[lang.languageCode]?.entryLabel ?? '',
+              description: i18nMap[lang.languageCode]?.description ?? '',
+            }));
+          setI18nData(rows);
+        })
+        .catch((error: unknown) => {
+          console.error('Load options failed:', error);
+          setI18nData([]);
+        })
+        .finally(() => setI18nLoading(false));
+    }
+  }, [open, data?.i18n]);
+
+  // 创建 mutation
+  const createMutation = useCreateDictEntry({
+    onSuccess: () => {
+      message.success(t('createSuccess'));
+      queryClient.invalidateQueries({ queryKey: ['listDictEntries'] });
+      onSuccess();
+      onClose();
+    },
+    onError: (error: Error) => {
+      message.error(error.message || t('createFailed'));
+    },
+  });
+
+  // 更新 mutation
+  const updateMutation = useUpdateDictEntry({
+    onSuccess: () => {
+      message.success(t('updateSuccess'));
+      queryClient.invalidateQueries({ queryKey: ['listDictEntries'] });
+      onSuccess();
+      onClose();
+    },
+    onError: (error: Error) => {
+      message.error(error.message || t('updateFailed'));
+    },
+  });
+
+  // 提交表单
+  const handleSubmit = async (values: DictEntryRecord) => {
+    try {
+      setConfirmLoading(true);
+
+      // 构建 i18n map：只提交用户实际填写过的语言行。
+      // 后端 entry_label 有 NotEmpty 校验，空标签行会导致 500（对齐 vue-element/vben 行为）。
+      const i18nMap: NonNullable<DictEntryRecord['i18n']> = {};
+      i18nData.forEach((row) => {
+        const label = (row.entryLabel || '').trim();
+        const desc = (row.description || '').trim();
+        if (row.languageCode && (label || desc)) {
+          i18nMap[row.languageCode] = {
+            languageCode: row.languageCode,
+            entryLabel: label,
+            description: desc,
+          };
+        }
+      });
+
+      const payload = {
+        ...values,
+        i18n: i18nMap,
+      };
+
+      if (mode === 'edit' && data?.id) {
+        await updateMutation.mutateAsync({ id: data.id, values: payload });
+      } else {
+        await createMutation.mutateAsync({ data: payload });
+      }
+      return true;
+    } catch (error) {
+      console.error('Save dictionary entry failed:', error);
+      return false;
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  // i18n 表格可编辑单元格
+  const isEditing = (record: I18nRow) => record.key === editingKey;
+
+  const edit = (record: I18nRow) => {
+    // 进入编辑前快照原始值，供取消时还原（避免取消后改动仍保留）
+    setI18nBackup({
+      key: record.key,
+      entryLabel: record.entryLabel,
+      description: record.description,
+    });
+    setEditingKey(record.key);
+  };
+
+  const cancel = () => {
+    // 取消编辑：从快照还原该行的原始值
+    if (i18nBackup) {
+      setI18nData((prev) =>
+        prev.map((row) =>
+          row.key === i18nBackup.key
+            ? {
+                ...row,
+                entryLabel: i18nBackup.entryLabel,
+                description: i18nBackup.description,
+              }
+            : row,
+        ),
+      );
+      setI18nBackup(null);
+    }
+    setEditingKey('');
+  };
+
+  const save = () => {
+    // 保存：保留改动，清除快照
+    setI18nBackup(null);
+    setEditingKey('');
+  };
+
+  const updateI18nRow = (key: string, field: string, value: string) => {
+    setI18nData((prev) => prev.map((row) => (row.key === key ? { ...row, [field]: value } : row)));
+  };
+
+  // i18n 表格列定义
+  const i18nColumns = [
+    {
+      title: t('languageCode'),
+      dataIndex: 'languageCode',
+      width: 100,
+    },
+    {
+      title: t('languageName'),
+      dataIndex: 'languageName',
+      width: 100,
+    },
+    {
+      title: t('entryLabel'),
+      dataIndex: 'entryLabel',
+      render: (_: unknown, record: I18nRow) => {
+        if (isEditing(record)) {
+          return (
+            <Input
+              value={record.entryLabel}
+              onChange={(e) => updateI18nRow(record.key, 'entryLabel', e.target.value)}
+              onPressEnter={() => save()}
+              size="small"
+            />
+          );
+        }
+        return record.entryLabel || '-';
+      },
+    },
+    {
+      title: t('description'),
+      dataIndex: 'description',
+      render: (_: unknown, record: I18nRow) => {
+        if (isEditing(record)) {
+          return (
+            <Input
+              value={record.description}
+              onChange={(e) => updateI18nRow(record.key, 'description', e.target.value)}
+              onPressEnter={() => save()}
+              size="small"
+            />
+          );
+        }
+        return record.description || '-';
+      },
+    },
+    {
+      title: t('action'),
+      dataIndex: 'action',
+      width: 120,
+      render: (_: unknown, record: I18nRow) => {
+        if (isEditing(record)) {
+          return (
+            <Space size={4}>
+              <Button type="link" size="small" onClick={() => save()}>
+                {t('common:button.ok')}
+              </Button>
+              <Button type="link" size="small" onClick={cancel}>
+                {t('common:button.cancel')}
+              </Button>
+            </Space>
+          );
+        }
+        return (
+          <Button type="link" size="small" onClick={() => edit(record)}>
+            {t('common:button.edit')}
+          </Button>
+        );
+      },
+    },
+  ];
+
+  return (
+    <DrawerForm
+      formRef={formRef}
+      title={mode === 'create' ? t('create') : t('edit')}
+      open={open}
+      onValuesChange={handleValuesChange}
+      initialValues={{
+        typeId,
+        sortOrder: 1,
+        isEnabled: true,
+      }}
+      onFinish={handleSubmit}
+      submitter={{
+        searchConfig: {
+          submitText: t('common:button.submit'),
+          resetText: t('common:button.cancel'),
+        },
+        submitButtonProps: {
+          loading: confirmLoading || createMutation.isPending || updateMutation.isPending,
+        },
+        resetButtonProps: { onClick: guardClose },
+      }}
+      drawerProps={{ destroyOnHidden: true, onClose: guardClose, size: 800 }}
+      layout="horizontal"
+      labelCol={{ flex: '0 0 120px' }}
+      wrapperCol={{ flex: 'auto' }}
+    >
+      {/* 所属类型 - Select */}
+      <Form.Item
+        name="typeId"
+        label={t('typeId')}
+        rules={[{ required: true, message: t('requiredTypeId') }]}
+      >
+        <Select
+          options={typeOptions}
+          placeholder={t('typeIdPlaceholder')}
+          allowClear={false}
+          showSearch
+        />
+      </Form.Item>
+
+      <ProFormText
+        name="entryValue"
+        label={t('entryValue')}
+        placeholder={t('entryValuePlaceholder')}
+        rules={[{ required: true, message: t('requiredEntryValue') }]}
+        fieldProps={{ allowClear: true }}
+      />
+
+      <ProFormDigit
+        name="numericValue"
+        label={t('numericValue')}
+        placeholder={t('numericValuePlaceholder')}
+        fieldProps={{ precision: 0 }}
+      />
+
+      <ProFormDigit
+        name="sortOrder"
+        label={t('sortOrder')}
+        placeholder={t('sortOrderPlaceholder')}
+        fieldProps={{ precision: 0, min: 0 }}
+      />
+
+      <ProFormRadio.Group
+        name="isEnabled"
+        label={t('status')}
+        rules={[{ required: true, message: t('requiredStatus') }]}
+        options={enableBoolRadioOptions(t)}
+        fieldProps={{ optionType: 'button', buttonStyle: 'solid' }}
+      />
+
+      {/* 国际化子表格 */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ display: 'block', marginBottom: 8, color: 'var(--ant-color-text)' }}>
+          {t('i18nTitle')}
+        </label>
+        <Spin spinning={i18nLoading}>
+          <Table
+            dataSource={i18nData}
+            columns={i18nColumns}
+            size="small"
+            pagination={false}
+            bordered
+            scroll={{ y: 300 }}
+            style={{
+              border: '1px solid var(--ant-color-border)',
+              borderRadius: 6,
+            }}
+          />
+        </Spin>
+      </div>
+    </DrawerForm>
+  );
+};
+
+export default function DictEntryDrawer(props: DictEntryDrawerProps) {
+  return (
+    <DictEntryDrawerContent
+      key={`${props.open}-${props.mode}-${props.data?.id}-${props.typeId}`}
+      {...props}
+    />
+  );
+}

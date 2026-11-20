@@ -35,5 +35,31 @@
       "package": "google.golang.org/grpc/cmd/protoc-gen-go-grpc",
       "version": "v1.6.2"
     }
+  ],
+  "admin_plugins": [
+    {
+      "package": "github.com/bufbuild/buf/cmd/buf",
+      "version": "v1.50.0"
+    },
+    {
+      "package": "github.com/cloudwego/hertz/cmd/hz",
+      "version": "v0.9.1"
+    },
+    {
+      "package": "github.com/envoyproxy/protoc-gen-validate",
+      "version": "v1.3.3"
+    },
+    {
+      "package": "github.com/google/gnostic/cmd/protoc-gen-openapi",
+      "version": "v0.7.1"
+    },
+    {
+      "package": "github.com/tx7do/go-wind-toolkit/protoc-gen-go-redact",
+      "version": "v0.0.0-20260831125122-5bb4931991b2"
+    },
+    {
+      "package": "github.com/tx7do/go-wind-toolkit/protoc-gen-typescript-http",
+      "version": "v0.0.0-20260831125122-5bb4931991b2"
+    }
   ]
 }

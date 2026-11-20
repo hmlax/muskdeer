@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 用户 MFA 因子表
+message SysUserMfaFactors {
+  option (operator.v1.model) = {
+    entity: "UserMfaFactor"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 租户ID
+  optional uint32 tenant_id = 5 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:idx_sys_user_mfa_tenant_user_id,priority:1;uniqueIndex:idx_sys_user_mfa_tenant_uid_method,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 关联主表的用户ID
+  optional uint32 user_id = 6 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;index:idx_sys_user_mfa_tenant_user_id,priority:2;uniqueIndex:idx_sys_user_mfa_tenant_uid_method,priority:2;comment:关联主表的用户ID\" json:\"user_id,omitempty\"", (operator.v1.go_name) = "UserID"];
+
+  // MFA 方法
+  optional string method = 7 [(tagger.tags) = "gorm:\"column:method;type:varchar(255);default:TOTP;uniqueIndex:idx_sys_user_mfa_tenant_uid_method,priority:3;comment:MFA 方法\" json:\"method,omitempty\"", (operator.v1.go_name) = "Method", (operator.v1.enum_values) = { name: "MethodTotp" value: "TOTP" }, (operator.v1.enum_values) = { name: "MethodSms" value: "SMS" }, (operator.v1.enum_values) = { name: "MethodEmail" value: "EMAIL" }, (operator.v1.enum_values) = { name: "MethodWebauthn" value: "WEBAUTHN" }];
+
+  // MFA secret 密文（AES-GCM 加密，base64 编码；TOTP 校验需还原明文）
+  optional string secret_hash = 8 [(tagger.tags) = "gorm:\"column:secret_hash;type:varchar(512);comment:MFA secret 密文（AES-GCM 加密，base64 编码；TOTP 校验需还原明文）\" json:\"secret_hash,omitempty\"", (operator.v1.go_name) = "SecretHash", (operator.v1.min_len) = 1, (operator.v1.max_len) = 512];
+
+  // 设备/因子展示名（用户自定义）
+  optional string display_name = 9 [(tagger.tags) = "gorm:\"column:display_name;type:varchar(128);comment:设备/因子展示名（用户自定义）\" json:\"display_name,omitempty\"", (operator.v1.go_name) = "DisplayName", (operator.v1.max_len) = 128];
+
+  // 因子状态
+  optional string status = 10 [(tagger.tags) = "gorm:\"column:status;type:varchar(255);default:ENABLED;comment:因子状态\" json:\"status,omitempty\"", (operator.v1.go_name) = "Status", (operator.v1.enum_values) = { name: "StatusDisabled" value: "DISABLED" }, (operator.v1.enum_values) = { name: "StatusEnabled" value: "ENABLED" }];
+
+  // 最近一次用于验证的时间
+  google.protobuf.Timestamp last_used_at = 11 [(tagger.tags) = "gorm:\"column:last_used_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:最近一次用于验证的时间\" json:\"last_used_at,omitempty\"", (operator.v1.go_name) = "LastUsedAt"];
+}

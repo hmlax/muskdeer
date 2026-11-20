@@ -1,0 +1,33 @@
+server:
+  rest:
+    addr: ':7788'
+    timeout: 30s
+    enable_swagger: true
+    cors:
+      allow_credentials: true
+      origins: ['http://localhost:15888', 'http://127.0.0.1:15888']
+      methods: [GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS]
+      headers: [X-Requested-With, X-Request-ID, Content-Type, Authorization, X-Tenant-Code, X-Captcha-Id, X-Captcha-Value]
+  grpc:
+    addr: ':7790'
+    timeout: 30s
+logger:
+  type: std
+authz:
+  type: casbin
+runtime:
+  tracing:
+    enabled: false
+    endpoint: jaeger.internal.example:4317
+    insecure: false
+    sampling_per_million: 100000
+    export_timeout: 3s
+  operator_endpoint: '' # Empty selects Nacos discovery for operator.grpc.
+  sso:
+    issuer: ''
+    client_id: ''
+    client_secret: ''
+    redirect_url: ''
+    scopes: openid email profile
+    auto_create: false
+    tenant_code: ''

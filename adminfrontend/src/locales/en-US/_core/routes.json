@@ -1,0 +1,107 @@
+{
+  "MuskdeerGateways": "Gateways",
+  "accessKeys": "OpenAPI Credentials",
+  "api-audit-log": "API Logs",
+  "apis": "API Management",
+  "auth": "Authentication",
+  "coming-soon": "Coming Soon",
+  "configs": "Config Management",
+  "dashboard": "Overview",
+  "dashboard-analytics": "Home",
+  "data-access-audit-log": "Data Logs",
+  "dict": "Dictionary Management",
+  "error-pages": "Error",
+  "files": "File Management",
+  "forbidden": "Forbidden",
+  "forgot-password": "Forgot Password",
+  "home": "Home",
+  "languages": "Language Management",
+  "log": "Audit Logs",
+  "login": "Login",
+  "login-audit-log": "Login Logs",
+  "login-policies": "Login Policy",
+  "menus": "Menu Management",
+  "mfaChallenge": "MFA Verification",
+  "not-found": "404",
+  "offline": "Offline",
+  "online-sessions": "Online Users",
+  "operation-audit-log": "Operation Logs",
+  "opm": "Organization & Personnel",
+  "org-units": "Organization Structure",
+  "permission": "Permission Management",
+  "permission-audit-log": "Permission Logs",
+  "permission-codes": "Permission Codes",
+  "policy-evaluation-log": "Policy Evaluation Logs",
+  "positions": "Position Management",
+  "roles": "Role Management",
+  "server-error": "Server Error",
+  "ssoCallback": "SSO Callback",
+  "system": "System Management",
+  "tenant": "Tenant Management",
+  "tenant-members": "Tenant List",
+  "unauthorized": "Unauthorized",
+  "user-detail": "User Details",
+  "user-profile": "Profile Center",
+  "users": "User Management",
+  "menu": {
+    "profile": {
+      "settings": "Profile Center"
+    },
+    "tenant": {
+      "moduleName": "Tenant Management",
+      "member": "Tenant List"
+    },
+    "opm": {
+      "moduleName": "Organization & Personnel",
+      "orgUnit": "Organization Structure",
+      "position": "Position Management",
+      "user": "User Management",
+      "userDetail": "User Details"
+    },
+    "permission": {
+      "moduleName": "Permission Management",
+      "permission": "Permission Codes",
+      "role": "Role Management",
+      "menu": "Menu Management",
+      "api": "API Management"
+    },
+    "log": {
+      "moduleName": "Audit Logs",
+      "loginAuditLog": "Login Logs",
+      "apiAuditLog": "API Logs",
+      "operationAuditLog": "Operation Logs",
+      "dataAccessAuditLog": "Data Logs",
+      "permissionAuditLog": "Permission Logs",
+      "policyEvaluationLog": "Policy Evaluation Logs",
+      "redisCacheMonitor": "Redis Cache Monitor"
+    },
+    "system": {
+      "moduleName": "System Management",
+      "dict": "Dictionary Management",
+      "file": "File Management",
+      "loginPolicy": "Login Policy",
+      "language": "Language Management",
+      "accessKeys": "OpenAPI Credentials",
+      "config": "Config Management",
+      "onlineSessions": "Online Users",
+      "monitorAlerts": "Monitor Alerts"
+    }
+  },
+  "page": {
+    "dashboard": {
+      "title": "Overview",
+      "analytics": "Home",
+      "workspace": "Workbench"
+    }
+  },
+  "Muskdeer": "Market making",
+  "MuskdeerTemplates": "Strategy templates",
+  "MuskdeerInstances": "Strategy instances",
+  "MuskdeerInstruments": "Instruments",
+  "MuskdeerAccounts": "Trading accounts",
+  "MuskdeerOrders": "Order records",
+  "MuskdeerCancellations": "Cancellations",
+  "MuskdeerSynthetic": "Development publications",
+  "MuskdeerSnapshot": "Orders and positions",
+  "MuskdeerBindings": "Merchant account bindings"
+}

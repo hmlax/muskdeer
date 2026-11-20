@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "admin/v1/permission_audit_log_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 权限变更审计日志服务
+service PermissionAuditLogService {
+  // 查询权限变更审计日志列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListPermissionAuditLogResponse) {
+    option (api.get) = "/admin/v1/permission-audit-logs";
+  }
+
+  // 查询权限变更审计日志详情
+  rpc Get(admin.v1.GetPermissionAuditLogRequest) returns (admin.v1.PermissionAuditLog) {
+    option (api.get) = "/admin/v1/permission-audit-logs/:id";
+  }
+}

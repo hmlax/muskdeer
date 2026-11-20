@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-20 最新范围：管理后台并入 Muskdeer，采用顶层 admin/operator/adminfrontend 与 Deer 公共代码布局，保持独立进程、单 go.mod、管理库隔离及经过认证的 Console gRPC；此条替代本文历史独立仓库/移除后台入口的范围。边界及命令见[管理后台合并](ADMIN_INTEGRATION.md)。
+
 2026-11-09 最新要求：当前 development_only WashTrade 订阅行情、计算单次量后直接调用 SDK WashTrade，事件处理不进行任何数据库读写；配置/启停独立控制面刷新。旧批次与序号只留历史，不再参与运行，详见 [DIRECT_WASH_TRADE.md](DIRECT_WASH_TRADE.md)。
 
 2026-11-09 铺单订单无本地持久化：当前 market_maker 使用独立强类型 QuoteClient 直接发送撮合命令，不复用本地下单/撤单日志接口；execution 不写订单与账户运行观察，portfolio 对铺单账户仅保存内存实时快照。实例配置、启停及参数仍来自数据库。旧通道日志由网格/历史恢复继续使用，开发合成记录不变，见 [DIRECT_MAKER_QUOTES.md](DIRECT_MAKER_QUOTES.md)。

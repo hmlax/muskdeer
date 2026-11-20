@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/api_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// API资源管理服务
+service ApiService {
+  // 查询API资源列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListApiResponse) {
+    option (api.get) = "/admin/v1/apis";
+  }
+
+  // 查询API资源详情
+  rpc Get(admin.v1.GetApiRequest) returns (admin.v1.Api) {
+    option (api.get) = "/admin/v1/apis/:id";
+  }
+
+  // 创建API资源
+  rpc Create(admin.v1.CreateApiRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/apis";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新API资源
+  rpc Update(admin.v1.UpdateApiRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/apis/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除API资源
+  rpc Delete(admin.v1.DeleteApiRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/apis/:id";
+  }
+
+  // 同步API资源
+  rpc SyncApis(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/apis/sync";
+    option (admin.http.body) = "*";
+  }
+
+  // 查询路由数据
+  rpc GetWalkRouteData(google.protobuf.Empty) returns (admin.v1.ListApiResponse) {
+    option (api.get) = "/admin/v1/apis/walk-route";
+  }
+}

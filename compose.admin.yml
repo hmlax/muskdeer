@@ -1,0 +1,79 @@
+# May be combined with compose.yml; uses the same project and existing infra.
+name: muskdeer
+x-admin: &admin-runtime
+  restart: unless-stopped
+  profiles: [admin]
+  env_file:
+    - "${MUSKDEER_ADMIN_NACOS_ENV_FILE:?set the private administration Nacos connection file}"
+  networks: [infra, management]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: "3"}
+
+services:
+  operator:
+    <<: *admin-runtime
+    image: muskdeer-operator:${VERSION:-dev}
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+      target: runtime-operator
+      args: {VERSION: "${VERSION:-dev}", BUILD: "${BUILD:-unknown}"}
+    expose: ['7790']
+    volumes:
+      - operator-data:/app/data
+      - "${MUSKDEER_CERTS_DIR:?set the existing read-only operator certificates}:/app/muskdeer-certs:ro"
+  admin:
+    <<: *admin-runtime
+    image: muskdeer-admin:${VERSION:-dev}
+    build:
+      context: .
+      dockerfile: Dockerfile.admin
+      target: runtime-admin
+      args: {VERSION: "${VERSION:-dev}", BUILD: "${BUILD:-unknown}"}
+    ports: ['127.0.0.1:17788:7788']
+    depends_on: [operator]
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:7788/admin/v1/sso/login-info']
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+  platform-ui:
+    profiles: [admin]
+    image: muskdeer-platform:${VERSION:-dev}
+    build:
+      context: adminfrontend
+      args: {ADMIN_APP: platform, FRONTEND_CONFIG_REVISION: "${VERSION:-dev}"}
+      secrets: [frontend_aes_key]
+    restart: unless-stopped
+    ports: ['127.0.0.1:15888:8080']
+    environment: {ADMIN_API_UPSTREAM: 'http://muskdeer-admin-1:7788', MERCHANT_CODE: ''}
+    networks: [management]
+    depends_on: [admin]
+  merchant-ui:
+    profiles: [admin]
+    image: muskdeer-merchant:${VERSION:-dev}
+    build:
+      context: adminfrontend
+      args: {ADMIN_APP: merchant, FRONTEND_CONFIG_REVISION: "${VERSION:-dev}"}
+      secrets: [frontend_aes_key]
+    restart: unless-stopped
+    ports: ['127.0.0.1:15889:8080']
+    environment:
+      ADMIN_API_UPSTREAM: http://muskdeer-admin-1:7788
+      MERCHANT_CODE: "${MUSKDEER_MERCHANT_CODE:?set the existing merchant code}"
+    networks: [management]
+    depends_on: [admin]
+
+networks:
+  infra:
+    external: true
+    name: infra-network
+  management:
+    internal: true
+volumes:
+  operator-data:
+secrets:
+  frontend_aes_key:
+    file: "${MUSKDEER_FRONTEND_AES_KEY_FILE:?set the private frontend build key file}"

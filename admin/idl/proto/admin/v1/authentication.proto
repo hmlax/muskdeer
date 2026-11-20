@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/authentication_types.proto";
+import "admin/v1/sso_types.proto";
+import "admin/v1/tenant_branding_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 用户后台登录认证服务
+service AuthenticationService {
+  // 登录
+  rpc Login(admin.v1.LoginRequest) returns (admin.v1.LoginResponse) {
+    option (api.post) = "/admin/v1/login";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // 登出
+  rpc Logout(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/logout";
+    option (admin.http.body) = "*";
+  }
+
+  // 忘记密码：向已绑定邮箱的用户发送重置验证码（免鉴权；不泄露用户是否存在）
+  rpc ForgotPassword(admin.v1.ForgotPasswordRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/forgot-password";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // 凭验证码重置密码（免鉴权；重置后吊销该用户全部会话）
+  rpc ResetPasswordByCode(admin.v1.ResetPasswordByCodeRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/reset-password-by-code";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // 刷新认证令牌
+  rpc RefreshToken(admin.v1.LoginRequest) returns (admin.v1.LoginResponse) {
+    option (api.post) = "/admin/v1/refresh-token";
+    option (admin.http.body) = "*";
+  }
+
+  // 生成验证码
+  rpc GenerateCaptcha(google.protobuf.Empty) returns (admin.v1.GenerateCaptchaResponse) {
+    option (api.get) = "/admin/v1/captcha";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // 验证验证码
+  rpc VerifyCaptcha(admin.v1.VerifyCaptchaRequest) returns (admin.v1.VerifyCaptchaResponse) {
+    option (api.post) = "/admin/v1/captcha/verify";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // SSO 登录能力开关（免鉴权；登录页按钮显隐）
+  rpc GetSsoLoginInfo(admin.v1.GetSsoLoginInfoRequest) returns (admin.v1.GetSsoLoginInfoResponse) {
+    option (api.get) = "/admin/v1/sso/login-info";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // 生成 OIDC 授权跳转 URL（免鉴权）
+  rpc GetSsoLoginUrl(admin.v1.GetSsoLoginUrlRequest) returns (admin.v1.GetSsoLoginUrlResponse) {
+    option (api.post) = "/admin/v1/sso/login-url";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // OIDC 回调换本系统令牌（免鉴权）
+  rpc SsoLogin(admin.v1.SsoLoginRequest) returns (admin.v1.LoginResponse) {
+    option (api.post) = "/admin/v1/sso/login";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+
+  // 租户白标查询（免鉴权；登录前按租户编号取名称/Logo 等展示信息）
+  rpc GetTenantBranding(admin.v1.GetTenantBrandingRequest) returns (admin.v1.GetTenantBrandingResponse) {
+    option (api.post) = "/admin/v1/tenant-branding";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+}

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/empty.proto";
+import "operator/v1/menu.proto";
+
+// 后台前端初始化数据与配置服务
+service AdminPortalService {
+  // 查询前端路由表
+  rpc GetNavigation (google.protobuf.Empty) returns (ListRouteResponse) {
+  }
+
+  // 查询权限码列表
+  rpc GetMyPermissionCode (google.protobuf.Empty) returns (ListPermissionCodeResponse) {
+  }
+
+  // 一次性获取进入后台所需的所有上下文
+  rpc GetInitialContext (google.protobuf.Empty) returns (InitialContextResponse) {
+  }
+}
+
+// 查询路由列表 - 回应
+message ListRouteResponse {
+  repeated operator.v1.MenuRouteItem items = 1;
+}
+
+// 查询权限码列表 - 回应
+message ListPermissionCodeResponse {
+  repeated string codes = 1;
+  repeated string hidden_fields = 2 [json_name = "hiddenFields"]; // 字段权限隐藏字段集（"资源.字段" 串，供前端列显隐）
+  repeated ApiGrant api_permissions = 3 [json_name = "apiPermissions"]; // 当前角色实际获准的 HTTP 操作
+}
+
+message ApiGrant {
+  string path = 1;
+  string method = 2;
+}
+
+message InitialContextResponse {
+  repeated operator.v1.MenuRouteItem menus = 1;  // 菜单树
+  repeated string permissions = 2;   // 权限码
+  repeated string hidden_fields = 3 [json_name = "hiddenFields"]; // 字段权限隐藏字段集（"资源.字段" 串）
+  repeated ApiGrant api_permissions = 4 [json_name = "apiPermissions"];
+}

@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/user_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 用户个人资料服务
+service UserProfileService {
+  // 获取用户资料
+  rpc GetUser(google.protobuf.Empty) returns (admin.v1.User) {
+    option (api.get) = "/admin/v1/me";
+  }
+
+  // 更新用户资料
+  rpc UpdateUser(admin.v1.UpdateUserRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/me";
+    option (admin.http.body) = "*";
+  }
+
+  // 修改用户密码
+  rpc ChangePassword(admin.v1.ChangePasswordRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/me/password";
+    option (admin.http.body) = "*";
+  }
+
+  // 上传头像
+  rpc UploadAvatar(admin.v1.UploadAvatarRequest) returns (admin.v1.UploadAvatarResponse) {
+    option (api.post) = "/admin/v1/me/avatar";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除头像
+  rpc DeleteAvatar(google.protobuf.Empty) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/me/avatar";
+  }
+
+  // 绑定手机号码/邮箱
+  rpc BindContact(admin.v1.BindContactRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/me/contact";
+    option (admin.http.body) = "*";
+  }
+
+  // 验证手机号码/邮箱
+  rpc VerifyContact(admin.v1.VerifyContactRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/me/contact/verify";
+    option (admin.http.body) = "*";
+  }
+}

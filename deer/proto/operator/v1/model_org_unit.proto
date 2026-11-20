@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 组织单元表
+message SysOrgUnits {
+  option (operator.v1.model) = {
+    entity: "OrgUnit"
+    relations: { name: "Parent" target: "SysOrgUnits" foreign_key: "ParentID" references: "ID" many: false }
+    relations: { name: "Children" target: "SysOrgUnits" foreign_key: "ParentID" references: "ID" many: true }
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_org_created_by_created_at,priority:2;index:idx_org_tenant_created_at,priority:2;index:idx_org_created_at,priority:1;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;index:idx_org_created_by_created_at,priority:1;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 状态
+  optional string status = 8 [(tagger.tags) = "gorm:\"column:status;type:varchar(255);not null;default:ON;comment:状态\" json:\"status,omitempty\"", (operator.v1.go_name) = "Status", (operator.v1.enum_values) = { name: "StatusOff" value: "OFF" }, (operator.v1.enum_values) = { name: "StatusOn" value: "ON" }];
+
+  // 排序值（越小越靠前）
+  optional uint32 sort_order = 9 [(tagger.tags) = "gorm:\"column:sort_order;type:bigint;default:0;comment:排序值（越小越靠前）\" json:\"sort_order,omitempty\"", (operator.v1.go_name) = "SortOrder"];
+
+  // 租户ID
+  optional uint32 tenant_id = 10 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:idx_org_tenant_id,priority:1;uniqueIndex:uix_org_tenant_parent_name,priority:1;uniqueIndex:uix_org_tenant_parent_path,priority:1;index:idx_org_tenant_path,priority:1;uniqueIndex:uix_org_tenant_code,priority:1;index:idx_org_tenant_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 备注
+  optional string remark = 11 [(tagger.tags) = "gorm:\"column:remark;type:varchar(255);comment:备注\" json:\"remark,omitempty\"", (operator.v1.go_name) = "Remark"];
+
+  // 描述
+  optional string description = 12 [(tagger.tags) = "gorm:\"column:description;type:varchar(255);comment:描述\" json:\"description,omitempty\"", (operator.v1.go_name) = "Description"];
+
+  // 树路径，规范： 根节点: /，非根节点: /1/2/3/（以 / 开头且以 / 结尾）。禁止空字符串（NULL 表示未设置）。
+  optional string path = 13 [(tagger.tags) = "gorm:\"column:path;type:varchar(512);uniqueIndex:uix_org_tenant_parent_path,priority:3;index:idx_org_tenant_path,priority:2;comment:树路径，规范： 根节点: /，非根节点: /1/2/3/（以 / 开头且以 / 结尾）。禁止空字符串（NULL 表示未设置）。\" json:\"path,omitempty\"", (operator.v1.go_name) = "Path", (operator.v1.max_len) = 512];
+
+  // 名称
+  optional string name = 14 [(tagger.tags) = "gorm:\"column:name;type:varchar(255);not null;uniqueIndex:uix_org_tenant_parent_name,priority:3;comment:名称\" json:\"name,omitempty\"", (operator.v1.go_name) = "Name", (operator.v1.min_len) = 1];
+
+  // 唯一编码（可用于导入/识别）
+  optional string code = 15 [(tagger.tags) = "gorm:\"column:code;type:varchar(255);uniqueIndex:uix_org_tenant_code,priority:2;comment:唯一编码（可用于导入/识别）\" json:\"code,omitempty\"", (operator.v1.go_name) = "Code"];
+
+  // 负责人用户ID
+  optional uint32 leader_id = 16 [(tagger.tags) = "gorm:\"column:leader_id;type:bigint;index:idx_org_leader_id,priority:1;comment:负责人用户ID\" json:\"leader_id,omitempty\"", (operator.v1.go_name) = "LeaderID"];
+
+  // 组织类型
+  optional string type = 17 [(tagger.tags) = "gorm:\"column:type;type:varchar(255);not null;default:DEPARTMENT;index:idx_org_type,priority:1;comment:组织类型\" json:\"type,omitempty\"", (operator.v1.go_name) = "Type", (operator.v1.enum_values) = { name: "TypeCompany" value: "COMPANY" }, (operator.v1.enum_values) = { name: "TypeDivision" value: "DIVISION" }, (operator.v1.enum_values) = { name: "TypeDepartment" value: "DEPARTMENT" }, (operator.v1.enum_values) = { name: "TypeTeam" value: "TEAM" }, (operator.v1.enum_values) = { name: "TypeProject" value: "PROJECT" }, (operator.v1.enum_values) = { name: "TypeCommittee" value: "COMMITTEE" }, (operator.v1.enum_values) = { name: "TypeRegion" value: "REGION" }, (operator.v1.enum_values) = { name: "TypeOther" value: "OTHER" }];
+
+  // 组织的业务范围/服务条线
+  repeated string business_scopes = 18 [(tagger.tags) = "gorm:\"column:business_scopes;serializer:json;type:json;comment:组织的业务范围/服务条线\" json:\"business_scopes,omitempty\"", (operator.v1.go_name) = "BusinessScopes"];
+
+  // 外部系统ID
+  optional string external_id = 19 [(tagger.tags) = "gorm:\"column:external_id;type:varchar(255);index:idx_org_external_id,priority:1;comment:外部系统ID\" json:\"external_id,omitempty\"", (operator.v1.go_name) = "ExternalID"];
+
+  // 是否为法定主体
+  optional bool is_legal_entity = 20 [(tagger.tags) = "gorm:\"column:is_legal_entity;type:boolean;default:false;index:idx_org_is_legal_entity,priority:1;comment:是否为法定主体\" json:\"is_legal_entity,omitempty\"", (operator.v1.go_name) = "IsLegalEntity"];
+
+  // 注册号/统一社会信用代码
+  optional string registration_number = 21 [(tagger.tags) = "gorm:\"column:registration_number;type:varchar(255);comment:注册号/统一社会信用代码\" json:\"registration_number,omitempty\"", (operator.v1.go_name) = "RegistrationNumber"];
+
+  // 税号
+  optional string tax_id = 22 [(tagger.tags) = "gorm:\"column:tax_id;type:varchar(255);comment:税号\" json:\"tax_id,omitempty\"", (operator.v1.go_name) = "TaxID"];
+
+  // 关联的法定主体组织ID
+  optional uint32 legal_entity_org_id = 23 [(tagger.tags) = "gorm:\"column:legal_entity_org_id;type:bigint;comment:关联的法定主体组织ID\" json:\"legal_entity_org_id,omitempty\"", (operator.v1.go_name) = "LegalEntityOrgID"];
+
+  // 详细地址
+  optional string address = 24 [(tagger.tags) = "gorm:\"column:address;type:varchar(255);comment:详细地址\" json:\"address,omitempty\"", (operator.v1.go_name) = "Address"];
+
+  // 联系电话
+  optional string phone = 25 [(tagger.tags) = "gorm:\"column:phone;type:varchar(255);comment:联系电话\" json:\"phone,omitempty\"", (operator.v1.go_name) = "Phone"];
+
+  // 联系邮箱
+  optional string email = 26 [(tagger.tags) = "gorm:\"column:email;type:varchar(255);comment:联系邮箱\" json:\"email,omitempty\"", (operator.v1.go_name) = "Email"];
+
+  // 时区
+  optional string timezone = 27 [(tagger.tags) = "gorm:\"column:timezone;type:varchar(255);comment:时区\" json:\"timezone,omitempty\"", (operator.v1.go_name) = "Timezone"];
+
+  // 国家/地区代码
+  optional string country = 28 [(tagger.tags) = "gorm:\"column:country;type:varchar(255);comment:国家/地区代码\" json:\"country,omitempty\"", (operator.v1.go_name) = "Country"];
+
+  // 纬度
+  optional double latitude = 29 [(tagger.tags) = "gorm:\"column:latitude;type:double precision;comment:纬度\" json:\"latitude,omitempty\"", (operator.v1.go_name) = "Latitude"];
+
+  // 经度
+  optional double longitude = 30 [(tagger.tags) = "gorm:\"column:longitude;type:double precision;comment:经度\" json:\"longitude,omitempty\"", (operator.v1.go_name) = "Longitude"];
+
+  // 生效时间（UTC）
+  google.protobuf.Timestamp start_at = 31 [(tagger.tags) = "gorm:\"column:start_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_org_start_at,priority:1;comment:生效时间（UTC）\" json:\"start_at,omitempty\"", (operator.v1.go_name) = "StartAt"];
+
+  // 结束有效期（UTC）
+  google.protobuf.Timestamp end_at = 32 [(tagger.tags) = "gorm:\"column:end_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_org_end_at,priority:1;comment:结束有效期（UTC）\" json:\"end_at,omitempty\"", (operator.v1.go_name) = "EndAt"];
+
+  // 业务联系人用户ID
+  optional uint32 contact_user_id = 33 [(tagger.tags) = "gorm:\"column:contact_user_id;type:bigint;index:idx_org_contact_user_id,priority:1;comment:业务联系人用户ID\" json:\"contact_user_id,omitempty\"", (operator.v1.go_name) = "ContactUserID"];
+
+  // 与权限/角色映射的标签
+  repeated string permission_tags = 34 [(tagger.tags) = "gorm:\"column:permission_tags;serializer:json;type:json;comment:与权限/角色映射的标签\" json:\"permission_tags,omitempty\"", (operator.v1.go_name) = "PermissionTags"];
+
+  // 父节点ID
+  optional uint32 parent_id = 35 [(tagger.tags) = "gorm:\"column:parent_id;type:bigint;uniqueIndex:uix_org_tenant_parent_name,priority:2;uniqueIndex:uix_org_tenant_parent_path,priority:2;index:idx_org_parent_id,priority:1;comment:父节点ID\" json:\"parent_id,omitempty\"", (operator.v1.go_name) = "ParentID"];
+}

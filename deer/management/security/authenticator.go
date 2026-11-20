@@ -1,0 +1,751 @@
+package security
+
+import (
+	"context"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/tx7do/go-utils/jwtutil"
+	"github.com/tx7do/go-utils/trans"
+	authnEngine "github.com/tx7do/kratos-authn/engine"
+	authnJwt "github.com/tx7do/kratos-authn/engine/jwt"
+	conf "github.com/tx7do/kratos-bootstrap/api/gen/go/conf/v1"
+	"github.com/tx7do/kratos-bootstrap/bootstrap"
+	bLogger "github.com/tx7do/kratos-bootstrap/logger"
+
+	"github.com/hmlax/muskdeer/deer/management/jwt"
+	operatorV1 "github.com/hmlax/muskdeer/deer/pb/operator/v1"
+)
+
+// devSamplePrivateKeyFingerprint 是 configs/auth.yaml 内置开发示例 RSA 私钥的
+// PEM body 指纹（首行），用于检测示例密钥是否仍生效。替换 Nacos 配置中的
+// 生产密钥后即不再命中。
+const devSamplePrivateKeyFingerprint = "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCL8EdeTLDTf8AY"
+
+// checkJwtKeys 检查 Nacos 中的 JWT 密钥是否仍为开发示例。
+func checkJwtKeys(logHelper *bLogger.Helper, jwtCfg *conf.Authentication_Jwt) *conf.Authentication_Jwt {
+	if jwtCfg == nil {
+		return jwtCfg
+	}
+
+	if strings.Contains(jwtCfg.GetPrivateKey(), devSamplePrivateKeyFingerprint) {
+		// 仅打醒目告警，不阻断启动——测试/本地环境普遍沿用示例密钥，
+		// 强行 panic 会断掉开发与联调链路。生产替换由部署流程保证。
+		logHelper.Warnf(context.Background(), "⚠️ configs/auth.yaml 中的开发示例 JWT 私钥仍在生效，生产环境必须替换："+
+			"请修改 Nacos data.yaml 中 authn.jwt 的密钥配置。")
+	}
+	return jwtCfg
+}
+
+const (
+	// DefaultAccessTokenExpires  默认访问令牌过期时间（配置未指定时使用）
+	DefaultAccessTokenExpires = time.Minute * 15
+
+	// DefaultRefreshTokenExpires 默认刷新令牌过期时间（配置未指定时使用）
+	DefaultRefreshTokenExpires = time.Hour * 24 * 7
+)
+
+type Authenticator struct {
+	log *bLogger.Helper
+
+	AdminAuthenticator authnEngine.Authenticator
+
+	// jwtCfg 保留 JWT 配置，用于读取令牌过期时间。
+	jwtCfg *conf.Authentication_Jwt
+
+	userTokenCache *UserTokenCache
+}
+
+func NewAuthenticator(
+	ctx *bootstrap.Context,
+	userTokenCache *UserTokenCache,
+) *Authenticator {
+	cfg := ctx.GetConfig()
+	if cfg == nil || cfg.Authn == nil {
+		return nil
+	}
+
+	jwtCfg := cfg.Authn.GetJwt()
+
+	logHelper := ctx.NewLoggerHelper("authenticator/data/authentication-service")
+
+	// 密钥只读取 Nacos 配置，并检查开发示例。
+	jwtCfg = checkJwtKeys(logHelper, jwtCfg)
+
+	a := Authenticator{
+		log:            logHelper,
+		jwtCfg:         jwtCfg,
+		userTokenCache: userTokenCache,
+	}
+
+	adminAuth, err := newAdminAuthenticator(jwtCfg)
+	if err != nil {
+		// 启动期密钥/算法配置错误属于不可恢复故障，直接 panic 以暴露问题。
+		panic(fmt.Sprintf("init admin authenticator failed: %v", err))
+	}
+	a.AdminAuthenticator = adminAuth
+
+	return &a
+}
+
+// newAdminAuthenticator 根据配置构造 JWT 认证器，同时支持对称与非对称签名算法。
+//   - 对称算法（HS256/HS384/HS512）：key 为共享秘钥。
+//   - 非对称算法（RS256/RS384/RS512、PS256/PS384/PS512、ES256/...、EdDSA）：
+//     private_key 用于签发，public_key 用于校验。若仅配置了 private_key（如本服务
+//     既签发又校验的单体场景），则回退为从私钥派生公钥。
+func newAdminAuthenticator(jwtCfg *conf.Authentication_Jwt) (authnEngine.Authenticator, error) {
+	if jwtCfg == nil {
+		return nil, fmt.Errorf("jwt config is nil")
+	}
+
+	method := jwtCfg.GetMethod()
+	if method == "" {
+		// 与底层库默认行为一致。
+		method = "HS256"
+	}
+
+	opts := []authnJwt.Option{
+		authnJwt.WithSigningMethod(method),
+	}
+
+	if isAsymmetricMethod(method) {
+		// 非对称算法：优先使用独立配置的 private_key / public_key。
+		switch {
+		case jwtCfg.GetPrivateKey() != "" && jwtCfg.GetPublicKey() != "":
+			opts = append(opts,
+				authnJwt.WithPrivateKeyFromPEM([]byte(jwtCfg.GetPrivateKey())),
+				authnJwt.WithPublicKeyFromPEM([]byte(jwtCfg.GetPublicKey())),
+			)
+		case jwtCfg.GetPrivateKey() != "":
+			// 仅配置私钥：从私钥派生公钥（本服务既签发又校验的场景）。
+			privPEM := []byte(jwtCfg.GetPrivateKey())
+			publicKey, err := publicKeyFromPrivateKeyPEM(privPEM)
+			if err != nil {
+				return nil, fmt.Errorf("derive public key from private key: %w", err)
+			}
+			opts = append(opts,
+				authnJwt.WithPrivateKeyFromPEM(privPEM),
+				authnJwt.WithVerificationKey(publicKey),
+			)
+		case jwtCfg.GetPublicKey() != "":
+			// 仅配置公钥：只能用于校验，无法签发。
+			opts = append(opts, authnJwt.WithPublicKeyFromPEM([]byte(jwtCfg.GetPublicKey())))
+		default:
+			return nil, fmt.Errorf("asymmetric method %q requires private_key and/or public_key in config", method)
+		}
+	} else {
+		// 对称算法：key 即 HMAC 共享秘钥，签发与校验共用。
+		if jwtCfg.GetKey() == "" {
+			return nil, fmt.Errorf("signing method %q requires a non-empty shared key", method)
+		}
+		opts = append(opts, authnJwt.WithKey([]byte(jwtCfg.GetKey())))
+	}
+
+	return authnJwt.NewAuthenticator(opts...)
+}
+
+// isAsymmetricMethod 判断给定的签名算法是否为非对称（基于公钥/私钥对）算法。
+func isAsymmetricMethod(method string) bool {
+	switch strings.ToUpper(method) {
+	case "RS256", "RS384", "RS512", // RSA
+		"PS256", "PS384", "PS512", // RSA-PSS
+		"ES256", "ES384", "ES512", // ECDSA
+		"EDDSA": // Ed25519
+		return true
+	default:
+		return false
+	}
+}
+
+// publicKeyFromPrivateKeyPEM 从 PEM 编码的 RSA 私钥中派生出公钥。
+// 适用于仅配置了私钥、本服务既签发又校验令牌的场景。
+func publicKeyFromPrivateKeyPEM(pemBytes []byte) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode(pemBytes)
+	if block == nil {
+		return nil, fmt.Errorf("failed to decode PEM block from private key")
+	}
+
+	var privKey *rsa.PrivateKey
+	switch block.Type {
+	case "RSA PRIVATE KEY": // PKCS#1
+		parsed, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parse PKCS#1 private key: %w", err)
+		}
+		privKey = parsed
+	case "PRIVATE KEY": // PKCS#8
+		parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parse PKCS#8 private key: %w", err)
+		}
+		rsaKey, ok := parsed.(*rsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("PKCS#8 key is not an RSA private key")
+		}
+		privKey = rsaKey
+	default:
+		return nil, fmt.Errorf("unsupported PEM block type %q (expected RSA PRIVATE KEY or PRIVATE KEY)", block.Type)
+	}
+
+	return &privKey.PublicKey, nil
+}
+
+// GetAccessTokenExpires 获取访问令牌过期时间。
+// 优先使用配置中的 access_token_expires，未配置时回退到默认值。
+func (a *Authenticator) GetAccessTokenExpires(clientType operatorV1.ClientType_ClientType) time.Duration {
+	if a.jwtCfg != nil && a.jwtCfg.GetAccessTokenExpires() != nil {
+		return a.jwtCfg.GetAccessTokenExpires().AsDuration()
+	}
+	switch clientType {
+	case operatorV1.ClientType_admin:
+		return DefaultAccessTokenExpires
+	default:
+		return DefaultAccessTokenExpires
+	}
+}
+
+// GetRefreshTokenExpires 获取刷新令牌过期时间。
+// 优先使用配置中的 refresh_token_expires，未配置时回退到默认值。
+func (a *Authenticator) GetRefreshTokenExpires(clientType operatorV1.ClientType_ClientType) time.Duration {
+	if a.jwtCfg != nil && a.jwtCfg.GetRefreshTokenExpires() != nil {
+		return a.jwtCfg.GetRefreshTokenExpires().AsDuration()
+	}
+	switch clientType {
+	case operatorV1.ClientType_admin:
+		return DefaultRefreshTokenExpires
+	default:
+		return DefaultRefreshTokenExpires
+	}
+}
+
+// Authenticate 根据不同的客户端类型验证 Token
+func (a *Authenticator) Authenticate(ctx context.Context, req *operatorV1.ValidateTokenRequest) (*operatorV1.ValidateTokenResponse, error) {
+	if req == nil {
+		return nil, operatorV1.ErrorAuthenticationBadRequest("validate token request is nil")
+	}
+
+	if req.GetToken() == "" {
+		return nil, operatorV1.ErrorAuthenticationBadRequest("token is empty")
+	}
+
+	authenticator, err := a.getAuthenticator(req.GetClientType())
+	if err != nil {
+		return nil, err
+	}
+
+	switch req.GetTokenCategory() {
+	case operatorV1.TokenCategory_ACCESS:
+		// Authenticate Token
+		var claims *authnEngine.AuthClaims
+		claims, err = authenticator.AuthenticateToken(req.GetToken())
+		if err != nil {
+			return nil, operatorV1.ErrorAuthenticationUnauthorized("authenticate token failed: [%v]", err)
+		}
+
+		// Check Token Expiration
+		if jwt.IsTokenExpired(claims) {
+			return &operatorV1.ValidateTokenResponse{
+				IsValid: false,
+			}, operatorV1.ErrorAuthenticationUnauthorized("access token is expired")
+		}
+
+		// Check Token Validity
+		// if !jwt.IsTokenNotValidYet(claims) {
+		//	return &authenticationV1.ValidateTokenResponse{
+		//		IsValid: false,
+		//	}, authenticationV1.ErrorUnauthorized("access token is not valid yet")
+		// }
+
+		// Parse Token Payload
+		var payload *operatorV1.UserTokenPayload
+		payload, err = jwt.NewUserTokenPayloadWithClaims(claims)
+		if err != nil {
+			return &operatorV1.ValidateTokenResponse{
+				IsValid: false,
+			}, err
+		}
+
+		// Check token validity in cache
+		if !req.GetSkipRedis() {
+			var valid bool
+			if valid, err = a.userTokenCache.IsValidAccessToken(ctx, req.GetClientType(), payload.GetUserId(), payload.GetJti(), req.GetToken()); err != nil {
+				return &operatorV1.ValidateTokenResponse{
+					IsValid: false,
+				}, operatorV1.ErrorAuthenticationUnauthorized("invalid access token: [%v]", err)
+			}
+			if !valid {
+				return &operatorV1.ValidateTokenResponse{
+					IsValid: false,
+				}, operatorV1.ErrorAuthenticationUnauthorized("access token is revoked or expired")
+			}
+		}
+
+		// Check if token is blocked
+		if !req.GetSkipBlacklist() {
+			if a.userTokenCache.IsBlockedAccessToken(ctx, payload.GetJti()) {
+				return &operatorV1.ValidateTokenResponse{
+					IsValid: false,
+				}, operatorV1.ErrorAuthenticationUnauthorized("access token is blocked")
+			}
+		}
+
+		return &operatorV1.ValidateTokenResponse{
+			IsValid: true,
+			Payload: payload,
+		}, nil
+
+	case operatorV1.TokenCategory_REFRESH:
+		// refresh token 现为自描述 JWT，身份信息从 token 自身解析
+		rtAuthenticator, rtErr := a.getAuthenticator(req.GetClientType())
+		if rtErr != nil {
+			return &operatorV1.ValidateTokenResponse{IsValid: false}, rtErr
+		}
+		rtClaims, rtAuthErr := rtAuthenticator.AuthenticateToken(req.GetToken())
+		if rtAuthErr != nil {
+			return &operatorV1.ValidateTokenResponse{IsValid: false},
+				operatorV1.ErrorAuthenticationUnauthorized("refresh token authentication failed")
+		}
+		if jwt.IsTokenExpired(rtClaims) {
+			return &operatorV1.ValidateTokenResponse{IsValid: false},
+				operatorV1.ErrorAuthenticationUnauthorized("refresh token is expired")
+		}
+		rtUserId, _, rtParseErr := jwt.ParseRefreshTokenClaims(rtClaims)
+		if rtParseErr != nil {
+			return &operatorV1.ValidateTokenResponse{IsValid: false},
+				operatorV1.ErrorAuthenticationUnauthorized("invalid refresh token")
+		}
+		exist, _, err := a.userTokenCache.IsExistRefreshToken(ctx, req.GetClientType(), rtUserId, req.GetToken())
+		if err != nil {
+			a.log.Errorf(ctx, "check refresh token exist failed: %s", err.Error())
+		}
+		if err != nil || !exist {
+			return &operatorV1.ValidateTokenResponse{
+				IsValid: false,
+			}, operatorV1.ErrorAuthenticationUnauthorized("refresh token not found for user")
+		}
+
+		return &operatorV1.ValidateTokenResponse{
+			IsValid: true,
+		}, nil
+
+	default:
+		return nil, operatorV1.ErrorAuthenticationBadRequest("invalid token category")
+	}
+}
+
+// CreateUserToken 创建用户令牌对（访问令牌和刷新令牌）
+func (a *Authenticator) CreateUserToken(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, tokenPayload *operatorV1.UserTokenPayload,
+) (accessToken, refreshToken string, err error) {
+	if tokenPayload == nil {
+		return "", "", operatorV1.ErrorAuthenticationBadRequest("token payload is nil")
+	}
+
+	var jti string
+	if jti = a.newJwtId(); jti == "" {
+		return "", "", operatorV1.ErrorAuthenticationServiceUnavailable("create jwt id failed")
+	}
+
+	tokenPayload.Jti = trans.Ptr(jti)
+
+	// Create Access Token
+	if accessToken, err = a.newAccessToken(clientType, tokenPayload); accessToken == "" || err != nil {
+		return "", "", operatorV1.ErrorAuthenticationServiceUnavailable("create access token failed")
+	}
+
+	// Create Refresh Token
+	if refreshToken, err = a.newRefreshToken(clientType, tokenPayload); refreshToken == "" || err != nil {
+		return "", "", operatorV1.ErrorAuthenticationServiceUnavailable("create refresh token failed")
+	}
+
+	// Store tokens in cache
+	if err = a.userTokenCache.AddTokenPair(
+		ctx,
+		clientType,
+		tokenPayload.GetUserId(),
+		jti,
+		accessToken,
+		refreshToken,
+		a.GetAccessTokenExpires(clientType),
+		a.GetRefreshTokenExpires(clientType),
+	); err != nil {
+		return "", "", err
+	}
+
+	return
+}
+
+// AddTokenLineage 记录令牌代际（newJti 由 prevJti 轮换而来）。记录失败仅降级为
+// 「踢下线可能漏杀更早各代 AT」，不阻断令牌签发，调用方按日志告警即可。
+func (a *Authenticator) AddTokenLineage(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, userId uint32,
+	newJti string,
+	prevJti string,
+) error {
+	if a.userTokenCache == nil {
+		return nil
+	}
+	return a.userTokenCache.AddTokenLineage(ctx, clientType, userId, newJti, prevJti, a.GetAccessTokenExpires(clientType))
+}
+
+// CreateMachineToken 签发机器令牌（AK/SK 令牌交换专用）：
+// 仅签发 access token（短期、无 refresh、不进在线会话缓存）——
+// 机器令牌无对应用户行，走 CreateUserToken 的 userId 缓存键与 refresh 链路都不适用。
+func (a *Authenticator) CreateMachineToken(
+	ctx context.Context,
+	tokenPayload *operatorV1.UserTokenPayload,
+) (accessToken string, expires time.Duration, err error) {
+	if tokenPayload == nil {
+		return "", 0, operatorV1.ErrorAuthenticationBadRequest("token payload is nil")
+	}
+
+	var jti string
+	if jti = a.newJwtId(); jti == "" {
+		return "", 0, operatorV1.ErrorAuthenticationServiceUnavailable("create jwt id failed")
+	}
+	tokenPayload.Jti = trans.Ptr(jti)
+
+	if accessToken, err = a.newAccessToken(0, tokenPayload); accessToken == "" || err != nil {
+		return "", 0, operatorV1.ErrorAuthenticationServiceUnavailable("create access token failed")
+	}
+
+	// 访问令牌必须进 Redis 缓存：auth 中间件的校验器会核对缓存中的令牌，
+	// 未入缓存的令牌会被判为"已吊销/过期"。机器令牌无 refresh。
+	expires = a.GetAccessTokenExpires(0)
+	if err = a.userTokenCache.AddAccessToken(ctx, 0, tokenPayload.GetUserId(), jti, accessToken, expires); err != nil {
+		return "", 0, operatorV1.ErrorAuthenticationServiceUnavailable("cache machine token failed")
+	}
+
+	return accessToken, expires, nil
+}
+
+// RevokeUserToken 撤销用户令牌
+func (a *Authenticator) RevokeUserToken(ctx context.Context, clientType operatorV1.ClientType_ClientType, userId uint32) error {
+	if a.userTokenCache == nil {
+		a.log.Error(ctx, "userTokenCache is nil")
+		return operatorV1.ErrorAuthenticationServiceUnavailable("token cache unavailable")
+	}
+
+	if userId == 0 {
+		return operatorV1.ErrorAuthenticationBadRequest("invalid user id")
+	}
+
+	if _, err := a.getAuthenticator(clientType); err != nil {
+		return err
+	}
+
+	if err := a.userTokenCache.RevokeToken(ctx, clientType, userId); err != nil {
+		a.log.Errorf(ctx, "revoke user token failed: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func (a *Authenticator) RevokeTokenByJti(ctx context.Context, clientType *operatorV1.ClientType_ClientType, userId uint32, jti string) error {
+	if clientType != nil {
+		if _, err := a.getAuthenticator(*clientType); err != nil {
+			return err
+		}
+		return a.userTokenCache.RevokeTokenByJti(ctx, *clientType, userId, jti)
+	}
+
+	if err := a.userTokenCache.RevokeTokenByJti(ctx, operatorV1.ClientType_admin, userId, jti); err != nil {
+		return err
+	}
+	return a.userTokenCache.RevokeTokenByJti(ctx, operatorV1.ClientType_app, userId, jti)
+}
+
+// VerifyRefreshToken 验证刷新令牌，并原子地轮换旧刷新令牌。
+// refresh token 现为自描述 JWT，本函数从 token 自身验签解析出 uid/jti，
+// 不再依赖 access token 提供的身份信息。随后用 Lua 脚本保证「验证 RT → 删除 RT →
+// 旧 RT 入宽限集合」的原子性，避免 TOCTOU 竞态。
+// grace=true 表示该 RT 处于宽限窗口内（刚被并发刷新对撞的一方轮换掉），
+// 调用方应兑换一个独立新会话，且不得做旧会话元数据继承。
+func (a *Authenticator) VerifyRefreshToken(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, refreshToken string,
+) (userId uint32, jti string, grace bool, err error) {
+	return a.VerifyRefreshTokenWithUserCheck(ctx, clientType, refreshToken, nil)
+}
+
+// VerifyRefreshTokenWithUserCheck checks the verified user before consuming a refresh token.
+func (a *Authenticator) VerifyRefreshTokenWithUserCheck(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, refreshToken string,
+	checkUser func(context.Context, uint32) error,
+) (userId uint32, jti string, grace bool, err error) {
+	if a.userTokenCache == nil {
+		a.log.Error(ctx, "userTokenCache is nil")
+		return 0, "", false, operatorV1.ErrorAuthenticationServiceUnavailable("token cache unavailable")
+	}
+	if refreshToken == "" {
+		return 0, "", false, operatorV1.ErrorAuthenticationBadRequest("refresh token is empty")
+	}
+
+	authenticator, err := a.getAuthenticator(clientType)
+	if err != nil {
+		return 0, "", false, err
+	}
+
+	// 验签 refresh token JWT，提取 uid/jti
+	claims, authErr := authenticator.AuthenticateToken(refreshToken)
+	if authErr != nil {
+		a.log.Errorf(ctx, "authenticate refresh token failed: [%s]", authErr)
+		return 0, "", false, operatorV1.ErrorAuthenticationIncorrectRefreshToken("invalid refresh token")
+	}
+	if jwt.IsTokenExpired(claims) {
+		return 0, "", false, operatorV1.ErrorAuthenticationIncorrectRefreshToken("refresh token is expired")
+	}
+	userId, jti, err = jwt.ParseRefreshTokenClaims(claims)
+	if err != nil {
+		a.log.Errorf(ctx, "parse refresh token claims failed: [%s]", err)
+		return 0, "", false, operatorV1.ErrorAuthenticationIncorrectRefreshToken("invalid refresh token")
+	}
+
+	if checkUser != nil {
+		if err = checkUser(ctx, userId); err != nil {
+			return 0, "", false, err
+		}
+	}
+
+	// 原子验证并轮换旧令牌对（Lua 脚本保证原子性）
+	var valid bool
+	if valid, err = a.userTokenCache.VerifyAndRevokeTokenPair(ctx, clientType, userId, jti, refreshToken); err != nil {
+		a.log.Errorf(ctx, "verify refresh token failed for user [%d]: [%s]", userId, err)
+		return 0, "", false, operatorV1.ErrorAuthenticationServiceUnavailable("verify refresh token failed")
+	}
+	if !valid {
+		// 宽限窗口：RT 刚被并发刷新对撞的另一方轮换掉。放行为其兑换独立
+		// 新会话，而不是报 INCORRECT_REFRESH_TOKEN 逼前端强制登出。
+		if a.userTokenCache.IsGraceRefreshToken(ctx, clientType, userId, refreshToken) {
+			a.log.Warnf(ctx, "refresh token for user [%d] accepted in grace window (concurrent refresh race)", userId)
+			return userId, jti, true, nil
+		}
+		a.log.Errorf(ctx, "invalid refresh token for user [%d]", userId)
+		return 0, "", false, operatorV1.ErrorAuthenticationIncorrectRefreshToken("invalid refresh token")
+	}
+
+	return userId, jti, false, nil
+}
+
+// GetAccessTokens 获取用户的所有访问令牌
+func (a *Authenticator) GetAccessTokens(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, userId uint32,
+) []string {
+	return a.userTokenCache.GetAccessTokens(ctx, clientType, userId)
+}
+
+// BlockToken 封禁访问令牌
+func (a *Authenticator) BlockToken(
+	ctx context.Context,
+	req *operatorV1.BlockTokenRequest,
+) (err error) {
+	var jti string
+	switch req.Target.(type) {
+	case *operatorV1.BlockTokenRequest_Token:
+		var exist bool
+		exist, jti, err = a.userTokenCache.IsExistAccessToken(ctx, req.GetClientType(), req.GetUserId(), req.GetToken())
+		if err != nil {
+			a.log.Errorf(ctx, "check access token existence failed: [%v]", err)
+			return operatorV1.ErrorAuthenticationServiceUnavailable("check access token existence failed")
+		}
+		if !exist {
+			a.log.Warnf(ctx, "access token not found for user [%d]", req.GetUserId())
+			return operatorV1.ErrorAuthenticationAccessTokenNotFound("access token not found")
+		}
+
+	case *operatorV1.BlockTokenRequest_Jti:
+		var exist bool
+		exist, err = a.userTokenCache.IsExistAccessTokenByJti(ctx, req.GetClientType(), req.GetUserId(), req.GetJti())
+		if err != nil {
+			a.log.Errorf(ctx, "check access token existence by jti failed: [%v]", err)
+			return operatorV1.ErrorAuthenticationServiceUnavailable("check access token existence failed")
+		}
+		if !exist {
+			a.log.Warnf(ctx, "access token not found for user [%d] by jti", req.GetUserId())
+			return operatorV1.ErrorAuthenticationAccessTokenNotFound("access token not found")
+		}
+		jti = req.GetJti()
+
+	default:
+		a.log.Error(ctx, "invalid block token request target")
+		return operatorV1.ErrorAuthenticationBadRequest("invalid block token request target")
+	}
+
+	return a.userTokenCache.AddBlockedAccessToken(ctx, jti, req.GetReason(), req.GetDuration().AsDuration())
+}
+
+func (a *Authenticator) UnblockToken(
+	ctx context.Context,
+	req *operatorV1.UnblockTokenRequest,
+) (err error) {
+	var jti string
+	switch req.Target.(type) {
+	case *operatorV1.UnblockTokenRequest_Token:
+		var exist bool
+		exist, jti, err = a.userTokenCache.IsExistAccessToken(ctx, req.GetClientType(), req.GetUserId(), req.GetToken())
+		if err != nil {
+			a.log.Errorf(ctx, "check access token existence failed: [%v]", err)
+			return operatorV1.ErrorAuthenticationServiceUnavailable("check access token existence failed")
+		}
+		if !exist {
+			a.log.Warnf(ctx, "access token not found for user [%d]", req.GetUserId())
+			return operatorV1.ErrorAuthenticationAccessTokenNotFound("access token not found")
+		}
+
+	case *operatorV1.UnblockTokenRequest_Jti:
+		var exist bool
+		exist, err = a.userTokenCache.IsExistAccessTokenByJti(ctx, req.GetClientType(), req.GetUserId(), req.GetJti())
+		if err != nil {
+			a.log.Errorf(ctx, "check access token existence by jti failed: [%v]", err)
+			return operatorV1.ErrorAuthenticationServiceUnavailable("check access token existence failed")
+		}
+		if !exist {
+			a.log.Warnf(ctx, "access token not found for user [%d] by jti", req.GetUserId())
+			return operatorV1.ErrorAuthenticationAccessTokenNotFound("access token not found")
+		}
+		jti = req.GetJti()
+
+	default:
+		a.log.Error(ctx, "invalid block token request target")
+		return operatorV1.ErrorAuthenticationBadRequest("invalid block token request target")
+	}
+
+	return a.userTokenCache.RevokeTokenByJti(ctx, req.GetClientType(), req.GetUserId(), jti)
+}
+
+// ==============================
+// 会话元数据（在线用户功能）
+// ==============================
+
+// SaveSessionMeta 记录会话元数据，TTL 与 refresh token 对齐。
+// 在登录 / 刷新轮换 / MFA 验证通过签发新令牌对后由 service 层调用。
+func (a *Authenticator) SaveSessionMeta(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, userId uint32,
+	jti string,
+	meta *SessionMeta,
+	expires time.Duration,
+) error {
+	return a.userTokenCache.SaveSessionMeta(ctx, clientType, userId, jti, meta, expires)
+}
+
+// GetSessionMeta 读取单个会话元数据；会话不存在返回 nil（不视为错误）。
+func (a *Authenticator) GetSessionMeta(
+	ctx context.Context,
+	clientType operatorV1.ClientType_ClientType, userId uint32,
+	jti string,
+) (*SessionMeta, error) {
+	return a.userTokenCache.GetSessionMeta(ctx, clientType, userId, jti)
+}
+
+// ListSessionEntries 扫描全部在线会话。
+func (a *Authenticator) ListSessionEntries(ctx context.Context) ([]SessionEntry, error) {
+	return a.userTokenCache.ListSessionEntries(ctx)
+}
+
+// RevokeUserTokenAllClientTypes 吊销用户全部客户端类型的所有令牌与会话记录。
+// 用于改密 / 重置密码后的强制下线：被改密用户的所有已签发令牌立即失效。
+func (a *Authenticator) RevokeUserTokenAllClientTypes(ctx context.Context, userId uint32) error {
+	// 显式枚举合法客户端类型（与 RevokeTokenByJti 的 nil 分支同形）。
+	// 此前遍历 ClientType_value 名字表：后续枚举若新增无效/未实现类型会被
+	// 静默带进吊销循环；叠加 map 迭代序随机与遇错早退，会得到「实际吊销了
+	// 哪几类取决于运行时顺序」的部分吊销——对改密强制下线这一安全语义不可
+	// 接受。改为逐类全部尝试、汇总错误：任一类失败不阻断其余类别的吊销。
+	var errs []error
+	for _, ct := range []operatorV1.ClientType_ClientType{
+		operatorV1.ClientType_admin,
+		operatorV1.ClientType_app,
+	} {
+		if err := a.RevokeUserToken(ctx, ct, userId); err != nil {
+			a.log.Errorf(ctx, "revoke user [%d] tokens of client type [%d] failed: %v", userId, ct, err)
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// getAuthenticator 根据客户端类型获取认证器
+func (a *Authenticator) getAuthenticator(clientType operatorV1.ClientType_ClientType) (authnEngine.Authenticator, error) {
+	var authenticator authnEngine.Authenticator
+	switch clientType {
+	case operatorV1.ClientType_admin:
+		authenticator = a.AdminAuthenticator
+	case operatorV1.ClientType_app:
+	default:
+		a.log.Error(context.Background(), "invalid client type: [%v]", clientType)
+		return nil, operatorV1.ErrorAuthenticationBadRequest("invalid client type")
+	}
+	return authenticator, nil
+}
+
+// newAccessToken 创建访问令牌
+func (a *Authenticator) newAccessToken(
+	clientType operatorV1.ClientType_ClientType, tokenPayload *operatorV1.UserTokenPayload,
+) (accessToken string, err error) {
+	if tokenPayload == nil {
+		a.log.Error(context.Background(), "token payload is nil")
+		return "", operatorV1.ErrorAuthenticationBadRequest("token payload is nil")
+	}
+
+	expTime := time.Now().Add(a.GetAccessTokenExpires(clientType))
+	authClaims := jwt.NewUserTokenAuthClaims(tokenPayload, &expTime)
+
+	authenticator, err := a.getAuthenticator(clientType)
+	if err != nil {
+		return "", err
+	}
+
+	accessToken, err = authenticator.CreateIdentity(*authClaims)
+	if err != nil {
+		a.log.Error(context.Background(), "create access token failed: [%v]", err)
+		return "", operatorV1.ErrorAuthenticationServiceUnavailable("create access token failed")
+	}
+
+	return accessToken, nil
+}
+
+// newRefreshToken 创建刷新令牌（自描述 JWT，仅含 uid/jti/exp/iat）。
+// refresh token 以 HttpOnly Cookie 传输，需脱离 access token 独立鉴权，
+// 因此自身携带定位 Redis 记录所需的最小 claims（uid + jti），不含业务权限字段。
+func (a *Authenticator) newRefreshToken(
+	clientType operatorV1.ClientType_ClientType, tokenPayload *operatorV1.UserTokenPayload,
+) (refreshToken string, err error) {
+	if tokenPayload == nil {
+		a.log.Error(context.Background(), "refresh token payload is nil")
+		return "", operatorV1.ErrorAuthenticationBadRequest("refresh token payload is nil")
+	}
+
+	expTime := time.Now().Add(a.GetRefreshTokenExpires(clientType))
+	authClaims, err := jwt.NewRefreshTokenAuthClaims(tokenPayload.GetUserId(), tokenPayload.GetJti(), &expTime)
+	if err != nil {
+		a.log.Error(context.Background(), "create refresh token claims failed: [%v]", err)
+		return "", operatorV1.ErrorAuthenticationServiceUnavailable("create refresh token failed")
+	}
+
+	authenticator, err := a.getAuthenticator(clientType)
+	if err != nil {
+		return "", err
+	}
+
+	refreshToken, err = authenticator.CreateIdentity(*authClaims)
+	if err != nil {
+		a.log.Error(context.Background(), "create refresh token failed: [%v]", err)
+		return "", operatorV1.ErrorAuthenticationServiceUnavailable("create refresh token failed")
+	}
+	return refreshToken, nil
+}
+
+// newJwtId 创建 JWT ID
+func (a *Authenticator) newJwtId() string {
+	return jwtutil.NewJWTId()
+}

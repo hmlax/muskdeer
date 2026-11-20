@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/role_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 角色管理服务
+service RoleService {
+  // 查询角色列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListRoleResponse) {
+    option (api.get) = "/admin/v1/roles";
+  }
+
+  // 查询角色详情
+  rpc Get(admin.v1.GetRoleRequest) returns (admin.v1.Role) {
+    option (api.get) = "/admin/v1/roles/:id";
+  }
+
+  // 创建角色
+  rpc Create(admin.v1.CreateRoleRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/roles";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新角色
+  rpc Update(admin.v1.UpdateRoleRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/roles/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除角色
+  rpc Delete(admin.v1.DeleteRoleRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/roles/:id";
+  }
+}

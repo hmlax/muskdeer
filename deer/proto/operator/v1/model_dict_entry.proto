@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 字典项表
+message SysDictEntries {
+  option (operator.v1.model) = {
+    entity: "DictEntry"
+    relations: { name: "DictType" target: "SysDictTypes" foreign_key: "TypeID" references: "ID" many: false }
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;uniqueIndex:uix_sys_dict_entries_tenant_type_value,priority:2;index:idx_sys_dict_entries_tenant_type,priority:2;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 排序值（越小越靠前）
+  optional uint32 sort_order = 8 [(tagger.tags) = "gorm:\"column:sort_order;type:bigint;default:0;comment:排序值（越小越靠前）\" json:\"sort_order,omitempty\"", (operator.v1.go_name) = "SortOrder"];
+
+  // 是否启用
+  optional bool is_enabled = 9 [(tagger.tags) = "gorm:\"column:is_enabled;type:boolean;default:true;comment:是否启用\" json:\"is_enabled,omitempty\"", (operator.v1.go_name) = "IsEnabled"];
+
+  // 租户ID
+  optional uint32 tenant_id = 10 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;uniqueIndex:uix_sys_dict_entries_tenant_type_value,priority:1;index:idx_sys_dict_entries_tenant_type,priority:1;index:idx_sys_dict_entries_tenant_entry_value,priority:1;index:idx_sys_dict_entries_tenant_id,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 字典项的实际值
+  optional string entry_value = 11 [(tagger.tags) = "gorm:\"column:entry_value;type:varchar(255);not null;uniqueIndex:uix_sys_dict_entries_tenant_type_value,priority:3;index:idx_sys_dict_entries_tenant_entry_value,priority:2;index:idx_sys_dict_entries_entry_value,priority:1;comment:字典项的实际值\" json:\"entry_value,omitempty\"", (operator.v1.go_name) = "EntryValue", (operator.v1.min_len) = 1];
+
+  // 数值型值
+  optional int32 numeric_value = 12 [(tagger.tags) = "gorm:\"column:numeric_value;type:integer;index:idx_sys_dict_entries_numeric_value,priority:1;comment:数值型值\" json:\"numeric_value,omitempty\"", (operator.v1.go_name) = "NumericValue"];
+
+  //
+  optional uint32 type_id = 13 [(tagger.tags) = "gorm:\"column:type_id;type:bigint\" json:\"type_id,omitempty\"", (operator.v1.go_name) = "TypeID"];
+}

@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 系统参数表（平台全局动态 KV 运行时配置；区别于字典管理的业务枚举，两者语义不同）
+message SysConfigs {
+  option (operator.v1.model) = {
+    entity: "SysConfig"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_sys_configs_created_at,priority:1;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 参数名称（展示用）
+  optional string name = 8 [(tagger.tags) = "gorm:\"column:name;type:varchar(255);comment:参数名称（展示用）\" json:\"name,omitempty\"", (operator.v1.go_name) = "Name"];
+
+  // 参数键名，全局唯一，服务侧读取器按键定位
+  optional string key = 9 [(tagger.tags) = "gorm:\"column:key;type:varchar(255);uniqueIndex:uidx_sys_configs_key,priority:1;comment:参数键名，全局唯一，服务侧读取器按键定位\" json:\"key,omitempty\"", (operator.v1.go_name) = "Key"];
+
+  // 参数键值
+  optional string value = 10 [(tagger.tags) = "gorm:\"column:value;type:varchar(255);comment:参数键值\" json:\"value,omitempty\"", (operator.v1.go_name) = "Value"];
+
+  // 参数值类型（读取器按类型解析，类型不符回退默认值）
+  optional string value_type = 11 [(tagger.tags) = "gorm:\"column:value_type;type:varchar(255);default:STRING;comment:参数值类型（读取器按类型解析，类型不符回退默认值）\" json:\"value_type,omitempty\"", (operator.v1.go_name) = "ValueType", (operator.v1.enum_values) = { name: "ValueTypeString" value: "STRING" }, (operator.v1.enum_values) = { name: "ValueTypeBool" value: "BOOL" }, (operator.v1.enum_values) = { name: "ValueTypeInt" value: "INT" }];
+
+  // 是否系统内置参数（内置参数禁止删除）
+  optional bool is_built_in = 12 [(tagger.tags) = "gorm:\"column:is_built_in;type:boolean;default:false;comment:是否系统内置参数（内置参数禁止删除）\" json:\"is_built_in,omitempty\"", (operator.v1.go_name) = "IsBuiltIn"];
+}

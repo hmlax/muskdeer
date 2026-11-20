@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 权限点动态策略表
+message SysPermissionPolicies {
+  option (operator.v1.model) = {
+    entity: "PermissionPolicy"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 状态
+  optional string status = 8 [(tagger.tags) = "gorm:\"column:status;type:varchar(255);not null;default:ON;comment:状态\" json:\"status,omitempty\"", (operator.v1.go_name) = "Status", (operator.v1.enum_values) = { name: "StatusOff" value: "OFF" }, (operator.v1.enum_values) = { name: "StatusOn" value: "ON" }];
+
+  // 权限ID（关联sys_permissions.id）
+  optional uint32 permission_id = 9 [(tagger.tags) = "gorm:\"column:permission_id;type:bigint;not null;index:idx_perm_policy_perm_version,priority:1;index:idx_perm_policy_perm,priority:1;comment:权限ID（关联sys_permissions.id）\" json:\"permission_id,omitempty\"", (operator.v1.go_name) = "PermissionID"];
+
+  // 策略引擎
+  optional string policy_engine = 10 [(tagger.tags) = "gorm:\"column:policy_engine;type:varchar(255);not null;default:CASBIN;index:idx_perm_policy_engine,priority:1;comment:策略引擎\" json:\"policy_engine,omitempty\"", (operator.v1.go_name) = "PolicyEngine", (operator.v1.enum_values) = { name: "PolicyEngineCel" value: "CEL" }, (operator.v1.enum_values) = { name: "PolicyEngineCasbin" value: "CASBIN" }, (operator.v1.enum_values) = { name: "PolicyEngineOpa" value: "OPA" }, (operator.v1.enum_values) = { name: "PolicyEngineSql" value: "SQL" }];
+
+  // 策略定义（动态结构）
+  optional string definition = 11 [(tagger.tags) = "gorm:\"column:definition;type:jsonb;comment:策略定义（动态结构）\" json:\"definition,omitempty\"", (operator.v1.go_name) = "Definition"];
+
+  // 策略版本（用于灰度/回滚）
+  optional uint32 version = 12 [(tagger.tags) = "gorm:\"column:version;type:bigint;not null;default:1;index:idx_perm_policy_perm_version,priority:2;index:idx_perm_policy_version,priority:1;comment:策略版本（用于灰度/回滚）\" json:\"version,omitempty\"", (operator.v1.go_name) = "Version"];
+
+  // 评估优先级（越小越先执行）
+  optional uint32 eval_order = 13 [(tagger.tags) = "gorm:\"column:eval_order;type:bigint;not null;default:0;comment:评估优先级（越小越先执行）\" json:\"eval_order,omitempty\"", (operator.v1.go_name) = "EvalOrder"];
+
+  // 结果缓存秒数（0=不缓存）
+  optional uint32 cache_ttl = 14 [(tagger.tags) = "gorm:\"column:cache_ttl;type:bigint;not null;default:300;comment:结果缓存秒数（0=不缓存）\" json:\"cache_ttl,omitempty\"", (operator.v1.go_name) = "CacheTTL"];
+}

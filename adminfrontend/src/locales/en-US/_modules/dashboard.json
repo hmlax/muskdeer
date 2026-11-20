@@ -1,0 +1,4 @@
+{
+  "welcome": "Welcome, {{name}}",
+  "description": "Use the sidebar to manage administrators, roles, permissions and system settings."
+}

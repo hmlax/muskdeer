@@ -1,0 +1,9 @@
+version: v2
+
+clean: true
+
+
+
+plugins:
+  - local: protoc-gen-typescript-http
+    out: adminfrontend/src/api/generated/

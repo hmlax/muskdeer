@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/device_info.proto";
+import "operator/v1/geo_location.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 操作审计日志表
+message SysOperationAuditLogs {
+  option (operator.v1.model) = {
+    entity: "OperationAuditLog"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:operationauditlog_ip_address_created_at,priority:2;index:operationauditlog_created_at,priority:1;index:operationauditlog_tenant_id_created_at,priority:2;index:operationauditlog_tenant_id_user_id_created_at,priority:3;index:operationauditlog_action_success_created_at,priority:3;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 租户ID
+  optional uint32 tenant_id = 3 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:operationauditlog_tenant_id,priority:1;index:operationauditlog_tenant_id_created_at,priority:1;index:operationauditlog_tenant_id_user_id_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 操作者用户ID
+  optional uint32 user_id = 4 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;index:operationauditlog_user_id,priority:1;index:operationauditlog_tenant_id_user_id_created_at,priority:2;comment:操作者用户ID\" json:\"user_id,omitempty\"", (operator.v1.go_name) = "UserID"];
+
+  // 操作者账号名
+  optional string username = 5 [(tagger.tags) = "gorm:\"column:username;type:varchar(255);index:operationauditlog_username,priority:1;comment:操作者账号名\" json:\"username,omitempty\"", (operator.v1.go_name) = "Username"];
+
+  // 资源类型
+  optional string resource_type = 6 [(tagger.tags) = "gorm:\"column:resource_type;type:varchar(255);index:operationauditlog_resource_type_resource_id,priority:1;comment:资源类型\" json:\"resource_type,omitempty\"", (operator.v1.go_name) = "ResourceType"];
+
+  // 资源ID
+  optional string resource_id = 7 [(tagger.tags) = "gorm:\"column:resource_id;type:varchar(255);index:operationauditlog_resource_type_resource_id,priority:2;comment:资源ID\" json:\"resource_id,omitempty\"", (operator.v1.go_name) = "ResourceID"];
+
+  // 动作
+  optional string action = 8 [(tagger.tags) = "gorm:\"column:action;type:varchar(255);index:operationauditlog_action,priority:1;index:operationauditlog_action_success_created_at,priority:1;comment:动作\" json:\"action,omitempty\"", (operator.v1.go_name) = "Action", (operator.v1.enum_values) = { name: "ActionCreate" value: "CREATE" }, (operator.v1.enum_values) = { name: "ActionUpdate" value: "UPDATE" }, (operator.v1.enum_values) = { name: "ActionDelete" value: "DELETE" }, (operator.v1.enum_values) = { name: "ActionRead" value: "READ" }, (operator.v1.enum_values) = { name: "ActionAssign" value: "ASSIGN" }, (operator.v1.enum_values) = { name: "ActionUnassign" value: "UNASSIGN" }, (operator.v1.enum_values) = { name: "ActionExport" value: "EXPORT" }, (operator.v1.enum_values) = { name: "ActionImport" value: "IMPORT" }, (operator.v1.enum_values) = { name: "ActionOther" value: "OTHER" }];
+
+  // 操作前数据
+  optional string before_data = 9 [(tagger.tags) = "gorm:\"column:before_data;type:jsonb;comment:操作前数据\" json:\"before_data,omitempty\"", (operator.v1.go_name) = "BeforeData"];
+
+  // 操作后数据
+  optional string after_data = 10 [(tagger.tags) = "gorm:\"column:after_data;type:jsonb;comment:操作后数据\" json:\"after_data,omitempty\"", (operator.v1.go_name) = "AfterData"];
+
+  // 数据敏感级别
+  optional string sensitive_level = 11 [(tagger.tags) = "gorm:\"column:sensitive_level;type:varchar(255);index:operationauditlog_sensitive_level,priority:1;comment:数据敏感级别\" json:\"sensitive_level,omitempty\"", (operator.v1.go_name) = "SensitiveLevel", (operator.v1.enum_values) = { name: "SensitiveLevelPublic" value: "PUBLIC" }, (operator.v1.enum_values) = { name: "SensitiveLevelInternal" value: "INTERNAL" }, (operator.v1.enum_values) = { name: "SensitiveLevelConfidential" value: "CONFIDENTIAL" }, (operator.v1.enum_values) = { name: "SensitiveLevelSecret" value: "SECRET" }];
+
+  // 全局请求ID
+  optional string request_id = 12 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(255);index:operationauditlog_request_id,priority:1;comment:全局请求ID\" json:\"request_id,omitempty\"", (operator.v1.go_name) = "RequestID"];
+
+  // 全局链路追踪ID
+  optional string trace_id = 13 [(tagger.tags) = "gorm:\"column:trace_id;type:varchar(255);index:operationauditlog_trace_id,priority:1;comment:全局链路追踪ID\" json:\"trace_id,omitempty\"", (operator.v1.go_name) = "TraceID"];
+
+  // 操作结果
+  optional bool success = 14 [(tagger.tags) = "gorm:\"column:success;type:boolean;index:operationauditlog_action_success_created_at,priority:2;index:operationauditlog_success,priority:1;comment:操作结果\" json:\"success,omitempty\"", (operator.v1.go_name) = "Success"];
+
+  // 失败原因
+  optional string failure_reason = 15 [(tagger.tags) = "gorm:\"column:failure_reason;type:varchar(255);comment:失败原因\" json:\"failure_reason,omitempty\"", (operator.v1.go_name) = "FailureReason"];
+
+  // IP地址
+  optional string ip_address = 16 [(tagger.tags) = "gorm:\"column:ip_address;type:varchar(255);index:operationauditlog_ip_address,priority:1;index:operationauditlog_ip_address_created_at,priority:1;comment:IP地址\" json:\"ip_address,omitempty\"", (operator.v1.go_name) = "IPAddress"];
+
+  // 地理位置(来自IP库)
+  operator.v1.GeoLocation geo_location = 17 [(tagger.tags) = "gorm:\"column:geo_location;serializer:json;type:json;comment:地理位置(来自IP库)\" json:\"geo_location,omitempty\"", (operator.v1.go_name) = "GeoLocation"];
+
+  // 设备信息
+  operator.v1.DeviceInfo device_info = 18 [(tagger.tags) = "gorm:\"column:device_info;serializer:json;type:json;comment:设备信息\" json:\"device_info,omitempty\"", (operator.v1.go_name) = "DeviceInfo"];
+
+  // 日志内容哈希（SHA256，十六进制字符串）
+  optional string log_hash = 19 [(tagger.tags) = "gorm:\"column:log_hash;type:varchar(255);index:operationauditlog_log_hash,priority:1;comment:日志内容哈希（SHA256，十六进制字符串）\" json:\"log_hash,omitempty\"", (operator.v1.go_name) = "LogHash"];
+
+  // 日志数字签名
+  bytes signature = 20 [(tagger.tags) = "gorm:\"column:signature;type:bytea;comment:日志数字签名\" json:\"signature,omitempty\"", (operator.v1.go_name) = "Signature"];
+}

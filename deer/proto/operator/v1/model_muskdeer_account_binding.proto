@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// The account's tenant ownership is permanent. Disable a binding to revoke
+// access; never transfer an account and its prior history to another tenant.
+message SysMuskdeerAccountBindings {
+ option (operator.v1.model) = { entity: "MuskdeerAccountBinding" };
+ uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+ google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;not null\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+ google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;not null\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+ google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+ optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy", (operator.v1.immutable) = true];
+ optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+ optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+ optional uint32 tenant_id = 8 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;not null;index:idx_muskdeer_binding_tenant\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+ optional string account_id = 9 [(tagger.tags) = "gorm:\"column:account_id;type:varchar(64);not null;uniqueIndex:uk_muskdeer_binding_account\" json:\"account_id,omitempty\"", (operator.v1.go_name) = "AccountID", (operator.v1.immutable) = true, (operator.v1.min_len) = 1];
+ optional bool is_enabled = 10 [(tagger.tags) = "gorm:\"column:is_enabled;type:boolean;not null\" json:\"is_enabled,omitempty\"", (operator.v1.go_name) = "IsEnabled"];
+ optional uint64 version = 11 [(tagger.tags) = "gorm:\"column:version;type:bigint;not null\" json:\"version,omitempty\"", (operator.v1.go_name) = "Version"];
+}

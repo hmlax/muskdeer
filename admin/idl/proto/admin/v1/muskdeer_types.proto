@@ -1,0 +1,162 @@
+syntax = "proto3";
+package admin.v1;
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+message MuskdeerOverviewRequest { }
+message MuskdeerListRequest { uint32 page = 2; uint32 page_size = 3; string search = 4; string account_id = 5; }
+message MuskdeerInstanceListRequest {
+ uint32 page = 2; uint32 page_size = 3; string search = 4;
+ string strategy_type = 5; string account_id = 6;
+}
+message MuskdeerInstanceRequest { int64 id = 2; }
+message MuskdeerCreateInstanceRequest { MuskdeerInstanceDraft data = 1; }
+message MuskdeerInstanceDraft {
+ string instance_key = 1; int64 template_id = 2; int64 template_revision = 3;
+ string account_id = 4; int64 instrument_id = 5; string market_data_source = 6;
+ MuskdeerInstanceParameters parameters = 7;
+}
+message MuskdeerUpdateInstanceRequest {
+ int64 id = 1; MuskdeerInstanceParameterUpdate data = 2;
+ int64 expected_revision = 3; int64 expected_control_version = 4;
+}
+message MuskdeerInstanceParameterUpdate { MuskdeerInstanceParameters parameters = 1; }
+message MuskdeerRunningRequest {
+ int64 id = 2; int64 expected_revision = 3;
+ int64 expected_control_version = 4;
+}
+message MuskdeerAccountRequest { string account_id = 2; }
+message MuskdeerRecordListRequest {
+ uint32 page = 2; uint32 page_size = 3; string symbol = 4;
+ string account_id = 5; string state = 6; int64 instance_id = 7;
+ string run_id = 8;
+}
+message MuskdeerCancelRequest {
+ int64 instance_id = 2; int64 expected_revision = 3;
+ // Required explicit intent; an absent flag must never widen cancellation.
+ bool cancel_all = 4;
+}
+message MuskdeerCancelReply { uint32 acknowledged = 1; bool confirmation_pending = 2; }
+message MuskdeerOverview {
+ uint64 templates = 1; uint64 instances = 2; uint64 desired_running = 3;
+ uint64 instruments = 4; uint64 accounts = 5; uint64 order_records = 6;
+ uint64 synthetic_published = 7; uint64 synthetic_unknown = 8; int64 observed_at_ms = 9;
+}
+message MuskdeerTemplate {
+ int64 id = 1; string key = 2; string name = 3; string strategy_type = 4;
+ string implementation = 5; int64 revision = 6; bool enabled = 7;
+ bool requires_order_book = 8; bool requires_account = 9;
+ string trades_mode = 10; repeated string execution_fields = 11;
+ repeated string parameter_fields = 12;
+}
+message MuskdeerTemplatePage { repeated MuskdeerTemplate items = 1; uint64 total = 2; }
+message MuskdeerGateway {
+ string key = 1; string execution_venue = 2; string protocol = 3;
+ string target = 4; bool configured = 5;
+}
+message MuskdeerGatewayPage { repeated MuskdeerGateway items = 1; uint64 total = 2; }
+message MuskdeerInstance {
+ int64 id = 1; string instance_key = 2; string strategy_type = 3;
+ string implementation = 4; int64 template_id = 5; int64 template_revision = 6;
+ string account_id = 7; int64 instrument_id = 8; string symbol = 9;
+ string market_data_source = 10; bool desired_running = 11;
+ int64 revision = 12; int64 control_version = 13; MuskdeerInstanceParameters parameters = 14;
+ bool restart_required = 15; repeated MuskdeerRuntimeVersion runtimes = 16;
+ int64 created_at_ms = 17; int64 updated_at_ms = 18; bool archived = 19;
+}
+message MuskdeerRuntimeVersion { string service = 1; int64 revision = 2; bool available = 3; }
+message MuskdeerInstancePage { repeated MuskdeerInstance items = 1; uint64 total = 2; }
+message MuskdeerInstanceParameters {
+ MuskdeerExecutionParameters execution = 1;
+ oneof algorithm { MuskdeerDepthParameters market_maker = 2; MuskdeerGridParameters grid = 3; MuskdeerWashParameters wash_trade = 4; MuskdeerLongGridParameters long_grid = 5; }
+}
+message MuskdeerExecutionParameters {
+ int64 poll_interval_ms = 1; int64 operation_timeout_ms = 2;
+ int64 lease_ttl_ms = 3; uint32 leverage = 4;
+}
+message MuskdeerDepthParameters {
+ uint32 depth = 1; string quantity_fraction = 2;
+ string replacement_fraction = 3; uint32 bridge_slots = 4;
+}
+message MuskdeerGridParameters {
+ string lower_price = 1; string upper_price = 2; int32 grid_count = 3;
+ string total_budget = 4; string per_order_notional = 5;
+ string inventory_limit = 6; int64 max_market_age_ms = 7;
+}
+message MuskdeerWashParameters {
+ bool development_only = 1; string mode = 2; string run_id = 3;
+ int64 interval_ms = 4;
+ // Zero is unlimited; no historical slot is reset or resent.
+ uint32 maximum_events = 5;
+ string quantity = 6; string maximum_notional = 7; string quantity_fraction = 8;
+}
+message MuskdeerInstrument {
+ int64 id = 1; string symbol = 2; string base_asset = 3; string quote_asset = 4;
+ string status = 5; string execution_venue = 6; string price_tick = 7;
+ string quantity_step = 8; string minimum_notional = 9;
+}
+message MuskdeerInstrumentPage { repeated MuskdeerInstrument items = 1; uint64 total = 2; }
+message MuskdeerAccount {
+ int64 id = 1; string account_id = 2; int64 user_id = 3; int64 fund_id = 4;
+ string symbol = 5; string maximum_notional = 6; string maximum_order_notional = 7;
+ uint32 leverage = 8; bool enabled = 9; string observed_notional = 10;
+ string reserved_notional = 11; string available_quote = 12;
+ int64 snapshot_expires_at_ms = 13;
+}
+message MuskdeerAccountPage { repeated MuskdeerAccount items = 1; uint64 total = 2; }
+message MuskdeerOrderRecord {
+ int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;
+ string account_id = 4; string symbol = 5; string client_id = 6;
+ string side = 7; string price = 8; string quantity = 9; uint32 leverage = 10;
+ string state = 11; string order_id = 12; string reserved_notional = 13;
+ int64 instance_id = 14; int64 revision = 15;
+}
+message MuskdeerOrderPage { repeated MuskdeerOrderRecord items = 1; uint64 total = 2; }
+message MuskdeerCancellation {
+ int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;
+ string account_id = 4; string symbol = 5; string order_id = 6; string state = 7;
+}
+message MuskdeerCancellationPage { repeated MuskdeerCancellation items = 1; uint64 total = 2; }
+message MuskdeerSyntheticRecord {
+ int64 id = 1; int64 created_at_ms = 2; string run_id = 3; string symbol = 4;
+ uint64 sequence = 5; string side = 6; string price = 7; string quantity = 8;
+ string notional = 9; string state = 10; string trade_id = 11;
+ int64 instance_id = 12; string source_trade_id = 13;
+}
+message MuskdeerSyntheticPage { repeated MuskdeerSyntheticRecord items = 1; uint64 total = 2; }
+// MuskdeerAccountSnapshot comes from the matching gateway, never from local order audit.
+message MuskdeerAccountSnapshot {
+ string account_id = 1; string symbol = 2; int64 valid_until_ms = 3;
+ repeated MuskdeerActiveOrder orders = 4; repeated MuskdeerPosition positions = 5;
+ string available = 6; string mark_price = 7; int64 observed_at_ms = 8;
+}
+message MuskdeerActiveOrder {
+ string order_id = 1; string client_id = 2; string side = 3; string price = 4;
+ string quantity = 5; string executed_quantity = 6; string status = 7;
+}
+message MuskdeerPosition {
+ string symbol = 1; string signed_quantity = 2; string entry_price = 3;
+ string leverage = 4;
+}
+
+message MuskdeerAccountBinding {
+ uint32 id = 1; uint32 tenant_id = 2; string account_id = 3;
+ bool enabled = 4; uint64 version = 5;
+}
+message MuskdeerBindingListRequest { uint32 page = 1; uint32 page_size = 2; uint32 tenant_id = 3; string account_id = 4; }
+message MuskdeerBindingPage { repeated MuskdeerAccountBinding items = 1; uint64 total = 2; }
+message MuskdeerBindingDraft { uint32 tenant_id = 1; string account_id = 2; bool enabled = 3; }
+message MuskdeerCreateBindingRequest { MuskdeerBindingDraft data = 1; }
+message MuskdeerSetBindingEnabledRequest { uint32 id = 1; uint64 expected_version = 2; bool enabled = 3; }
+
+message MuskdeerLongGridParameters {
+ string spacing_fraction = 1; string stop_loss_fraction = 2;
+ string order_notional = 3; string maximum_position_notional = 4;
+ bool open_on_start = 5; bool halt_after_stop_loss = 6;
+}
+
+message MuskdeerAccountDraft {
+ string user_id = 1; string fund_id = 2; string instrument_id = 3;
+ string market_data_source = 4; string maximum_notional = 5;
+ string maximum_order_notional = 6; uint32 leverage = 7;
+}
+message MuskdeerCreateAccountRequest { MuskdeerAccountDraft data = 1; }

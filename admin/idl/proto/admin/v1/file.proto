@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/file_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 文件管理服务
+service FileService {
+  // 查询文件列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListFileResponse) {
+    option (api.get) = "/admin/v1/files";
+  }
+
+  // 查询文件详情
+  rpc Get(admin.v1.GetFileRequest) returns (admin.v1.File) {
+    option (api.get) = "/admin/v1/files/:id";
+  }
+
+  // 创建文件
+  rpc Create(admin.v1.CreateFileRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/files";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新文件
+  rpc Update(admin.v1.UpdateFileRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/files/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除文件
+  rpc Delete(admin.v1.DeleteFileRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/files/:id";
+  }
+}

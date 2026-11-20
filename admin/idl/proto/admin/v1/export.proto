@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "admin/v1/export_types.proto";
+import "admin/v1/http_transport_types.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "hertz/api.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// Download exports. The response is encoded as a file with headers from
+// BinaryFileResponse; these endpoints retain the corresponding list permissions.
+service ExportService {
+  rpc ExportAuditLogs(admin.v1.AuditExportRequest) returns (admin.v1.BinaryFileResponse) {
+    option (api.get) = "/admin/v1/audit-logs:export";
+    option (gnostic.openapi.v3.operation) = {
+      responses: {
+        response_or_reference: {
+          name: "200"
+          value: {
+            response: {
+              description: "CSV or XLSX file. Content-Disposition supplies the filename."
+              content: {
+                additional_properties: {
+                  name: "application/octet-stream"
+                  value: {
+                    schema: {
+                      schema: {
+                        type: "string"
+                        format: "binary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+  }
+}

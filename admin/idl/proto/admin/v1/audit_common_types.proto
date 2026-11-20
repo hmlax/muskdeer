@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+import "gnostic/openapi/v3/annotations.proto";
+import "validate/validate.proto";
+
+// 敏感级别
+message SensitiveLevel {
+enum SensitiveLevel {
+  SENSITIVE_LEVEL_UNSPECIFIED = 0;
+
+  PUBLIC = 1;      // 公开数据
+  INTERNAL = 2;    // 内部数据
+  CONFIDENTIAL = 3; // 机密数据（个人身份信息）
+  SECRET = 4;      // 秘密数据（金融交易）
+}
+}

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package operator.v1;
+
+import "operator/v1/http_transport.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+// Download exports. The response is encoded as a file with headers from
+// BinaryFileResponse; these endpoints retain the corresponding list permissions.
+service ExportService {
+  rpc ExportAuditLogs(AuditExportRequest) returns (BinaryFileResponse) {}
+}
+message AuditExportRequest {
+  string type = 1;
+  string format = 2;
+  uint32 max_rows = 3 [json_name = "maxRows"];
+  string query = 4;
+}

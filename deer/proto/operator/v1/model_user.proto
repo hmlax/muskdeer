@@ -1,0 +1,91 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 用户表
+message SysUsers {
+  option (operator.v1.model) = {
+    entity: "User"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建者ID
+  optional uint32 created_by = 2 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;index:idx_sys_user_tenant_created_by,priority:2;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 3 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 4 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 5 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_sys_user_tenant_created_at,priority:2;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 6 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 7 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 备注
+  optional string remark = 8 [(tagger.tags) = "gorm:\"column:remark;type:varchar(255);comment:备注\" json:\"remark,omitempty\"", (operator.v1.go_name) = "Remark"];
+
+  // 租户ID
+  optional uint32 tenant_id = 9 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;uniqueIndex:idx_sys_user_tenant_username,priority:1;uniqueIndex:idx_sys_user_tenant_email,priority:1;index:idx_sys_user_tenant_mobile,priority:1;index:idx_sys_user_tenant_last_login_at,priority:1;index:idx_sys_user_tenant_last_login_ip,priority:1;index:idx_sys_user_tenant_created_by,priority:1;index:idx_sys_user_tenant_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 用户名
+  optional string username = 10 [(tagger.tags) = "gorm:\"column:username;type:varchar(255);uniqueIndex:idx_sys_user_tenant_username,priority:2;comment:用户名\" json:\"username,omitempty\"", (operator.v1.go_name) = "Username", (operator.v1.min_len) = 1, (operator.v1.immutable) = true];
+
+  // 昵称
+  optional string nickname = 11 [(tagger.tags) = "gorm:\"column:nickname;type:varchar(255);comment:昵称\" json:\"nickname,omitempty\"", (operator.v1.go_name) = "Nickname"];
+
+  // 真实名字
+  optional string realname = 12 [(tagger.tags) = "gorm:\"column:realname;type:varchar(255);comment:真实名字\" json:\"realname,omitempty\"", (operator.v1.go_name) = "Realname"];
+
+  // 电子邮箱
+  optional string email = 13 [(tagger.tags) = "gorm:\"column:email;type:varchar(320);uniqueIndex:idx_sys_user_tenant_email,priority:2;comment:电子邮箱\" json:\"email,omitempty\"", (operator.v1.go_name) = "Email", (operator.v1.max_len) = 320];
+
+  // 手机号码
+  optional string mobile = 14 [(tagger.tags) = "gorm:\"column:mobile;type:varchar(255);default:'';index:idx_sys_user_tenant_mobile,priority:2;comment:手机号码\" json:\"mobile,omitempty\"", (operator.v1.go_name) = "Mobile", (operator.v1.max_len) = 255];
+
+  // 座机号码
+  optional string telephone = 15 [(tagger.tags) = "gorm:\"column:telephone;type:varchar(255);default:'';comment:座机号码\" json:\"telephone,omitempty\"", (operator.v1.go_name) = "Telephone", (operator.v1.max_len) = 255];
+
+  // 头像
+  optional string avatar = 16 [(tagger.tags) = "gorm:\"column:avatar;type:varchar(255);comment:头像\" json:\"avatar,omitempty\"", (operator.v1.go_name) = "Avatar"];
+
+  // 地址
+  optional string address = 17 [(tagger.tags) = "gorm:\"column:address;type:varchar(255);default:'';comment:地址\" json:\"address,omitempty\"", (operator.v1.go_name) = "Address"];
+
+  // 国家地区
+  optional string region = 18 [(tagger.tags) = "gorm:\"column:region;type:varchar(255);default:'';comment:国家地区\" json:\"region,omitempty\"", (operator.v1.go_name) = "Region"];
+
+  // 偏好语言（事务性邮件按此渲染；zh-CN/en-US，空=按请求 Accept-Language）
+  optional string locale = 19 [(tagger.tags) = "gorm:\"column:locale;type:varchar(255);default:'';comment:偏好语言（事务性邮件按此渲染；zh-CN/en-US，空=按请求 Accept-Language）\" json:\"locale,omitempty\"", (operator.v1.go_name) = "Locale"];
+
+  // 个人说明
+  optional string description = 20 [(tagger.tags) = "gorm:\"column:description;type:varchar(1023);comment:个人说明\" json:\"description,omitempty\"", (operator.v1.go_name) = "Description", (operator.v1.max_len) = 1023];
+
+  // 性别
+  optional string gender = 21 [(tagger.tags) = "gorm:\"column:gender;type:varchar(255);default:SECRET;comment:性别\" json:\"gender,omitempty\"", (operator.v1.go_name) = "Gender", (operator.v1.enum_values) = { name: "GenderSecret" value: "SECRET" }, (operator.v1.enum_values) = { name: "GenderMale" value: "MALE" }, (operator.v1.enum_values) = { name: "GenderFemale" value: "FEMALE" }];
+
+  // 最后一次登录的时间
+  google.protobuf.Timestamp last_login_at = 22 [(tagger.tags) = "gorm:\"column:last_login_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_sys_user_tenant_last_login_at,priority:2;comment:最后一次登录的时间\" json:\"last_login_at,omitempty\"", (operator.v1.go_name) = "LastLoginAt"];
+
+  // 最后一次登录的IP
+  optional string last_login_ip = 23 [(tagger.tags) = "gorm:\"column:last_login_ip;type:varchar(255);index:idx_sys_user_tenant_last_login_ip,priority:2;comment:最后一次登录的IP\" json:\"last_login_ip,omitempty\"", (operator.v1.go_name) = "LastLoginIP"];
+
+  // 锁定截止时间
+  google.protobuf.Timestamp locked_until = 24 [(tagger.tags) = "gorm:\"column:locked_until;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:锁定截止时间\" json:\"locked_until,omitempty\"", (operator.v1.go_name) = "LockedUntil"];
+
+  // 状态
+  optional string status = 25 [(tagger.tags) = "gorm:\"column:status;type:varchar(255);default:NORMAL;comment:状态\" json:\"status,omitempty\"", (operator.v1.go_name) = "Status", (operator.v1.enum_values) = { name: "StatusNormal" value: "NORMAL" }, (operator.v1.enum_values) = { name: "StatusDisabled" value: "DISABLED" }, (operator.v1.enum_values) = { name: "StatusPending" value: "PENDING" }, (operator.v1.enum_values) = { name: "StatusLocked" value: "LOCKED" }, (operator.v1.enum_values) = { name: "StatusExpired" value: "EXPIRED" }, (operator.v1.enum_values) = { name: "StatusClosed" value: "CLOSED" }];
+}

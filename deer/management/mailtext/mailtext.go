@@ -1,0 +1,116 @@
+// Package mailtext renders localized authentication email content.
+package mailtext
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/hmlax/muskdeer/deer/management/netutil"
+)
+
+// Locale 邮件语言。取值与前端 locale 同名，便于排障时按语言直接对上文案。
+type Locale string
+
+const (
+	LocaleZhCN Locale = "zh-CN"
+	LocaleEnUS Locale = "en-US"
+)
+
+// defaultLocale 回落语言：读不到请求头，或请求语言不受支持时使用。
+const defaultLocale = LocaleZhCN
+
+// headerAcceptLanguage Kratos 侧读取的头名（大小写由 net/http 规范化，此处按线格式写）。
+const headerAcceptLanguage = "Accept-Language"
+
+// mailCopy contains authentication email subjects and bodies.
+type mailCopy struct {
+	passwordResetTitle string
+	passwordResetBody  string
+	contactBindTitle   string
+	contactBindBody    string
+}
+
+var tables = map[Locale]mailCopy{
+	LocaleZhCN: {
+		passwordResetTitle: "Go Admin 密码重置验证码",
+		passwordResetBody:  "您的密码重置验证码是：%s\n\n10 分钟内有效。若非本人操作请忽略本邮件。\n",
+		contactBindTitle:   "Go Admin 邮箱绑定验证码",
+		contactBindBody:    "您的邮箱绑定验证码是：%s\n\n10 分钟内有效。若非本人操作请忽略本邮件。\n",
+	},
+	LocaleEnUS: {
+		passwordResetTitle: "Go Admin password reset code",
+		passwordResetBody:  "Your password reset code is %s.\n\nIt expires in 10 minutes. Ignore this email if you did not request it.\n",
+		contactBindTitle:   "Go Admin email binding code",
+		contactBindBody:    "Your email binding code is %s.\n\nIt expires in 10 minutes. Ignore this email if you did not request it.\n",
+	},
+}
+
+// Resolve 取邮件语言：显式 locale（WithLocale 注入，来自收件用户的偏好设置）
+// 优先；未设置时回落请求 Accept-Language 头；均无则默认 zh-CN。
+func Resolve(ctx context.Context) Locale {
+	if v := ctx.Value(localeContextKey{}); v != nil {
+		if loc, ok := v.(Locale); ok {
+			return loc
+		}
+	}
+	header := netutil.HeaderFromContext(ctx)
+	if header == nil {
+		return defaultLocale
+	}
+	return localeOf(header.Get(headerAcceptLanguage))
+}
+
+// localeContextKey WithLocale 注入的显式语言键。
+type localeContextKey struct{}
+
+// WithLocale 显式指定邮件语言（如收件用户的偏好设置），覆盖请求头判定。
+// 找回密码这类免鉴权流程在拿到用户后调用，验证码邮件即按用户偏好渲染。
+func WithLocale(ctx context.Context, locale Locale) context.Context {
+	return context.WithValue(ctx, localeContextKey{}, locale)
+}
+
+// LocaleOfTag 把 BCP-47 风格标签（zh-CN/en-US/zh/en）归一为受支持的 Locale；
+// 不识别返回 ok=false（调用方保持默认）。
+func LocaleOfTag(tag string) (Locale, bool) {
+	base, _, _ := strings.Cut(strings.ToLower(strings.TrimSpace(tag)), "-")
+	switch base {
+	case "zh":
+		return LocaleZhCN, true
+	case "en":
+		return LocaleEnUS, true
+	}
+	return defaultLocale, false
+}
+
+// localeOf 按列表顺序取第一个受支持的语言，只比主语言子标签（zh / en），不解析 q 权重：
+// 浏览器发出的列表本身已按偏好排序，加权解析在这个规模上是多余的复杂度。
+func localeOf(acceptLanguage string) Locale {
+	for _, item := range strings.Split(acceptLanguage, ",") {
+		tag, _, _ := strings.Cut(item, ";")
+		base, _, _ := strings.Cut(strings.ToLower(strings.TrimSpace(tag)), "-")
+		switch base {
+		case "zh":
+			return LocaleZhCN
+		case "en":
+			return LocaleEnUS
+		}
+	}
+	return defaultLocale
+}
+
+func tableOf(ctx context.Context) mailCopy {
+	return tables[Resolve(ctx)]
+}
+
+// PasswordResetCode 找回密码验证码邮件。
+func PasswordResetCode(ctx context.Context, code string) (title, content string) {
+	t := tableOf(ctx)
+	return t.passwordResetTitle, fmt.Sprintf(t.passwordResetBody, code)
+}
+
+// ContactBindCode 邮箱绑定验证码邮件。
+func ContactBindCode(ctx context.Context, code string) (title, content string) {
+	t := tableOf(ctx)
+	return t.contactBindTitle, fmt.Sprintf(t.contactBindBody, code)
+}

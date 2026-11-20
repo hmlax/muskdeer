@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/device_info.proto";
+import "operator/v1/geo_location.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// API审计日志表
+message SysApiAuditLogs {
+  option (operator.v1.model) = {
+    entity: "ApiAuditLog"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_sys_api_audit_logs_tenant_created_at,priority:2;index:idx_sys_api_audit_logs_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_user_created_at,priority:3;index:idx_sys_api_audit_logs_tenant_username_created_at,priority:3;index:idx_sys_api_audit_logs_tenant_ip_created_at,priority:3;index:idx_sys_api_audit_logs_tenant_api_created_at,priority:4;index:idx_sys_api_audit_logs_tenant_path_method_created_at,priority:4;index:idx_sys_api_audit_logs_tenant_status_created_at,priority:4;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 租户ID
+  optional uint32 tenant_id = 3 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;uniqueIndex:uidx_sys_api_audit_logs_tenant_request_id,priority:1;uniqueIndex:uidx_sys_api_audit_logs_tenant_log_hash,priority:1;index:idx_sys_api_audit_logs_tenant_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_user_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_username_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_ip_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_trace_id,priority:1;index:idx_sys_api_audit_logs_tenant_api_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_path_method_created_at,priority:1;index:idx_sys_api_audit_logs_tenant_status_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 操作者用户ID
+  optional uint32 user_id = 4 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;index:idx_sys_api_audit_logs_tenant_user_created_at,priority:2;comment:操作者用户ID\" json:\"user_id,omitempty\"", (operator.v1.go_name) = "UserID"];
+
+  // 操作者账号名
+  optional string username = 5 [(tagger.tags) = "gorm:\"column:username;type:varchar(255);index:idx_sys_api_audit_logs_tenant_username_created_at,priority:2;comment:操作者账号名\" json:\"username,omitempty\"", (operator.v1.go_name) = "Username"];
+
+  // IP地址
+  optional string ip_address = 6 [(tagger.tags) = "gorm:\"column:ip_address;type:varchar(255);index:idx_sys_api_audit_logs_tenant_ip_created_at,priority:2;comment:IP地址\" json:\"ip_address,omitempty\"", (operator.v1.go_name) = "IPAddress"];
+
+  // 地理位置(来自IP库)
+  operator.v1.GeoLocation geo_location = 7 [(tagger.tags) = "gorm:\"column:geo_location;serializer:json;type:json;comment:地理位置(来自IP库)\" json:\"geo_location,omitempty\"", (operator.v1.go_name) = "GeoLocation"];
+
+  // 设备信息
+  operator.v1.DeviceInfo device_info = 8 [(tagger.tags) = "gorm:\"column:device_info;serializer:json;type:json;comment:设备信息\" json:\"device_info,omitempty\"", (operator.v1.go_name) = "DeviceInfo"];
+
+  // 请求来源URL
+  optional string referer = 9 [(tagger.tags) = "gorm:\"column:referer;type:varchar(255);comment:请求来源URL\" json:\"referer,omitempty\"", (operator.v1.go_name) = "Referer"];
+
+  // 客户端版本号
+  optional string app_version = 10 [(tagger.tags) = "gorm:\"column:app_version;type:varchar(255);comment:客户端版本号\" json:\"app_version,omitempty\"", (operator.v1.go_name) = "AppVersion"];
+
+  // HTTP请求方法
+  optional string http_method = 11 [(tagger.tags) = "gorm:\"column:http_method;type:varchar(255);index:idx_sys_api_audit_logs_tenant_path_method_created_at,priority:3;comment:HTTP请求方法\" json:\"http_method,omitempty\"", (operator.v1.go_name) = "HTTPMethod"];
+
+  // 请求路径
+  optional string path = 12 [(tagger.tags) = "gorm:\"column:path;type:varchar(255);index:idx_sys_api_audit_logs_tenant_path_method_created_at,priority:2;comment:请求路径\" json:\"path,omitempty\"", (operator.v1.go_name) = "Path"];
+
+  // 完整请求URI
+  optional string request_uri = 13 [(tagger.tags) = "gorm:\"column:request_uri;type:varchar(255);comment:完整请求URI\" json:\"request_uri,omitempty\"", (operator.v1.go_name) = "RequestURI"];
+
+  // API所属业务模块
+  optional string api_module = 14 [(tagger.tags) = "gorm:\"column:api_module;type:varchar(255);index:idx_sys_api_audit_logs_tenant_api_created_at,priority:2;comment:API所属业务模块\" json:\"api_module,omitempty\"", (operator.v1.go_name) = "APIModule"];
+
+  // API业务操作
+  optional string api_operation = 15 [(tagger.tags) = "gorm:\"column:api_operation;type:varchar(255);index:idx_sys_api_audit_logs_tenant_api_created_at,priority:3;comment:API业务操作\" json:\"api_operation,omitempty\"", (operator.v1.go_name) = "APIOperation"];
+
+  // API功能描述
+  optional string api_description = 16 [(tagger.tags) = "gorm:\"column:api_description;type:varchar(255);comment:API功能描述\" json:\"api_description,omitempty\"", (operator.v1.go_name) = "APIDescription"];
+
+  // 请求ID
+  optional string request_id = 17 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(255);uniqueIndex:uidx_sys_api_audit_logs_tenant_request_id,priority:2;comment:请求ID\" json:\"request_id,omitempty\"", (operator.v1.go_name) = "RequestID"];
+
+  // 全局链路追踪ID
+  optional string trace_id = 18 [(tagger.tags) = "gorm:\"column:trace_id;type:varchar(255);index:idx_sys_api_audit_logs_tenant_trace_id,priority:2;comment:全局链路追踪ID\" json:\"trace_id,omitempty\"", (operator.v1.go_name) = "TraceID"];
+
+  // 当前跨度ID
+  optional string span_id = 19 [(tagger.tags) = "gorm:\"column:span_id;type:varchar(255);comment:当前跨度ID\" json:\"span_id,omitempty\"", (operator.v1.go_name) = "SpanID"];
+
+  // 操作耗时
+  optional uint32 latency_ms = 20 [(tagger.tags) = "gorm:\"column:latency_ms;type:bigint;comment:操作耗时\" json:\"latency_ms,omitempty\"", (operator.v1.go_name) = "LatencyMs"];
+
+  // 操作结果
+  optional bool success = 21 [(tagger.tags) = "gorm:\"column:success;type:boolean;index:idx_sys_api_audit_logs_tenant_status_created_at,priority:3;comment:操作结果\" json:\"success,omitempty\"", (operator.v1.go_name) = "Success"];
+
+  // HTTP状态码
+  optional uint32 status_code = 22 [(tagger.tags) = "gorm:\"column:status_code;type:bigint;index:idx_sys_api_audit_logs_tenant_status_created_at,priority:2;comment:HTTP状态码\" json:\"status_code,omitempty\"", (operator.v1.go_name) = "StatusCode"];
+
+  // 操作失败原因
+  optional string reason = 23 [(tagger.tags) = "gorm:\"column:reason;type:varchar(255);comment:操作失败原因\" json:\"reason,omitempty\"", (operator.v1.go_name) = "Reason"];
+
+  // 请求头
+  optional string request_header = 24 [(tagger.tags) = "gorm:\"column:request_header;type:varchar(255);comment:请求头\" json:\"request_header,omitempty\"", (operator.v1.go_name) = "RequestHeader"];
+
+  // 请求体
+  optional string request_body = 25 [(tagger.tags) = "gorm:\"column:request_body;type:varchar(255);comment:请求体\" json:\"request_body,omitempty\"", (operator.v1.go_name) = "RequestBody"];
+
+  // 响应信息
+  optional string response = 26 [(tagger.tags) = "gorm:\"column:response;type:varchar(255);comment:响应信息\" json:\"response,omitempty\"", (operator.v1.go_name) = "Response"];
+
+  // 日志内容哈希（SHA256，十六进制字符串）
+  optional string log_hash = 27 [(tagger.tags) = "gorm:\"column:log_hash;type:varchar(255);uniqueIndex:uidx_sys_api_audit_logs_tenant_log_hash,priority:2;comment:日志内容哈希（SHA256，十六进制字符串）\" json:\"log_hash,omitempty\"", (operator.v1.go_name) = "LogHash"];
+
+  // 日志数字签名
+  bytes signature = 28 [(tagger.tags) = "gorm:\"column:signature;type:bytea;comment:日志数字签名\" json:\"signature,omitempty\"", (operator.v1.go_name) = "Signature"];
+}

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 登录策略表
+message SysLoginPolicies {
+  option (operator.v1.model) = {
+    entity: "LoginPolicy"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 租户ID
+  optional uint32 tenant_id = 8 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;uniqueIndex:uidx_sys_login_policy_tenant_target_type_method,priority:1;index:idx_sys_login_policy_tenant_type_method,priority:1;index:idx_sys_login_policy_tenant_value,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 目标用户ID
+  optional uint32 target_id = 9 [(tagger.tags) = "gorm:\"column:target_id;type:bigint;uniqueIndex:uidx_sys_login_policy_tenant_target_type_method,priority:2;comment:目标用户ID\" json:\"target_id,omitempty\"", (operator.v1.go_name) = "TargetID"];
+
+  // 限制值（如IP地址、MAC地址或地区代码）
+  optional string value = 10 [(tagger.tags) = "gorm:\"column:value;type:varchar(255);index:idx_sys_login_policy_tenant_value,priority:2;comment:限制值（如IP地址、MAC地址或地区代码）\" json:\"value,omitempty\"", (operator.v1.go_name) = "Value"];
+
+  // 限制原因
+  optional string reason = 11 [(tagger.tags) = "gorm:\"column:reason;type:varchar(255);comment:限制原因\" json:\"reason,omitempty\"", (operator.v1.go_name) = "Reason"];
+
+  // 限制类型
+  optional string type = 12 [(tagger.tags) = "gorm:\"column:type;type:varchar(255);default:BLACKLIST;uniqueIndex:uidx_sys_login_policy_tenant_target_type_method,priority:3;index:idx_sys_login_policy_tenant_type_method,priority:2;comment:限制类型\" json:\"type,omitempty\"", (operator.v1.go_name) = "Type", (operator.v1.enum_values) = { name: "TypeBlacklist" value: "BLACKLIST" }, (operator.v1.enum_values) = { name: "TypeWhitelist" value: "WHITELIST" }];
+
+  // 限制方式
+  optional string method = 13 [(tagger.tags) = "gorm:\"column:method;type:varchar(255);default:IP;uniqueIndex:uidx_sys_login_policy_tenant_target_type_method,priority:4;index:idx_sys_login_policy_tenant_type_method,priority:3;comment:限制方式\" json:\"method,omitempty\"", (operator.v1.go_name) = "Method", (operator.v1.enum_values) = { name: "MethodIp" value: "IP" }, (operator.v1.enum_values) = { name: "MethodMac" value: "MAC" }, (operator.v1.enum_values) = { name: "MethodRegion" value: "REGION" }, (operator.v1.enum_values) = { name: "MethodTime" value: "TIME" }, (operator.v1.enum_values) = { name: "MethodDevice" value: "DEVICE" }];
+}

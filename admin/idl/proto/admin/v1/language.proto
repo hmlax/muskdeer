@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/language_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 语言管理服务
+service LanguageService {
+  // 分页查询语言列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListLanguageResponse) {
+    option (api.get) = "/admin/v1/dict/langs";
+  }
+
+  // 查询语言详情
+  rpc Get(admin.v1.GetLanguageRequest) returns (admin.v1.Language) {
+    option (api.get) = "/admin/v1/dict/langs/:id";
+  }
+
+  // 创建语言
+  rpc Create(admin.v1.CreateLanguageRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/dict/langs";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新语言
+  rpc Update(admin.v1.UpdateLanguageRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/dict/langs/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除语言
+  rpc Delete(admin.v1.DeleteLanguageRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/dict/langs";
+  }
+
+  // 批量创建语言
+  rpc BatchCreate(admin.v1.BatchCreateLanguagesRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/dict/langs/batch";
+    option (admin.http.body) = "*";
+  }
+}

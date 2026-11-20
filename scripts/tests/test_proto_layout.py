@@ -20,7 +20,7 @@ class ProtoLayoutTest(unittest.TestCase):
     def test_service_and_common_owners_keep_existing_wire_namespace(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            for owner in ('common', 'market', 'strategy', 'execution', 'portfolio', 'cron'):
+            for owner in ('common', 'market', 'strategy', 'execution', 'portfolio', 'cron', 'operator'):
                 self.make_source(root, owner + '/model/v1/entity.proto')
             self.make_source(root, 'common/probe/v1/probe.proto', service='service Probe {}')
             validate_layout(root)

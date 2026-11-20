@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+package operator.v1;
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+// API资源表
+message SysApis {
+  option (operator.v1.model) = {entity: "Api"};
+
+  // id
+  uint32 id = 1 [
+    (tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"",
+    (operator.v1.go_name) = "ID",
+    (operator.v1.immutable) = true
+  ];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [
+    (tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_sys_api_res_created_by_created_at,priority:2;index:idx_sys_api_res_created_at,priority:1;comment:创建时间\" json:\"created_at,omitempty\"",
+    (operator.v1.go_name) = "CreatedAt",
+    (operator.v1.immutable) = true
+  ];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [
+    (tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"",
+    (operator.v1.go_name) = "UpdatedAt"
+  ];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [
+    (tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"",
+    (operator.v1.go_name) = "DeletedAt"
+  ];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [
+    (tagger.tags) = "gorm:\"column:created_by;type:bigint;index:idx_sys_api_res_created_by_created_at,priority:1;comment:创建者ID\" json:\"created_by,omitempty\"",
+    (operator.v1.go_name) = "CreatedBy"
+  ];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [
+    (tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"",
+    (operator.v1.go_name) = "UpdatedBy"
+  ];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [
+    (tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"",
+    (operator.v1.go_name) = "DeletedBy"
+  ];
+
+  // 状态
+  optional string status = 8 [
+    (tagger.tags) = "gorm:\"column:status;type:varchar(255);not null;default:ON;comment:状态\" json:\"status,omitempty\"",
+    (operator.v1.go_name) = "Status",
+    (operator.v1.enum_values) = {
+      name: "StatusOff"
+      value: "OFF"
+    },
+    (operator.v1.enum_values) = {
+      name: "StatusOn"
+      value: "ON"
+    }
+  ];
+
+  // 描述
+  optional string description = 9 [
+    (tagger.tags) = "gorm:\"column:description;type:varchar(255);comment:描述\" json:\"description,omitempty\"",
+    (operator.v1.go_name) = "Description"
+  ];
+
+  // 所属业务模块
+  optional string module = 10 [
+    (tagger.tags) = "gorm:\"column:module;type:varchar(255);uniqueIndex:idx_sys_api_res_module_path_method_scope,priority:1;index:idx_sys_api_res_module,priority:1;comment:所属业务模块\" json:\"module,omitempty\"",
+    (operator.v1.go_name) = "Module"
+  ];
+
+  // 业务模块描述
+  optional string module_description = 11 [
+    (tagger.tags) = "gorm:\"column:module_description;type:varchar(255);comment:业务模块描述\" json:\"module_description,omitempty\"",
+    (operator.v1.go_name) = "ModuleDescription"
+  ];
+
+  // 所属业务功能模块
+  optional string business_module = 12 [
+    (tagger.tags) = "gorm:\"column:business_module;type:varchar(255);index:idx_sys_api_res_business_module,priority:1;comment:所属业务功能模块\" json:\"business_module,omitempty\"",
+    (operator.v1.go_name) = "BusinessModule",
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleDashboard"
+      value: "DASHBOARD"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleOpm"
+      value: "OPM"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleSystem"
+      value: "SYSTEM"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleDict"
+      value: "DICT"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleTenant"
+      value: "TENANT"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModulePermission"
+      value: "PERMISSION"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleLog"
+      value: "LOG"
+    },
+    (operator.v1.enum_values) = {
+      name: "BusinessModuleFile"
+      value: "FILE"
+    },
+    (operator.v1.enum_values) = { name: "BusinessModuleMuskdeer" value: "MUSKDEER" }
+  ];
+
+  // 接口操作名
+  optional string operation = 13 [
+    (tagger.tags) = "gorm:\"column:operation;type:varchar(255);comment:接口操作名\" json:\"operation,omitempty\"",
+    (operator.v1.go_name) = "Operation"
+  ];
+
+  // 接口路径
+  optional string path = 14 [
+    (tagger.tags) = "gorm:\"column:path;type:varchar(255);uniqueIndex:idx_sys_api_res_module_path_method_scope,priority:2;index:idx_sys_api_res_path_method,priority:1;comment:接口路径\" json:\"path,omitempty\"",
+    (operator.v1.go_name) = "Path"
+  ];
+
+  // 请求方法
+  optional string method = 15 [
+    (tagger.tags) = "gorm:\"column:method;type:varchar(255);uniqueIndex:idx_sys_api_res_module_path_method_scope,priority:3;index:idx_sys_api_res_path_method,priority:2;comment:请求方法\" json:\"method,omitempty\"",
+    (operator.v1.go_name) = "Method"
+  ];
+
+  // 作用域
+  optional string scope = 16 [
+    (tagger.tags) = "gorm:\"column:scope;type:varchar(255);default:ADMIN;uniqueIndex:idx_sys_api_res_module_path_method_scope,priority:4;index:idx_sys_api_res_scope,priority:1;comment:作用域\" json:\"scope,omitempty\"",
+    (operator.v1.go_name) = "Scope",
+    (operator.v1.enum_values) = {
+      name: "ScopeAdmin"
+      value: "ADMIN"
+    },
+    (operator.v1.enum_values) = {
+      name: "ScopeApp"
+      value: "APP"
+    }
+  ];
+}

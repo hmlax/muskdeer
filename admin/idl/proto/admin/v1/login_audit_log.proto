@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "admin/v1/login_audit_log_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 登录审计日志管理服务
+service LoginAuditLogService {
+  // 查询登录审计日志列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListLoginAuditLogResponse) {
+    option (api.get) = "/admin/v1/login-audit-logs";
+  }
+
+  // 查询登录审计日志详情
+  rpc Get(admin.v1.GetLoginAuditLogRequest) returns (admin.v1.LoginAuditLog) {
+    option (api.get) = "/admin/v1/login-audit-logs/:id";
+  }
+}

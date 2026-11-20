@@ -1,5 +1,7 @@
 # MVP 需求规格 v0.1
 
+2026-11-20 用户要求参考 Bullfrog 将管理后台合并到 Muskdeer 项目。admin、operator、adminfrontend 同仓库维护，管理与交易数据库仍隔离，商户权限和核心 Console mTLS 边界保持；此条替代此前后台独立仓库及不交付后台入口的范围。见[管理后台合并](ADMIN_INTEGRATION.md)。
+
 2026-11-09 最新要求：当前 development_only WashTrade 订阅行情、计算单次量后直接调用 SDK WashTrade，事件处理不进行任何数据库读写；配置/启停独立控制面刷新。旧批次与序号只留历史，不再参与运行，详见 [DIRECT_WASH_TRADE.md](DIRECT_WASH_TRADE.md)。
 
 2026-11-09 进一步明确：做市铺单订单不落库，移除本地订单意图、回执、撤单和订单观察；包含挂单的实时账户快照也不落库。撮合为当前订单权威，数据库仅提供策略/品种/账户配置及启停。旧审计、网格记录和开发合成去重不在本次删除范围，见 [DIRECT_MAKER_QUOTES.md](DIRECT_MAKER_QUOTES.md)。

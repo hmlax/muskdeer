@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/menu_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 后台菜单管理服务
+service MenuService {
+  // 查询菜单列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListMenuResponse) {
+    option (api.get) = "/admin/v1/menus";
+  }
+
+  // 查询菜单详情
+  rpc Get(admin.v1.GetMenuRequest) returns (admin.v1.Menu) {
+    option (api.get) = "/admin/v1/menus/:id";
+  }
+
+  // 创建菜单
+  rpc Create(admin.v1.CreateMenuRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/menus";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新菜单
+  rpc Update(admin.v1.UpdateMenuRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/menus/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除菜单
+  rpc Delete(admin.v1.DeleteMenuRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/menus/:id";
+  }
+
+  // 同步菜单
+  rpc SyncMenus(admin.v1.SyncMenusRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/menus/sync";
+    option (admin.http.body) = "*";
+  }
+}

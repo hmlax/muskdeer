@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 180">
+  <title>Go Admin — 几何字标</title>
+  <defs>
+    <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#70B3FF"/>
+      <stop offset=".5" stop-color="#0D74F2"/>
+      <stop offset="1" stop-color="#005AC2"/>
+    </linearGradient>
+    <path id="cG" d="M70 22 A40 40 0 1 0 82 50 L56 50"/>
+    <circle id="cO" cx="42" cy="50" r="40"/>
+    <path id="cA" d="M0 100 L40 0 L80 100 M16 60 H64"/>
+    <path id="cD" d="M10 0 V100 M10 0 H24 A50 50 0 0 1 24 100 H10"/>
+    <path id="cM" d="M0 100 V0 L40 60 L80 0 V100"/>
+    <path id="cI" d="M10 0 V100"/>
+    <path id="cN" d="M10 100 V0 L74 100 V0"/>
+  </defs>
+  <g transform="translate(36,40)" fill="none" stroke="url(#wg)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round">
+    <use href="#cG"/><use href="#cO" x="116"/><use href="#cA" x="254"/><use href="#cD" x="362"/><use href="#cM" x="470"/><use href="#cI" x="588"/><use href="#cN" x="642"/>
+  </g>
+</svg>

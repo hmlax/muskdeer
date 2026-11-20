@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "admin/v1/online_session_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 在线会话管理服务（在线用户列表 + 强制下线）
+service OnlineSessionService {
+  // 查询在线会话列表
+  rpc ListOnlineSession(admin.v1.ListOnlineSessionRequest) returns (admin.v1.ListOnlineSessionResponse) {
+    option (api.get) = "/admin/v1/online-session/sessions";
+  }
+
+  // 强制下线指定会话
+  rpc ForceLogoutSession(admin.v1.ForceLogoutSessionRequest) returns (admin.v1.ForceLogoutSessionResponse) {
+    option (api.post) = "/admin/v1/online-session/force-logout";
+    option (admin.http.body) = "*";
+  }
+
+  // 查询当前登录用户的在线会话（个人中心自助视图）
+  rpc ListMyOnlineSession(admin.v1.ListMyOnlineSessionRequest) returns (admin.v1.ListOnlineSessionResponse) {
+    option (api.get) = "/admin/v1/online-session/my-sessions";
+  }
+
+  // 当前用户强制下线自己的指定会话
+  rpc RevokeMyOnlineSession(admin.v1.RevokeMyOnlineSessionRequest) returns (admin.v1.RevokeMyOnlineSessionResponse) {
+    option (api.post) = "/admin/v1/online-session/my-sessions/revoke";
+    option (admin.http.body) = "*";
+  }
+}

@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "admin/v1/file_transfer_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 文件传输服务
+service FileTransferService {
+  // 下载文件
+  rpc DownloadFile(admin.v1.DownloadFileRequest) returns (admin.v1.DownloadFileResponse) {
+    option (api.get) = "/admin/v1/file/download";
+  }
+
+  // 上传文件 PUT 方式
+  rpc PutUploadFile(admin.v1.UploadFileRequest) returns (admin.v1.UploadFileResponse) {
+    option (api.put) = "/admin/v1/file/upload";
+    option (admin.http.body) = "*";
+  }
+
+  // 上传文件 POST 方式
+  rpc PostUploadFile(admin.v1.UploadFileRequest) returns (admin.v1.UploadFileResponse) {
+    option (api.post) = "/admin/v1/file/upload";
+    option (admin.http.body) = "*";
+  }
+}

@@ -1,5 +1,7 @@
 # 项目目录与业务归属
 
+2026-11-20：在下述核心边界上合并管理后台。根 admin、operator、adminfrontend 分别拥有 HTTP、管理 RPC 和两套前端；公共代码归 deer/management，operator 契约/模型归 deer/proto/operator/v1 与 deer/pb/operator/v1，生成工具归 scripts/admin。仍只有根 go.mod，管理库独立；核心不得依赖后台实现，operator 仅通过权威 Console 契约调用核心。此条替代下文历史移除 operator、独立后台仓库或禁止 Console 管理 RPC 的范围，详见 [ADMIN_INTEGRATION](ADMIN_INTEGRATION.md)。
+
 顶层原 internal 曾同时放四服务业务、公共领域、跨表事务、迁移和测试夹具。Go 的 internal 只限制导入可见性，不会自动形成服务边界；原来四项目主要只有入口与生命周期装配。
 
 2026-11-03 用户确认按业务下沉，公共部分继续共用。现在不保留顶层 internal，仍是单仓库、单 go.mod、五个独立入口（默认部署四个交易核心），没有复制事务仓储或拆数据库。

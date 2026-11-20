@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/device_info.proto";
+import "operator/v1/geo_location.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 数据访问审计日志表
+message SysDataAccessAuditLogs {
+  option (operator.v1.model) = {
+    entity: "DataAccessAuditLog"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:dataaccessauditlog_ip_address_created_at,priority:2;index:dataaccessauditlog_created_at,priority:1;index:dataaccessauditlog_tenant_id_created_at,priority:2;index:dataaccessauditlog_tenant_id_user_id_created_at,priority:3;index:dataaccessauditlog_access_type_success_created_at,priority:3;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 租户ID
+  optional uint32 tenant_id = 3 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:dataaccessauditlog_tenant_id,priority:1;index:dataaccessauditlog_tenant_id_created_at,priority:1;index:dataaccessauditlog_tenant_id_user_id_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 操作者用户ID
+  optional uint32 user_id = 4 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;index:dataaccessauditlog_user_id,priority:1;index:dataaccessauditlog_tenant_id_user_id_created_at,priority:2;comment:操作者用户ID\" json:\"user_id,omitempty\"", (operator.v1.go_name) = "UserID"];
+
+  // 操作者账号名
+  optional string username = 5 [(tagger.tags) = "gorm:\"column:username;type:varchar(255);index:dataaccessauditlog_username,priority:1;comment:操作者账号名\" json:\"username,omitempty\"", (operator.v1.go_name) = "Username"];
+
+  // IP地址
+  optional string ip_address = 6 [(tagger.tags) = "gorm:\"column:ip_address;type:varchar(255);index:dataaccessauditlog_ip_address,priority:1;index:dataaccessauditlog_ip_address_created_at,priority:1;comment:IP地址\" json:\"ip_address,omitempty\"", (operator.v1.go_name) = "IPAddress"];
+
+  // 地理位置(来自IP库)
+  operator.v1.GeoLocation geo_location = 7 [(tagger.tags) = "gorm:\"column:geo_location;serializer:json;type:json;comment:地理位置(来自IP库)\" json:\"geo_location,omitempty\"", (operator.v1.go_name) = "GeoLocation"];
+
+  // 设备信息
+  operator.v1.DeviceInfo device_info = 8 [(tagger.tags) = "gorm:\"column:device_info;serializer:json;type:json;comment:设备信息\" json:\"device_info,omitempty\"", (operator.v1.go_name) = "DeviceInfo"];
+
+  // 全局请求ID
+  optional string request_id = 9 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(255);index:dataaccessauditlog_request_id,priority:1;comment:全局请求ID\" json:\"request_id,omitempty\"", (operator.v1.go_name) = "RequestID"];
+
+  // 全局链路追踪ID
+  optional string trace_id = 10 [(tagger.tags) = "gorm:\"column:trace_id;type:varchar(255);index:dataaccessauditlog_trace_id,priority:1;comment:全局链路追踪ID\" json:\"trace_id,omitempty\"", (operator.v1.go_name) = "TraceID"];
+
+  // 数据源类型
+  optional string data_source = 11 [(tagger.tags) = "gorm:\"column:data_source;type:varchar(255);index:dataaccessauditlog_data_source_table_name_data_id,priority:1;comment:数据源类型\" json:\"data_source,omitempty\"", (operator.v1.go_name) = "DataSource"];
+
+  // 数据表名
+  optional string table_name = 12 [(tagger.tags) = "gorm:\"column:table_name;type:varchar(255);index:dataaccessauditlog_data_source_table_name_data_id,priority:2;comment:数据表名\" json:\"table_name,omitempty\"", (operator.v1.go_name) = "TableName"];
+
+  // 数据主键ID
+  optional string data_id = 13 [(tagger.tags) = "gorm:\"column:data_id;type:varchar(255);index:dataaccessauditlog_data_source_table_name_data_id,priority:3;comment:数据主键ID\" json:\"data_id,omitempty\"", (operator.v1.go_name) = "DataID"];
+
+  // 数据访问类型
+  optional string access_type = 14 [(tagger.tags) = "gorm:\"column:access_type;type:varchar(255);index:dataaccessauditlog_access_type,priority:1;index:dataaccessauditlog_access_type_success_created_at,priority:1;comment:数据访问类型\" json:\"access_type,omitempty\"", (operator.v1.go_name) = "AccessType", (operator.v1.enum_values) = { name: "AccessTypeSelect" value: "SELECT" }, (operator.v1.enum_values) = { name: "AccessTypeInsert" value: "INSERT" }, (operator.v1.enum_values) = { name: "AccessTypeUpdate" value: "UPDATE" }, (operator.v1.enum_values) = { name: "AccessTypeDelete" value: "DELETE" }, (operator.v1.enum_values) = { name: "AccessTypeView" value: "VIEW" }, (operator.v1.enum_values) = { name: "AccessTypeBulkRead" value: "BULK_READ" }, (operator.v1.enum_values) = { name: "AccessTypeExport" value: "EXPORT" }, (operator.v1.enum_values) = { name: "AccessTypeImport" value: "IMPORT" }, (operator.v1.enum_values) = { name: "AccessTypeDDLCreate" value: "DDL_CREATE" }, (operator.v1.enum_values) = { name: "AccessTypeDDLAlter" value: "DDL_ALTER" }, (operator.v1.enum_values) = { name: "AccessTypeDDLDrop" value: "DDL_DROP" }, (operator.v1.enum_values) = { name: "AccessTypeMetadataRead" value: "METADATA_READ" }, (operator.v1.enum_values) = { name: "AccessTypeScan" value: "SCAN" }, (operator.v1.enum_values) = { name: "AccessTypeAdminOperation" value: "ADMIN_OPERATION" }, (operator.v1.enum_values) = { name: "AccessTypeOther" value: "OTHER" }];
+
+  // 执行的SQL语句摘要
+  optional string sql_digest = 15 [(tagger.tags) = "gorm:\"column:sql_digest;type:varchar(255);index:dataaccessauditlog_sql_digest,priority:1;comment:执行的SQL语句摘要\" json:\"sql_digest,omitempty\"", (operator.v1.go_name) = "SQLDigest"];
+
+  // 执行的SQL语句
+  optional string sql_text = 16 [(tagger.tags) = "gorm:\"column:sql_text;type:varchar(255);comment:执行的SQL语句\" json:\"sql_text,omitempty\"", (operator.v1.go_name) = "SQLText"];
+
+  // 影响行数
+  optional uint32 affected_rows = 17 [(tagger.tags) = "gorm:\"column:affected_rows;type:bigint;comment:影响行数\" json:\"affected_rows,omitempty\"", (operator.v1.go_name) = "AffectedRows"];
+
+  // 延迟时间（毫秒）
+  optional uint32 latency_ms = 18 [(tagger.tags) = "gorm:\"column:latency_ms;type:bigint;comment:延迟时间（毫秒）\" json:\"latency_ms,omitempty\"", (operator.v1.go_name) = "LatencyMs"];
+
+  // 操作结果
+  optional bool success = 19 [(tagger.tags) = "gorm:\"column:success;type:boolean;index:dataaccessauditlog_access_type_success_created_at,priority:2;comment:操作结果\" json:\"success,omitempty\"", (operator.v1.go_name) = "Success"];
+
+  // 数据敏感级别
+  optional string sensitive_level = 20 [(tagger.tags) = "gorm:\"column:sensitive_level;type:varchar(255);comment:数据敏感级别\" json:\"sensitive_level,omitempty\"", (operator.v1.go_name) = "SensitiveLevel", (operator.v1.enum_values) = { name: "SensitiveLevelPublic" value: "PUBLIC" }, (operator.v1.enum_values) = { name: "SensitiveLevelInternal" value: "INTERNAL" }, (operator.v1.enum_values) = { name: "SensitiveLevelConfidential" value: "CONFIDENTIAL" }, (operator.v1.enum_values) = { name: "SensitiveLevelSecret" value: "SECRET" }];
+
+  // 是否已脱敏
+  optional bool data_masked = 21 [(tagger.tags) = "gorm:\"column:data_masked;type:boolean;index:dataaccessauditlog_data_masked,priority:1;comment:是否已脱敏\" json:\"data_masked,omitempty\"", (operator.v1.go_name) = "DataMasked"];
+
+  // 脱敏规则
+  optional string masking_rules = 22 [(tagger.tags) = "gorm:\"column:masking_rules;type:varchar(255);comment:脱敏规则\" json:\"masking_rules,omitempty\"", (operator.v1.go_name) = "MaskingRules"];
+
+  // 业务处理目的
+  optional string business_purpose = 23 [(tagger.tags) = "gorm:\"column:business_purpose;type:varchar(255);comment:业务处理目的\" json:\"business_purpose,omitempty\"", (operator.v1.go_name) = "BusinessPurpose"];
+
+  // 数据分类标签
+  optional string data_category = 24 [(tagger.tags) = "gorm:\"column:data_category;type:varchar(255);comment:数据分类标签\" json:\"data_category,omitempty\"", (operator.v1.go_name) = "DataCategory"];
+
+  // 数据库用户
+  optional string db_user = 25 [(tagger.tags) = "gorm:\"column:db_user;type:varchar(255);comment:数据库用户\" json:\"db_user,omitempty\"", (operator.v1.go_name) = "DbUser"];
+
+  // 日志内容哈希（SHA256，十六进制字符串）
+  optional string log_hash = 26 [(tagger.tags) = "gorm:\"column:log_hash;type:varchar(255);comment:日志内容哈希（SHA256，十六进制字符串）\" json:\"log_hash,omitempty\"", (operator.v1.go_name) = "LogHash"];
+
+  // 日志数字签名
+  bytes signature = 27 [(tagger.tags) = "gorm:\"column:signature;type:bytea;comment:日志数字签名\" json:\"signature,omitempty\"", (operator.v1.go_name) = "Signature"];
+}

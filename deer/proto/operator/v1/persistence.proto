@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/descriptor.proto";
+
+// A relation is generated together with the model; it never selects a table by name.
+message Relation {
+  string name = 1;
+  string target = 2;
+  string foreign_key = 3;
+  string references = 4;
+  bool many = 5;
+}
+
+message Model {
+  string entity = 1;
+  repeated Relation relations = 2;
+  bool data_scope = 3;
+}
+
+message EnumValue {
+  string name = 1;
+  string value = 2;
+}
+
+extend google.protobuf.MessageOptions {
+  Model model = 51300;
+}
+
+extend google.protobuf.FieldOptions {
+  string go_name = 51301;
+  repeated EnumValue enum_values = 51302;
+  uint64 min_len = 51303;
+  uint64 max_len = 51304;
+  bool immutable = 51305;
+}

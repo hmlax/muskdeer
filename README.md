@@ -1,5 +1,7 @@
 # Muskdeer
 
+管理后台与核心服务共用本仓库：`admin/`、`operator/`、`adminfrontend/`，统一 Go module 和构建入口，管理库继续独立。安装、生成、构建和运行见[管理后台](docs/ADMIN_INTEGRATION.md)。
+
 当前开发 WashTrade：订阅行情后计算并直发 SDK，每笔处理零数据库操作；配置与启停独立维护，见 [直发说明](docs/DIRECT_WASH_TRADE.md)。
 
 2026-11-09 最新：当前做市铺单订单直接交给撮合，不再写本地意图、回执、撤单或订单观察；包含挂单的实时账户快照仅在内存短期缓存。策略配置与启停仍从数据库读取，旧审计及其他策略记录保留，见[铺单直连说明](docs/DIRECT_MAKER_QUOTES.md)。
@@ -8,23 +10,26 @@
 
 连接既有交易所的自营做市与策略交易项目。当前交付 market、strategy、execution、portfolio 四个独立交易核心服务，以及具备 gRPC 健康检查的独立 cron 基础进程，使用 gRPC 和 Nacos 通信，继续共用一个 Go module。
 
-管理 HTTP、前端、管理开户命令及 OpenAPI/浏览器工具已按当前需求移出本仓库。核心服务保留 mTLS、参数检查、幂等和状态机；当前通道取消数据库进程租约及历史预留汇总，历史迁移和审计记录保留。
+管理 HTTP、operator 及两套管理前端现统一在本仓库维护；管理数据库独立，operator 通过经过 mTLS 认证的 Console gRPC 访问核心。核心服务保留参数检查、幂等和状态机；当前通道取消数据库进程租约及历史预留汇总，历史迁移和审计记录保留。
 
 公开仓库：[hmlax/muskdeer](https://github.com/hmlax/muskdeer)。Go module：`github.com/hmlax/muskdeer`。
 
 ## 核心服务
 
-| 服务 | 独立入口 | 本机 gRPC | 主要职责 |
+| 服务 | 独立入口 | 本机接口 | 主要职责 |
 |---|---|---|---|
 | market | market/cmd | 127.0.0.1:59002 | Binance/OKX 行情、质量与参考价 |
 | strategy | strategy/cmd | 127.0.0.1:59003 | 策略实例、报价计划与执行/行情客户端 |
 | execution | execution/cmd | 127.0.0.1:59004 | 意图、OMS、风险、撤单恢复与 outbox |
 | portfolio | portfolio/cmd | 127.0.0.1:59005 | 成交消费、幂等投影与恢复查询 |
 | cron | cron/cmd | 127.0.0.1:59006 | 独立生命周期与健康检查；尚无定期业务 |
+| admin | admin | HTTP 17788（容器内 7788） | JWT、会话、RBAC 与管理 HTTP |
+| operator | operator/cmd/server | 内网 gRPC 7790 | 管理库与商户范围、核心 Console 客户端 |
+| adminfrontend | adminfrontend/platform-admin、merchant-admin | 15888、15889 | 平台与商户两套 React 应用 |
 
-五个进程均提供 `grpc.health.v1.Health/Check`、`Watch`、`List`，服务名为空或 `<service>.grpc`。cron 可独立构建，默认 Compose 仍只启动四个交易核心。
+五个核心进程均提供 `grpc.health.v1.Health/Check`、`Watch`、`List`，服务名为空或 `<service>.grpc`。cron 可独立构建，默认 Compose 仍只启动四个交易核心；后台由 compose.admin.yml 的 admin profile 显式部署。
 
-每个进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，基础连接与服务配置从 Nacos 的 data.yaml/service.yaml 配对读取，铺单、网格、WashTrade 等全部业务执行参数从数据库读取。更新后显式重启，字段与维护说明见[数据库业务执行参数](docs/DATABASE_PARAMETERS.md)。
+每个核心进程使用自己的 Wire injector、internal/app ProviderSet 和一个 `deer.Deer`。核心命令无参数，Nacos 连接从 env 读取，基础连接与服务配置从 Nacos 的 data.yaml/service.yaml 配对读取，铺单、网格、WashTrade 等全部业务执行参数从数据库读取。更新后显式重启，字段与维护说明见[数据库业务执行参数](docs/DATABASE_PARAMETERS.md)。
 
 `model` 下的 Proto 是本项目数据库实体的唯一结构定义，用于生成带 GORM 标签的 Go 模型，保存订单、策略、额度、持仓等业务记录；技术样例模型已移除。
 
@@ -69,6 +74,7 @@ docker compose down
 ```sh
 make doctor
 make tools
+make admin-deps
 make generate-check
 make wire-check
 make verify

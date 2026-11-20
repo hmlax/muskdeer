@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/user_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 用户管理服务
+service UserService {
+  // 获取用户列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListUserResponse) {
+    option (api.get) = "/admin/v1/users";
+  }
+
+  // 获取用户数据
+  rpc Get(admin.v1.GetUserRequest) returns (admin.v1.User) {
+    option (api.get) = "/admin/v1/users/:id";
+  }
+
+  // 获取用户数据
+  rpc GetByUsername(admin.v1.GetUserRequest) returns (admin.v1.User) {
+    option (api.get) = "/admin/v1/users/username/:username";
+    option (admin.http.rpc) = "Get";
+  }
+
+  // 创建用户
+  rpc Create(admin.v1.CreateUserRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/users";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新用户
+  rpc Update(admin.v1.UpdateUserRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/users/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除用户
+  rpc Delete(admin.v1.DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/users/:id";
+  }
+
+  // 删除用户
+  rpc DeleteByUsername(admin.v1.DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/users/username/:username";
+    option (admin.http.rpc) = "Delete";
+  }
+
+  // 用户是否存在
+  rpc UserExists(admin.v1.UserExistsRequest) returns (admin.v1.UserExistsResponse) {
+    option (api.get) = "/admin/v1/users:exists";
+  }
+
+  // 修改用户密码
+  rpc EditUserPassword(admin.v1.EditUserPasswordRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/users/:user_id/password";
+    option (admin.http.body) = "*";
+  }
+}

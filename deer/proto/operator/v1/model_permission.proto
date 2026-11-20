@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 权限点表
+message SysPermissions {
+  option (operator.v1.model) = {
+    entity: "Permission"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 状态
+  optional string status = 8 [(tagger.tags) = "gorm:\"column:status;type:varchar(255);not null;default:ON;comment:状态\" json:\"status,omitempty\"", (operator.v1.go_name) = "Status", (operator.v1.enum_values) = { name: "StatusOff" value: "OFF" }, (operator.v1.enum_values) = { name: "StatusOn" value: "ON" }];
+
+  // 描述
+  optional string description = 9 [(tagger.tags) = "gorm:\"column:description;type:varchar(255);comment:描述\" json:\"description,omitempty\"", (operator.v1.go_name) = "Description"];
+
+  // 权限名称（如：删除用户）
+  optional string name = 10 [(tagger.tags) = "gorm:\"column:name;type:varchar(255);not null;index:idx_perm_name,priority:1;comment:权限名称（如：删除用户）\" json:\"name,omitempty\"", (operator.v1.go_name) = "Name", (operator.v1.min_len) = 1];
+
+  // 权限编码（如：opm:user:delete、order:export）
+  optional string code = 11 [(tagger.tags) = "gorm:\"column:code;type:varchar(255);not null;uniqueIndex:uix_perm_code,priority:1;comment:权限编码（如：opm:user:delete、order:export）\" json:\"code,omitempty\"", (operator.v1.go_name) = "Code"];
+
+  // 关联权限分组 ID
+  optional uint32 group_id = 12 [(tagger.tags) = "gorm:\"column:group_id;type:bigint;index:idx_perm_group_id,priority:1;comment:关联权限分组 ID\" json:\"group_id,omitempty\"", (operator.v1.go_name) = "GroupID"];
+}

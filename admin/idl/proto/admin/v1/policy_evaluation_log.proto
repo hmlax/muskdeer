@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "admin/v1/policy_evaluation_log_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 策略评估日志服务
+service PolicyEvaluationLogService {
+  // 查询策略评估日志列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListPolicyEvaluationLogResponse) {
+    option (api.get) = "/admin/v1/policy-evaluation-logs";
+  }
+
+  // 查询策略评估日志详情
+  rpc Get(admin.v1.GetPolicyEvaluationLogRequest) returns (admin.v1.PolicyEvaluationLog) {
+    option (api.get) = "/admin/v1/policy-evaluation-logs/:id";
+  }
+}

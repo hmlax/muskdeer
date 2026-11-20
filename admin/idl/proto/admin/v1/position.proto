@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/position_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 职位管理服务
+service PositionService {
+  // 查询职位列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListPositionResponse) {
+    option (api.get) = "/admin/v1/positions";
+  }
+
+  // 查询职位详情
+  rpc Get(admin.v1.GetPositionRequest) returns (admin.v1.Position) {
+    option (api.get) = "/admin/v1/positions/:id";
+  }
+
+  // 创建职位
+  rpc Create(admin.v1.CreatePositionRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/positions";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新职位
+  rpc Update(admin.v1.UpdatePositionRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/positions/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除职位
+  rpc Delete(admin.v1.DeletePositionRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/positions/:id";
+  }
+}

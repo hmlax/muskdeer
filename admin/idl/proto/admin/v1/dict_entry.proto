@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/dict_entry_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 数据字典条目管理服务
+service DictEntryService {
+  // 分页查询字典条目列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListDictEntryResponse) {
+    option (api.get) = "/admin/v1/dict/entries";
+  }
+
+  // 创建字典条目
+  rpc Create(admin.v1.CreateDictEntryRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/dict/entries";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新字典条目
+  rpc Update(admin.v1.UpdateDictEntryRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/dict/entries/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除字典条目
+  rpc Delete(admin.v1.DeleteDictEntryRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/dict/entries";
+  }
+
+  // 查询启用的字典条目
+  rpc ListByTypeCode(admin.v1.ListDictEntryByTypeCodeRequest) returns (admin.v1.ListDictEntryByTypeCodeResponse) {
+    option (api.get) = "/admin/v1/dict/entries/by-type-code";
+  }
+}

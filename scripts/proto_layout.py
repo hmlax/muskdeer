@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 
 SERVICES = ('market', 'strategy', 'execution', 'portfolio', 'cron')
-OWNERS = ('common', *SERVICES)
+OWNERS = ('common', 'operator', *SERVICES)
 MODULE = 'github.com/hmlax/muskdeer/'
 
 

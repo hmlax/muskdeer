@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package admin.http;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin;httpanno";
+
+// HTTP contracts own their messages; these options select body and RPC adapters.
+// api.get/post/... own the route; these options preserve body and RPC mapping.
+extend google.protobuf.MethodOptions {
+  optional string body = 70001; // "*" is the complete request; "data" wraps CRUD data.
+  optional string rpc = 70002; // Alternate HTTP binding forwarding to this operator method.
+}

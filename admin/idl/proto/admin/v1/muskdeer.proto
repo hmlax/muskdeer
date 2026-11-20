@@ -1,0 +1,78 @@
+syntax = "proto3";
+package admin.v1;
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+import "admin/http.proto";
+import "hertz/api.proto";
+import "admin/v1/muskdeer_types.proto";
+
+// 平台提供公共配置；商户独立配置和操作其账户及策略实例。
+service MuskdeerService {
+ rpc CreateAccount(MuskdeerCreateAccountRequest) returns (MuskdeerAccount) {
+  option (api.post) = "/admin/v1/muskdeer/accounts";
+  option (admin.http.body) = "*";
+ }
+ rpc ListAccountBindings(MuskdeerBindingListRequest) returns (MuskdeerBindingPage) {
+  option (api.get) = "/admin/v1/muskdeer/account-bindings";
+ }
+ rpc CreateAccountBinding(MuskdeerCreateBindingRequest) returns (MuskdeerAccountBinding) {
+  option (api.post) = "/admin/v1/muskdeer/account-bindings";
+  option (admin.http.body) = "*";
+ }
+ rpc SetAccountBindingEnabled(MuskdeerSetBindingEnabledRequest) returns (MuskdeerAccountBinding) {
+  option (api.post) = "/admin/v1/muskdeer/account-bindings/:id/set-enabled";
+  option (admin.http.body) = "*";
+ }
+ rpc GetOverview(MuskdeerOverviewRequest) returns (MuskdeerOverview) {
+  option (api.get) = "/admin/v1/muskdeer/overview";
+ }
+ rpc ListTemplates(MuskdeerListRequest) returns (MuskdeerTemplatePage) {
+  option (api.get) = "/admin/v1/muskdeer/templates";
+ }
+ rpc ListGateways(MuskdeerOverviewRequest) returns (MuskdeerGatewayPage) {
+  option (api.get) = "/admin/v1/muskdeer/gateways";
+ }
+ rpc ListInstances(MuskdeerInstanceListRequest) returns (MuskdeerInstancePage) {
+  option (api.get) = "/admin/v1/muskdeer/instances";
+ }
+ rpc GetInstance(MuskdeerInstanceRequest) returns (MuskdeerInstance) {
+  option (api.get) = "/admin/v1/muskdeer/instances/:id";
+ }
+ rpc CreateInstance(MuskdeerCreateInstanceRequest) returns (MuskdeerInstance) {
+  option (api.post) = "/admin/v1/muskdeer/instances";
+  option (admin.http.body) = "*";
+ }
+ rpc UpdateInstance(MuskdeerUpdateInstanceRequest) returns (MuskdeerInstance) {
+  option (api.put) = "/admin/v1/muskdeer/instances/:id";
+  option (admin.http.body) = "*";
+ }
+ rpc StartInstance(MuskdeerRunningRequest) returns (MuskdeerInstance) {
+  option (api.post) = "/admin/v1/muskdeer/instances/:id/start";
+  option (admin.http.body) = "*";
+ }
+ rpc StopInstance(MuskdeerRunningRequest) returns (MuskdeerInstance) {
+  option (api.post) = "/admin/v1/muskdeer/instances/:id/stop";
+  option (admin.http.body) = "*";
+ }
+ rpc ListInstruments(MuskdeerListRequest) returns (MuskdeerInstrumentPage) {
+  option (api.get) = "/admin/v1/muskdeer/instruments";
+ }
+ rpc ListAccounts(MuskdeerListRequest) returns (MuskdeerAccountPage) {
+  option (api.get) = "/admin/v1/muskdeer/accounts";
+ }
+ rpc ListOrderRecords(MuskdeerRecordListRequest) returns (MuskdeerOrderPage) {
+  option (api.get) = "/admin/v1/muskdeer/order-records";
+ }
+ rpc ListCancellations(MuskdeerRecordListRequest) returns (MuskdeerCancellationPage) {
+  option (api.get) = "/admin/v1/muskdeer/cancellations";
+ }
+ rpc ListSyntheticRecords(MuskdeerRecordListRequest) returns (MuskdeerSyntheticPage) {
+  option (api.get) = "/admin/v1/muskdeer/synthetic-records";
+ }
+ rpc GetAccountSnapshot(MuskdeerAccountRequest) returns (MuskdeerAccountSnapshot) {
+  option (api.get) = "/admin/v1/muskdeer/account-snapshot";
+ }
+ rpc CancelInstanceOrders(MuskdeerCancelRequest) returns (MuskdeerCancelReply) {
+  option (api.post) = "/admin/v1/muskdeer/instances/:instance_id/cancel-orders";
+  option (admin.http.body) = "*";
+ }
+}

@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/device_info.proto";
+import "operator/v1/geo_location.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 登录审计日志表
+message SysLoginAuditLogs {
+  option (operator.v1.model) = {
+    entity: "LoginAuditLog"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:loginauditlog_ip_address_created_at,priority:2;index:loginauditlog_created_at,priority:1;index:loginauditlog_tenant_id_created_at,priority:2;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 租户ID
+  optional uint32 tenant_id = 3 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:loginauditlog_tenant_id,priority:1;index:loginauditlog_tenant_id_created_at,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 操作者用户ID
+  optional uint32 user_id = 4 [(tagger.tags) = "gorm:\"column:user_id;type:bigint;index:loginauditlog_user_id,priority:1;comment:操作者用户ID\" json:\"user_id,omitempty\"", (operator.v1.go_name) = "UserID"];
+
+  // 操作者账号名
+  optional string username = 5 [(tagger.tags) = "gorm:\"column:username;type:varchar(255);index:loginauditlog_username,priority:1;comment:操作者账号名\" json:\"username,omitempty\"", (operator.v1.go_name) = "Username"];
+
+  // IP地址
+  optional string ip_address = 6 [(tagger.tags) = "gorm:\"column:ip_address;type:varchar(255);index:loginauditlog_ip_address,priority:1;index:loginauditlog_ip_address_created_at,priority:1;comment:IP地址\" json:\"ip_address,omitempty\"", (operator.v1.go_name) = "IPAddress"];
+
+  // 地理位置(来自IP库)
+  operator.v1.GeoLocation geo_location = 7 [(tagger.tags) = "gorm:\"column:geo_location;serializer:json;type:json;comment:地理位置(来自IP库)\" json:\"geo_location,omitempty\"", (operator.v1.go_name) = "GeoLocation"];
+
+  // 会话ID
+  optional string session_id = 8 [(tagger.tags) = "gorm:\"column:session_id;type:varchar(255);index:loginauditlog_session_id,priority:1;comment:会话ID\" json:\"session_id,omitempty\"", (operator.v1.go_name) = "SessionID"];
+
+  // 设备信息
+  operator.v1.DeviceInfo device_info = 9 [(tagger.tags) = "gorm:\"column:device_info;serializer:json;type:json;comment:设备信息\" json:\"device_info,omitempty\"", (operator.v1.go_name) = "DeviceInfo"];
+
+  // 全局请求ID
+  optional string request_id = 10 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(255);index:loginauditlog_request_id,priority:1;comment:全局请求ID\" json:\"request_id,omitempty\"", (operator.v1.go_name) = "RequestID"];
+
+  // 全局链路追踪ID
+  optional string trace_id = 11 [(tagger.tags) = "gorm:\"column:trace_id;type:varchar(255);comment:全局链路追踪ID\" json:\"trace_id,omitempty\"", (operator.v1.go_name) = "TraceID"];
+
+  // 事件动作类型
+  optional string action_type = 12 [(tagger.tags) = "gorm:\"column:action_type;type:varchar(255);index:loginauditlog_action_type,priority:1;comment:事件动作类型\" json:\"action_type,omitempty\"", (operator.v1.go_name) = "ActionType", (operator.v1.enum_values) = { name: "ActionTypeLogin" value: "LOGIN" }, (operator.v1.enum_values) = { name: "ActionTypeLogout" value: "LOGOUT" }, (operator.v1.enum_values) = { name: "ActionTypeSessionExpired" value: "SESSION_EXPIRED" }, (operator.v1.enum_values) = { name: "ActionTypeKickedOut" value: "KICKED_OUT" }, (operator.v1.enum_values) = { name: "ActionTypePasswordReset" value: "PASSWORD_RESET" }];
+
+  // 操作结果状态
+  optional string status = 13 [(tagger.tags) = "gorm:\"column:status;type:varchar(255);index:loginauditlog_status,priority:1;comment:操作结果状态\" json:\"status,omitempty\"", (operator.v1.go_name) = "Status", (operator.v1.enum_values) = { name: "StatusSuccess" value: "SUCCESS" }, (operator.v1.enum_values) = { name: "StatusFailed" value: "FAILED" }, (operator.v1.enum_values) = { name: "StatusPartial" value: "PARTIAL" }, (operator.v1.enum_values) = { name: "StatusLocked" value: "LOCKED" }];
+
+  // 登录方式
+  optional string login_method = 14 [(tagger.tags) = "gorm:\"column:login_method;type:varchar(255);comment:登录方式\" json:\"login_method,omitempty\"", (operator.v1.go_name) = "LoginMethod", (operator.v1.enum_values) = { name: "LoginMethodPassword" value: "PASSWORD" }, (operator.v1.enum_values) = { name: "LoginMethodSmsCode" value: "SMS_CODE" }, (operator.v1.enum_values) = { name: "LoginMethodQrCode" value: "QR_CODE" }, (operator.v1.enum_values) = { name: "LoginMethodOidcSocial" value: "OIDC_SOCIAL" }, (operator.v1.enum_values) = { name: "LoginMethodBiometric" value: "BIOMETRIC" }, (operator.v1.enum_values) = { name: "LoginMethodFido2" value: "FIDO2" }];
+
+  // 失败原因
+  optional string failure_reason = 15 [(tagger.tags) = "gorm:\"column:failure_reason;type:varchar(255);comment:失败原因\" json:\"failure_reason,omitempty\"", (operator.v1.go_name) = "FailureReason"];
+
+  // MFA状态
+  optional string mfa_status = 16 [(tagger.tags) = "gorm:\"column:mfa_status;type:varchar(255);comment:MFA状态\" json:\"mfa_status,omitempty\"", (operator.v1.go_name) = "MfaStatus"];
+
+  // 风险评分（0-100，分值越高风险越大）
+  optional uint32 risk_score = 17 [(tagger.tags) = "gorm:\"column:risk_score;type:bigint;comment:风险评分（0-100，分值越高风险越大）\" json:\"risk_score,omitempty\"", (operator.v1.go_name) = "RiskScore"];
+
+  // 风险等级（高风险需实时告警）
+  optional string risk_level = 18 [(tagger.tags) = "gorm:\"column:risk_level;type:varchar(255);comment:风险等级（高风险需实时告警）\" json:\"risk_level,omitempty\"", (operator.v1.go_name) = "RiskLevel", (operator.v1.enum_values) = { name: "RiskLevelLow" value: "LOW" }, (operator.v1.enum_values) = { name: "RiskLevelMedium" value: "MEDIUM" }, (operator.v1.enum_values) = { name: "RiskLevelHigh" value: "HIGH" }];
+
+  // 风险因素（ISO 27001标准，如：异地登录/新设备/密码尝试次数过多）
+  repeated string risk_factors = 19 [(tagger.tags) = "gorm:\"column:risk_factors;serializer:json;type:json;comment:风险因素（ISO 27001标准，如：异地登录/新设备/密码尝试次数过多）\" json:\"risk_factors,omitempty\"", (operator.v1.go_name) = "RiskFactors"];
+
+  // 日志内容哈希（SHA256，十六进制字符串）
+  optional string log_hash = 20 [(tagger.tags) = "gorm:\"column:log_hash;type:varchar(255);comment:日志内容哈希（SHA256，十六进制字符串）\" json:\"log_hash,omitempty\"", (operator.v1.go_name) = "LogHash"];
+
+  // 日志数字签名
+  bytes signature = 21 [(tagger.tags) = "gorm:\"column:signature;type:bytea;comment:日志数字签名\" json:\"signature,omitempty\"", (operator.v1.go_name) = "Signature"];
+}

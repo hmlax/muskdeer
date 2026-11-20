@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 角色字段权限配置表
+message SysRoleFieldPermissions {
+  option (operator.v1.model) = {
+    entity: "RoleFieldPermission"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 更新时间
+  google.protobuf.Timestamp updated_at = 3 [(tagger.tags) = "gorm:\"column:updated_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:更新时间\" json:\"updated_at,omitempty\"", (operator.v1.go_name) = "UpdatedAt"];
+
+  // 删除时间
+  google.protobuf.Timestamp deleted_at = 4 [(tagger.tags) = "gorm:\"column:deleted_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;comment:删除时间\" json:\"deleted_at,omitempty\"", (operator.v1.go_name) = "DeletedAt"];
+
+  // 创建者ID
+  optional uint32 created_by = 5 [(tagger.tags) = "gorm:\"column:created_by;type:bigint;comment:创建者ID\" json:\"created_by,omitempty\"", (operator.v1.go_name) = "CreatedBy"];
+
+  // 更新者ID
+  optional uint32 updated_by = 6 [(tagger.tags) = "gorm:\"column:updated_by;type:bigint;comment:更新者ID\" json:\"updated_by,omitempty\"", (operator.v1.go_name) = "UpdatedBy"];
+
+  // 删除者ID
+  optional uint32 deleted_by = 7 [(tagger.tags) = "gorm:\"column:deleted_by;type:bigint;comment:删除者ID\" json:\"deleted_by,omitempty\"", (operator.v1.go_name) = "DeletedBy"];
+
+  // 租户ID
+  optional uint32 tenant_id = 8 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;uniqueIndex:uix_rfp_tenant_role_resource_field,priority:1;index:idx_rfp_tenant_role,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 角色ID（关联sys_roles.id）
+  optional uint32 role_id = 9 [(tagger.tags) = "gorm:\"column:role_id;type:bigint;not null;uniqueIndex:uix_rfp_tenant_role_resource_field,priority:2;index:idx_rfp_tenant_role,priority:2;comment:角色ID（关联sys_roles.id）\" json:\"role_id,omitempty\"", (operator.v1.go_name) = "RoleID"];
+
+  // 资源名（proto 消息名，如 User）
+  optional string resource = 10 [(tagger.tags) = "gorm:\"column:resource;type:varchar(128);not null;uniqueIndex:uix_rfp_tenant_role_resource_field,priority:3;comment:资源名（proto 消息名，如 User）\" json:\"resource,omitempty\"", (operator.v1.go_name) = "Resource", (operator.v1.max_len) = 128];
+
+  // 字段名（proto 字段 json_name，如 email）
+  optional string field_name = 11 [(tagger.tags) = "gorm:\"column:field_name;type:varchar(128);not null;uniqueIndex:uix_rfp_tenant_role_resource_field,priority:4;comment:字段名（proto 字段 json_name，如 email）\" json:\"field_name,omitempty\"", (operator.v1.go_name) = "FieldName", (operator.v1.max_len) = 128];
+}

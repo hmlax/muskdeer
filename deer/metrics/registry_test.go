@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"google.golang.org/grpc/codes"
 )
 
@@ -29,7 +30,7 @@ func TestMetricsRemainExactAndPrometheusCompatible(t *testing.T) {
 			t.Fatalf("missing exact metric %s", sample)
 		}
 	}
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.LegacyValidation)
 	families, err := parser.TextToMetricFamilies(strings.NewReader(output))
 	if err != nil || len(families) != 3 {
 		t.Fatalf("Prometheus parser = %d families, %v", len(families), err)
@@ -54,7 +55,7 @@ func TestMetricsBoundLabelsAndJoinConcurrentUpdates(t *testing.T) {
 	}
 	work.Go(func() {
 		for range 20 {
-			var parser expfmt.TextParser
+			parser := expfmt.NewTextParser(model.LegacyValidation)
 			families, err := parser.TextToMetricFamilies(strings.NewReader(string(registry.Render())))
 			if err != nil {
 				t.Error(err)

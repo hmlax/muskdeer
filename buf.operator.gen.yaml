@@ -1,0 +1,45 @@
+version: v2
+
+clean: false
+
+
+inputs:
+  - directory: .
+    paths:
+      - deer/proto/operator/v1
+
+plugins:
+  # generate go code
+  #- plugin: buf.build/protocolbuffers/go
+  - local: protoc-gen-go
+    out: deer/pb
+    opt: paths=source_relative # use relative paths
+
+  # generate grpc service code
+  #- plugin: buf.build/grpc/go
+  - local: protoc-gen-go-grpc
+    out: deer/pb
+    opt:
+      - paths=source_relative # use relative paths
+
+  # generate kratos errors code
+  - local: [go, run, ./scripts/admin/tools/errorgen]
+    strategy: all
+    out: deer/pb
+    opt:
+      - paths=source_relative # use relative paths
+
+  # generate message validator code
+  #- plugin: buf.build/bufbuild/validate-go
+  - local: protoc-gen-validate
+    out: deer/pb
+    opt:
+      - paths=source_relative # use relative paths
+      - lang=go
+
+  # generate redact code
+  - local: protoc-gen-go-redact
+    out: deer/pb
+    opt:
+      - paths=source_relative # use relative paths
+      - lang=go

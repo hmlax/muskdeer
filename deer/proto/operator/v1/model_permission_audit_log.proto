@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/timestamp.proto";
+import "operator/v1/persistence.proto";
+import "tagger/tagger.proto";
+
+// 权限变更审计日志表
+message SysPermissionAuditLogs {
+  option (operator.v1.model) = {
+    entity: "PermissionAuditLog"
+  };
+
+  // id
+  uint32 id = 1 [(tagger.tags) = "gorm:\"column:id;size:32;primaryKey;autoIncrement;not null;comment:id\" json:\"id,omitempty\"", (operator.v1.go_name) = "ID", (operator.v1.immutable) = true];
+
+  // 创建时间
+  google.protobuf.Timestamp created_at = 2 [(tagger.tags) = "gorm:\"column:created_at;autoCreateTime:false;autoUpdateTime:false;type:timestamp;index:idx_permission_audit_tenant_created_at,priority:2;index:idx_permission_audit_tenant_operator_created_at,priority:3;index:idx_permission_audit_tenant_target_created_at,priority:4;index:idx_permission_audit_tenant_action_created_at,priority:3;comment:创建时间\" json:\"created_at,omitempty\"", (operator.v1.go_name) = "CreatedAt", (operator.v1.immutable) = true];
+
+  // 租户ID
+  optional uint32 tenant_id = 3 [(tagger.tags) = "gorm:\"column:tenant_id;type:bigint;default:0;index:idx_permission_audit_tenant_created_at,priority:1;index:idx_permission_audit_tenant_operator_created_at,priority:1;index:idx_permission_audit_tenant_target_created_at,priority:1;index:idx_permission_audit_tenant_action_created_at,priority:1;index:idx_permission_audit_tenant_ip,priority:1;comment:租户ID\" json:\"tenant_id,omitempty\"", (operator.v1.go_name) = "TenantID", (operator.v1.immutable) = true];
+
+  // 操作者 用户ID
+  optional uint32 operator_id = 4 [(tagger.tags) = "gorm:\"column:operator_id;type:bigint;index:idx_permission_audit_tenant_operator_created_at,priority:2;comment:操作者 用户ID\" json:\"operator_id,omitempty\"", (operator.v1.go_name) = "OperatorID"];
+
+  // 操作者用户名
+  optional string operator_name = 5 [(tagger.tags) = "gorm:\"column:operator_name;type:varchar(255);comment:操作者用户名\" json:\"operator_name,omitempty\"", (operator.v1.go_name) = "OperatorName"];
+
+  // 目标类型
+  optional string target_type = 6 [(tagger.tags) = "gorm:\"column:target_type;type:varchar(255);index:idx_permission_audit_tenant_target_created_at,priority:2;index:idx_permission_audit_target,priority:1;comment:目标类型\" json:\"target_type,omitempty\"", (operator.v1.go_name) = "TargetType"];
+
+  // 目标ID
+  optional string target_id = 7 [(tagger.tags) = "gorm:\"column:target_id;type:varchar(255);index:idx_permission_audit_tenant_target_created_at,priority:3;index:idx_permission_audit_target,priority:2;comment:目标ID\" json:\"target_id,omitempty\"", (operator.v1.go_name) = "TargetID"];
+
+  // 目标名称
+  optional string target_name = 8 [(tagger.tags) = "gorm:\"column:target_name;type:varchar(255);comment:目标名称\" json:\"target_name,omitempty\"", (operator.v1.go_name) = "TargetName"];
+
+  // 动作
+  optional string action = 9 [(tagger.tags) = "gorm:\"column:action;type:varchar(255);index:idx_permission_audit_tenant_action_created_at,priority:2;comment:动作\" json:\"action,omitempty\"", (operator.v1.go_name) = "Action", (operator.v1.enum_values) = { name: "ActionGrant" value: "GRANT" }, (operator.v1.enum_values) = { name: "ActionRevoke" value: "REVOKE" }, (operator.v1.enum_values) = { name: "ActionUpdate" value: "UPDATE" }, (operator.v1.enum_values) = { name: "ActionReset" value: "RESET" }, (operator.v1.enum_values) = { name: "ActionCreate" value: "CREATE" }, (operator.v1.enum_values) = { name: "ActionDelete" value: "DELETE" }, (operator.v1.enum_values) = { name: "ActionAssign" value: "ASSIGN" }, (operator.v1.enum_values) = { name: "ActionUnassign" value: "UNASSIGN" }, (operator.v1.enum_values) = { name: "ActionBulkGrant" value: "BULK_GRANT" }, (operator.v1.enum_values) = { name: "ActionBulkRevoke" value: "BULK_REVOKE" }, (operator.v1.enum_values) = { name: "ActionExpire" value: "EXPIRE" }, (operator.v1.enum_values) = { name: "ActionSuspend" value: "SUSPEND" }, (operator.v1.enum_values) = { name: "ActionResume" value: "RESUME" }, (operator.v1.enum_values) = { name: "ActionRollback" value: "ROLLBACK" }, (operator.v1.enum_values) = { name: "ActionOther" value: "OTHER" }];
+
+  // 旧值（JSON）
+  optional string old_value = 10 [(tagger.tags) = "gorm:\"column:old_value;type:jsonb;comment:旧值（JSON）\" json:\"old_value,omitempty\"", (operator.v1.go_name) = "OldValue"];
+
+  // 新值（JSON）
+  optional string new_value = 11 [(tagger.tags) = "gorm:\"column:new_value;type:jsonb;comment:新值（JSON）\" json:\"new_value,omitempty\"", (operator.v1.go_name) = "NewValue"];
+
+  // 操作者IP地址
+  optional string ip_address = 12 [(tagger.tags) = "gorm:\"column:ip_address;type:varchar(255);not null;index:idx_permission_audit_tenant_ip,priority:2;comment:操作者IP地址\" json:\"ip_address,omitempty\"", (operator.v1.go_name) = "IPAddress"];
+
+  // 关联全局请求ID
+  optional string request_id = 13 [(tagger.tags) = "gorm:\"column:request_id;type:varchar(255);not null;comment:关联全局请求ID\" json:\"request_id,omitempty\"", (operator.v1.go_name) = "RequestID"];
+
+  // 变更原因
+  optional string reason = 14 [(tagger.tags) = "gorm:\"column:reason;type:varchar(255);not null;comment:变更原因\" json:\"reason,omitempty\"", (operator.v1.go_name) = "Reason"];
+
+  // 日志内容哈希（SHA256，十六进制字符串）
+  optional string log_hash = 15 [(tagger.tags) = "gorm:\"column:log_hash;type:varchar(255);comment:日志内容哈希（SHA256，十六进制字符串）\" json:\"log_hash,omitempty\"", (operator.v1.go_name) = "LogHash"];
+
+  // 日志数字签名
+  bytes signature = 16 [(tagger.tags) = "gorm:\"column:signature;type:bytea;comment:日志数字签名\" json:\"signature,omitempty\"", (operator.v1.go_name) = "Signature"];
+}

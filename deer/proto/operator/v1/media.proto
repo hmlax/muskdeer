@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "operator/v1/http_transport.proto";
+
+// Signed media is authorized by its signature and expiry instead of a JWT.
+service MediaService {
+  rpc ReadImage(ReadMediaRequest) returns (BinaryFileResponse) {
+  }
+}
+message ReadMediaRequest {
+  string path = 1;
+  int64 expires = 2;
+  string sig = 3;
+}

@@ -1,0 +1,310 @@
+package data
+
+import (
+	"context"
+	"time"
+
+	"github.com/tx7do/go-utils/mapper"
+	"github.com/tx7do/go-utils/timeutil"
+	"github.com/tx7do/kratos-bootstrap/bootstrap"
+	bLogger "github.com/tx7do/kratos-bootstrap/logger"
+
+	operatorV1 "github.com/hmlax/muskdeer/deer/pb/operator/v1"
+	"github.com/hmlax/muskdeer/operator/internal/data/store"
+	"github.com/hmlax/muskdeer/operator/internal/data/store/userorgunit"
+)
+
+type UserOrgUnitRepo struct {
+	log *bLogger.Helper
+
+	dbClient        *store.DBClient
+	statusConverter *mapper.EnumTypeConverter[operatorV1.UserOrgUnit_Status, userorgunit.Status]
+}
+
+func NewUserOrgUnitRepo(ctx *bootstrap.Context, dbClient *store.DBClient) *UserOrgUnitRepo {
+	return &UserOrgUnitRepo{
+		log:      ctx.NewLoggerHelper("user-org-unit/repo/admin-service"),
+		dbClient: dbClient,
+		statusConverter: mapper.NewEnumTypeConverter[operatorV1.UserOrgUnit_Status, userorgunit.Status](
+			operatorV1.UserOrgUnit_Status_name,
+			operatorV1.UserOrgUnit_Status_value,
+		),
+	}
+}
+
+// CleanRelationsByUserID 清理用户组织单元关联
+func (r *UserOrgUnitRepo) CleanRelationsByUserID(ctx context.Context, tx *store.Tx, userID uint32) error {
+	if userID == 0 {
+		return nil
+	}
+
+	if _, err := tx.UserOrgUnit.Delete().
+		Where(
+			userorgunit.UserIDEQ(userID),
+		).
+		Exec(ctx); err != nil {
+		r.log.Errorf(ctx, "delete old user orgUnits failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("delete old user orgUnits failed")
+	}
+	return nil
+}
+
+// CleanRelationsByUserIDs 清理多个用户组织单元关联
+func (r *UserOrgUnitRepo) CleanRelationsByUserIDs(ctx context.Context, tx *store.Tx, userIDs []uint32) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+
+	if _, err := tx.UserOrgUnit.Delete().
+		Where(
+			userorgunit.UserIDIn(userIDs...),
+		).
+		Exec(ctx); err != nil {
+		r.log.Errorf(ctx, "delete old user orgUnits by user ids failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("delete old user orgUnits by user ids failed")
+	}
+	return nil
+}
+
+// CleanRelationsByOrgUnitID 清理组织单元的用户关联
+func (r *UserOrgUnitRepo) CleanRelationsByOrgUnitID(ctx context.Context, tx *store.Tx, orgUnitID uint32) error {
+	if orgUnitID == 0 {
+		return nil
+	}
+
+	if _, err := tx.UserOrgUnit.Delete().
+		Where(
+			userorgunit.OrgUnitIDEQ(orgUnitID),
+		).
+		Exec(ctx); err != nil {
+		r.log.Errorf(ctx, "delete old user orgUnits by orgUnit id failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("delete old user orgUnits by orgUnit id failed")
+	}
+	return nil
+}
+
+// CleanRelationsByOrgUnitIDs 清理组织单元的用户关联
+func (r *UserOrgUnitRepo) CleanRelationsByOrgUnitIDs(ctx context.Context, tx *store.Tx, orgUnitIDs []uint32) error {
+	if len(orgUnitIDs) == 0 {
+		return nil
+	}
+
+	if _, err := tx.UserOrgUnit.Delete().
+		Where(
+			userorgunit.OrgUnitIDIn(orgUnitIDs...),
+		).
+		Exec(ctx); err != nil {
+		r.log.Errorf(ctx, "delete old user orgUnits by orgUnit ids failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("delete old user orgUnits by orgUnit ids failed")
+	}
+	return nil
+}
+
+// RemoveOrgUnitsFromUser 从用户移除组织单元
+func (r *UserOrgUnitRepo) RemoveOrgUnitsFromUser(ctx context.Context, userID uint32, orgUnitIDs []uint32) error {
+	if len(orgUnitIDs) == 0 || userID == 0 {
+		return nil
+	}
+
+	_, err := r.dbClient.Client().UserOrgUnit.Delete().
+		Where(
+			userorgunit.And(
+				userorgunit.UserIDEQ(userID),
+				userorgunit.OrgUnitIDIn(orgUnitIDs...),
+			),
+		).
+		Exec(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "remove user orgUnits failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("remove user orgUnits failed")
+	}
+	return nil
+}
+
+// AssignUserOrgUnit 分配组织单元给用户
+func (r *UserOrgUnitRepo) AssignUserOrgUnit(
+	ctx context.Context,
+	tx *store.Tx,
+	data *operatorV1.UserOrgUnit,
+) error {
+	if data == nil {
+		return nil
+	}
+
+	now := time.Now()
+	if data.StartAt == nil {
+		data.StartAt = timeutil.TimeToTimestamppb(&now)
+	}
+	_, err := tx.UserOrgUnit.
+		Create().
+		SetUserID(data.GetUserId()).
+		SetOrgUnitID(data.GetOrgUnitId()).
+		SetNillableStatus(r.statusConverter.ToEntity(data.Status)).
+		SetNillableAssignedBy(data.AssignedBy).
+		SetNillableAssignedAt(timeutil.TimestamppbToTime(data.AssignedAt)).
+		SetNillableIsPrimary(data.IsPrimary).
+		SetNillableStartAt(timeutil.TimestamppbToTime(data.StartAt)).
+		SetNillableEndAt(timeutil.TimestamppbToTime(data.EndAt)).
+		SetNillableCreatedBy(data.CreatedBy).
+		SetCreatedAt(now).
+		Save(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "assign orgUnit to user failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("assign orgUnit to user failed")
+	}
+	return nil
+}
+
+// AssignUserOrgUnits 分配组织单元给用户
+func (r *UserOrgUnitRepo) AssignUserOrgUnits(
+	ctx context.Context, tx *store.Tx,
+	userID uint32,
+	datas []*operatorV1.UserOrgUnit,
+) error {
+	if len(datas) == 0 || userID == 0 {
+		return nil
+	}
+
+	var err error
+
+	// 删除该角色的所有旧关联
+	if err = r.CleanRelationsByUserID(ctx, tx, userID); err != nil {
+		return operatorV1.ErrorIdentityInternalServerError("clean old user orgUnits failed")
+	}
+
+	now := time.Now()
+
+	var userOrgUnitCreates []*store.UserOrgUnitCreate
+	for _, data := range datas {
+		if data.StartAt == nil {
+			data.StartAt = timeutil.TimeToTimestamppb(&now)
+		}
+		rm := tx.UserOrgUnit.
+			Create().
+			SetNillableTenantID(data.TenantId).
+			SetUserID(data.GetUserId()).
+			SetOrgUnitID(data.GetOrgUnitId()).
+			SetNillableStatus(r.statusConverter.ToEntity(data.Status)).
+			SetNillableAssignedBy(data.AssignedBy).
+			SetNillableAssignedAt(timeutil.TimestamppbToTime(data.AssignedAt)).
+			SetNillableIsPrimary(data.IsPrimary).
+			SetNillableStartAt(timeutil.TimestamppbToTime(data.StartAt)).
+			SetNillableEndAt(timeutil.TimestamppbToTime(data.EndAt)).
+			SetNillableCreatedBy(data.CreatedBy).
+			SetCreatedAt(now)
+		userOrgUnitCreates = append(userOrgUnitCreates, rm)
+	}
+
+	_, err = tx.UserOrgUnit.CreateBulk(userOrgUnitCreates...).Save(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "assign orgUnit to user failed: %s", err.Error())
+		return operatorV1.ErrorIdentityInternalServerError("assign orgUnit to user failed")
+	}
+
+	return nil
+}
+
+// ListOrgUnitIDs 列出角色关联的组织单元ID列表
+func (r *UserOrgUnitRepo) ListOrgUnitIDs(ctx context.Context, userID uint32, excludeExpired bool) ([]uint32, error) {
+	if userID == 0 {
+		return []uint32{}, nil
+	}
+
+	q := r.dbClient.Client().UserOrgUnit.Query().
+		Where(
+			userorgunit.UserIDEQ(userID),
+		)
+
+	if excludeExpired {
+		now := time.Now()
+		q = q.Where(
+			userorgunit.Or(
+				userorgunit.EndAtIsNil(),
+				userorgunit.EndAtGT(now),
+			),
+		)
+	}
+
+	intIDs, err := q.
+		Select(userorgunit.FieldOrgUnitID).
+		Ints(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "query orgUnit ids by user id failed: %s", err.Error())
+		return nil, operatorV1.ErrorIdentityInternalServerError("query orgUnit ids by user id failed")
+	}
+	ids := make([]uint32, len(intIDs))
+	for i, v := range intIDs {
+		ids[i] = uint32(v)
+	}
+	return ids, nil
+}
+
+// ListUserIDs 列出组织单元关联的用户ID列表
+func (r *UserOrgUnitRepo) ListUserIDs(ctx context.Context, orgUnitID uint32, excludeExpired bool) ([]uint32, error) {
+	if orgUnitID == 0 {
+		return []uint32{}, nil
+	}
+
+	q := r.dbClient.Client().UserOrgUnit.Query().
+		Where(
+			userorgunit.OrgUnitIDEQ(orgUnitID),
+		)
+
+	if excludeExpired {
+		now := time.Now()
+		q = q.Where(
+			userorgunit.Or(
+				userorgunit.EndAtIsNil(),
+				userorgunit.EndAtGT(now),
+			),
+		)
+	}
+
+	intIDs, err := q.
+		Select(userorgunit.FieldUserID).
+		Ints(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "query user ids by orgUnit id failed: %s", err.Error())
+		return nil, operatorV1.ErrorIdentityInternalServerError("query user ids by orgUnit id failed")
+	}
+	ids := make([]uint32, len(intIDs))
+	for i, v := range intIDs {
+		ids[i] = uint32(v)
+	}
+	return ids, nil
+}
+
+// ListUserIDsByOrgUnitIDs 列出多个组织单元关联的用户ID列表
+func (r *UserOrgUnitRepo) ListUserIDsByOrgUnitIDs(ctx context.Context, orgUnitIDs []uint32, excludeExpired bool) ([]uint32, error) {
+	if len(orgUnitIDs) == 0 {
+		return nil, nil
+	}
+
+	q := r.dbClient.Client().UserOrgUnit.Query().
+		Where(
+			userorgunit.OrgUnitIDIn(orgUnitIDs...),
+		)
+
+	if excludeExpired {
+		now := time.Now()
+		q = q.Where(
+			userorgunit.Or(
+				userorgunit.EndAtIsNil(),
+				userorgunit.EndAtGT(now),
+			),
+		)
+	}
+
+	intIDs, err := q.
+		Select(userorgunit.FieldUserID).
+		Ints(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "query user ids by orgUnit ids failed: %s", err.Error())
+		return nil, operatorV1.ErrorIdentityInternalServerError("query user ids by orgUnit ids failed")
+	}
+	ids := make([]uint32, len(intIDs))
+	for i, v := range intIDs {
+		ids[i] = uint32(v)
+	}
+	return ids, nil
+}

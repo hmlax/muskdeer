@@ -1,0 +1,372 @@
+import { useRef, useState, useEffect } from 'react';
+import type { ProFormInstance } from '@ant-design/pro-components';
+import {
+  DrawerForm,
+  ProFormText,
+  ProFormDigit,
+  ProFormTextArea,
+  ProFormRadio,
+  ProFormSelect,
+  ProFormDependency,
+} from '@ant-design/pro-components';
+import { App, Tree, Spin, Checkbox } from 'antd';
+import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { Role as Role } from '@/api/generated/admin/v1';
+import { useCreateRole, useUpdateRole } from '@/api/hooks/role';
+import { fetchListPermissionGroups } from '@/api/hooks/permission-group';
+import { fetchListPermissions } from '@/api/hooks/permission';
+import { fetchListOrgUnits } from '@/api/hooks/org-unit';
+import { PaginationQuery } from '@/core';
+import {
+  getStatusOptions,
+  getDataScopeOptions,
+  buildPermissionTree,
+  extractLeafIds,
+  buildOrgUnitTree,
+  ROLE_FIELD_RESOURCES,
+} from '../constants';
+import { useDrawerCloseGuard } from '@/components/common/use-drawer-close-guard';
+import { useApiAccess } from '@/core/access';
+
+interface RoleDrawerProps {
+  open: boolean;
+  mode: 'create' | 'edit';
+  data?: Role;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+/**
+ * 角色编辑/创建抽屉组件
+ */
+const RoleDrawerContent: React.FC<RoleDrawerProps> = ({ open, mode, data, onClose, onSuccess }) => {
+  const { t } = useTranslation('role');
+  const formRef = useRef<ProFormInstance>(null);
+
+  // 关闭守卫：遮罩/ESC/X/取消统一，脏数据先确认（docs/form_drawer_close_guard.md）
+  const { guardClose, handleValuesChange } = useDrawerCloseGuard(open, onClose);
+  const queryClient = useQueryClient();
+  const { message } = App.useApp();
+  const canAccess = useApiAccess();
+  const canReadPermissionGroups = canAccess('GET', '/admin/v1/permission-groups');
+
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [treeData, setTreeData] = useState<ReturnType<typeof buildPermissionTree>>([]);
+  const [checkedKeys, setCheckedKeys] = useState<number[]>(() =>
+    mode === 'edit' ? (data?.permissions ?? []) : [],
+  );
+  const [permissionsChanged, setPermissionsChanged] = useState(false);
+  const [treeVersion, setTreeVersion] = useState(0);
+  const [treeLoading, setTreeLoading] = useState(open);
+  const [unitTreeData, setUnitTreeData] = useState<ReturnType<typeof buildOrgUnitTree>>([]);
+  const [unitCheckedKeys, setUnitCheckedKeys] = useState<number[]>(() =>
+    mode === 'edit' && data?.dataScope === 'SELECTED_UNITS' ? (data.orgUnits ?? []) : [],
+  );
+  const [unitTreeVersion, setUnitTreeVersion] = useState(0);
+  // 字段权限：User 资源上勾选隐藏的字段（json_name）
+  // 字段权限：资源名 → 隐藏字段集（多资源，按 ROLE_FIELD_RESOURCES 登记渲染）
+  const [hiddenByResource, setHiddenByResource] = useState<Record<string, string[]>>(() =>
+    Object.fromEntries(
+      (mode === 'edit' ? (data?.fieldPermissions ?? []) : [])
+        .filter((entry) => entry.resource)
+        .map((entry) => [entry.resource!, entry.hiddenFields ?? []]),
+    ),
+  );
+
+  // 加载权限树数据
+  useEffect(() => {
+    if (open) {
+      Promise.all([
+        canReadPermissionGroups
+          ? fetchListPermissionGroups(new PaginationQuery({ formValues: { status: 'ON' } }))
+          : Promise.resolve({ items: [] }),
+        fetchListPermissions(new PaginationQuery({ formValues: { status: 'ON' } })),
+      ])
+        .then(([groupRes, permRes]) => {
+          const groups = groupRes?.items || [];
+          const permissions = permRes?.items || [];
+          if (groups.length === 0 && permissions.length > 0) {
+            // 无权限组时，直接罗列权限（平铺，不嵌套）
+            setTreeData(
+              permissions.map((p) => ({
+                key: Number(p.id),
+                title: p.name || p.code || String(p.id),
+              })),
+            );
+          } else {
+            setTreeData(buildPermissionTree(groups, permissions));
+          }
+          setTreeVersion((v) => v + 1);
+        })
+        .catch((error) => {
+          console.error('Failed to load assignable permissions:', error);
+          message.error(error.message || t('updateFailed'));
+          setTreeData([]);
+        })
+        .finally(() => setTreeLoading(false));
+    }
+  }, [open, canReadPermissionGroups, message, t]);
+
+  // 加载组织单元树（SELECTED_UNITS 自定义授权集配置用）
+  useEffect(() => {
+    if (open) {
+      fetchListOrgUnits(new PaginationQuery({ formValues: { status: 'ON' } }))
+        .then((res) => {
+          setUnitTreeData(buildOrgUnitTree(res?.items || []));
+          setUnitTreeVersion((v) => v + 1);
+        })
+        .catch((error) => {
+          console.error('Failed to load role organization scope:', error);
+          setUnitTreeData([]);
+        });
+    }
+  }, [open]);
+
+  // 编辑模式填充表单
+  useEffect(() => {
+    if (open && mode === 'edit' && data) {
+      setTimeout(() => {
+        formRef.current?.setFieldsValue({
+          name: data.name || '',
+          code: data.code || '',
+          sortOrder: data.sortOrder ?? 1,
+          status: data.status || 'ON',
+          dataScope: data.dataScope || 'ALL',
+          description: data.description || '',
+        });
+      }, 0);
+    }
+  }, [open, mode, data]);
+
+  const createMutation = useCreateRole({
+    onSuccess: () => {
+      message.success(t('createSuccess'));
+      onSuccess();
+      onClose();
+      queryClient.invalidateQueries({ queryKey: ['listRoles'] });
+    },
+    onError: (error: Error) => {
+      message.error(error.message || t('createFailed'));
+    },
+  });
+
+  const updateMutation = useUpdateRole({
+    onSuccess: () => {
+      message.success(t('updateSuccess'));
+      onSuccess();
+      onClose();
+      queryClient.invalidateQueries({ queryKey: ['listRoles'] });
+    },
+    onError: (error: Error) => {
+      message.error(error.message || t('updateFailed'));
+    },
+  });
+
+  const handleSubmit = async (values: Role) => {
+    setConfirmLoading(true);
+    try {
+      const payload = {
+        ...values,
+        // 用叶子交集剥离权限组父节点 ID（父子联动会自动勾选父节点，
+        // 组 ID 混入提交会被后端当作权限 ID，可能越权绑定）。
+        ...(mode === 'create' || permissionsChanged
+          ? { permissions: extractLeafIds(checkedKeys, treeData) }
+          : {}),
+      };
+
+      // 仅 SELECTED_UNITS 档提交授权单元集（含清空场景）；
+      // 其余档位不携带该字段，后端维持既有集不替换。
+      if (values.dataScope === 'SELECTED_UNITS') {
+        payload.orgUnits = unitCheckedKeys.filter((v) => typeof v === 'number');
+      }
+
+      // 字段权限始终随表单提交（含清空场景）：抽屉所见即保存后的最终态。
+      payload.fieldPermissions = ROLE_FIELD_RESOURCES.map(({ resource }) => ({
+        resource,
+        hiddenFields: hiddenByResource[resource] ?? [],
+      })).filter((e) => e.hiddenFields.length > 0);
+
+      if (mode === 'create') {
+        await createMutation.mutateAsync({ data: payload });
+      } else if (data?.id) {
+        await updateMutation.mutateAsync({ id: data.id, values: payload });
+      }
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
+  return (
+    <DrawerForm
+      formRef={formRef}
+      title={mode === 'create' ? t('create') : t('edit')}
+      open={open}
+      onValuesChange={handleValuesChange}
+      initialValues={{
+        sortOrder: 1,
+        status: 'ON',
+        dataScope: 'ALL',
+      }}
+      onFinish={handleSubmit}
+      submitter={{
+        searchConfig: {
+          submitText: t('common:button.submit'),
+          resetText: t('common:button.cancel'),
+        },
+        submitButtonProps: {
+          loading: confirmLoading || createMutation.isPending || updateMutation.isPending,
+        },
+        resetButtonProps: { onClick: guardClose },
+      }}
+      drawerProps={{ destroyOnHidden: true, onClose: guardClose, size: 600 }}
+      layout="horizontal"
+      labelCol={{ flex: '0 0 120px' }}
+      wrapperCol={{ flex: 'auto' }}
+    >
+      <ProFormText
+        name="name"
+        label={t('name')}
+        placeholder={t('namePlaceholder')}
+        rules={[{ required: true, message: t('requiredName') }]}
+        fieldProps={{ allowClear: true }}
+      />
+
+      <ProFormText
+        name="code"
+        label={t('code')}
+        placeholder={t('codePlaceholder')}
+        rules={[{ required: true, message: t('requiredCode') }]}
+        fieldProps={{ allowClear: true }}
+      />
+
+      <ProFormDigit
+        name="sortOrder"
+        label={t('sortOrder')}
+        placeholder={t('sortOrderPlaceholder')}
+        rules={[{ required: true }]}
+        fieldProps={{ precision: 0, min: 0 }}
+      />
+
+      <ProFormRadio.Group
+        name="status"
+        label={t('status')}
+        rules={[{ required: true, message: t('requiredStatus') }]}
+        options={getStatusOptions(t)}
+        fieldProps={{ optionType: 'button', buttonStyle: 'solid' }}
+      />
+
+      <ProFormSelect
+        name="dataScope"
+        label={t('dataScope')}
+        placeholder={t('dataScopePlaceholder')}
+        options={getDataScopeOptions(t)}
+        rules={[{ required: true, message: t('requiredDataScope') }]}
+        fieldProps={{ allowClear: false }}
+      />
+
+      <ProFormDependency name={['dataScope']}>
+        {({ dataScope }) =>
+          dataScope === 'SELECTED_UNITS' ? (
+            <div className="mb-6">
+              <label className="block mb-2 text-sm font-medium text-[color:var(--ant-color-text)]">
+                {t('orgUnits')}
+              </label>
+              {unitTreeData.length > 0 ? (
+                <div className="rounded-lg border border-[color:var(--ant-color-border-secondary)] bg-[color:var(--ant-color-fill-quaternary)] p-2.5">
+                  <Tree
+                    checkable
+                    checkedKeys={unitCheckedKeys}
+                    onCheck={(checked) => {
+                      setUnitCheckedKeys(checked as number[]);
+                      handleValuesChange();
+                    }}
+                    treeData={unitTreeData}
+                    defaultExpandAll
+                    key={unitTreeVersion}
+                    className="max-h-80 overflow-auto"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-[color:var(--ant-color-border)] py-4 text-center text-sm text-[color:var(--ant-color-text-quaternary)]">
+                  {t('noOrgUnitData')}
+                </div>
+              )}
+            </div>
+          ) : null
+        }
+      </ProFormDependency>
+
+      <ProFormTextArea
+        name="description"
+        label={<span className="inline-flex items-center gap-2">{t('description')}</span>}
+        placeholder={t('descriptionPlaceholder')}
+        fieldProps={{ allowClear: true, rows: 2 }}
+      />
+
+      {/* 权限树 */}
+      <div className="mb-6">
+        <label className="block mb-2 text-sm font-medium text-[color:var(--ant-color-text)]">
+          {t('permissions')}
+        </label>
+        <Spin spinning={treeLoading}>
+          {treeData.length > 0 ? (
+            <div className="rounded-lg border border-[color:var(--ant-color-border-secondary)] bg-[color:var(--ant-color-fill-quaternary)] p-2.5">
+              <Tree
+                checkable
+                checkedKeys={checkedKeys}
+                onCheck={(checked) => {
+                  setCheckedKeys(checked as number[]);
+                  setPermissionsChanged(true);
+                  handleValuesChange();
+                }}
+                treeData={treeData}
+                defaultExpandAll
+                key={treeVersion}
+                className="max-h-80 overflow-auto"
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-[color:var(--ant-color-border)] py-4 text-center text-sm text-[color:var(--ant-color-text-quaternary)]">
+              {treeLoading ? '' : 'No permission data'}
+            </div>
+          )}
+        </Spin>
+      </div>
+
+      {/* 字段权限：勾选 = 对该角色用户隐藏（黑名单语义，User 资源试点） */}
+      <div className="mb-6">
+        <label className="block mb-2 text-sm font-medium text-[color:var(--ant-color-text)]">
+          {t('fieldPerm.title')}
+        </label>
+        <div className="rounded-lg border border-[color:var(--ant-color-border-secondary)] bg-[color:var(--ant-color-fill-quaternary)] p-2.5">
+          <p className="mb-2 text-xs text-[color:var(--ant-color-text-quaternary)]">
+            {t('fieldPerm.hint')}
+          </p>
+          <div className="flex flex-col gap-3">
+            {ROLE_FIELD_RESOURCES.map(({ resource, options }) => (
+              <div key={resource}>
+                <p className="mb-1.5 text-xs font-medium text-[color:var(--ant-color-text-secondary)]">
+                  {resource}
+                </p>
+                <Checkbox.Group
+                  value={hiddenByResource[resource] ?? []}
+                  onChange={(vals) => {
+                    setHiddenByResource((prev) => ({ ...prev, [resource]: vals as string[] }));
+                    handleValuesChange();
+                  }}
+                  options={options(t)}
+                  className="flex flex-col gap-2"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </DrawerForm>
+  );
+};
+
+export default function RoleDrawer(props: RoleDrawerProps) {
+  return <RoleDrawerContent key={`${props.open}-${props.mode}-${props.data?.id}`} {...props} />;
+}

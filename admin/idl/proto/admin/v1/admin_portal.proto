@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/admin_portal_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 后台前端初始化数据与配置服务
+service AdminPortalService {
+  // 查询前端路由表
+  rpc GetNavigation(google.protobuf.Empty) returns (admin.v1.ListRouteResponse) {
+    option (api.get) = "/admin/v1/routes";
+  }
+
+  // 查询权限码列表
+  rpc GetMyPermissionCode(google.protobuf.Empty) returns (admin.v1.ListPermissionCodeResponse) {
+    option (api.get) = "/admin/v1/perm-codes";
+  }
+
+  // 一次性获取进入后台所需的所有上下文
+  rpc GetInitialContext(google.protobuf.Empty) returns (admin.v1.InitialContextResponse) {
+    option (api.get) = "/admin/v1/initial-context";
+  }
+}

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "admin/v1/http_transport_types.proto";
+import "admin/v1/media_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// Signed media is authorized by its signature and expiry instead of a JWT.
+service MediaService {
+  rpc ReadImage(admin.v1.ReadMediaRequest) returns (admin.v1.BinaryFileResponse) {
+    option (api.get) = "/admin/v1/file/image";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+      responses: {
+        response_or_reference: {
+          name: "200"
+          value: {
+            response: {
+              description: "Image bytes authenticated by the signed URL."
+              content: {
+                additional_properties: {
+                  name: "image/*"
+                  value: {
+                    schema: {
+                      schema: {
+                        type: "string"
+                        format: "binary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    };
+  }
+}

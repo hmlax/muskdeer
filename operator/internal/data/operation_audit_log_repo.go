@@ -1,0 +1,249 @@
+package data
+
+import (
+	"sort"
+
+	"context"
+	"time"
+
+	"github.com/hmlax/muskdeer/operator/internal/data/store/queryscope"
+
+	"github.com/tx7do/kratos-bootstrap/bootstrap"
+	bLogger "github.com/tx7do/kratos-bootstrap/logger"
+
+	paginationV1 "github.com/tx7do/go-crud/api/gen/go/pagination/v1"
+
+	"github.com/tx7do/go-crud/viewer"
+
+	"github.com/hmlax/muskdeer/operator/internal/data/store"
+	"github.com/hmlax/muskdeer/operator/internal/data/store/operationauditlog"
+
+	operatorV1 "github.com/hmlax/muskdeer/deer/pb/operator/v1"
+
+	"github.com/tx7do/go-utils/copierutil"
+	"github.com/tx7do/go-utils/mapper"
+)
+
+type OperationAuditLogRepo struct {
+	dbClient *store.DBClient
+	log      *bLogger.Helper
+
+	mapper *mapper.CopierMapper[operatorV1.OperationAuditLog, store.OperationAuditLog]
+
+	actionTypeConverter     *mapper.EnumTypeConverter[operatorV1.OperationAuditLog_ActionType, operationauditlog.Action]
+	sensitiveLevelConverter *mapper.EnumTypeConverter[operatorV1.SensitiveLevel_SensitiveLevel, operationauditlog.SensitiveLevel]
+
+	repository *store.Repository[operatorV1.OperationAuditLog, store.OperationAuditLog]
+}
+
+func NewOperationAuditLogRepo(ctx *bootstrap.Context, dbClient *store.DBClient) *OperationAuditLogRepo {
+	repo := &OperationAuditLogRepo{
+		log:      ctx.NewLoggerHelper("operation-audit-log/repo/admin-service"),
+		dbClient: dbClient,
+		mapper:   mapper.NewCopierMapper[operatorV1.OperationAuditLog, store.OperationAuditLog](),
+		actionTypeConverter: mapper.NewEnumTypeConverter[operatorV1.OperationAuditLog_ActionType, operationauditlog.Action](
+			operatorV1.OperationAuditLog_ActionType_name, operatorV1.OperationAuditLog_ActionType_value,
+		),
+		sensitiveLevelConverter: mapper.NewEnumTypeConverter[operatorV1.SensitiveLevel_SensitiveLevel, operationauditlog.SensitiveLevel](
+			operatorV1.SensitiveLevel_SensitiveLevel_name, operatorV1.SensitiveLevel_SensitiveLevel_value,
+		),
+	}
+
+	repo.init()
+
+	return repo
+}
+
+func (r *OperationAuditLogRepo) init() {
+	r.repository = store.NewRepository[operatorV1.OperationAuditLog, store.OperationAuditLog](r.mapper)
+
+	r.mapper.AppendConverters(copierutil.NewTimeStringConverterPair())
+	r.mapper.AppendConverters(copierutil.NewTimeTimestamppbConverterPair())
+
+	r.mapper.AppendConverters(r.actionTypeConverter.NewConverterPair())
+	r.mapper.AppendConverters(r.sensitiveLevelConverter.NewConverterPair())
+}
+
+func (r *OperationAuditLogRepo) Count(ctx context.Context, whereCond []queryscope.Scope) (int, error) {
+	builder := r.dbClient.Client().OperationAuditLog.Query()
+	if len(whereCond) != 0 {
+		builder.Modify(whereCond...)
+	}
+
+	count, err := builder.Count(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "query count failed: %s", err.Error())
+		return 0, operatorV1.ErrorAdminInternalServerError("query count failed")
+	}
+
+	return count, nil
+}
+
+func (r *OperationAuditLogRepo) List(ctx context.Context, req *paginationV1.PagingRequest) (*operatorV1.ListOperationAuditLogResponse, error) {
+	if req == nil {
+		return nil, operatorV1.ErrorAdminBadRequest("invalid parameter")
+	}
+
+	builder := r.dbClient.Client().OperationAuditLog.Query()
+
+	ret, err := r.repository.ListWithPaging(ctx, builder, builder.Clone(), req)
+	if err != nil {
+		return nil, err
+	}
+	if ret == nil {
+		return &operatorV1.ListOperationAuditLogResponse{
+			Total: 0,
+			Items: nil,
+		}, nil
+	}
+
+	return &operatorV1.ListOperationAuditLogResponse{
+		Total: ret.Total,
+		Items: ret.Items,
+	}, nil
+}
+
+func (r *OperationAuditLogRepo) IsExist(ctx context.Context, id uint32) (bool, error) {
+	exist, err := r.dbClient.Client().OperationAuditLog.Query().
+		Where(operationauditlog.IDEQ(id)).
+		Exist(ctx)
+	if err != nil {
+		r.log.Errorf(ctx, "query exist failed: %s", err.Error())
+		return false, operatorV1.ErrorAdminInternalServerError("query exist failed")
+	}
+	return exist, nil
+}
+
+func (r *OperationAuditLogRepo) Get(ctx context.Context, req *operatorV1.GetOperationAuditLogRequest) (*operatorV1.OperationAuditLog, error) {
+	if req == nil {
+		return nil, operatorV1.ErrorAdminBadRequest("invalid parameter")
+	}
+
+	builder := r.dbClient.Client().OperationAuditLog.Query()
+
+	var whereCond []queryscope.Scope
+	switch req.QueryBy.(type) {
+	default:
+	case *operatorV1.GetOperationAuditLogRequest_Id:
+		whereCond = append(whereCond, operationauditlog.IDEQ(req.GetId()))
+	}
+
+	dto, err := r.repository.Get(ctx, builder, req.GetViewMask(), whereCond...)
+	if err != nil {
+		return nil, err
+	}
+
+	return dto, err
+}
+
+func (r *OperationAuditLogRepo) Create(ctx context.Context, req *operatorV1.CreateOperationAuditLogRequest) error {
+	if req == nil || req.Data == nil {
+		return operatorV1.ErrorAdminBadRequest("invalid parameter")
+	}
+
+	builder := r.dbClient.Client().OperationAuditLog.
+		Create().
+		SetNillableTenantID(req.Data.TenantId).
+		SetNillableUserID(req.Data.UserId).
+		SetNillableUsername(req.Data.Username).
+		SetNillableResourceType(req.Data.ResourceType).
+		SetNillableResourceID(req.Data.ResourceId).
+		SetNillableAction(r.actionTypeConverter.ToEntity(req.Data.Action)).
+		SetNillableBeforeData(req.Data.BeforeData).
+		SetNillableAfterData(req.Data.AfterData).
+		SetNillableSensitiveLevel(r.sensitiveLevelConverter.ToEntity(req.Data.SensitiveLevel)).
+		SetNillableRequestID(req.Data.RequestId).
+		SetNillableTraceID(req.Data.TraceId).
+		SetNillableSuccess(req.Data.Success).
+		SetNillableFailureReason(req.Data.FailureReason).
+		SetNillableIPAddress(req.Data.IpAddress).
+		SetGeoLocation(req.Data.GeoLocation).
+		SetNillableLogHash(req.Data.LogHash).
+		SetSignature(req.Data.Signature).
+		SetCreatedAt(time.Now())
+
+	if err := builder.Exec(ctx); err != nil {
+		r.log.Errorf(ctx, "insert operation audit log failed: %s", err.Error())
+		return operatorV1.ErrorAdminInternalServerError("insert operation audit log failed")
+	}
+
+	return nil
+}
+
+// AuditDigestStats 审计日报聚合统计。
+type AuditDigestStats struct {
+	Total      int64              // 昨日总操作数
+	Failed     int64              // 失败操作数
+	Users      int64              // 涉及用户数
+	TopActions []AuditActionCount // 动作分布（全部动作类型，按次数降序）
+}
+
+// AuditActionCount 单个动作类型的计数。
+type AuditActionCount struct {
+	Action string
+	Count  int64
+}
+
+// DigestStats 聚合 [from, to) 区间的操作审计统计（系统查看器；日报任务无请求上下文）。
+func (r *OperationAuditLogRepo) DigestStats(ctx context.Context, from, to time.Time) (*AuditDigestStats, error) {
+	sysCtx := viewer.WithSystemContext(ctx)
+	client := r.dbClient.Client().OperationAuditLog.Query().Where(
+		operationauditlog.CreatedAtGTE(from),
+		operationauditlog.CreatedAtLT(to),
+	)
+
+	stats := &AuditDigestStats{TopActions: make([]AuditActionCount, 0, 8)}
+
+	total, err := client.Clone().Count(sysCtx)
+	if err != nil {
+		r.log.Errorf(ctx, "audit digest: count total failed: %s", err.Error())
+		return nil, operatorV1.ErrorAuditInternalServerError("audit digest stats failed")
+	}
+	stats.Total = int64(total)
+	if total == 0 {
+		return stats, nil
+	}
+
+	failed, err := client.Clone().Where(operationauditlog.SuccessEQ(false)).Count(sysCtx)
+	if err != nil {
+		r.log.Errorf(ctx, "audit digest: count failed failed: %s", err.Error())
+		return nil, operatorV1.ErrorAuditInternalServerError("audit digest stats failed")
+	}
+	stats.Failed = int64(failed)
+
+	// 涉及用户数（去重 user_id）
+	var userRows []struct {
+		UserID uint32 `sql:"user_id"`
+		Cnt    int    `sql:"cnt"`
+	}
+	if err = client.Clone().
+		GroupBy(operationauditlog.FieldUserID).
+		Aggregate(store.As(store.Count(), "cnt")).
+		Scan(sysCtx, &userRows); err != nil {
+		r.log.Errorf(ctx, "audit digest: count users failed: %s", err.Error())
+		return nil, operatorV1.ErrorAuditInternalServerError("audit digest stats failed")
+	}
+	stats.Users = int64(len(userRows))
+
+	// 动作分布
+	var actionRows []struct {
+		Action string `sql:"action"`
+		Cnt    int    `sql:"cnt"`
+	}
+	if err = client.Clone().
+		GroupBy(operationauditlog.FieldAction).
+		Aggregate(store.As(store.Count(), "cnt")).
+		Scan(sysCtx, &actionRows); err != nil {
+		r.log.Errorf(ctx, "audit digest: group actions failed: %s", err.Error())
+		return nil, operatorV1.ErrorAuditInternalServerError("audit digest stats failed")
+	}
+	for _, row := range actionRows {
+		stats.TopActions = append(stats.TopActions, AuditActionCount{
+			Action: row.Action,
+			Count:  int64(row.Cnt),
+		})
+	}
+	sort.Slice(stats.TopActions, func(i, j int) bool { return stats.TopActions[i].Count > stats.TopActions[j].Count })
+
+	return stats, nil
+}

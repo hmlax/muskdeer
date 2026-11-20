@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/dict_type_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 数据字典分类管理服务
+service DictTypeService {
+  // 分页查询字典类型列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListDictTypeResponse) {
+    option (api.get) = "/admin/v1/dict/types";
+  }
+
+  // 查询字典类型详情
+  rpc Get(admin.v1.GetDictTypeRequest) returns (admin.v1.DictType) {
+    option (api.get) = "/admin/v1/dict/types/:id";
+  }
+
+  // 查询字典类型详情
+  rpc GetByCode(admin.v1.GetDictTypeRequest) returns (admin.v1.DictType) {
+    option (api.get) = "/admin/v1/dict/types/code/:code";
+    option (admin.http.rpc) = "Get";
+  }
+
+  // 创建字典类型
+  rpc Create(admin.v1.CreateDictTypeRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/dict/types";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新字典类型
+  rpc Update(admin.v1.UpdateDictTypeRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/dict/types/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除字典类型
+  rpc Delete(admin.v1.DeleteDictTypeRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/dict/types";
+  }
+}

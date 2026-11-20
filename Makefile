@@ -1,3 +1,5 @@
+PYTHON ?= python3
+
 .PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check sdk-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-prepare compose-up compose-down compose-status core-test
 
 # Freeze one version/build record for every binary in this Make invocation.
@@ -9,91 +11,97 @@ BUILD := $(BUILD)
 export NAME VERSION BUILD
 CORE_SERVICES := market strategy execution portfolio cron
 BUILD_COMMANDS := migrate coreinit policyinit readycheck venueinit venuebaseline instancemigrate instanceupgrade doctor marketprobe contractcheck
+PNPM := npm exec --yes --package=pnpm@12.16.1 -- pnpm --store-dir="$(CURDIR)/.cache/pnpm-store"
+export npm_config_cache := $(CURDIR)/.cache/npm
 
 doctor:
-	python3 scripts/go.py version
+	$(PYTHON) scripts/go.py version
 	@for role in market strategy execution portfolio cron; do \
-		python3 scripts/go.py run ./cmd/doctor -config configs/local/$$role || exit $$?; \
+		$(PYTHON) scripts/go.py run ./cmd/doctor -config configs/local/$$role || exit $$?; \
 	done
 
 test-tooling:
-	python3 -m unittest discover -s scripts/tests -v
+	$(PYTHON) -m unittest discover -s scripts/tests -v
 
 tools:
-	python3 scripts/protoc.py
-	python3 scripts/tools.py --install
+	$(PYTHON) scripts/protoc.py
+	$(PYTHON) scripts/tools.py --install
+	$(PYTHON) scripts/admin.py tools
 
 contract-check:
-	python3 scripts/policy.py
+	$(PYTHON) scripts/policy.py
 
 policy-test:
-	python3 scripts/policy-negative.py
+	$(PYTHON) scripts/policy-negative.py
 
 generate: contract-check
-	python3 scripts/generate.py
-	python3 scripts/wire.py
+	$(PYTHON) scripts/generate.py
+	$(PYTHON) scripts/wire.py
+	$(PYTHON) scripts/admin.py generate
 
 generate-check: contract-check
-	python3 scripts/generate.py --check
-	python3 scripts/wire.py --check
+	$(PYTHON) scripts/generate.py --check
+	$(PYTHON) scripts/wire.py --check
+	$(PYTHON) scripts/admin.py check
 
 wire:
-	python3 scripts/wire.py
+	$(PYTHON) scripts/wire.py
 
 wire-check:
-	python3 scripts/wire.py --check
+	$(PYTHON) scripts/wire.py --check
 
 sdk-check:
-	python3 scripts/check-himalaya-sdk.py
-	python3 scripts/go.py test -race gitlab.com/himalaya/lukla-go/...
+	$(PYTHON) scripts/check-himalaya-sdk.py
+	$(PYTHON) scripts/go.py test -race gitlab.com/himalaya/lukla-go/...
 
 fmt:
-	python3 scripts/format.py
+	$(PYTHON) scripts/format.py
 
 fmt-check:
-	python3 scripts/format.py --check
+	$(PYTHON) scripts/format.py --check
 
 lint:
-	python3 scripts/check-layout.py
-	python3 scripts/lint.py
+	$(PYTHON) scripts/check-layout.py
+	$(PYTHON) scripts/lint.py
 
 test:
-	python3 scripts/go.py test ./...
+	$(PYTHON) scripts/go.py test ./...
 
 test-race:
-	python3 scripts/go.py test -race ./...
+	$(PYTHON) scripts/go.py test -race ./...
 
 build:
 	mkdir -p .cache/bin
 	@for name in $(BUILD_COMMANDS); do \
-		python3 scripts/build.py $$name ./cmd/$$name .cache/bin/$$name || exit $$?; \
+		$(PYTHON) scripts/build.py $$name ./cmd/$$name .cache/bin/$$name || exit $$?; \
 	done
 	@for name in $(CORE_SERVICES); do \
-		python3 scripts/build.py $$name ./$$name/cmd .cache/bin/$$name || exit $$?; \
+		$(PYTHON) scripts/build.py $$name ./$$name/cmd .cache/bin/$$name || exit $$?; \
 	done
+	$(MAKE) admin-backend-build
 
-verify: doctor contract-check generate-check sdk-check fmt-check lint policy-test test-tooling test test-race build
+verify: doctor contract-check generate-check sdk-check fmt-check lint policy-test test-tooling test test-race build admin-frontend-check
 
 build-fixtures: build
 	@for role in market strategy execution portfolio; do \
-		python3 scripts/build.py module-$$role ./$$role/testservice .cache/bin/module-$$role || exit $$?; \
+		$(PYTHON) scripts/build.py module-$$role ./$$role/testservice .cache/bin/module-$$role || exit $$?; \
 	done
-	python3 scripts/build.py testinfra ./deer/testinfra .cache/bin/testinfra
+	$(PYTHON) scripts/build.py testinfra ./deer/testinfra .cache/bin/testinfra
 
 integration: build-fixtures
-	python3 scripts/integration.py
+	$(PYTHON) scripts/integration.py
 
 dev-up:
-	python3 scripts/dev.py up
+	$(PYTHON) scripts/dev.py up
 
 dev-down:
-	python3 scripts/dev.py down
+	$(PYTHON) scripts/dev.py down
 
 dev-status:
-	python3 scripts/dev.py status
+	$(PYTHON) scripts/dev.py status
 
 dev-test: build
-	python3 scripts/dev-smoke.py
+	$(PYTHON) scripts/dev-smoke.py
 
 image:
 	@for name in $(CORE_SERVICES); do \
@@ -101,24 +109,24 @@ image:
 	done
 
 image-test: image
-	python3 scripts/image-smoke.py
+	$(PYTHON) scripts/image-smoke.py
 
 e2e: core-test image-test
 
 
 soak: build-fixtures
-	python3 scripts/soak.py
+	$(PYTHON) scripts/soak.py
 
 soak-smoke: build-fixtures
-	python3 scripts/soak.py --smoke
+	$(PYTHON) scripts/soak.py --smoke
 
 compose-prepare:
-	python3 scripts/compose.py prepare
+	$(PYTHON) scripts/compose.py prepare
 
 compose-up: compose-prepare
 	docker compose --env-file .cache/compose/compose.env build --build-arg VERSION --build-arg BUILD
-	python3 scripts/compose.py bootstrap
-	docker compose --env-file .cache/compose/compose.env up -d --remove-orphans --wait --wait-timeout 60
+	$(PYTHON) scripts/compose.py bootstrap
+	docker compose --env-file .cache/compose/compose.env up -d --wait --wait-timeout 60
 
 compose-down:
 	docker compose --env-file .cache/compose/compose.env down
@@ -127,4 +135,48 @@ compose-status:
 	docker compose --env-file .cache/compose/compose.env ps
 
 core-test: build
-	python3 scripts/core-process-test.py
+	$(PYTHON) scripts/core-process-test.py
+
+# Administration shares this module; only the framework database remains separate.
+.PHONY: admin-tools admin-deps admin-generate admin-generate-check admin-wire admin-wire-check admin-openapi admin-ts admin-backend-build admin-frontend-build admin-build admin-test admin-check admin-dev-platform admin-dev-merchant build-all
+admin-tools:
+	$(PYTHON) scripts/admin.py tools
+admin-deps:
+	cd adminfrontend && $(PNPM) install --frozen-lockfile
+admin-generate:
+	$(PYTHON) scripts/admin.py generate
+admin-generate-check:
+	$(PYTHON) scripts/admin.py check
+admin-wire:
+	$(PYTHON) scripts/admin.py wire
+admin-wire-check:
+	$(PYTHON) scripts/admin.py wire-check
+admin-openapi:
+	$(PYTHON) scripts/admin/tools/codegen.py openapi
+	$(PYTHON) scripts/go.py run ./scripts/admin/tools/openapigen deer/management/apidocs/openapi.yaml
+admin-ts:
+	$(PYTHON) scripts/admin/tools/codegen.py ts
+admin-backend-build:
+	$(PYTHON) scripts/build.py admin ./admin .cache/bin/admin
+	$(PYTHON) scripts/build.py operator ./operator/cmd/server .cache/bin/operator
+	$(PYTHON) scripts/build.py muskdeer-admin-bootstrap ./operator/cmd/muskdeer-bootstrap .cache/bin/muskdeer-admin-bootstrap
+	$(PYTHON) scripts/build.py muskdeer-admin-migrate ./operator/cmd/muskdeer-migrate .cache/bin/muskdeer-admin-migrate
+admin-frontend-build:
+	cd adminfrontend && $(PNPM) build
+admin-build: admin-backend-build admin-frontend-build
+admin-test:
+	$(PYTHON) scripts/go.py test ./admin/... ./operator/... ./deer/management/... ./scripts/admin/tools/...
+	$(PYTHON) -m unittest discover -s scripts/admin/test -p 'test_*.py' -v
+	cd adminfrontend && $(PNPM) test:tenant-routes
+admin-check: admin-test admin-wire-check admin-generate-check
+	cd adminfrontend && $(PNPM) typecheck
+admin-dev-platform:
+	cd adminfrontend && $(PNPM) dev:platform
+admin-dev-merchant:
+	cd adminfrontend && $(PNPM) dev:merchant
+build-all: build admin-frontend-build
+
+.PHONY: admin-frontend-check
+admin-frontend-check:
+	cd adminfrontend && $(PNPM) typecheck
+	cd adminfrontend && $(PNPM) test:tenant-routes

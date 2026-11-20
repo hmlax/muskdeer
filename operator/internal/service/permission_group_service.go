@@ -1,0 +1,137 @@
+package service
+
+import (
+	"context"
+
+	"github.com/hmlax/muskdeer/operator/internal/data/store/queryscope"
+
+	paginationV1 "github.com/tx7do/go-crud/api/gen/go/pagination/v1"
+	"github.com/tx7do/go-utils/trans"
+	"github.com/tx7do/kratos-bootstrap/bootstrap"
+	bLogger "github.com/tx7do/kratos-bootstrap/logger"
+	"google.golang.org/protobuf/types/known/emptypb"
+
+	"github.com/hmlax/muskdeer/operator/internal/data"
+
+	"github.com/tx7do/go-crud/viewer"
+
+	"github.com/hmlax/muskdeer/deer/management/constants"
+	"github.com/hmlax/muskdeer/deer/management/middleware/auth"
+	operatorV1 "github.com/hmlax/muskdeer/deer/pb/operator/v1"
+)
+
+type PermissionGroupService struct {
+	operatorV1.UnimplementedPermissionGroupServiceServer
+	log *bLogger.Helper
+
+	permissionGroupRepo *data.PermissionGroupRepo
+	permissionRepo      *data.PermissionRepo
+}
+
+func NewPermissionGroupService(
+	ctx *bootstrap.Context,
+	permissionGroupRepo *data.PermissionGroupRepo,
+	permissionRepo *data.PermissionRepo,
+) *PermissionGroupService {
+	svc := &PermissionGroupService{
+		log:                 ctx.NewLoggerHelper("permission-group/service/admin-service"),
+		permissionGroupRepo: permissionGroupRepo,
+		permissionRepo:      permissionRepo,
+	}
+
+	svc.init()
+
+	return svc
+}
+
+func (s *PermissionGroupService) init() {
+	ctx := viewer.WithSystemContext(context.Background())
+	if count, _ := s.permissionGroupRepo.Count(ctx, []queryscope.Scope{}); count == 0 {
+		_ = s.createDefaultPermissionGroups(ctx)
+	}
+}
+
+func (s *PermissionGroupService) List(ctx context.Context, req *paginationV1.PagingRequest) (*operatorV1.ListPermissionGroupResponse, error) {
+	return s.permissionGroupRepo.List(ctx, req, true)
+}
+
+func (s *PermissionGroupService) Get(ctx context.Context, req *operatorV1.GetPermissionGroupRequest) (*operatorV1.PermissionGroup, error) {
+	return s.permissionGroupRepo.Get(ctx, req)
+}
+
+func (s *PermissionGroupService) Create(ctx context.Context, req *operatorV1.CreatePermissionGroupRequest) (*emptypb.Empty, error) {
+	if req.Data == nil {
+		return nil, operatorV1.ErrorAdminBadRequest("invalid parameter")
+	}
+
+	// 获取操作人信息
+	operator, err := auth.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Data.CreatedBy = trans.Ptr(operator.UserId)
+
+	if _, err = s.permissionGroupRepo.Create(ctx, req); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *PermissionGroupService) Update(ctx context.Context, req *operatorV1.UpdatePermissionGroupRequest) (*emptypb.Empty, error) {
+	if req.Data == nil {
+		return nil, operatorV1.ErrorAdminBadRequest("invalid parameter")
+	}
+
+	// 获取操作人信息
+	operator, err := auth.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Data.Id = trans.Ptr(req.GetId())
+
+	req.Data.UpdatedBy = trans.Ptr(operator.UserId)
+	if req.UpdateMask != nil {
+		req.UpdateMask.Paths = append(req.UpdateMask.Paths, "updated_by")
+	}
+
+	if err = s.permissionGroupRepo.Update(ctx, req); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *PermissionGroupService) Delete(ctx context.Context, req *operatorV1.DeletePermissionGroupRequest) (*emptypb.Empty, error) {
+	var err error
+
+	// 先清理组内权限点，再删分组本身（两 repo 无共享事务，顺序保证失败可重试：
+	// 权限点清理成功而分组删除失败时，组仍保留，重试删除不会产生孤儿数据）。
+	if err = s.permissionRepo.Delete(ctx, &operatorV1.DeletePermissionRequest{
+		QueryBy: &operatorV1.DeletePermissionRequest_GroupId{GroupId: req.GetId()},
+	}); err != nil {
+		return nil, err
+	}
+
+	if err = s.permissionGroupRepo.Delete(ctx, req); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *PermissionGroupService) createDefaultPermissionGroups(ctx context.Context) error {
+	var err error
+	for _, d := range constants.DefaultPermissionGroups {
+		if _, err = s.permissionGroupRepo.Create(ctx, &operatorV1.CreatePermissionGroupRequest{
+			Data: d,
+		}); err != nil {
+			s.log.Errorf(ctx, "create default permission group error: %v", err)
+			return err
+		}
+	}
+
+	return nil
+}

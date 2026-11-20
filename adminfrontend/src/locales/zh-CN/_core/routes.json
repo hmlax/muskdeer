@@ -1,0 +1,107 @@
+{
+  "MuskdeerGateways": "网关",
+  "accessKeys": "OpenAPI 凭证",
+  "api-audit-log": "API日志",
+  "apis": "API管理",
+  "auth": "认证",
+  "coming-soon": "即将上线",
+  "configs": "参数管理",
+  "dashboard": "概览",
+  "dashboard-analytics": "首页",
+  "data-access-audit-log": "数据日志",
+  "dict": "字典管理",
+  "error-pages": "错误",
+  "files": "文件管理",
+  "forbidden": "无权限",
+  "forgot-password": "找回密码",
+  "home": "首页",
+  "languages": "语言管理",
+  "log": "日志审计",
+  "login": "登录",
+  "login-audit-log": "登录日志",
+  "login-policies": "登录策略",
+  "menus": "菜单管理",
+  "mfaChallenge": "MFA 验证",
+  "not-found": "404",
+  "offline": "离线",
+  "online-sessions": "在线用户",
+  "operation-audit-log": "操作日志",
+  "opm": "组织人员",
+  "org-units": "组织架构",
+  "permission": "权限管理",
+  "permission-audit-log": "权限日志",
+  "permission-codes": "权限点管理",
+  "policy-evaluation-log": "策略评估日志",
+  "positions": "职位管理",
+  "roles": "角色管理",
+  "server-error": "服务器错误",
+  "ssoCallback": "SSO 回调",
+  "system": "系统管理",
+  "tenant": "租户管理",
+  "tenant-members": "租户列表",
+  "unauthorized": "未授权",
+  "user-detail": "用户详情",
+  "user-profile": "个人中心",
+  "users": "用户管理",
+  "menu": {
+    "profile": {
+      "settings": "个人中心"
+    },
+    "tenant": {
+      "moduleName": "租户管理",
+      "member": "租户列表"
+    },
+    "opm": {
+      "moduleName": "组织人员",
+      "orgUnit": "组织架构",
+      "position": "职位管理",
+      "user": "用户管理",
+      "userDetail": "用户详情"
+    },
+    "permission": {
+      "moduleName": "权限管理",
+      "permission": "权限点管理",
+      "role": "角色管理",
+      "menu": "菜单管理",
+      "api": "API管理"
+    },
+    "log": {
+      "moduleName": "日志审计",
+      "loginAuditLog": "登录日志",
+      "apiAuditLog": "API日志",
+      "operationAuditLog": "操作日志",
+      "dataAccessAuditLog": "数据日志",
+      "permissionAuditLog": "权限日志",
+      "policyEvaluationLog": "策略评估日志",
+      "redisCacheMonitor": "Redis缓存监控"
+    },
+    "system": {
+      "moduleName": "系统管理",
+      "dict": "字典管理",
+      "file": "文件管理",
+      "loginPolicy": "登录策略",
+      "language": "语言管理",
+      "accessKeys": "OpenAPI 凭证",
+      "config": "参数管理",
+      "onlineSessions": "在线用户",
+      "monitorAlerts": "监控告警"
+    }
+  },
+  "page": {
+    "dashboard": {
+      "title": "概览",
+      "analytics": "首页",
+      "workspace": "工作台"
+    }
+  },
+  "Muskdeer": "做市管理",
+  "MuskdeerTemplates": "策略模板",
+  "MuskdeerInstances": "策略实例",
+  "MuskdeerInstruments": "品种",
+  "MuskdeerAccounts": "交易账户",
+  "MuskdeerOrders": "订单记录",
+  "MuskdeerCancellations": "撤单记录",
+  "MuskdeerSynthetic": "开发成交",
+  "MuskdeerSnapshot": "挂单与持仓",
+  "MuskdeerBindings": "商户账户绑定"
+}

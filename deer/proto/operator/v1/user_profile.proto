@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package operator.v1;
+
+option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
+
+import "google/protobuf/empty.proto";
+import "operator/v1/user.proto";
+
+// 用户个人资料服务
+service UserProfileService {
+  // 获取用户资料
+  rpc GetUser (google.protobuf.Empty) returns (operator.v1.User) {
+  }
+
+  // 更新用户资料
+  rpc UpdateUser (operator.v1.UpdateUserRequest) returns (google.protobuf.Empty) {
+  }
+
+  // 修改用户密码
+  rpc ChangePassword(operator.v1.ChangePasswordRequest) returns (google.protobuf.Empty) {
+  }
+
+  // 上传头像
+  rpc UploadAvatar(operator.v1.UploadAvatarRequest) returns (operator.v1.UploadAvatarResponse) {
+  }
+  // 删除头像
+  rpc DeleteAvatar(google.protobuf.Empty) returns (google.protobuf.Empty) {
+  }
+
+  // 绑定手机号码/邮箱
+  rpc BindContact(operator.v1.BindContactRequest) returns (google.protobuf.Empty) {
+  }
+  // 验证手机号码/邮箱
+  rpc VerifyContact(operator.v1.VerifyContactRequest) returns (google.protobuf.Empty) {
+  }
+}
+
+// 用户个人资料服务

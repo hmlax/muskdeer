@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/login_policy_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 登录策略管理服务
+service LoginPolicyService {
+  // 查询登录策略列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListLoginPolicyResponse) {
+    option (api.get) = "/admin/v1/login-policies";
+  }
+
+  // 查询登录策略详情
+  rpc Get(admin.v1.GetLoginPolicyRequest) returns (admin.v1.LoginPolicy) {
+    option (api.get) = "/admin/v1/login-policies/:id";
+  }
+
+  // 创建登录策略
+  rpc Create(admin.v1.CreateLoginPolicyRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/login-policies";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新登录策略
+  rpc Update(admin.v1.UpdateLoginPolicyRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/login-policies/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除登录策略
+  rpc Delete(admin.v1.DeleteLoginPolicyRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/login-policies/:id";
+  }
+}

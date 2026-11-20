@@ -17,7 +17,7 @@ REMOVED = ('api', 'web', 'cmd/operator', 'deer/api.go', 'deer/testbusiness',
 
 def check_packages(packages):
     failures = []
-    prefixes = tuple(MODULE + name + '/' for name in SERVICES)
+    prefixes = tuple(MODULE + name + '/' for name in (*SERVICES, 'admin', 'operator'))
     for package in packages:
         name = package['ImportPath']
         imports = set(package.get('Imports', []))
@@ -49,6 +49,9 @@ def check_packages(packages):
             for dependency in dependencies:
                 if '/testbusiness' in dependency or '/testservice' in dependency:
                     failures.append(f'{service} imports regression fixture {dependency}')
+                if dependency.startswith((MODULE + 'admin/', MODULE + 'operator/',
+                                          MODULE + 'deer/management/', MODULE + 'deer/pb/operator/')):
+                    failures.append(f'{service} depends on administration implementation {dependency}')
     return failures
 
 

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/config_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 系统参数管理服务
+service ConfigService {
+  // 查询系统参数列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListConfigResponse) {
+    option (api.get) = "/admin/v1/configs";
+  }
+
+  // 查询系统参数详情
+  rpc Get(admin.v1.GetConfigRequest) returns (admin.v1.Config) {
+    option (api.get) = "/admin/v1/configs/:id";
+  }
+
+  // 创建系统参数
+  rpc Create(admin.v1.CreateConfigRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/configs";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新系统参数
+  rpc Update(admin.v1.UpdateConfigRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/configs/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除系统参数
+  rpc Delete(admin.v1.DeleteConfigRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/configs/:id";
+  }
+}

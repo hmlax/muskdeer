@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "gnostic/openapi/v3/annotations.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/access_key_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// OpenAPI 访问凭证（AK/SK）管理 — BFF
+service AccessKeyService {
+  // 分页查询访问凭证列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListAccessKeyResponse) {
+    option (api.get) = "/admin/v1/access-keys";
+  }
+
+  // 查询访问凭证详情
+  rpc Get(admin.v1.GetAccessKeyRequest) returns (admin.v1.AccessKey) {
+    option (api.get) = "/admin/v1/access-keys/:id";
+  }
+
+  // 创建访问凭证（响应中的 secret 仅本次明文返回，服务端只存 SHA-256 摘要）
+  rpc Create(admin.v1.CreateAccessKeyRequest) returns (admin.v1.CreateAccessKeyResponse) {
+    option (api.post) = "/admin/v1/access-keys";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新访问凭证（名称/状态/过期时间）
+  rpc Update(admin.v1.UpdateAccessKeyRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/access-keys/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除访问凭证
+  rpc Delete(admin.v1.DeleteAccessKeyRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/access-keys/:id";
+  }
+
+  // 重置密钥：生成新 Secret（响应明文返回一次）
+  rpc ResetSecret(admin.v1.ResetAccessKeySecretRequest) returns (admin.v1.CreateAccessKeyResponse) {
+    option (api.put) = "/admin/v1/access-keys/:id/secret";
+    option (admin.http.body) = "*";
+  }
+
+  // 令牌交换（机器对机器）：AK/SK 换短期 JWT。免鉴权端点——本身即是认证。
+  rpc IssueToken(admin.v1.IssueTokenRequest) returns (admin.v1.IssueTokenResponse) {
+    option (api.post) = "/admin/v1/access-keys/token";
+    option (admin.http.body) = "*";
+    option (gnostic.openapi.v3.operation) = {
+      security: {}
+    };
+  }
+}

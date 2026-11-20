@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+
+
+message ReadMediaRequest {
+  string path = 1;
+  int64 expires = 2;
+  string sig = 3;
+}

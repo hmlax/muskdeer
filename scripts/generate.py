@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def generate(verify: bool) -> None:
     check()
     validate_layout(ROOT)
-    inputs = sorted((ROOT / 'deer/proto').rglob('*.proto'))
+    inputs = sorted(path for path in (ROOT / 'deer/proto').rglob('*.proto')
+                    if path.relative_to(ROOT / 'deer/proto').parts[0] != 'operator')
     if not inputs:
         raise ValueError('no project Proto definitions found')
     with tempfile.TemporaryDirectory(prefix='muskdeer-generate-') as temporary:
@@ -59,6 +60,7 @@ def generate(verify: bool) -> None:
             path.relative_to(ROOT)
             for base in ('deer/pb', 'deer/proto')
             for path in (ROOT / base).rglob('*.pb.go')
+            if path.relative_to(ROOT / base).parts[0] != 'operator'
         }
         stale = sorted(existing - expected)
         if stale:

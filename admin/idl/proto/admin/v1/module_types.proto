@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package admin.v1;
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 业务功能模块
+message Module {
+  enum Module {
+    MODULE_UNSPECIFIED = 0; // 未指定
+
+    DASHBOARD = 1; // 仪表盘
+    OPM = 2; // 组织人员管理
+    SYSTEM = 3; // 系统管理
+    DICT = 4; // 数据字典
+    TENANT = 5; // 租户管理
+    PERMISSION = 6; // 权限管理
+    LOG = 7; // 日志审计
+    reserved 8, 10, 11;
+    reserved "INTERNAL_MESSAGE", "TASK", "AI";
+    MUSKDEER = 12; // 做市管理
+    FILE = 9; // 文件管理
+  }
+}

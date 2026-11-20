@@ -1,0 +1,25 @@
+version: v2
+
+modules:
+  - path: admin/idl/proto
+  - path: deer/proto
+    excludes: [deer/proto/common, deer/proto/market, deer/proto/strategy, deer/proto/execution, deer/proto/portfolio, deer/proto/cron]
+  - path: deer/third_party/admin
+    # Third-party annotation definitions retain their original package.
+    lint:
+      use: [MINIMAL]
+deps:
+  - 'buf.build/googleapis/googleapis'
+  - 'buf.build/kratos/apis'
+  - 'buf.build/gnostic/gnostic'
+  - 'buf.build/tx7do/pagination'
+  - 'buf.build/go-wind/redact'
+  - 'buf.build/envoyproxy/protoc-gen-validate'
+
+breaking:
+  use:
+    - FILE
+
+lint:
+  use:
+    - DEFAULT

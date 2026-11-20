@@ -1,0 +1,49 @@
+FROM golang:1.27.3-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS build
+ENV GOTOOLCHAIN=local CGO_ENABLED=0
+WORKDIR /workspace
+ARG VERSION=dev
+ARG BUILD=unknown
+COPY go.mod go.sum ./
+COPY deer/third_party/lukla-go ./deer/third_party/lukla-go
+RUN --mount=type=cache,target=/go/pkg/mod go mod download
+COPY admin ./admin
+COPY operator ./operator
+COPY deer ./deer
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    test -n "$VERSION" && test -n "$BUILD" && \
+    case "$VERSION/$BUILD" in *[!A-Za-z0-9._+:/@-]*) exit 2 ;; esac && \
+    go build -mod=readonly -trimpath -ldflags="-X main.Name=admin -X main.Version=$VERSION -X main.Build=$BUILD" -o /out/admin ./admin && \
+    go build -mod=readonly -trimpath -ldflags="-X main.Name=operator -X main.Version=$VERSION -X main.Build=$BUILD" -o /out/operator ./operator/cmd/server && \
+    for name in muskdeer-bootstrap muskdeer-migrate; do \
+      go build -mod=readonly -trimpath -ldflags="-X main.Name=$name -X main.Version=$VERSION -X main.Build=$BUILD" -o /out/$name ./operator/cmd/$name || exit $?; \
+    done
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build \
+    go list -deps -f '{{with .Module}}{{.Dir}}{{end}}' ./admin ./operator/cmd/server ./operator/cmd/muskdeer-bootstrap ./operator/cmd/muskdeer-migrate > /tmp/modules && \
+    mkdir -p /out/licenses/go /out/licenses/admin-framework && \
+    cp /usr/local/go/LICENSE /out/licenses/go/LICENSE && \
+    cp deer/management/LICENSE /out/licenses/admin-framework/LICENSE && \
+    sort -u /tmp/modules > /tmp/modules-sorted && \
+    while IFS= read -r module_dir; do \
+      case "$module_dir" in /go/pkg/mod/*) \
+        target="/out/licenses/${module_dir#/go/pkg/mod/}"; \
+        mkdir -p "$target"; \
+        find "$module_dir" -maxdepth 1 -type f \( -iname 'LICENSE*' -o -iname 'NOTICE*' -o -iname 'COPYING*' \) -exec cp '{}' "$target/" \; ;; \
+      esac; \
+    done < /tmp/modules-sorted
+
+FROM alpine:3.22 AS runtime-base
+RUN apk --no-cache add ca-certificates tzdata && adduser -D appuser && \
+    mkdir -p /app/data && chown appuser:appuser /app/data
+WORKDIR /app
+COPY --from=build /out/licenses /licenses
+USER appuser:appuser
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/app/bin/server"]
+
+FROM runtime-base AS runtime-admin
+COPY --from=build /out/admin /app/bin/server
+
+FROM runtime-base AS runtime-operator
+COPY --from=build /out/operator /app/bin/server
+COPY --from=build /out/muskdeer-bootstrap /app/bin/muskdeer-bootstrap
+COPY --from=build /out/muskdeer-migrate /app/bin/muskdeer-migrate

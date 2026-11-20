@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package admin.v1;
+
+import "admin/http.proto";
+import "hertz/api.proto";
+import "google/protobuf/empty.proto";
+import "admin/v1/org_unit_types.proto";
+import "admin/v1/pagination_types.proto";
+
+option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb";
+
+// 组织单元服务
+service OrgUnitService {
+  // 查询组织单元列表
+  rpc List(admin.v1.PagingRequest) returns (admin.v1.ListOrgUnitResponse) {
+    option (api.get) = "/admin/v1/org-units";
+  }
+
+  // 查询组织单元详情
+  rpc Get(admin.v1.GetOrgUnitRequest) returns (admin.v1.OrgUnit) {
+    option (api.get) = "/admin/v1/org-units/:id";
+  }
+
+  // 创建组织单元
+  rpc Create(admin.v1.CreateOrgUnitRequest) returns (google.protobuf.Empty) {
+    option (api.post) = "/admin/v1/org-units";
+    option (admin.http.body) = "*";
+  }
+
+  // 更新组织单元
+  rpc Update(admin.v1.UpdateOrgUnitRequest) returns (google.protobuf.Empty) {
+    option (api.put) = "/admin/v1/org-units/:id";
+    option (admin.http.body) = "*";
+  }
+
+  // 删除组织单元
+  rpc Delete(admin.v1.DeleteOrgUnitRequest) returns (google.protobuf.Empty) {
+    option (api.delete) = "/admin/v1/org-units/:id";
+  }
+}

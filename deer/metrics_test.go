@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	healthv1 "google.golang.org/grpc/health/grpc_health_v1"
@@ -101,7 +102,7 @@ func TestDeerMetricsAreIsolatedAndScrapesDoNotObserveThemselves(t *testing.T) {
 	if other := readMetricsHTTP(t, apiB.MonitoringAddress(), "/metrics"); !strings.Contains(other, `deer_request_duration_seconds_count{transport="probe"} 0`) {
 		t.Fatal("two services share metric state")
 	}
-	var parser expfmt.TextParser
+	parser := expfmt.NewTextParser(model.LegacyValidation)
 	if _, err := parser.TextToMetricFamilies(strings.NewReader(output)); err != nil {
 		t.Fatal(err)
 	}
