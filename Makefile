@@ -10,7 +10,7 @@ BUILD ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)@$(sh
 BUILD := $(BUILD)
 export NAME VERSION BUILD
 CORE_SERVICES := market strategy execution portfolio cron
-BUILD_COMMANDS := migrate coreinit policyinit readycheck venueinit venuebaseline instancemigrate instanceupgrade doctor marketprobe contractcheck
+BUILD_COMMANDS := migrate coreinit policyinit readycheck venueinit venuebaseline instancemigrate instanceupgrade catalogimport doctor marketprobe contractcheck
 PNPM := npm exec --yes --package=pnpm@12.16.1 -- pnpm --store-dir="$(CURDIR)/.cache/pnpm-store"
 export npm_config_cache := $(CURDIR)/.cache/npm
 

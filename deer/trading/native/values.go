@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/shopspring/decimal"
 
@@ -81,7 +82,7 @@ func Symbol(value string) bool {
 		return false
 	}
 	for _, c := range value {
-		if c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' {
+		if c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || unicode.Is(unicode.Han, c) {
 			continue
 		}
 		return false
