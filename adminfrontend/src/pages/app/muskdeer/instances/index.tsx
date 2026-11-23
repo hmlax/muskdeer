@@ -36,6 +36,24 @@ export default function Instances() {
   const columns: ProColumns<MuskdeerInstance>[] = [
     { title: t('search'), dataIndex: 'search', hideInTable: true },
     { title: t('strategyType'), dataIndex: 'strategyType', valueType: 'select', valueEnum: { market_maker: t('market_maker'), grid: t('grid'), wash_trade: t('wash_trade') }, width: 140 },
+    {
+      title: t('runningStatus'),
+      dataIndex: 'desiredRunning',
+      hideInTable: true,
+      valueType: 'select',
+      fieldProps: {
+        options: [
+          { label: t('allStatuses'), value: '' },
+          { label: t('started'), value: 'true' },
+          { label: t('stopped'), value: 'false' },
+        ],
+      },
+      search: {
+        transform: (value) => value === 'true' || value === 'false'
+          ? { desiredRunning: value === 'true' }
+          : {},
+      },
+    },
     { title: t('accountId'), dataIndex: 'accountId', width: 230 },
     { title: t('id'), dataIndex: 'id', hideInSearch: true, width: 80 },
     { title: t('instanceKey'), dataIndex: 'instanceKey', hideInSearch: true, width: 200 },
@@ -56,7 +74,7 @@ export default function Instances() {
     </Space> },
   ];
   return <>
-    <ResourceTable<MuskdeerInstance> resource="instances" columns={columns} fetch={muskdeerReaders.instances} actionRef={actionRef} notice={t('parameterNotice')}
+    <ResourceTable<MuskdeerInstance> resource="instances" columns={columns} fetch={muskdeerReaders.instances} actionRef={actionRef} notice={t('parameterNotice')} search={{ defaultCollapsed: false }}
       toolbar={allowed('create') ? [<Button key="create" type="primary" onClick={() => setEditor({})}>{t('create')}</Button>] : []} />
     {editor && <InstanceForm current={editor.current} onClose={() => setEditor(undefined)} onSaved={() => void actionRef.current?.reload()} />}
   </>;

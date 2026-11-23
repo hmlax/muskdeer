@@ -2616,6 +2616,10 @@ func toRPCMuskdeerInstanceListRequest(in *v1.MuskdeerInstanceListRequest) *v11.M
 	out.Search = in.Search
 	out.StrategyType = in.StrategyType
 	out.AccountId = in.AccountId
+	if in.DesiredRunning != nil {
+		value := *in.DesiredRunning
+		out.DesiredRunning = &value
+	}
 	return out
 }
 func toAPIMuskdeerInstancePage(in *v11.MuskdeerInstancePage) *v1.MuskdeerInstancePage {

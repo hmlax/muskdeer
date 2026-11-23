@@ -23,6 +23,14 @@ type capturingConsole struct {
 	actor   *core.Actor
 	running bool
 	calls   int
+	filter  *core.InstanceListRequest
+}
+
+func (c *capturingConsole) ListInstances(_ context.Context, in *core.InstanceListRequest, _ ...grpc.CallOption) (*core.InstancePage, error) {
+	c.filter = proto.CloneOf(in)
+	c.actor = in.Actor
+	c.calls++
+	return &core.InstancePage{}, nil
 }
 
 func (c *capturingConsole) ListAccounts(_ context.Context, in *core.ListRequest, _ ...grpc.CallOption) (*core.AccountPage, error) {
@@ -65,6 +73,12 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 	require.Equal(t, uint64(7), client.actor.TenantId)
 	require.Equal(t, "user:42", client.actor.Subject)
 	require.NotEmpty(t, client.actor.RequestId)
+	for _, filter := range []*bool{nil, proto.Bool(false), proto.Bool(true)} {
+		_, err := service.ListInstances(ctx, &pb.MuskdeerInstanceListRequest{DesiredRunning: filter})
+		require.NoError(t, err)
+		require.Equal(t, filter, client.filter.DesiredRunning)
+		require.Equal(t, []string{"venue/7/7"}, client.filter.Actor.AllowedAccountIds)
+	}
 	require.Equal(t, "9007199254740993.123456789012345678", accounts.Items[0].MaximumNotional)
 	_, err = service.StartInstance(ctx, &pb.MuskdeerRunningRequest{Id: 12})
 	require.NoError(t, err)

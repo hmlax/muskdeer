@@ -34,6 +34,8 @@ message ListRequest { Actor actor = 1; uint32 page = 2; uint32 page_size = 3; st
 message InstanceListRequest {
  Actor actor = 1; uint32 page = 2; uint32 page_size = 3; string search = 4;
  string strategy_type = 5; string account_id = 6;
+ // Absent lists all; explicit false selects stopped instances.
+ optional bool desired_running = 7;
 }
 message InstanceRequest { Actor actor = 1; int64 id = 2; }
 message CreateInstanceRequest {

@@ -67,6 +67,7 @@ func parseTargetAndAction(operation string) (string, operatorV1.PermissionAuditL
 	return targetType, action
 }
 
+// Handle records permission changes made by a write request.
 func (p *PermissionAuditLogMiddleware) Handle(ctx context.Context, htr HTTPTransport, middleErr error, latencyMs int64) {
 	// 仅对写操作落库。按 HTTP 方法判读请求（比方法名前缀猜测可靠）：
 	// GET/HEAD/OPTIONS 属读请求，不构成权限变更——此前 default 分支返回 OTHER

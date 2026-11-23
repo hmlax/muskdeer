@@ -126,14 +126,15 @@ func (x *MuskdeerListRequest) GetAccountId() string {
 }
 
 type MuskdeerInstanceListRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      uint32                 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	Search        string                 `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
-	StrategyType  string                 `protobuf:"bytes,5,opt,name=strategy_type,json=strategyType,proto3" json:"strategy_type,omitempty"`
-	AccountId     string                 `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Page           uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize       uint32                 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Search         string                 `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
+	StrategyType   string                 `protobuf:"bytes,5,opt,name=strategy_type,json=strategyType,proto3" json:"strategy_type,omitempty"`
+	AccountId      string                 `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	DesiredRunning *bool                  `protobuf:"varint,7,opt,name=desired_running,json=desiredRunning,proto3,oneof" json:"desired_running,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *MuskdeerInstanceListRequest) Reset() {
@@ -199,6 +200,13 @@ func (x *MuskdeerInstanceListRequest) GetAccountId() string {
 		return x.AccountId
 	}
 	return ""
+}
+
+func (x *MuskdeerInstanceListRequest) GetDesiredRunning() bool {
+	if x != nil && x.DesiredRunning != nil {
+		return *x.DesiredRunning
+	}
+	return false
 }
 
 type MuskdeerInstanceRequest struct {
@@ -3721,14 +3729,16 @@ const file_operator_v1_muskdeer_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\rR\bpageSize\x12\x16\n" +
 	"\x06search\x18\x04 \x01(\tR\x06search\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x05 \x01(\tR\taccountId\"\xaa\x01\n" +
+	"account_id\x18\x05 \x01(\tR\taccountId\"\xec\x01\n" +
 	"\x1bMuskdeerInstanceListRequest\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\rR\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x03 \x01(\rR\bpageSize\x12\x16\n" +
 	"\x06search\x18\x04 \x01(\tR\x06search\x12#\n" +
 	"\rstrategy_type\x18\x05 \x01(\tR\fstrategyType\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x06 \x01(\tR\taccountId\")\n" +
+	"account_id\x18\x06 \x01(\tR\taccountId\x12,\n" +
+	"\x0fdesired_running\x18\a \x01(\bH\x00R\x0edesiredRunning\x88\x01\x01B\x12\n" +
+	"\x10_desired_running\")\n" +
 	"\x17MuskdeerInstanceRequest\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x03R\x02id\"W\n" +
 	"\x1dMuskdeerCreateInstanceRequest\x126\n" +
@@ -4210,6 +4220,7 @@ func file_operator_v1_muskdeer_proto_init() {
 	if File_operator_v1_muskdeer_proto != nil {
 		return
 	}
+	file_operator_v1_muskdeer_proto_msgTypes[2].OneofWrappers = []any{}
 	file_operator_v1_muskdeer_proto_msgTypes[21].OneofWrappers = []any{
 		(*MuskdeerInstanceParameters_MarketMaker)(nil),
 		(*MuskdeerInstanceParameters_Grid)(nil),

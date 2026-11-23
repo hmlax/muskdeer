@@ -68,6 +68,7 @@ func parseResourceAndAction(operation string) (string, operatorV1.OperationAudit
 	return resourceType, action
 }
 
+// Handle records a business write operation when the request requires auditing.
 func (o *OperationAuditLogMiddleware) Handle(ctx context.Context, htr HTTPTransport, middleErr error, latencyMs int64) {
 	// 仅对写操作落库。按 HTTP 方法判读请求（比方法名前缀猜测可靠）：
 	// GET/HEAD/OPTIONS 属读请求，不构成变更——此前 default 分支返回 OTHER

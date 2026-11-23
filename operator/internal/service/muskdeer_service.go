@@ -205,12 +205,13 @@ func (s *MuskdeerService) ListInstances(ctx context.Context, in *pb.MuskdeerInst
 		return nil, err
 	}
 	result, err := s.client.ListInstances(ctx, &core.InstanceListRequest{
-		Actor:        actor,
-		Page:         in.GetPage(),
-		PageSize:     in.GetPageSize(),
-		Search:       in.GetSearch(),
-		AccountId:    in.GetAccountId(),
-		StrategyType: in.GetStrategyType(),
+		Actor:          actor,
+		Page:           in.GetPage(),
+		PageSize:       in.GetPageSize(),
+		Search:         in.GetSearch(),
+		AccountId:      in.GetAccountId(),
+		StrategyType:   in.GetStrategyType(),
+		DesiredRunning: in.DesiredRunning,
 	})
 	if err != nil {
 		return nil, s.failure(ctx, err)

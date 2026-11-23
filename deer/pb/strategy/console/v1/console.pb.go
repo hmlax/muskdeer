@@ -212,15 +212,17 @@ func (x *ListRequest) GetAccountId() string {
 }
 
 type InstanceListRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Actor         *Actor                 `protobuf:"bytes,1,opt,name=actor,proto3" json:"actor,omitempty"`
-	Page          uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      uint32                 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	Search        string                 `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
-	StrategyType  string                 `protobuf:"bytes,5,opt,name=strategy_type,json=strategyType,proto3" json:"strategy_type,omitempty"`
-	AccountId     string                 `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Actor        *Actor                 `protobuf:"bytes,1,opt,name=actor,proto3" json:"actor,omitempty"`
+	Page         uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize     uint32                 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Search       string                 `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
+	StrategyType string                 `protobuf:"bytes,5,opt,name=strategy_type,json=strategyType,proto3" json:"strategy_type,omitempty"`
+	AccountId    string                 `protobuf:"bytes,6,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	// Absent lists all; explicit false selects stopped instances.
+	DesiredRunning *bool `protobuf:"varint,7,opt,name=desired_running,json=desiredRunning,proto3,oneof" json:"desired_running,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *InstanceListRequest) Reset() {
@@ -293,6 +295,13 @@ func (x *InstanceListRequest) GetAccountId() string {
 		return x.AccountId
 	}
 	return ""
+}
+
+func (x *InstanceListRequest) GetDesiredRunning() bool {
+	if x != nil && x.DesiredRunning != nil {
+		return *x.DesiredRunning
+	}
+	return false
 }
 
 type InstanceRequest struct {
@@ -3450,7 +3459,7 @@ const file_deer_proto_strategy_console_v1_console_proto_rawDesc = "" +
 	"\tpage_size\x18\x03 \x01(\rR\bpageSize\x12\x16\n" +
 	"\x06search\x18\x04 \x01(\tR\x06search\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x05 \x01(\tR\taccountId\"\xdd\x01\n" +
+	"account_id\x18\x05 \x01(\tR\taccountId\"\x9f\x02\n" +
 	"\x13InstanceListRequest\x129\n" +
 	"\x05actor\x18\x01 \x01(\v2#.muskdeer.strategy.console.v1.ActorR\x05actor\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\rR\x04page\x12\x1b\n" +
@@ -3458,7 +3467,9 @@ const file_deer_proto_strategy_console_v1_console_proto_rawDesc = "" +
 	"\x06search\x18\x04 \x01(\tR\x06search\x12#\n" +
 	"\rstrategy_type\x18\x05 \x01(\tR\fstrategyType\x12\x1d\n" +
 	"\n" +
-	"account_id\x18\x06 \x01(\tR\taccountId\"\\\n" +
+	"account_id\x18\x06 \x01(\tR\taccountId\x12,\n" +
+	"\x0fdesired_running\x18\a \x01(\bH\x00R\x0edesiredRunning\x88\x01\x01B\x12\n" +
+	"\x10_desired_running\"\\\n" +
 	"\x0fInstanceRequest\x129\n" +
 	"\x05actor\x18\x01 \x01(\v2#.muskdeer.strategy.console.v1.ActorR\x05actor\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x03R\x02id\"\x87\x03\n" +
@@ -3907,6 +3918,7 @@ func file_deer_proto_strategy_console_v1_console_proto_init() {
 	if File_deer_proto_strategy_console_v1_console_proto != nil {
 		return
 	}
+	file_deer_proto_strategy_console_v1_console_proto_msgTypes[3].OneofWrappers = []any{}
 	file_deer_proto_strategy_console_v1_console_proto_msgTypes[20].OneofWrappers = []any{
 		(*InstanceParameters_MarketMaker)(nil),
 		(*InstanceParameters_Grid)(nil),

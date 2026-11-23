@@ -279,6 +279,10 @@ func (m *MuskdeerInstanceListRequest) validate(all bool) error {
 
 	// no validation rules for AccountId
 
+	if m.DesiredRunning != nil {
+		// no validation rules for DesiredRunning
+	}
+
 	if len(errors) > 0 {
 		return MuskdeerInstanceListRequestMultiError(errors)
 	}

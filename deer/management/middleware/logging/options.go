@@ -7,6 +7,7 @@ import (
 	operatorV1 "github.com/hmlax/muskdeer/deer/pb/operator/v1"
 )
 
+// WriteApiLogFunc persists one API audit record under the caller's context.
 type WriteApiLogFunc func(ctx context.Context, data *operatorV1.ApiAuditLog) error
 type WriteLoginLogFunc func(ctx context.Context, data *operatorV1.LoginAuditLog) error
 type WriteOperationAuditLogFunc func(ctx context.Context, data *operatorV1.OperationAuditLog) error
@@ -29,6 +30,7 @@ type options struct {
 
 type Option func(*options)
 
+// WithWriteApiLogFunc supplies the API audit record writer.
 func WithWriteApiLogFunc(fnc WriteApiLogFunc) Option {
 	return func(opts *options) {
 		opts.writeApiLogFunc = fnc

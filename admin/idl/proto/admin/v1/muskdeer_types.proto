@@ -7,6 +7,7 @@ message MuskdeerListRequest { uint32 page = 2; uint32 page_size = 3; string sear
 message MuskdeerInstanceListRequest {
  uint32 page = 2; uint32 page_size = 3; string search = 4;
  string strategy_type = 5; string account_id = 6;
+ optional bool desired_running = 7;
 }
 message MuskdeerInstanceRequest { int64 id = 2; }
 message MuskdeerCreateInstanceRequest { MuskdeerInstanceDraft data = 1; }

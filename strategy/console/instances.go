@@ -84,16 +84,7 @@ func (s *Server) ListInstances(ctx context.Context, in *pb.InstanceListRequest) 
 	if err != nil {
 		return nil, err
 	}
-	q := scoped(fresh(ctx, s.db).Model(&model.StrategyInstance{}).Where("delete_at IS NULL"), in.Actor)
-	if v := strings.TrimSpace(in.GetSearch()); v != "" {
-		q = q.Where("instance_key ILIKE ?", "%"+v+"%")
-	}
-	if in.GetAccountId() != "" {
-		q = q.Where("account_id = ?", in.AccountId)
-	}
-	if in.GetStrategyType() != "" {
-		q = q.Where("template = ?", in.StrategyType)
-	}
+	q := s.instanceListQuery(ctx, in)
 	var total int64
 	if err := q.Count(&total).Error; err != nil {
 		return nil, s.fail(ctx, err)
@@ -112,6 +103,23 @@ func (s *Server) ListInstances(ctx context.Context, in *pb.InstanceListRequest) 
 		out.Items = append(out.Items, item)
 	}
 	return out, nil
+}
+
+func (s *Server) instanceListQuery(ctx context.Context, in *pb.InstanceListRequest) *gorm.DB {
+	q := scoped(fresh(ctx, s.db).Model(&model.StrategyInstance{}).Where("delete_at IS NULL"), in.Actor)
+	if v := strings.TrimSpace(in.GetSearch()); v != "" {
+		q = q.Where("instance_key ILIKE ?", "%"+v+"%")
+	}
+	if in.GetAccountId() != "" {
+		q = q.Where("account_id = ?", in.AccountId)
+	}
+	if in.GetStrategyType() != "" {
+		q = q.Where("template = ?", in.StrategyType)
+	}
+	if in.DesiredRunning != nil {
+		q = q.Where("desired_running = ?", *in.DesiredRunning)
+	}
+	return q
 }
 
 func (s *Server) row(ctx context.Context, actor *pb.Actor, id int64) (*model.StrategyInstance, error) {

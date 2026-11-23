@@ -22,11 +22,11 @@ func TestOptionSetters(t *testing.T) {
 	key, _, err := auditutil.GenerateECDSAKeyPair()
 	require.NoError(t, err)
 
-	fApi := func(ctx context.Context, d *operatorV1.ApiAuditLog) error { return nil }
-	fLogin := func(ctx context.Context, d *operatorV1.LoginAuditLog) error { return nil }
-	fOp := func(ctx context.Context, d *operatorV1.OperationAuditLog) error { return nil }
-	fPerm := func(ctx context.Context, d *operatorV1.PermissionAuditLog) error { return nil }
-	fDA := func(ctx context.Context, d *operatorV1.DataAccessAuditLog) error { return nil }
+	fAPI := func(_ context.Context, _ *operatorV1.ApiAuditLog) error { return nil }
+	fLogin := func(_ context.Context, _ *operatorV1.LoginAuditLog) error { return nil }
+	fOp := func(_ context.Context, _ *operatorV1.OperationAuditLog) error { return nil }
+	fPerm := func(_ context.Context, _ *operatorV1.PermissionAuditLog) error { return nil }
+	fDA := func(_ context.Context, _ *operatorV1.DataAccessAuditLog) error { return nil }
 
 	cases := []struct {
 		name   string
@@ -35,7 +35,7 @@ func TestOptionSetters(t *testing.T) {
 	}{
 		{
 			"WithWriteApiLogFunc",
-			WithWriteApiLogFunc(fApi),
+			WithWriteApiLogFunc(fAPI),
 			func(o *options) bool { return o.writeApiLogFunc != nil },
 		},
 		{

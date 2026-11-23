@@ -13,10 +13,12 @@ import (
 	"github.com/tx7do/go-crud/viewer"
 )
 
+// ApiAuditLogMiddleware records API requests using the configured audit writer.
 type ApiAuditLogMiddleware struct {
 	op *options
 }
 
+// NewApiAuditLogMiddleware borrows the configured audit options.
 func NewApiAuditLogMiddleware(op *options) *ApiAuditLogMiddleware {
 	return &ApiAuditLogMiddleware{
 		op: op,

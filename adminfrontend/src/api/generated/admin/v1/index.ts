@@ -3158,6 +3158,7 @@ export type MuskdeerListRequest = {
 
 export type MuskdeerInstanceListRequest = {
   accountId?: string;
+  desiredRunning?: boolean;
   page?: number;
   pageSize?: number;
   search?: string;
@@ -3688,6 +3689,7 @@ export function createMuskdeerServiceClient(
         ['search', request.search],
         ['strategyType', request.strategyType],
         ['accountId', request.accountId],
+        ['desiredRunning', request.desiredRunning],
       ]);
       let uri = path;
       if (queryParams.length > 0) {
