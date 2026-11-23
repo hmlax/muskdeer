@@ -154,6 +154,7 @@ func TestInstanceStatusFilterKeepsScopeTotalsAndPagination(t *testing.T) {
 			}
 		})
 	}
+	t.Run("maker budget preflight", func(t *testing.T) { verifyMakerStartBudget(ctx, t, db, actor) })
 	t.Run("account activation and start guard", func(t *testing.T) {
 		row, policy, historyBefore := verifyDisabledAccountStart(ctx, t, db, server, actor)
 		verifyAccountEnable(ctx, t, db, server, actor, product, accounts, row, policy, historyBefore)

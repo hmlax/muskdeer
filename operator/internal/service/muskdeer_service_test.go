@@ -27,6 +27,15 @@ type capturingConsole struct {
 	enable  *core.EnableAccountRequest
 }
 
+func (c *capturingConsole) CheckInstance(_ context.Context, in *core.InstanceRequest, _ ...grpc.CallOption) (*core.MakerCheck, error) {
+	c.actor = in.Actor
+	c.calls++
+	return &core.MakerCheck{
+		TargetNotional:  "3998.123456789012345678",
+		MaximumNotional: "100",
+	}, nil
+}
+
 func (c *capturingConsole) EnableAccount(_ context.Context, in *core.EnableAccountRequest, _ ...grpc.CallOption) (*core.Account, error) {
 	c.enable = proto.CloneOf(in)
 	c.calls++
@@ -91,6 +100,11 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 		require.Equal(t, []string{"venue/7/7"}, client.filter.Actor.AllowedAccountIds)
 	}
 	require.Equal(t, "9007199254740993.123456789012345678", accounts.Items[0].MaximumNotional)
+	check, err := service.CheckInstance(ctx, &pb.MuskdeerInstanceRequest{Id: 213})
+	require.NoError(t, err)
+	require.Equal(t, "3998.123456789012345678", check.TargetNotional)
+	require.Equal(t, []string{"venue/7/7"}, client.actor.AllowedAccountIds)
+
 	enabled, err := service.EnableAccount(ctx, &pb.MuskdeerEnableAccountRequest{
 		Id:                  17,
 		ExpectedUpdatedAtMs: 12345,

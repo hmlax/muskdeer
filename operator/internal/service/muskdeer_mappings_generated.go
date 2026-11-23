@@ -6,6 +6,29 @@ import (
 	core "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
 )
 
+func fromCoreMakerCheck(in *core.MakerCheck) *pb.MuskdeerMakerCheck {
+	if in == nil {
+		return nil
+	}
+	out := &pb.MuskdeerMakerCheck{
+		CanStart:             in.CanStart,
+		Reason:               in.Reason,
+		Message:              in.Message,
+		TargetNotional:       in.TargetNotional,
+		MaximumNotional:      in.MaximumNotional,
+		MaximumOrderNotional: in.MaximumOrderNotional,
+		TargetOrderCount:     in.TargetOrderCount,
+		ActiveBuyOrders:      in.ActiveBuyOrders,
+		ActiveSellOrders:     in.ActiveSellOrders,
+		AvailableQuote:       in.AvailableQuote,
+		CheckedAtMs:          in.CheckedAtMs,
+		SnapshotObservedAtMs: in.SnapshotObservedAtMs,
+		ValidUntilMs:         in.ValidUntilMs,
+		Revision:             in.Revision,
+		ControlVersion:       in.ControlVersion,
+	}
+	return out
+}
 func fromCoreGateway(in *core.Gateway) *pb.MuskdeerGateway {
 	if in == nil {
 		return nil
@@ -448,6 +471,29 @@ func fromCoreCancelReply(in *core.CancelReply) *pb.MuskdeerCancelReply {
 	out := &pb.MuskdeerCancelReply{
 		Acknowledged:        in.Acknowledged,
 		ConfirmationPending: in.ConfirmationPending,
+	}
+	return out
+}
+func toCoreMakerCheck(in *pb.MuskdeerMakerCheck) *core.MakerCheck {
+	if in == nil {
+		return nil
+	}
+	out := &core.MakerCheck{
+		CanStart:             in.CanStart,
+		Reason:               in.Reason,
+		Message:              in.Message,
+		TargetNotional:       in.TargetNotional,
+		MaximumNotional:      in.MaximumNotional,
+		MaximumOrderNotional: in.MaximumOrderNotional,
+		TargetOrderCount:     in.TargetOrderCount,
+		ActiveBuyOrders:      in.ActiveBuyOrders,
+		ActiveSellOrders:     in.ActiveSellOrders,
+		AvailableQuote:       in.AvailableQuote,
+		CheckedAtMs:          in.CheckedAtMs,
+		SnapshotObservedAtMs: in.SnapshotObservedAtMs,
+		ValidUntilMs:         in.ValidUntilMs,
+		Revision:             in.Revision,
+		ControlVersion:       in.ControlVersion,
 	}
 	return out
 }

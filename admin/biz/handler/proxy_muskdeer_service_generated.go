@@ -21,6 +21,17 @@ func (s *MuskdeerServiceProxy) CancelInstanceOrders(ctx context.Context, in *v11
 	}
 	return toAPIMuskdeerCancelReply(reply), nil
 }
+func (s *MuskdeerServiceProxy) CheckInstance(ctx context.Context, in *v11.MuskdeerInstanceRequest) (*v11.MuskdeerMakerCheck, error) {
+	request := toRPCMuskdeerInstanceRequest(in)
+	if err := transport.ValidateRequest(request); err != nil {
+		return nil, err
+	}
+	reply, err := s.client.CheckInstance(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return toAPIMuskdeerMakerCheck(reply), nil
+}
 func (s *MuskdeerServiceProxy) CreateAccountBinding(ctx context.Context, in *v11.MuskdeerCreateBindingRequest) (*v11.MuskdeerAccountBinding, error) {
 	request := toRPCMuskdeerCreateBindingRequest(in)
 	if err := transport.ValidateRequest(request); err != nil {

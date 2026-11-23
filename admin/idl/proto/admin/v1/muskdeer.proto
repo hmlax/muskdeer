@@ -41,6 +41,9 @@ service MuskdeerService {
  rpc GetInstance(MuskdeerInstanceRequest) returns (MuskdeerInstance) {
   option (api.get) = "/admin/v1/muskdeer/instances/:id";
  }
+ rpc CheckInstance(MuskdeerInstanceRequest) returns (MuskdeerMakerCheck) {
+  option (api.get) = "/admin/v1/muskdeer/instances/:id/check";
+ }
  rpc CreateInstance(MuskdeerCreateInstanceRequest) returns (MuskdeerInstance) {
   option (api.post) = "/admin/v1/muskdeer/instances";
   option (admin.http.body) = "*";

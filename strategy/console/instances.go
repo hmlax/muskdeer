@@ -41,6 +41,9 @@ func (s *Server) inventories(ctx context.Context) []inventory {
 		{service: rpcsecurity.ServiceExecution},
 		{service: rpcsecurity.ServicePortfolio},
 	}
+	if s.factory == nil {
+		return result
+	}
 	var group errgroup.Group
 	for index := 1; index < len(result); index++ {
 		group.Go(func() error {
@@ -213,6 +216,10 @@ func (s *Server) manage(ctx context.Context, actor *pb.Actor, command instanceco
 				return nil, status.Error(codes.FailedPrecondition, domain.AccountDisabledMessage)
 			}
 			return nil, failure.Err()
+		case errors.Is(err, instanceconfig.ErrStartCheckExpired):
+			return nil, makerCheckError(domain.MakerCheckExpiredReason, domain.MakerCheckExpiredMessage)
+		case errors.Is(err, instanceconfig.ErrMakerBudget):
+			return nil, makerCheckError(domain.MakerBudgetReason, domain.MakerBudgetMessage)
 		case errors.Is(err, instanceconfig.ErrConflict):
 			return nil, status.Error(codes.Aborted, err.Error())
 		case errors.Is(err, instanceconfig.ErrInvalid):
@@ -273,22 +280,38 @@ func (s *Server) SetInstanceRunning(ctx context.Context, in *pb.RunningRequest) 
 		return nil, err
 	}
 	operation := instanceconfig.ManagementStop
+	var proof *instanceconfig.StartCheck
 	if in.GetRunning() {
 		row, err := s.row(ctx, in.Actor, in.Id)
 		if err != nil {
 			return nil, err
 		}
-		view, err := s.instance(ctx, row, s.inventories(ctx))
-		if err != nil {
-			return nil, err
+		if row.Revision != in.ExpectedRevision || row.RequestedConfigVersion != in.ExpectedControlVersion {
+			return nil, status.Error(codes.Aborted, instanceconfig.ErrConflict.Error())
 		}
-		if view.RestartRequired {
-			return nil, status.Error(codes.FailedPrecondition, "restart core services to load this instance revision before starting")
+		if domain.StrategyTemplate(row.Template) == domain.StrategyTemplateMarketMaker {
+			check, checked, err := s.checkMaker(ctx, row)
+			if err != nil {
+				return nil, err
+			}
+			if !check.CanStart {
+				return nil, makerCheckError(check.Reason, check.Message)
+			}
+			proof = checked
+		} else {
+			view, err := s.instance(ctx, row, s.inventories(ctx))
+			if err != nil {
+				return nil, err
+			}
+			if view.RestartRequired {
+				return nil, makerCheckError(domain.MakerRevisionReason, domain.MakerRevisionMessage)
+			}
 		}
 		operation = instanceconfig.ManagementStart
 	}
 	return s.manage(ctx, in.Actor, instanceconfig.ManagementWrite{
 		Operation:              operation,
+		StartCheck:             proof,
 		ID:                     in.Id,
 		ExpectedRevision:       in.ExpectedRevision,
 		ExpectedControlVersion: in.ExpectedControlVersion,

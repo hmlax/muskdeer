@@ -42,6 +42,9 @@ func (s *MuskdeerServiceAdapter) ListInstances(ctx context.Context, in *v1.Muskd
 func (s *MuskdeerServiceAdapter) GetInstance(ctx context.Context, in *v1.MuskdeerInstanceRequest) (*v1.MuskdeerInstance, error) {
 	return s.inner.GetInstance(ctx, in)
 }
+func (s *MuskdeerServiceAdapter) CheckInstance(ctx context.Context, in *v1.MuskdeerInstanceRequest) (*v1.MuskdeerMakerCheck, error) {
+	return s.inner.CheckInstance(ctx, in)
+}
 func (s *MuskdeerServiceAdapter) CreateInstance(ctx context.Context, in *v1.MuskdeerCreateInstanceRequest) (*v1.MuskdeerInstance, error) {
 	return s.inner.CreateInstance(ctx, in)
 }

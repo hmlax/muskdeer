@@ -2694,6 +2694,24 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MuskdeerInstance'
+    /admin/v1/muskdeer/instances/{id}/check:
+        get:
+            tags:
+                - MuskdeerService
+            operationId: MuskdeerService_CheckInstance
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MuskdeerMakerCheck'
     /admin/v1/muskdeer/instances/{id}/start:
         post:
             tags:
@@ -7158,6 +7176,42 @@ components:
                     type: boolean
                 haltAfterStopLoss:
                     type: boolean
+        MuskdeerMakerCheck:
+            type: object
+            properties:
+                canStart:
+                    type: boolean
+                reason:
+                    type: string
+                message:
+                    type: string
+                targetNotional:
+                    type: string
+                maximumNotional:
+                    type: string
+                maximumOrderNotional:
+                    type: string
+                targetOrderCount:
+                    type: integer
+                    format: uint32
+                activeBuyOrders:
+                    type: integer
+                    format: uint32
+                activeSellOrders:
+                    type: integer
+                    format: uint32
+                availableQuote:
+                    type: string
+                checkedAtMs:
+                    type: string
+                snapshotObservedAtMs:
+                    type: string
+                validUntilMs:
+                    type: string
+                revision:
+                    type: string
+                controlVersion:
+                    type: string
         MuskdeerOrderPage:
             type: object
             properties:

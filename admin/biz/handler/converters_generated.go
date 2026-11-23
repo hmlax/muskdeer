@@ -2363,6 +2363,36 @@ func toAPIMuskdeerCancelReply(in *v11.MuskdeerCancelReply) *v1.MuskdeerCancelRep
 	out.ConfirmationPending = in.ConfirmationPending
 	return out
 }
+func toRPCMuskdeerInstanceRequest(in *v1.MuskdeerInstanceRequest) *v11.MuskdeerInstanceRequest {
+	if in == nil {
+		return nil
+	}
+	out := new(v11.MuskdeerInstanceRequest)
+	out.Id = in.Id
+	return out
+}
+func toAPIMuskdeerMakerCheck(in *v11.MuskdeerMakerCheck) *v1.MuskdeerMakerCheck {
+	if in == nil {
+		return nil
+	}
+	out := new(v1.MuskdeerMakerCheck)
+	out.CanStart = in.CanStart
+	out.Reason = in.Reason
+	out.Message = in.Message
+	out.TargetNotional = in.TargetNotional
+	out.MaximumNotional = in.MaximumNotional
+	out.MaximumOrderNotional = in.MaximumOrderNotional
+	out.TargetOrderCount = in.TargetOrderCount
+	out.ActiveBuyOrders = in.ActiveBuyOrders
+	out.ActiveSellOrders = in.ActiveSellOrders
+	out.AvailableQuote = in.AvailableQuote
+	out.CheckedAtMs = in.CheckedAtMs
+	out.SnapshotObservedAtMs = in.SnapshotObservedAtMs
+	out.ValidUntilMs = in.ValidUntilMs
+	out.Revision = in.Revision
+	out.ControlVersion = in.ControlVersion
+	return out
+}
 func toRPCMuskdeerCreateBindingRequest(in *v1.MuskdeerCreateBindingRequest) *v11.MuskdeerCreateBindingRequest {
 	if in == nil {
 		return nil
@@ -2492,14 +2522,6 @@ func toAPIMuskdeerAccountSnapshot(in *v11.MuskdeerAccountSnapshot) *v1.MuskdeerA
 	out.Available = in.Available
 	out.MarkPrice = in.MarkPrice
 	out.ObservedAtMs = in.ObservedAtMs
-	return out
-}
-func toRPCMuskdeerInstanceRequest(in *v1.MuskdeerInstanceRequest) *v11.MuskdeerInstanceRequest {
-	if in == nil {
-		return nil
-	}
-	out := new(v11.MuskdeerInstanceRequest)
-	out.Id = in.Id
 	return out
 }
 func toRPCMuskdeerOverviewRequest(in *v1.MuskdeerOverviewRequest) *v11.MuskdeerOverviewRequest {

@@ -40,8 +40,9 @@ type ManagementWrite struct {
 	ExpectedRevision       int64
 	ExpectedControlVersion int64
 	// nil means platform scope; merchants must supply a nonempty, verified scope.
-	Accounts []string
-	Input    *common.StrategyInstanceInput
+	Accounts   []string
+	Input      *common.StrategyInstanceInput
+	StartCheck *StartCheck
 }
 
 // Manage atomically applies one versioned command and appends its complete
@@ -93,6 +94,9 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		}
 		budget, err := managementBudget(ctx, tx, row.AccountId, command.Operation)
 		if err != nil {
+			return err
+		}
+		if err := validateManagementStart(row, budget, command); err != nil {
 			return err
 		}
 		// fromRow validates full binding; a new row gets its real identity on insert.

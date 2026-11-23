@@ -169,5 +169,20 @@
   "readOnlyParametersNotice": "Read-only view of the complete saved parameters. Stop the instance before editing.",
   "templateRevision": "Template revision",
   "openOnStart": "Open on start",
-  "haltAfterStopLoss": "Stop after stop loss"
+  "haltAfterStopLoss": "Stop after stop loss",
+  "checkMaker": "Quotation check",
+  "refreshCheck": "Check again",
+  "makerCheckNotice": "Uses current source data and matching account observations to check quotation inputs and total budget. Live funds, exposure and execution risk checks still apply. Requested running does not indicate active orders.",
+  "makerCheckPassed": "Current quotation inputs and total budget check passed",
+  "makerBudgetInsufficient": "Target quotation notional exceeds the account limit; review the limit or strategy parameters",
+  "makerSnapshotUnavailable": "A fresh matching account observation is unavailable; check again later",
+  "makerSourceUnavailable": "The selected source has no fresh two-sided book",
+  "makerTargetsInvalid": "Quotation parameters do not match current market rules",
+  "makerCheckExpired": "The check expired; check again before starting",
+  "targetNotional": "Target quotation notional (USDT)",
+  "targetOrderCount": "Target order count",
+  "activeBuyOrders": "Active instance buy orders",
+  "activeSellOrders": "Active instance sell orders",
+  "snapshotObservedAt": "Account observed at",
+  "checkedAt": "Checked at"
 }

@@ -169,5 +169,20 @@
   "readOnlyParametersNotice": "当前为只读查看，显示已保存的完整参数。修改参数前请先停止实例。",
   "templateRevision": "模板版本",
   "openOnStart": "启动时开首笔",
-  "haltAfterStopLoss": "止损后停止"
+  "haltAfterStopLoss": "止损后停止",
+  "checkMaker": "铺单检查",
+  "refreshCheck": "重新检查",
+  "makerCheckNotice": "检查使用当前行情和撮合账户观察，仅校验本次报价输入与总额度；实际下单仍受实时资金、敞口和执行风控约束。请求运行不代表已有挂单。",
+  "makerCheckPassed": "当前报价输入及总额度检查通过",
+  "makerBudgetInsufficient": "目标报价总额超过账户总额度，请核对后调整额度或策略参数",
+  "makerSnapshotUnavailable": "无法获取新鲜的撮合账户观察，请稍后重新检查",
+  "makerSourceUnavailable": "所选行情源缺少新鲜的双边盘口",
+  "makerTargetsInvalid": "铺单参数与当前交易规则不匹配",
+  "makerCheckExpired": "检查结果已过期，请重新检查后启动",
+  "targetNotional": "目标报价总额（USDT）",
+  "targetOrderCount": "目标挂单数",
+  "activeBuyOrders": "本实例实际买单数",
+  "activeSellOrders": "本实例实际卖单数",
+  "snapshotObservedAt": "账户观察时间",
+  "checkedAt": "检查时间"
 }

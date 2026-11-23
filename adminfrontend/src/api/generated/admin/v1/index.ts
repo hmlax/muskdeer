@@ -3540,6 +3540,24 @@ export type MuskdeerCreateAccountRequest = {
   data?: MuskdeerAccountDraft;
 };
 
+export type MuskdeerMakerCheck = {
+  activeBuyOrders?: number;
+  activeSellOrders?: number;
+  availableQuote?: string;
+  canStart?: boolean;
+  checkedAtMs?: number;
+  controlVersion?: number;
+  maximumNotional?: string;
+  maximumOrderNotional?: string;
+  message?: string;
+  reason?: string;
+  revision?: number;
+  snapshotObservedAtMs?: number;
+  targetNotional?: string;
+  targetOrderCount?: number;
+  validUntilMs?: number;
+};
+
 // 平台提供公共配置；商户独立配置和操作其账户及策略实例。
 export interface MuskdeerService {
   EnableAccount(
@@ -3572,6 +3590,9 @@ export interface MuskdeerService {
   GetInstance(
     request: MuskdeerInstanceRequest,
   ): Promise<MuskdeerInstance>;
+  CheckInstance(
+    request: MuskdeerInstanceRequest,
+  ): Promise<MuskdeerMakerCheck>;
   CreateInstance(
     request: MuskdeerCreateInstanceRequest,
   ): Promise<MuskdeerInstance>;
@@ -3731,6 +3752,17 @@ export function createMuskdeerServiceClient(
         service: 'MuskdeerService',
         method: 'GetInstance',
       }) as Promise<MuskdeerInstance>;
+    },
+    CheckInstance(request) {
+      if (request.id === undefined || request.id === null) {
+        throw new Error('missing required field request.id');
+      }
+      const path = `admin/v1/muskdeer/instances/${request.id}/check`;
+      const body = null;
+      return transport.unary(path, 'GET', body, {
+        service: 'MuskdeerService',
+        method: 'CheckInstance',
+      }) as Promise<MuskdeerMakerCheck>;
     },
     CreateInstance(request) {
       const path = `admin/v1/muskdeer/instances`;

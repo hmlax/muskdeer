@@ -44,3 +44,5 @@ export const setMuskdeerBindingEnabled = (input: MuskdeerSetBindingEnabledReques
 export const getMuskdeerInstance = (id: number) => apiClient.muskdeerService.GetInstance({ id });
 export const createMuskdeerAccount = (data: MuskdeerAccountDraft) => apiClient.muskdeerService.CreateAccount({ data });
 export const enableMuskdeerAccount = (input: { id?: number; expectedUpdatedAtMs?: number }) => apiClient.muskdeerService.EnableAccount(input);
+
+export const checkMuskdeerInstance = (id: number) => apiClient.muskdeerService.CheckInstance({ id });

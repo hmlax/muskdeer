@@ -24,6 +24,7 @@ const (
 	Console_ListGateways_FullMethodName         = "/muskdeer.strategy.console.v1.Console/ListGateways"
 	Console_ListInstances_FullMethodName        = "/muskdeer.strategy.console.v1.Console/ListInstances"
 	Console_GetInstance_FullMethodName          = "/muskdeer.strategy.console.v1.Console/GetInstance"
+	Console_CheckInstance_FullMethodName        = "/muskdeer.strategy.console.v1.Console/CheckInstance"
 	Console_CreateInstance_FullMethodName       = "/muskdeer.strategy.console.v1.Console/CreateInstance"
 	Console_UpdateInstance_FullMethodName       = "/muskdeer.strategy.console.v1.Console/UpdateInstance"
 	Console_SetInstanceRunning_FullMethodName   = "/muskdeer.strategy.console.v1.Console/SetInstanceRunning"
@@ -50,6 +51,7 @@ type ConsoleClient interface {
 	ListGateways(ctx context.Context, in *ActorRequest, opts ...grpc.CallOption) (*GatewayPage, error)
 	ListInstances(ctx context.Context, in *InstanceListRequest, opts ...grpc.CallOption) (*InstancePage, error)
 	GetInstance(ctx context.Context, in *InstanceRequest, opts ...grpc.CallOption) (*Instance, error)
+	CheckInstance(ctx context.Context, in *InstanceRequest, opts ...grpc.CallOption) (*MakerCheck, error)
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	SetInstanceRunning(ctx context.Context, in *RunningRequest, opts ...grpc.CallOption) (*Instance, error)
@@ -116,6 +118,16 @@ func (c *consoleClient) GetInstance(ctx context.Context, in *InstanceRequest, op
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Instance)
 	err := c.cc.Invoke(ctx, Console_GetInstance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *consoleClient) CheckInstance(ctx context.Context, in *InstanceRequest, opts ...grpc.CallOption) (*MakerCheck, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MakerCheck)
+	err := c.cc.Invoke(ctx, Console_CheckInstance_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -254,6 +266,7 @@ type ConsoleServer interface {
 	ListGateways(context.Context, *ActorRequest) (*GatewayPage, error)
 	ListInstances(context.Context, *InstanceListRequest) (*InstancePage, error)
 	GetInstance(context.Context, *InstanceRequest) (*Instance, error)
+	CheckInstance(context.Context, *InstanceRequest) (*MakerCheck, error)
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
 	SetInstanceRunning(context.Context, *RunningRequest) (*Instance, error)
@@ -290,6 +303,9 @@ func (UnimplementedConsoleServer) ListInstances(context.Context, *InstanceListRe
 }
 func (UnimplementedConsoleServer) GetInstance(context.Context, *InstanceRequest) (*Instance, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetInstance not implemented")
+}
+func (UnimplementedConsoleServer) CheckInstance(context.Context, *InstanceRequest) (*MakerCheck, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckInstance not implemented")
 }
 func (UnimplementedConsoleServer) CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateInstance not implemented")
@@ -434,6 +450,24 @@ func _Console_GetInstance_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConsoleServer).GetInstance(ctx, req.(*InstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Console_CheckInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConsoleServer).CheckInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Console_CheckInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConsoleServer).CheckInstance(ctx, req.(*InstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -680,6 +714,10 @@ var Console_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstance",
 			Handler:    _Console_GetInstance_Handler,
+		},
+		{
+			MethodName: "CheckInstance",
+			Handler:    _Console_CheckInstance_Handler,
 		},
 		{
 			MethodName: "CreateInstance",

@@ -3786,6 +3786,162 @@ func (x *MuskdeerCreateAccountRequest) GetData() *MuskdeerAccountDraft {
 	return nil
 }
 
+type MuskdeerMakerCheck struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	CanStart             bool                   `protobuf:"varint,1,opt,name=can_start,json=canStart,proto3" json:"can_start,omitempty"`
+	Reason               string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	Message              string                 `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	TargetNotional       string                 `protobuf:"bytes,4,opt,name=target_notional,json=targetNotional,proto3" json:"target_notional,omitempty"`
+	MaximumNotional      string                 `protobuf:"bytes,5,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	MaximumOrderNotional string                 `protobuf:"bytes,6,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty"`
+	TargetOrderCount     uint32                 `protobuf:"varint,7,opt,name=target_order_count,json=targetOrderCount,proto3" json:"target_order_count,omitempty"`
+	ActiveBuyOrders      uint32                 `protobuf:"varint,8,opt,name=active_buy_orders,json=activeBuyOrders,proto3" json:"active_buy_orders,omitempty"`
+	ActiveSellOrders     uint32                 `protobuf:"varint,9,opt,name=active_sell_orders,json=activeSellOrders,proto3" json:"active_sell_orders,omitempty"`
+	AvailableQuote       string                 `protobuf:"bytes,10,opt,name=available_quote,json=availableQuote,proto3" json:"available_quote,omitempty"`
+	CheckedAtMs          int64                  `protobuf:"varint,11,opt,name=checked_at_ms,json=checkedAtMs,proto3" json:"checked_at_ms,omitempty"`
+	SnapshotObservedAtMs int64                  `protobuf:"varint,12,opt,name=snapshot_observed_at_ms,json=snapshotObservedAtMs,proto3" json:"snapshot_observed_at_ms,omitempty"`
+	ValidUntilMs         int64                  `protobuf:"varint,13,opt,name=valid_until_ms,json=validUntilMs,proto3" json:"valid_until_ms,omitempty"`
+	Revision             int64                  `protobuf:"varint,14,opt,name=revision,proto3" json:"revision,omitempty"`
+	ControlVersion       int64                  `protobuf:"varint,15,opt,name=control_version,json=controlVersion,proto3" json:"control_version,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *MuskdeerMakerCheck) Reset() {
+	*x = MuskdeerMakerCheck{}
+	mi := &file_admin_v1_muskdeer_types_proto_msgTypes[49]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MuskdeerMakerCheck) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MuskdeerMakerCheck) ProtoMessage() {}
+
+func (x *MuskdeerMakerCheck) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_muskdeer_types_proto_msgTypes[49]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MuskdeerMakerCheck.ProtoReflect.Descriptor instead.
+func (*MuskdeerMakerCheck) Descriptor() ([]byte, []int) {
+	return file_admin_v1_muskdeer_types_proto_rawDescGZIP(), []int{49}
+}
+
+func (x *MuskdeerMakerCheck) GetCanStart() bool {
+	if x != nil {
+		return x.CanStart
+	}
+	return false
+}
+
+func (x *MuskdeerMakerCheck) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *MuskdeerMakerCheck) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+func (x *MuskdeerMakerCheck) GetTargetNotional() string {
+	if x != nil {
+		return x.TargetNotional
+	}
+	return ""
+}
+
+func (x *MuskdeerMakerCheck) GetMaximumNotional() string {
+	if x != nil {
+		return x.MaximumNotional
+	}
+	return ""
+}
+
+func (x *MuskdeerMakerCheck) GetMaximumOrderNotional() string {
+	if x != nil {
+		return x.MaximumOrderNotional
+	}
+	return ""
+}
+
+func (x *MuskdeerMakerCheck) GetTargetOrderCount() uint32 {
+	if x != nil {
+		return x.TargetOrderCount
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetActiveBuyOrders() uint32 {
+	if x != nil {
+		return x.ActiveBuyOrders
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetActiveSellOrders() uint32 {
+	if x != nil {
+		return x.ActiveSellOrders
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetAvailableQuote() string {
+	if x != nil {
+		return x.AvailableQuote
+	}
+	return ""
+}
+
+func (x *MuskdeerMakerCheck) GetCheckedAtMs() int64 {
+	if x != nil {
+		return x.CheckedAtMs
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetSnapshotObservedAtMs() int64 {
+	if x != nil {
+		return x.SnapshotObservedAtMs
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetValidUntilMs() int64 {
+	if x != nil {
+		return x.ValidUntilMs
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetRevision() int64 {
+	if x != nil {
+		return x.Revision
+	}
+	return 0
+}
+
+func (x *MuskdeerMakerCheck) GetControlVersion() int64 {
+	if x != nil {
+		return x.ControlVersion
+	}
+	return 0
+}
+
 var File_admin_v1_muskdeer_types_proto protoreflect.FileDescriptor
 
 const file_admin_v1_muskdeer_types_proto_rawDesc = "" +
@@ -4130,7 +4286,24 @@ const file_admin_v1_muskdeer_types_proto_rawDesc = "" +
 	"\x16maximum_order_notional\x18\x06 \x01(\tR\x14maximumOrderNotional\x12\x1a\n" +
 	"\bleverage\x18\a \x01(\rR\bleverage\"R\n" +
 	"\x1cMuskdeerCreateAccountRequest\x122\n" +
-	"\x04data\x18\x01 \x01(\v2\x1e.admin.v1.MuskdeerAccountDraftR\x04dataB<Z:github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpbb\x06proto3"
+	"\x04data\x18\x01 \x01(\v2\x1e.admin.v1.MuskdeerAccountDraftR\x04data\"\xe4\x04\n" +
+	"\x12MuskdeerMakerCheck\x12\x1b\n" +
+	"\tcan_start\x18\x01 \x01(\bR\bcanStart\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage\x12'\n" +
+	"\x0ftarget_notional\x18\x04 \x01(\tR\x0etargetNotional\x12)\n" +
+	"\x10maximum_notional\x18\x05 \x01(\tR\x0fmaximumNotional\x124\n" +
+	"\x16maximum_order_notional\x18\x06 \x01(\tR\x14maximumOrderNotional\x12,\n" +
+	"\x12target_order_count\x18\a \x01(\rR\x10targetOrderCount\x12*\n" +
+	"\x11active_buy_orders\x18\b \x01(\rR\x0factiveBuyOrders\x12,\n" +
+	"\x12active_sell_orders\x18\t \x01(\rR\x10activeSellOrders\x12'\n" +
+	"\x0favailable_quote\x18\n" +
+	" \x01(\tR\x0eavailableQuote\x12\"\n" +
+	"\rchecked_at_ms\x18\v \x01(\x03R\vcheckedAtMs\x125\n" +
+	"\x17snapshot_observed_at_ms\x18\f \x01(\x03R\x14snapshotObservedAtMs\x12$\n" +
+	"\x0evalid_until_ms\x18\r \x01(\x03R\fvalidUntilMs\x12\x1a\n" +
+	"\brevision\x18\x0e \x01(\x03R\brevision\x12'\n" +
+	"\x0fcontrol_version\x18\x0f \x01(\x03R\x0econtrolVersionB<Z:github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpbb\x06proto3"
 
 var (
 	file_admin_v1_muskdeer_types_proto_rawDescOnce sync.Once
@@ -4144,7 +4317,7 @@ func file_admin_v1_muskdeer_types_proto_rawDescGZIP() []byte {
 	return file_admin_v1_muskdeer_types_proto_rawDescData
 }
 
-var file_admin_v1_muskdeer_types_proto_msgTypes = make([]protoimpl.MessageInfo, 49)
+var file_admin_v1_muskdeer_types_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
 var file_admin_v1_muskdeer_types_proto_goTypes = []any{
 	(*MuskdeerOverviewRequest)(nil),          // 0: admin.v1.MuskdeerOverviewRequest
 	(*MuskdeerListRequest)(nil),              // 1: admin.v1.MuskdeerListRequest
@@ -4195,6 +4368,7 @@ var file_admin_v1_muskdeer_types_proto_goTypes = []any{
 	(*MuskdeerLongGridParameters)(nil),       // 46: admin.v1.MuskdeerLongGridParameters
 	(*MuskdeerAccountDraft)(nil),             // 47: admin.v1.MuskdeerAccountDraft
 	(*MuskdeerCreateAccountRequest)(nil),     // 48: admin.v1.MuskdeerCreateAccountRequest
+	(*MuskdeerMakerCheck)(nil),               // 49: admin.v1.MuskdeerMakerCheck
 }
 var file_admin_v1_muskdeer_types_proto_depIdxs = []int32{
 	5,  // 0: admin.v1.MuskdeerCreateInstanceRequest.data:type_name -> admin.v1.MuskdeerInstanceDraft
@@ -4246,7 +4420,7 @@ func file_admin_v1_muskdeer_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_v1_muskdeer_types_proto_rawDesc), len(file_admin_v1_muskdeer_types_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   49,
+			NumMessages:   50,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

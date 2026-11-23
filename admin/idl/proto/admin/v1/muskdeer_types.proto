@@ -164,3 +164,13 @@ message MuskdeerAccountDraft {
  string maximum_order_notional = 6; uint32 leverage = 7;
 }
 message MuskdeerCreateAccountRequest { MuskdeerAccountDraft data = 1; }
+
+message MuskdeerMakerCheck {
+ bool can_start = 1; string reason = 2; string message = 3;
+ string target_notional = 4; string maximum_notional = 5;
+ string maximum_order_notional = 6; uint32 target_order_count = 7;
+ uint32 active_buy_orders = 8; uint32 active_sell_orders = 9;
+ string available_quote = 10; int64 checked_at_ms = 11;
+ int64 snapshot_observed_at_ms = 12; int64 valid_until_ms = 13;
+ int64 revision = 14; int64 control_version = 15;
+}

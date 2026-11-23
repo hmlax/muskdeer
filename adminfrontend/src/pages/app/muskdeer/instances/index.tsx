@@ -5,10 +5,11 @@ import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import type { MuskdeerInstance } from '@/api/generated/admin/v1';
 import { cancelMuskdeerOrders, getMuskdeerInstance, muskdeerReaders, startMuskdeerInstance, stopMuskdeerInstance, useMuskdeerWrite } from '@/api/hooks/muskdeer';
 import { useAccess } from '@/core/access';
-import { isTradingAccountDisabled } from '@/api/hooks/muskdeer-errors';
+import { instanceActionMessageKey } from '@/api/hooks/muskdeer-errors';
 import ResourceTable from '../components/ResourceTable';
 import InstanceForm from '../components/InstanceForm';
 import InstanceParametersDrawer from '../components/InstanceParametersDrawer';
+import MakerCheckDrawer from '../components/MakerCheckDrawer';
 
 export default function Instances() {
   const { t } = useTranslation('muskdeer');
@@ -16,6 +17,7 @@ export default function Instances() {
   const { hasAccessByCodes } = useAccess();
   const actionRef = useRef<ActionType>(null);
   const [editor, setEditor] = useState<{ current?: MuskdeerInstance }>();
+  const [checking, setChecking] = useState<MuskdeerInstance>();
   const [details, setDetails] = useState<MuskdeerInstance>();
   const [viewing, setViewing] = useState<number>();
   const start = useMuskdeerWrite(startMuskdeerInstance);
@@ -34,7 +36,7 @@ export default function Instances() {
           message.success(t(kind === 'cancel' ? 'cancelPending' : 'saved'));
         } catch (error) {
           console.error('Instance action failed', error);
-          message.error(t(isTradingAccountDisabled(error) ? 'enableAccountBeforeStart' : 'failed'));
+          message.error(t(instanceActionMessageKey(error)));
         } finally {
           await actionRef.current?.reload();
         }
@@ -84,6 +86,7 @@ export default function Instances() {
           setViewing(undefined);
         }
       }}>{t('viewParameters')}</Button>}
+      {allowed('view') && row.strategyType === 'market_maker' && <Button type="link" onClick={() => setChecking(row)}>{t('checkMaker')}</Button>}
       {allowed('update') && <Button type="link" disabled={row.desiredRunning} onClick={async () => {
         try {
           if (row.id) setEditor({ current: await getMuskdeerInstance(row.id) });
@@ -101,6 +104,7 @@ export default function Instances() {
     <ResourceTable<MuskdeerInstance> resource="instances" columns={columns} fetch={muskdeerReaders.instances} actionRef={actionRef} notice={t('parameterNotice')} search={{ defaultCollapsed: false }}
       toolbar={allowed('create') ? [<Button key="create" type="primary" onClick={() => setEditor({})}>{t('create')}</Button>] : []} />
     {editor && <InstanceForm current={editor.current} onClose={() => setEditor(undefined)} onSaved={() => void actionRef.current?.reload()} />}
+    {checking && <MakerCheckDrawer current={checking} onClose={() => setChecking(undefined)} />}
     {details && <InstanceParametersDrawer current={details} onClose={() => setDetails(undefined)} />}
   </>;
 }

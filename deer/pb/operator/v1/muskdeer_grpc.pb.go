@@ -29,6 +29,7 @@ const (
 	MuskdeerService_ListGateways_FullMethodName             = "/operator.v1.MuskdeerService/ListGateways"
 	MuskdeerService_ListInstances_FullMethodName            = "/operator.v1.MuskdeerService/ListInstances"
 	MuskdeerService_GetInstance_FullMethodName              = "/operator.v1.MuskdeerService/GetInstance"
+	MuskdeerService_CheckInstance_FullMethodName            = "/operator.v1.MuskdeerService/CheckInstance"
 	MuskdeerService_CreateInstance_FullMethodName           = "/operator.v1.MuskdeerService/CreateInstance"
 	MuskdeerService_UpdateInstance_FullMethodName           = "/operator.v1.MuskdeerService/UpdateInstance"
 	MuskdeerService_StartInstance_FullMethodName            = "/operator.v1.MuskdeerService/StartInstance"
@@ -56,6 +57,7 @@ type MuskdeerServiceClient interface {
 	ListGateways(ctx context.Context, in *MuskdeerOverviewRequest, opts ...grpc.CallOption) (*MuskdeerGatewayPage, error)
 	ListInstances(ctx context.Context, in *MuskdeerInstanceListRequest, opts ...grpc.CallOption) (*MuskdeerInstancePage, error)
 	GetInstance(ctx context.Context, in *MuskdeerInstanceRequest, opts ...grpc.CallOption) (*MuskdeerInstance, error)
+	CheckInstance(ctx context.Context, in *MuskdeerInstanceRequest, opts ...grpc.CallOption) (*MuskdeerMakerCheck, error)
 	CreateInstance(ctx context.Context, in *MuskdeerCreateInstanceRequest, opts ...grpc.CallOption) (*MuskdeerInstance, error)
 	UpdateInstance(ctx context.Context, in *MuskdeerUpdateInstanceRequest, opts ...grpc.CallOption) (*MuskdeerInstance, error)
 	StartInstance(ctx context.Context, in *MuskdeerRunningRequest, opts ...grpc.CallOption) (*MuskdeerInstance, error)
@@ -171,6 +173,16 @@ func (c *muskdeerServiceClient) GetInstance(ctx context.Context, in *MuskdeerIns
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MuskdeerInstance)
 	err := c.cc.Invoke(ctx, MuskdeerService_GetInstance_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *muskdeerServiceClient) CheckInstance(ctx context.Context, in *MuskdeerInstanceRequest, opts ...grpc.CallOption) (*MuskdeerMakerCheck, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MuskdeerMakerCheck)
+	err := c.cc.Invoke(ctx, MuskdeerService_CheckInstance_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -301,6 +313,7 @@ type MuskdeerServiceServer interface {
 	ListGateways(context.Context, *MuskdeerOverviewRequest) (*MuskdeerGatewayPage, error)
 	ListInstances(context.Context, *MuskdeerInstanceListRequest) (*MuskdeerInstancePage, error)
 	GetInstance(context.Context, *MuskdeerInstanceRequest) (*MuskdeerInstance, error)
+	CheckInstance(context.Context, *MuskdeerInstanceRequest) (*MuskdeerMakerCheck, error)
 	CreateInstance(context.Context, *MuskdeerCreateInstanceRequest) (*MuskdeerInstance, error)
 	UpdateInstance(context.Context, *MuskdeerUpdateInstanceRequest) (*MuskdeerInstance, error)
 	StartInstance(context.Context, *MuskdeerRunningRequest) (*MuskdeerInstance, error)
@@ -351,6 +364,9 @@ func (UnimplementedMuskdeerServiceServer) ListInstances(context.Context, *Muskde
 }
 func (UnimplementedMuskdeerServiceServer) GetInstance(context.Context, *MuskdeerInstanceRequest) (*MuskdeerInstance, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetInstance not implemented")
+}
+func (UnimplementedMuskdeerServiceServer) CheckInstance(context.Context, *MuskdeerInstanceRequest) (*MuskdeerMakerCheck, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckInstance not implemented")
 }
 func (UnimplementedMuskdeerServiceServer) CreateInstance(context.Context, *MuskdeerCreateInstanceRequest) (*MuskdeerInstance, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateInstance not implemented")
@@ -582,6 +598,24 @@ func _MuskdeerService_GetInstance_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MuskdeerServiceServer).GetInstance(ctx, req.(*MuskdeerInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MuskdeerService_CheckInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MuskdeerInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MuskdeerServiceServer).CheckInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MuskdeerService_CheckInstance_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MuskdeerServiceServer).CheckInstance(ctx, req.(*MuskdeerInstanceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -830,6 +864,10 @@ var MuskdeerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetInstance",
 			Handler:    _MuskdeerService_GetInstance_Handler,
+		},
+		{
+			MethodName: "CheckInstance",
+			Handler:    _MuskdeerService_CheckInstance_Handler,
 		},
 		{
 			MethodName: "CreateInstance",

@@ -3,7 +3,7 @@ import re
 w=Path(__file__).resolve().parents[3]
 s=(w/'deer/proto/strategy/console/v1/console.proto').read_text()
 # Data DTOs (requests mapped explicitly by the service); generated code is explicit field assignments.
-names=['Gateway','GatewayPage','Overview','Template','TemplatePage','Instance','RuntimeVersion','InstancePage','InstanceParameters','ExecutionParameters','DepthParameters','GridParameters','LongGridParameters','WashParameters','Instrument','InstrumentPage','Account','AccountPage','AccountDraft','OrderRecord','OrderPage','Cancellation','CancellationPage','SyntheticRecord','SyntheticPage','AccountSnapshot','ActiveOrder','Position','CancelReply']
+names=['MakerCheck','Gateway','GatewayPage','Overview','Template','TemplatePage','Instance','RuntimeVersion','InstancePage','InstanceParameters','ExecutionParameters','DepthParameters','GridParameters','LongGridParameters','WashParameters','Instrument','InstrumentPage','Account','AccountPage','AccountDraft','OrderRecord','OrderPage','Cancellation','CancellationPage','SyntheticRecord','SyntheticPage','AccountSnapshot','ActiveOrder','Position','CancelReply']
 def camel(x):return ''.join(p.title() for p in x.split('_'))
 scalars={'int64','uint64','uint32','int32','bool','string'}
 def block(name):

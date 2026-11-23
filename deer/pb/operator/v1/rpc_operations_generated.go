@@ -112,6 +112,7 @@ const OperationMuskdeerServiceListTemplates = "/operator.v1.MuskdeerService/List
 const OperationMuskdeerServiceListGateways = "/operator.v1.MuskdeerService/ListGateways"
 const OperationMuskdeerServiceListInstances = "/operator.v1.MuskdeerService/ListInstances"
 const OperationMuskdeerServiceGetInstance = "/operator.v1.MuskdeerService/GetInstance"
+const OperationMuskdeerServiceCheckInstance = "/operator.v1.MuskdeerService/CheckInstance"
 const OperationMuskdeerServiceCreateInstance = "/operator.v1.MuskdeerService/CreateInstance"
 const OperationMuskdeerServiceUpdateInstance = "/operator.v1.MuskdeerService/UpdateInstance"
 const OperationMuskdeerServiceStartInstance = "/operator.v1.MuskdeerService/StartInstance"

@@ -202,7 +202,7 @@ func Capabilities() []Capability {
 			Code:         "muskdeer:instance:view",
 			Title:        "查看策略实例",
 			Page:         "instances",
-			Methods:      []string{"ListInstances", "GetInstance"},
+			Methods:      []string{"ListInstances", "GetInstance", "CheckInstance"},
 			MerchantOnly: true,
 		},
 		{

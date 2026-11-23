@@ -40,6 +40,7 @@ type Server struct {
 	connection       *configv1.VenueConnection
 	revisions        map[int64]int64
 	accountInspector func(context.Context, *common.VenueScope) (*common.VenueSnapshot, error)
+	bookInspector    func(context.Context, string) (*common.VenueBook, error)
 }
 
 // Dependencies borrows one database, logger and service-client owner.
