@@ -46,6 +46,10 @@ type Runtime struct {
 	logger     *logging.Logger
 	memoryOnly bool
 	latest     atomic.Pointer[commonv1.VenueSnapshot]
+	// Nil preserves the standalone observation contract. Configured funds use
+	// one control reader; this flag only sheds background SDK reads.
+	observeEnabled  *atomic.Bool
+	observeRecovery bool
 }
 
 // NewRuntime borrows the existing pool and RPC factory without starting tasks.
@@ -77,6 +81,12 @@ func (r *Runtime) RegisterGRPC(registrar grpc.ServiceRegistrar) {
 func (r *Runtime) Workers() []deer.Worker {
 	if r.children != nil {
 		var workers []deer.Worker
+		if r.db != nil && len(r.children) != 0 {
+			workers = append(workers, deer.Worker{
+				Name: workerPollControls,
+				Run:  r.watchPolling,
+			})
+		}
 		for _, key := range sortedDependencyKeys(r.children) {
 			workers = append(workers, r.children[key].Workers()...)
 		}
@@ -110,6 +120,12 @@ func (r *Runtime) Workers() []deer.Worker {
 }
 
 func (r *Runtime) poll(ctx context.Context, profile *commonv1.VenueProfilePolicy) (result error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if r.observeEnabled != nil && !r.observeEnabled.Load() {
+		return nil
+	}
 	ctx, span := r.factory.StartOperation(ctx, "portfolio.observe")
 	span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
 	defer func() { tracing.RecordError(ctx, result); span.End() }()

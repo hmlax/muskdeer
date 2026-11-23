@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"slices"
+	"sync/atomic"
 
 	"gorm.io/gorm"
 
@@ -27,7 +28,11 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	parent := &Runtime{children: make(map[string]*Runtime)}
+	parent := &Runtime{
+		children: make(map[string]*Runtime),
+		db:       db,
+		logger:   logger,
+	}
 	for _, instance := range instances {
 		if instance == nil || instance.ID <= 0 {
 			return nil, instanceconfig.ErrInvalid
@@ -45,6 +50,7 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 		}
 		key := native.ScopeKey(instance.Profile.UserId, instance.Profile.FundId)
 		if child := parent.children[key]; child != nil {
+			child.observeRecovery = child.observeRecovery || settings.LongGrid != nil
 			child.memoryOnly = child.memoryOnly || (instance.Type == domain.StrategyTemplateMarketMaker || settings.LongGrid != nil)
 			if child.cfg.Venue.Profiles[0].Symbol != instance.Profile.Symbol {
 				return nil, instanceconfig.ErrInvalid
@@ -56,12 +62,19 @@ func NewInstances(ctx context.Context, db *gorm.DB, owner string, instances []*i
 			continue
 		}
 		parent.children[key] = &Runtime{
-			db:         db,
-			owner:      owner,
-			cfg:        settings,
-			factory:    factory,
-			logger:     logger,
-			memoryOnly: (instance.Type == domain.StrategyTemplateMarketMaker || settings.LongGrid != nil),
+			db:              db,
+			owner:           owner,
+			cfg:             settings,
+			factory:         factory,
+			logger:          logger,
+			memoryOnly:      (instance.Type == domain.StrategyTemplateMarketMaker || settings.LongGrid != nil),
+			observeEnabled:  &atomic.Bool{},
+			observeRecovery: settings.LongGrid != nil,
+		}
+	}
+	if len(parent.children) != 0 {
+		if err := parent.refreshPolling(ctx); err != nil {
+			return nil, err
 		}
 	}
 	return parent, nil
