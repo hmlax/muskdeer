@@ -160,5 +160,9 @@
   "addAccount": "Add trading account",
   "accountEnrollmentNotice": "Connect an existing venue user and fund. The user must already be authorized for this merchant. Configure strategies separately after adding the account.",
   "tradingIDRequired": "Enter a valid positive account ID",
-  "accountAdded": "Trading account added"
+  "accountAdded": "Trading account added",
+  "enableAccount": "Enable account",
+  "confirmEnableAccount": "Enable the {{symbol}} trading account? Total limit: {{maximumNotional}} USDT; per-order limit: {{maximumOrderNotional}} USDT. Running or subsequently started strategies may trade within these existing limits.",
+  "accountEnabledSaved": "Trading account enabled",
+  "enableAccountBeforeStart": "Enable the trading account on the accounts page before starting the strategy"
 }

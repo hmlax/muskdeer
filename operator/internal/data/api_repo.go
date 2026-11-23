@@ -21,6 +21,7 @@ import (
 	"github.com/tx7do/go-utils/mapper"
 )
 
+// ApiRepo stores administration API catalog entries.
 type ApiRepo struct {
 	dbClient   *store.DBClient
 	driverName string
@@ -34,6 +35,7 @@ type ApiRepo struct {
 	repository *store.Repository[operatorV1.Api, store.Api]
 }
 
+// NewApiRepo borrows the administration database dependencies.
 func NewApiRepo(ctx *bootstrap.Context, dbClient *store.DBClient) *ApiRepo {
 	repo := &ApiRepo{
 		log:        ctx.NewLoggerHelper("api/repo/admin-service"),

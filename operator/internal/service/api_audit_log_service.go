@@ -14,6 +14,7 @@ import (
 	"github.com/hmlax/muskdeer/operator/internal/data"
 )
 
+// ApiAuditLogService exposes administration API audit queries.
 type ApiAuditLogService struct {
 	operatorV1.UnimplementedApiAuditLogServiceServer
 	log *bLogger.Helper
@@ -25,6 +26,7 @@ type ApiAuditLogService struct {
 	apiMutex sync.RWMutex
 }
 
+// NewApiAuditLogService borrows the audit repository dependencies.
 func NewApiAuditLogService(
 	ctx *bootstrap.Context,
 	apiAuditLogRepo *data.ApiAuditLogRepo,

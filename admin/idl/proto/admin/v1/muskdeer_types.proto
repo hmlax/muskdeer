@@ -26,6 +26,7 @@ message MuskdeerRunningRequest {
  int64 expected_control_version = 4;
 }
 message MuskdeerAccountRequest { string account_id = 2; }
+message MuskdeerEnableAccountRequest { int64 id = 2; int64 expected_updated_at_ms = 3; }
 message MuskdeerRecordListRequest {
  uint32 page = 2; uint32 page_size = 3; string symbol = 4;
  string account_id = 5; string state = 6; int64 instance_id = 7;
@@ -63,6 +64,7 @@ message MuskdeerInstance {
  int64 revision = 12; int64 control_version = 13; MuskdeerInstanceParameters parameters = 14;
  bool restart_required = 15; repeated MuskdeerRuntimeVersion runtimes = 16;
  int64 created_at_ms = 17; int64 updated_at_ms = 18; bool archived = 19;
+ bool account_enabled = 20;
 }
 message MuskdeerRuntimeVersion { string service = 1; int64 revision = 2; bool available = 3; }
 message MuskdeerInstancePage { repeated MuskdeerInstance items = 1; uint64 total = 2; }
@@ -102,6 +104,7 @@ message MuskdeerAccount {
  uint32 leverage = 8; bool enabled = 9; string observed_notional = 10;
  string reserved_notional = 11; string available_quote = 12;
  int64 snapshot_expires_at_ms = 13;
+ int64 updated_at_ms = 14;
 }
 message MuskdeerAccountPage { repeated MuskdeerAccount items = 1; uint64 total = 2; }
 message MuskdeerOrderRecord {

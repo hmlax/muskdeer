@@ -2409,6 +2409,7 @@ func toAPIMuskdeerAccount(in *v11.MuskdeerAccount) *v1.MuskdeerAccount {
 	out.ReservedNotional = in.ReservedNotional
 	out.AvailableQuote = in.AvailableQuote
 	out.SnapshotExpiresAtMs = in.SnapshotExpiresAtMs
+	out.UpdatedAtMs = in.UpdatedAtMs
 	return out
 }
 func toRPCMuskdeerCreateInstanceRequest(in *v1.MuskdeerCreateInstanceRequest) *v11.MuskdeerCreateInstanceRequest {
@@ -2448,6 +2449,16 @@ func toAPIMuskdeerInstance(in *v11.MuskdeerInstance) *v1.MuskdeerInstance {
 	out.CreatedAtMs = in.CreatedAtMs
 	out.UpdatedAtMs = in.UpdatedAtMs
 	out.Archived = in.Archived
+	out.AccountEnabled = in.AccountEnabled
+	return out
+}
+func toRPCMuskdeerEnableAccountRequest(in *v1.MuskdeerEnableAccountRequest) *v11.MuskdeerEnableAccountRequest {
+	if in == nil {
+		return nil
+	}
+	out := new(v11.MuskdeerEnableAccountRequest)
+	out.Id = in.Id
+	out.ExpectedUpdatedAtMs = in.ExpectedUpdatedAtMs
 	return out
 }
 func toRPCMuskdeerAccountRequest(in *v1.MuskdeerAccountRequest) *v11.MuskdeerAccountRequest {

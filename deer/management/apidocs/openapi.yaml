@@ -2518,6 +2518,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MuskdeerAccount'
+    /admin/v1/muskdeer/accounts/{id}/enable:
+        post:
+            tags:
+                - MuskdeerService
+            operationId: MuskdeerService_EnableAccount
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MuskdeerEnableAccountRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MuskdeerAccount'
     /admin/v1/muskdeer/cancellations:
         get:
             tags:
@@ -6765,6 +6789,8 @@ components:
                     type: string
                 snapshotExpiresAtMs:
                     type: string
+                updatedAtMs:
+                    type: string
         MuskdeerAccountBinding:
             type: object
             properties:
@@ -6939,6 +6965,13 @@ components:
                 bridgeSlots:
                     type: integer
                     format: uint32
+        MuskdeerEnableAccountRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                expectedUpdatedAtMs:
+                    type: string
         MuskdeerExecutionParameters:
             type: object
             properties:
@@ -7033,6 +7066,8 @@ components:
                 updatedAtMs:
                     type: string
                 archived:
+                    type: boolean
+                accountEnabled:
                     type: boolean
         MuskdeerInstanceDraft:
             type: object

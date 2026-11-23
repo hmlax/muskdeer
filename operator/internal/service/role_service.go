@@ -329,6 +329,7 @@ func (s *RoleService) revokeRoleUserSessions(ctx context.Context, roleID uint32,
 	return errors.Join(failures...)
 }
 
+// GetRoleCodesByRoleIds resolves role identifiers to their codes.
 func (s *RoleService) GetRoleCodesByRoleIds(ctx context.Context, req *operatorV1.GetRoleCodesByRoleIdsRequest) (*operatorV1.GetRoleCodesByRoleIdsResponse, error) {
 	ids, err := s.roleRepo.ListRoleCodesByRoleIds(ctx, req.GetRoleIds())
 	if err != nil {
@@ -352,6 +353,7 @@ func (s *RoleService) GetRolesByRoleCodes(ctx context.Context, req *operatorV1.G
 	}, nil
 }
 
+// GetRolesByRoleIds returns the requested administration roles.
 func (s *RoleService) GetRolesByRoleIds(ctx context.Context, req *operatorV1.GetRolesByRoleIdsRequest) (*operatorV1.ListRoleResponse, error) {
 	roles, err := s.roleRepo.ListRolesByRoleIds(ctx, req.GetRoleIds())
 	if err != nil {

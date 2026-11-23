@@ -3257,6 +3257,11 @@ export type MuskdeerAccountRequest = {
   accountId?: string;
 };
 
+export type MuskdeerEnableAccountRequest = {
+  expectedUpdatedAtMs?: number;
+  id?: number;
+};
+
 export type MuskdeerRecordListRequest = {
   accountId?: string;
   instanceId?: number;
@@ -3325,6 +3330,7 @@ export type MuskdeerGatewayPage = {
 };
 
 export type MuskdeerInstance = {
+  accountEnabled?: boolean;
   accountId?: string;
   archived?: boolean;
   controlVersion?: number;
@@ -3387,6 +3393,7 @@ export type MuskdeerAccount = {
   reservedNotional?: string;
   snapshotExpiresAtMs?: number;
   symbol?: string;
+  updatedAtMs?: number;
   userId?: number;
 };
 
@@ -3535,6 +3542,9 @@ export type MuskdeerCreateAccountRequest = {
 
 // 平台提供公共配置；商户独立配置和操作其账户及策略实例。
 export interface MuskdeerService {
+  EnableAccount(
+    request: MuskdeerEnableAccountRequest,
+  ): Promise<MuskdeerAccount>;
   CreateAccount(
     request: MuskdeerCreateAccountRequest,
   ): Promise<MuskdeerAccount>;
@@ -3601,6 +3611,17 @@ export function createMuskdeerServiceClient(
   transport: ClientTransport,
 ): MuskdeerService {
   return {
+    EnableAccount(request) {
+      if (request.id === undefined || request.id === null) {
+        throw new Error('missing required field request.id');
+      }
+      const path = `admin/v1/muskdeer/accounts/${request.id}/enable`;
+      const body = JSON.stringify(request);
+      return transport.unary(path, 'POST', body, {
+        service: 'MuskdeerService',
+        method: 'EnableAccount',
+      }) as Promise<MuskdeerAccount>;
+    },
     CreateAccount(request) {
       const path = `admin/v1/muskdeer/accounts`;
       const body = JSON.stringify(request);

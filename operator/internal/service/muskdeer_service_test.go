@@ -24,6 +24,17 @@ type capturingConsole struct {
 	running bool
 	calls   int
 	filter  *core.InstanceListRequest
+	enable  *core.EnableAccountRequest
+}
+
+func (c *capturingConsole) EnableAccount(_ context.Context, in *core.EnableAccountRequest, _ ...grpc.CallOption) (*core.Account, error) {
+	c.enable = proto.CloneOf(in)
+	c.calls++
+	return &core.Account{
+		Id:          in.Id,
+		Enabled:     true,
+		UpdatedAtMs: in.ExpectedUpdatedAtMs,
+	}, nil
 }
 
 func (c *capturingConsole) ListInstances(_ context.Context, in *core.InstanceListRequest, _ ...grpc.CallOption) (*core.InstancePage, error) {
@@ -80,6 +91,15 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 		require.Equal(t, []string{"venue/7/7"}, client.filter.Actor.AllowedAccountIds)
 	}
 	require.Equal(t, "9007199254740993.123456789012345678", accounts.Items[0].MaximumNotional)
+	enabled, err := service.EnableAccount(ctx, &pb.MuskdeerEnableAccountRequest{
+		Id:                  17,
+		ExpectedUpdatedAtMs: 12345,
+	})
+	require.NoError(t, err)
+	require.True(t, enabled.Enabled)
+	require.Equal(t, int64(17), client.enable.Id)
+	require.Equal(t, int64(12345), client.enable.ExpectedUpdatedAtMs)
+	require.Equal(t, []string{"venue/7/7"}, client.enable.Actor.AllowedAccountIds)
 	_, err = service.StartInstance(ctx, &pb.MuskdeerRunningRequest{Id: 12})
 	require.NoError(t, err)
 	require.True(t, client.running)
@@ -97,7 +117,7 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, calls, client.calls)
 	// Identity/scope fields cannot be supplied in browser or gateway request DTOs.
-	for _, request := range []proto.Message{&pb.MuskdeerListRequest{}, &pb.MuskdeerCreateInstanceRequest{}, &pb.MuskdeerRunningRequest{}} {
+	for _, request := range []proto.Message{&pb.MuskdeerListRequest{}, &pb.MuskdeerCreateInstanceRequest{}, &pb.MuskdeerRunningRequest{}, &pb.MuskdeerEnableAccountRequest{}} {
 		fields := request.ProtoReflect().Descriptor().Fields()
 		require.Nil(t, fields.ByName("actor"))
 		require.Nil(t, fields.ByName("allowed_account_ids"))

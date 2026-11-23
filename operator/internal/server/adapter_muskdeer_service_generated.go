@@ -15,6 +15,9 @@ type MuskdeerServiceAdapter struct {
 func (s *MuskdeerServiceAdapter) CreateAccount(ctx context.Context, in *v1.MuskdeerCreateAccountRequest) (*v1.MuskdeerAccount, error) {
 	return s.inner.CreateAccount(ctx, in)
 }
+func (s *MuskdeerServiceAdapter) EnableAccount(ctx context.Context, in *v1.MuskdeerEnableAccountRequest) (*v1.MuskdeerAccount, error) {
+	return s.inner.EnableAccount(ctx, in)
+}
 func (s *MuskdeerServiceAdapter) ListAccountBindings(ctx context.Context, in *v1.MuskdeerBindingListRequest) (*v1.MuskdeerBindingPage, error) {
 	return s.inner.ListAccountBindings(ctx, in)
 }

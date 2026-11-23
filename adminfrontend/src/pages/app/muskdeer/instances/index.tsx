@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { isAxiosError } from 'axios';
 import { App, Button, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
@@ -28,7 +29,11 @@ export default function Instances() {
           else if (kind === 'stop') await stop.mutateAsync(request);
           else await cancel.mutateAsync({ instanceId: row.id, expectedRevision: row.revision, cancelAll: true });
           message.success(t(kind === 'cancel' ? 'cancelPending' : 'saved'));
-        } catch (error) { console.error('Instance action failed', error); message.error(t('failed')); }
+        } catch (error) {
+          console.error('Instance action failed', error);
+          const accountDisabled = isAxiosError<{ reason?: string }>(error) && error.response?.data?.reason === 'TRADING_ACCOUNT_DISABLED';
+          message.error(t(accountDisabled ? 'enableAccountBeforeStart' : 'failed'));
+        }
         finally { await actionRef.current?.reload(); }
       },
     });
@@ -68,7 +73,7 @@ export default function Instances() {
         try { if (row.id) setEditor({ current: await getMuskdeerInstance(row.id) }); }
         catch (error) { console.error('Load current instance failed', error); message.error(t('failed')); }
       }}>{t('edit')}</Button>}
-      {allowed('start') && <Button type="link" disabled={row.desiredRunning || row.restartRequired || start.isPending} onClick={() => act(row, 'start')}>{t('start')}</Button>}
+      {allowed('start') && <Tooltip title={!row.accountEnabled ? t('enableAccountBeforeStart') : undefined}><span><Button type="link" disabled={!row.accountEnabled || row.desiredRunning || row.restartRequired || start.isPending} onClick={() => act(row, 'start')}>{t('start')}</Button></span></Tooltip>}
       {allowed('stop') && <Button type="link" disabled={!row.desiredRunning || stop.isPending} onClick={() => act(row, 'stop')}>{t('stop')}</Button>}
       {allowed('cancel') && row.strategyType !== 'wash_trade' && <Button type="link" danger disabled={row.desiredRunning || cancel.isPending} onClick={() => act(row, 'cancel')}>{t('cancelOrders')}</Button>}
     </Space> },

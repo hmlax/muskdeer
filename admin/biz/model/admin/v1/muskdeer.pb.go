@@ -26,8 +26,9 @@ var File_admin_v1_muskdeer_proto protoreflect.FileDescriptor
 
 const file_admin_v1_muskdeer_proto_rawDesc = "" +
 	"\n" +
-	"\x17admin/v1/muskdeer.proto\x12\badmin.v1\x1a\x10admin/http.proto\x1a\x0fhertz/api.proto\x1a\x1dadmin/v1/muskdeer_types.proto2\x9d\x14\n" +
-	"\x0fMuskdeerService\x12x\n" +
+	"\x17admin/v1/muskdeer.proto\x12\badmin.v1\x1a\x10admin/http.proto\x1a\x0fhertz/api.proto\x1a\x1dadmin/v1/muskdeer_types.proto2\xa3\x15\n" +
+	"\x0fMuskdeerService\x12\x83\x01\n" +
+	"\rEnableAccount\x12&.admin.v1.MuskdeerEnableAccountRequest\x1a\x19.admin.v1.MuskdeerAccount\"/\xd2\xc1\x18&/admin/v1/muskdeer/accounts/:id/enable\x8a\x97\"\x01*\x12x\n" +
 	"\rCreateAccount\x12&.admin.v1.MuskdeerCreateAccountRequest\x1a\x19.admin.v1.MuskdeerAccount\"$\xd2\xc1\x18\x1b/admin/v1/muskdeer/accounts\x8a\x97\"\x01*\x12\x83\x01\n" +
 	"\x13ListAccountBindings\x12$.admin.v1.MuskdeerBindingListRequest\x1a\x1d.admin.v1.MuskdeerBindingPage\"'\xca\xc1\x18#/admin/v1/muskdeer/account-bindings\x12\x8e\x01\n" +
 	"\x14CreateAccountBinding\x12&.admin.v1.MuskdeerCreateBindingRequest\x1a .admin.v1.MuskdeerAccountBinding\",\xd2\xc1\x18#/admin/v1/muskdeer/account-bindings\x8a\x97\"\x01*\x12\xa6\x01\n" +
@@ -50,79 +51,82 @@ const file_admin_v1_muskdeer_proto_rawDesc = "" +
 	"\x14CancelInstanceOrders\x12\x1f.admin.v1.MuskdeerCancelRequest\x1a\x1d.admin.v1.MuskdeerCancelReply\"@\xd2\xc1\x187/admin/v1/muskdeer/instances/:instance_id/cancel-orders\x8a\x97\"\x01*B<Z:github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpbb\x06proto3"
 
 var file_admin_v1_muskdeer_proto_goTypes = []any{
-	(*MuskdeerCreateAccountRequest)(nil),     // 0: admin.v1.MuskdeerCreateAccountRequest
-	(*MuskdeerBindingListRequest)(nil),       // 1: admin.v1.MuskdeerBindingListRequest
-	(*MuskdeerCreateBindingRequest)(nil),     // 2: admin.v1.MuskdeerCreateBindingRequest
-	(*MuskdeerSetBindingEnabledRequest)(nil), // 3: admin.v1.MuskdeerSetBindingEnabledRequest
-	(*MuskdeerOverviewRequest)(nil),          // 4: admin.v1.MuskdeerOverviewRequest
-	(*MuskdeerListRequest)(nil),              // 5: admin.v1.MuskdeerListRequest
-	(*MuskdeerInstanceListRequest)(nil),      // 6: admin.v1.MuskdeerInstanceListRequest
-	(*MuskdeerInstanceRequest)(nil),          // 7: admin.v1.MuskdeerInstanceRequest
-	(*MuskdeerCreateInstanceRequest)(nil),    // 8: admin.v1.MuskdeerCreateInstanceRequest
-	(*MuskdeerUpdateInstanceRequest)(nil),    // 9: admin.v1.MuskdeerUpdateInstanceRequest
-	(*MuskdeerRunningRequest)(nil),           // 10: admin.v1.MuskdeerRunningRequest
-	(*MuskdeerRecordListRequest)(nil),        // 11: admin.v1.MuskdeerRecordListRequest
-	(*MuskdeerAccountRequest)(nil),           // 12: admin.v1.MuskdeerAccountRequest
-	(*MuskdeerCancelRequest)(nil),            // 13: admin.v1.MuskdeerCancelRequest
-	(*MuskdeerAccount)(nil),                  // 14: admin.v1.MuskdeerAccount
-	(*MuskdeerBindingPage)(nil),              // 15: admin.v1.MuskdeerBindingPage
-	(*MuskdeerAccountBinding)(nil),           // 16: admin.v1.MuskdeerAccountBinding
-	(*MuskdeerOverview)(nil),                 // 17: admin.v1.MuskdeerOverview
-	(*MuskdeerTemplatePage)(nil),             // 18: admin.v1.MuskdeerTemplatePage
-	(*MuskdeerGatewayPage)(nil),              // 19: admin.v1.MuskdeerGatewayPage
-	(*MuskdeerInstancePage)(nil),             // 20: admin.v1.MuskdeerInstancePage
-	(*MuskdeerInstance)(nil),                 // 21: admin.v1.MuskdeerInstance
-	(*MuskdeerInstrumentPage)(nil),           // 22: admin.v1.MuskdeerInstrumentPage
-	(*MuskdeerAccountPage)(nil),              // 23: admin.v1.MuskdeerAccountPage
-	(*MuskdeerOrderPage)(nil),                // 24: admin.v1.MuskdeerOrderPage
-	(*MuskdeerCancellationPage)(nil),         // 25: admin.v1.MuskdeerCancellationPage
-	(*MuskdeerSyntheticPage)(nil),            // 26: admin.v1.MuskdeerSyntheticPage
-	(*MuskdeerAccountSnapshot)(nil),          // 27: admin.v1.MuskdeerAccountSnapshot
-	(*MuskdeerCancelReply)(nil),              // 28: admin.v1.MuskdeerCancelReply
+	(*MuskdeerEnableAccountRequest)(nil),     // 0: admin.v1.MuskdeerEnableAccountRequest
+	(*MuskdeerCreateAccountRequest)(nil),     // 1: admin.v1.MuskdeerCreateAccountRequest
+	(*MuskdeerBindingListRequest)(nil),       // 2: admin.v1.MuskdeerBindingListRequest
+	(*MuskdeerCreateBindingRequest)(nil),     // 3: admin.v1.MuskdeerCreateBindingRequest
+	(*MuskdeerSetBindingEnabledRequest)(nil), // 4: admin.v1.MuskdeerSetBindingEnabledRequest
+	(*MuskdeerOverviewRequest)(nil),          // 5: admin.v1.MuskdeerOverviewRequest
+	(*MuskdeerListRequest)(nil),              // 6: admin.v1.MuskdeerListRequest
+	(*MuskdeerInstanceListRequest)(nil),      // 7: admin.v1.MuskdeerInstanceListRequest
+	(*MuskdeerInstanceRequest)(nil),          // 8: admin.v1.MuskdeerInstanceRequest
+	(*MuskdeerCreateInstanceRequest)(nil),    // 9: admin.v1.MuskdeerCreateInstanceRequest
+	(*MuskdeerUpdateInstanceRequest)(nil),    // 10: admin.v1.MuskdeerUpdateInstanceRequest
+	(*MuskdeerRunningRequest)(nil),           // 11: admin.v1.MuskdeerRunningRequest
+	(*MuskdeerRecordListRequest)(nil),        // 12: admin.v1.MuskdeerRecordListRequest
+	(*MuskdeerAccountRequest)(nil),           // 13: admin.v1.MuskdeerAccountRequest
+	(*MuskdeerCancelRequest)(nil),            // 14: admin.v1.MuskdeerCancelRequest
+	(*MuskdeerAccount)(nil),                  // 15: admin.v1.MuskdeerAccount
+	(*MuskdeerBindingPage)(nil),              // 16: admin.v1.MuskdeerBindingPage
+	(*MuskdeerAccountBinding)(nil),           // 17: admin.v1.MuskdeerAccountBinding
+	(*MuskdeerOverview)(nil),                 // 18: admin.v1.MuskdeerOverview
+	(*MuskdeerTemplatePage)(nil),             // 19: admin.v1.MuskdeerTemplatePage
+	(*MuskdeerGatewayPage)(nil),              // 20: admin.v1.MuskdeerGatewayPage
+	(*MuskdeerInstancePage)(nil),             // 21: admin.v1.MuskdeerInstancePage
+	(*MuskdeerInstance)(nil),                 // 22: admin.v1.MuskdeerInstance
+	(*MuskdeerInstrumentPage)(nil),           // 23: admin.v1.MuskdeerInstrumentPage
+	(*MuskdeerAccountPage)(nil),              // 24: admin.v1.MuskdeerAccountPage
+	(*MuskdeerOrderPage)(nil),                // 25: admin.v1.MuskdeerOrderPage
+	(*MuskdeerCancellationPage)(nil),         // 26: admin.v1.MuskdeerCancellationPage
+	(*MuskdeerSyntheticPage)(nil),            // 27: admin.v1.MuskdeerSyntheticPage
+	(*MuskdeerAccountSnapshot)(nil),          // 28: admin.v1.MuskdeerAccountSnapshot
+	(*MuskdeerCancelReply)(nil),              // 29: admin.v1.MuskdeerCancelReply
 }
 var file_admin_v1_muskdeer_proto_depIdxs = []int32{
-	0,  // 0: admin.v1.MuskdeerService.CreateAccount:input_type -> admin.v1.MuskdeerCreateAccountRequest
-	1,  // 1: admin.v1.MuskdeerService.ListAccountBindings:input_type -> admin.v1.MuskdeerBindingListRequest
-	2,  // 2: admin.v1.MuskdeerService.CreateAccountBinding:input_type -> admin.v1.MuskdeerCreateBindingRequest
-	3,  // 3: admin.v1.MuskdeerService.SetAccountBindingEnabled:input_type -> admin.v1.MuskdeerSetBindingEnabledRequest
-	4,  // 4: admin.v1.MuskdeerService.GetOverview:input_type -> admin.v1.MuskdeerOverviewRequest
-	5,  // 5: admin.v1.MuskdeerService.ListTemplates:input_type -> admin.v1.MuskdeerListRequest
-	4,  // 6: admin.v1.MuskdeerService.ListGateways:input_type -> admin.v1.MuskdeerOverviewRequest
-	6,  // 7: admin.v1.MuskdeerService.ListInstances:input_type -> admin.v1.MuskdeerInstanceListRequest
-	7,  // 8: admin.v1.MuskdeerService.GetInstance:input_type -> admin.v1.MuskdeerInstanceRequest
-	8,  // 9: admin.v1.MuskdeerService.CreateInstance:input_type -> admin.v1.MuskdeerCreateInstanceRequest
-	9,  // 10: admin.v1.MuskdeerService.UpdateInstance:input_type -> admin.v1.MuskdeerUpdateInstanceRequest
-	10, // 11: admin.v1.MuskdeerService.StartInstance:input_type -> admin.v1.MuskdeerRunningRequest
-	10, // 12: admin.v1.MuskdeerService.StopInstance:input_type -> admin.v1.MuskdeerRunningRequest
-	5,  // 13: admin.v1.MuskdeerService.ListInstruments:input_type -> admin.v1.MuskdeerListRequest
-	5,  // 14: admin.v1.MuskdeerService.ListAccounts:input_type -> admin.v1.MuskdeerListRequest
-	11, // 15: admin.v1.MuskdeerService.ListOrderRecords:input_type -> admin.v1.MuskdeerRecordListRequest
-	11, // 16: admin.v1.MuskdeerService.ListCancellations:input_type -> admin.v1.MuskdeerRecordListRequest
-	11, // 17: admin.v1.MuskdeerService.ListSyntheticRecords:input_type -> admin.v1.MuskdeerRecordListRequest
-	12, // 18: admin.v1.MuskdeerService.GetAccountSnapshot:input_type -> admin.v1.MuskdeerAccountRequest
-	13, // 19: admin.v1.MuskdeerService.CancelInstanceOrders:input_type -> admin.v1.MuskdeerCancelRequest
-	14, // 20: admin.v1.MuskdeerService.CreateAccount:output_type -> admin.v1.MuskdeerAccount
-	15, // 21: admin.v1.MuskdeerService.ListAccountBindings:output_type -> admin.v1.MuskdeerBindingPage
-	16, // 22: admin.v1.MuskdeerService.CreateAccountBinding:output_type -> admin.v1.MuskdeerAccountBinding
-	16, // 23: admin.v1.MuskdeerService.SetAccountBindingEnabled:output_type -> admin.v1.MuskdeerAccountBinding
-	17, // 24: admin.v1.MuskdeerService.GetOverview:output_type -> admin.v1.MuskdeerOverview
-	18, // 25: admin.v1.MuskdeerService.ListTemplates:output_type -> admin.v1.MuskdeerTemplatePage
-	19, // 26: admin.v1.MuskdeerService.ListGateways:output_type -> admin.v1.MuskdeerGatewayPage
-	20, // 27: admin.v1.MuskdeerService.ListInstances:output_type -> admin.v1.MuskdeerInstancePage
-	21, // 28: admin.v1.MuskdeerService.GetInstance:output_type -> admin.v1.MuskdeerInstance
-	21, // 29: admin.v1.MuskdeerService.CreateInstance:output_type -> admin.v1.MuskdeerInstance
-	21, // 30: admin.v1.MuskdeerService.UpdateInstance:output_type -> admin.v1.MuskdeerInstance
-	21, // 31: admin.v1.MuskdeerService.StartInstance:output_type -> admin.v1.MuskdeerInstance
-	21, // 32: admin.v1.MuskdeerService.StopInstance:output_type -> admin.v1.MuskdeerInstance
-	22, // 33: admin.v1.MuskdeerService.ListInstruments:output_type -> admin.v1.MuskdeerInstrumentPage
-	23, // 34: admin.v1.MuskdeerService.ListAccounts:output_type -> admin.v1.MuskdeerAccountPage
-	24, // 35: admin.v1.MuskdeerService.ListOrderRecords:output_type -> admin.v1.MuskdeerOrderPage
-	25, // 36: admin.v1.MuskdeerService.ListCancellations:output_type -> admin.v1.MuskdeerCancellationPage
-	26, // 37: admin.v1.MuskdeerService.ListSyntheticRecords:output_type -> admin.v1.MuskdeerSyntheticPage
-	27, // 38: admin.v1.MuskdeerService.GetAccountSnapshot:output_type -> admin.v1.MuskdeerAccountSnapshot
-	28, // 39: admin.v1.MuskdeerService.CancelInstanceOrders:output_type -> admin.v1.MuskdeerCancelReply
-	20, // [20:40] is the sub-list for method output_type
-	0,  // [0:20] is the sub-list for method input_type
+	0,  // 0: admin.v1.MuskdeerService.EnableAccount:input_type -> admin.v1.MuskdeerEnableAccountRequest
+	1,  // 1: admin.v1.MuskdeerService.CreateAccount:input_type -> admin.v1.MuskdeerCreateAccountRequest
+	2,  // 2: admin.v1.MuskdeerService.ListAccountBindings:input_type -> admin.v1.MuskdeerBindingListRequest
+	3,  // 3: admin.v1.MuskdeerService.CreateAccountBinding:input_type -> admin.v1.MuskdeerCreateBindingRequest
+	4,  // 4: admin.v1.MuskdeerService.SetAccountBindingEnabled:input_type -> admin.v1.MuskdeerSetBindingEnabledRequest
+	5,  // 5: admin.v1.MuskdeerService.GetOverview:input_type -> admin.v1.MuskdeerOverviewRequest
+	6,  // 6: admin.v1.MuskdeerService.ListTemplates:input_type -> admin.v1.MuskdeerListRequest
+	5,  // 7: admin.v1.MuskdeerService.ListGateways:input_type -> admin.v1.MuskdeerOverviewRequest
+	7,  // 8: admin.v1.MuskdeerService.ListInstances:input_type -> admin.v1.MuskdeerInstanceListRequest
+	8,  // 9: admin.v1.MuskdeerService.GetInstance:input_type -> admin.v1.MuskdeerInstanceRequest
+	9,  // 10: admin.v1.MuskdeerService.CreateInstance:input_type -> admin.v1.MuskdeerCreateInstanceRequest
+	10, // 11: admin.v1.MuskdeerService.UpdateInstance:input_type -> admin.v1.MuskdeerUpdateInstanceRequest
+	11, // 12: admin.v1.MuskdeerService.StartInstance:input_type -> admin.v1.MuskdeerRunningRequest
+	11, // 13: admin.v1.MuskdeerService.StopInstance:input_type -> admin.v1.MuskdeerRunningRequest
+	6,  // 14: admin.v1.MuskdeerService.ListInstruments:input_type -> admin.v1.MuskdeerListRequest
+	6,  // 15: admin.v1.MuskdeerService.ListAccounts:input_type -> admin.v1.MuskdeerListRequest
+	12, // 16: admin.v1.MuskdeerService.ListOrderRecords:input_type -> admin.v1.MuskdeerRecordListRequest
+	12, // 17: admin.v1.MuskdeerService.ListCancellations:input_type -> admin.v1.MuskdeerRecordListRequest
+	12, // 18: admin.v1.MuskdeerService.ListSyntheticRecords:input_type -> admin.v1.MuskdeerRecordListRequest
+	13, // 19: admin.v1.MuskdeerService.GetAccountSnapshot:input_type -> admin.v1.MuskdeerAccountRequest
+	14, // 20: admin.v1.MuskdeerService.CancelInstanceOrders:input_type -> admin.v1.MuskdeerCancelRequest
+	15, // 21: admin.v1.MuskdeerService.EnableAccount:output_type -> admin.v1.MuskdeerAccount
+	15, // 22: admin.v1.MuskdeerService.CreateAccount:output_type -> admin.v1.MuskdeerAccount
+	16, // 23: admin.v1.MuskdeerService.ListAccountBindings:output_type -> admin.v1.MuskdeerBindingPage
+	17, // 24: admin.v1.MuskdeerService.CreateAccountBinding:output_type -> admin.v1.MuskdeerAccountBinding
+	17, // 25: admin.v1.MuskdeerService.SetAccountBindingEnabled:output_type -> admin.v1.MuskdeerAccountBinding
+	18, // 26: admin.v1.MuskdeerService.GetOverview:output_type -> admin.v1.MuskdeerOverview
+	19, // 27: admin.v1.MuskdeerService.ListTemplates:output_type -> admin.v1.MuskdeerTemplatePage
+	20, // 28: admin.v1.MuskdeerService.ListGateways:output_type -> admin.v1.MuskdeerGatewayPage
+	21, // 29: admin.v1.MuskdeerService.ListInstances:output_type -> admin.v1.MuskdeerInstancePage
+	22, // 30: admin.v1.MuskdeerService.GetInstance:output_type -> admin.v1.MuskdeerInstance
+	22, // 31: admin.v1.MuskdeerService.CreateInstance:output_type -> admin.v1.MuskdeerInstance
+	22, // 32: admin.v1.MuskdeerService.UpdateInstance:output_type -> admin.v1.MuskdeerInstance
+	22, // 33: admin.v1.MuskdeerService.StartInstance:output_type -> admin.v1.MuskdeerInstance
+	22, // 34: admin.v1.MuskdeerService.StopInstance:output_type -> admin.v1.MuskdeerInstance
+	23, // 35: admin.v1.MuskdeerService.ListInstruments:output_type -> admin.v1.MuskdeerInstrumentPage
+	24, // 36: admin.v1.MuskdeerService.ListAccounts:output_type -> admin.v1.MuskdeerAccountPage
+	25, // 37: admin.v1.MuskdeerService.ListOrderRecords:output_type -> admin.v1.MuskdeerOrderPage
+	26, // 38: admin.v1.MuskdeerService.ListCancellations:output_type -> admin.v1.MuskdeerCancellationPage
+	27, // 39: admin.v1.MuskdeerService.ListSyntheticRecords:output_type -> admin.v1.MuskdeerSyntheticPage
+	28, // 40: admin.v1.MuskdeerService.GetAccountSnapshot:output_type -> admin.v1.MuskdeerAccountSnapshot
+	29, // 41: admin.v1.MuskdeerService.CancelInstanceOrders:output_type -> admin.v1.MuskdeerCancelReply
+	21, // [21:42] is the sub-list for method output_type
+	0,  // [0:21] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name

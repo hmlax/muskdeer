@@ -54,6 +54,17 @@ func (s *MuskdeerServiceProxy) CreateInstance(ctx context.Context, in *v11.Muskd
 	}
 	return toAPIMuskdeerInstance(reply), nil
 }
+func (s *MuskdeerServiceProxy) EnableAccount(ctx context.Context, in *v11.MuskdeerEnableAccountRequest) (*v11.MuskdeerAccount, error) {
+	request := toRPCMuskdeerEnableAccountRequest(in)
+	if err := transport.ValidateRequest(request); err != nil {
+		return nil, err
+	}
+	reply, err := s.client.EnableAccount(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return toAPIMuskdeerAccount(reply), nil
+}
 func (s *MuskdeerServiceProxy) GetAccountSnapshot(ctx context.Context, in *v11.MuskdeerAccountRequest) (*v11.MuskdeerAccountSnapshot, error) {
 	request := toRPCMuskdeerAccountRequest(in)
 	if err := transport.ValidateRequest(request); err != nil {

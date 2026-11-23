@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -19,6 +20,7 @@ import (
 	model "github.com/hmlax/muskdeer/deer/pb/strategy/model/v1"
 	"github.com/hmlax/muskdeer/deer/rpcclient"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/instanceconfig"
 )
 
@@ -150,6 +152,10 @@ func (s *Server) GetInstance(ctx context.Context, in *pb.InstanceRequest) (*pb.I
 }
 
 func (s *Server) instance(ctx context.Context, row *model.StrategyInstance, versions []inventory) (*pb.Instance, error) {
+	var budget commonmodel.TradingAccountPolicy
+	if err := fresh(ctx, s.db).Model(&commonmodel.TradingAccountPolicy{}).Where("account_id = ? AND delete_at IS NULL", row.AccountId).Take(&budget).Error; err != nil {
+		return nil, s.fail(ctx, err)
+	}
 	var product commonmodel.Instrument
 	if err := fresh(ctx, s.db).Model(&commonmodel.Instrument{}).Where("id = ?", row.InstrumentId).Take(&product).Error; err != nil {
 		return nil, s.fail(ctx, err)
@@ -172,6 +178,7 @@ func (s *Server) instance(ctx context.Context, row *model.StrategyInstance, vers
 		CreatedAtMs:      row.CreateAt,
 		UpdatedAtMs:      row.UpdateAt,
 		Archived:         row.DeleteAt != nil,
+		AccountEnabled:   budget.Enabled,
 	}
 	for _, v := range versions {
 		revision, found := v.revisions[row.Id]
@@ -200,6 +207,12 @@ func (s *Server) manage(ctx context.Context, actor *pb.Actor, command instanceco
 	row, err := instanceconfig.ManageConfigured(ctx, s.db, command)
 	if err != nil {
 		switch {
+		case errors.Is(err, instanceconfig.ErrAccountDisabled):
+			failure, detailErr := status.New(codes.FailedPrecondition, domain.AccountDisabledMessage).WithDetails(&errdetails.ErrorInfo{Reason: domain.AccountDisabledReason})
+			if detailErr != nil {
+				return nil, status.Error(codes.FailedPrecondition, domain.AccountDisabledMessage)
+			}
+			return nil, failure.Err()
 		case errors.Is(err, instanceconfig.ErrConflict):
 			return nil, status.Error(codes.Aborted, err.Error())
 		case errors.Is(err, instanceconfig.ErrInvalid):

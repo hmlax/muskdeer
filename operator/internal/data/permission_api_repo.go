@@ -12,11 +12,13 @@ import (
 	"github.com/hmlax/muskdeer/operator/internal/data/store/permissionapi"
 )
 
+// PermissionApiRepo stores permission associations with administration APIs.
 type PermissionApiRepo struct {
 	log      *bLogger.Helper
 	dbClient *store.DBClient
 }
 
+// NewPermissionApiRepo borrows the administration database dependencies.
 func NewPermissionApiRepo(ctx *bootstrap.Context, dbClient *store.DBClient) *PermissionApiRepo {
 	return &PermissionApiRepo{
 		log:      ctx.NewLoggerHelper("permission-api/repo/admin-service"),

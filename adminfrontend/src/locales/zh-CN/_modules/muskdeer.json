@@ -160,5 +160,9 @@
   "addAccount": "添加交易账户",
   "accountEnrollmentNotice": "接入已有撮合用户和基金。用户须已获本商户授权，策略可在添加后单独配置。",
   "tradingIDRequired": "请输入有效的正整数账户 ID",
-  "accountAdded": "交易账户已添加"
+  "accountAdded": "交易账户已添加",
+  "enableAccount": "启用账户",
+  "confirmEnableAccount": "确认启用 {{symbol}} 交易账户？总名义上限 {{maximumNotional}} USDT，单笔上限 {{maximumOrderNotional}} USDT。启用后，已启动或随后启动的策略可按现有额度运行。",
+  "accountEnabledSaved": "交易账户已启用",
+  "enableAccountBeforeStart": "请先在交易账户页面启用账户，再启动策略"
 }

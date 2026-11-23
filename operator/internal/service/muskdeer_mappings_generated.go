@@ -103,6 +103,7 @@ func fromCoreInstance(in *core.Instance) *pb.MuskdeerInstance {
 		CreatedAtMs:      in.CreatedAtMs,
 		UpdatedAtMs:      in.UpdatedAtMs,
 		Archived:         in.Archived,
+		AccountEnabled:   in.AccountEnabled,
 	}
 	for _, v := range in.Runtimes {
 		out.Runtimes = append(out.Runtimes, fromCoreRuntimeVersion(v))
@@ -267,6 +268,7 @@ func fromCoreAccount(in *core.Account) *pb.MuskdeerAccount {
 		ReservedNotional:     in.ReservedNotional,
 		AvailableQuote:       in.AvailableQuote,
 		SnapshotExpiresAtMs:  in.SnapshotExpiresAtMs,
+		UpdatedAtMs:          in.UpdatedAtMs,
 	}
 	return out
 }
@@ -546,6 +548,7 @@ func toCoreInstance(in *pb.MuskdeerInstance) *core.Instance {
 		CreatedAtMs:      in.CreatedAtMs,
 		UpdatedAtMs:      in.UpdatedAtMs,
 		Archived:         in.Archived,
+		AccountEnabled:   in.AccountEnabled,
 	}
 	for _, v := range in.Runtimes {
 		out.Runtimes = append(out.Runtimes, toCoreRuntimeVersion(v))
@@ -710,6 +713,7 @@ func toCoreAccount(in *pb.MuskdeerAccount) *core.Account {
 		ReservedNotional:     in.ReservedNotional,
 		AvailableQuote:       in.AvailableQuote,
 		SnapshotExpiresAtMs:  in.SnapshotExpiresAtMs,
+		UpdatedAtMs:          in.UpdatedAtMs,
 	}
 	return out
 }

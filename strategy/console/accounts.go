@@ -64,6 +64,7 @@ func accountDTO(row *common.TradingAccountPolicy) *pb.Account {
 		ReservedNotional:     row.ReservedNotional,
 		AvailableQuote:       row.AvailableQuote,
 		SnapshotExpiresAtMs:  row.SnapshotExpiresAt,
+		UpdatedAtMs:          row.UpdateAt,
 	}
 }
 

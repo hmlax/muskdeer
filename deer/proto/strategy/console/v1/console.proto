@@ -16,6 +16,7 @@ service Console {
  rpc ListInstruments(ListRequest) returns (InstrumentPage);
  rpc ListAccounts(ListRequest) returns (AccountPage);
  rpc CreateAccount(CreateAccountRequest) returns (Account);
+ rpc EnableAccount(EnableAccountRequest) returns (Account);
  rpc ListOrderRecords(RecordListRequest) returns (OrderPage);
  rpc ListCancellations(RecordListRequest) returns (CancellationPage);
  rpc ListSyntheticRecords(RecordListRequest) returns (SyntheticPage);
@@ -90,6 +91,7 @@ message Instance {
  int64 revision = 12; int64 control_version = 13; InstanceParameters parameters = 14;
  bool restart_required = 15; repeated RuntimeVersion runtimes = 16;
  int64 created_at_ms = 17; int64 updated_at_ms = 18; bool archived = 19;
+ bool account_enabled = 20;
 }
 message RuntimeVersion { string service = 1; int64 revision = 2; bool available = 3; }
 message InstancePage { repeated Instance items = 1; uint64 total = 2; }
@@ -130,6 +132,7 @@ message Account {
  uint32 leverage = 8; bool enabled = 9; string observed_notional = 10;
  string reserved_notional = 11; string available_quote = 12;
  int64 snapshot_expires_at_ms = 13;
+ int64 updated_at_ms = 14;
 }
 message AccountPage { repeated Account items = 1; uint64 total = 2; }
 // IDs use exact decimal strings at the browser boundary; no floating conversion.
@@ -139,6 +142,7 @@ message AccountDraft {
  string maximum_order_notional = 6; uint32 leverage = 7;
 }
 message CreateAccountRequest { Actor actor = 1; AccountDraft data = 2; }
+message EnableAccountRequest { Actor actor = 1; int64 id = 2; int64 expected_updated_at_ms = 3; }
 message OrderRecord {
  int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;
  string account_id = 4; string symbol = 5; string client_id = 6;

@@ -19,6 +19,7 @@ import (
 	"github.com/hmlax/muskdeer/operator/internal/data/store/apiauditlog"
 )
 
+// ApiAuditLogRepo stores administration API audit records.
 type ApiAuditLogRepo struct {
 	dbClient *store.DBClient
 	log      *bLogger.Helper
@@ -28,6 +29,7 @@ type ApiAuditLogRepo struct {
 	repository *store.Repository[operatorV1.ApiAuditLog, store.ApiAuditLog]
 }
 
+// NewApiAuditLogRepo borrows the administration database dependencies.
 func NewApiAuditLogRepo(ctx *bootstrap.Context, dbClient *store.DBClient) *ApiAuditLogRepo {
 	repo := &ApiAuditLogRepo{
 		log:      ctx.NewLoggerHelper("api-audit-log/repo/admin-service"),

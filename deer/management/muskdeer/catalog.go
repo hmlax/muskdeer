@@ -13,6 +13,8 @@ const (
 	OverviewDashboardMenuName    = "Dashboard"
 	OverviewAnalyticsMenuName    = "Analytics"
 	AccountCreatePermissionCode  = "muskdeer:account:create"
+	AccountEnablePermissionCode  = "muskdeer:account:enable"
+	accountEnablePermissionTitle = "启用交易账户"
 	accountCreatePermissionTitle = "添加交易账户"
 )
 
@@ -161,6 +163,13 @@ func MenuAllowed(name string, platform bool) bool {
 // Capabilities returns the separately authorized API capabilities.
 func Capabilities() []Capability {
 	return []Capability{
+		{
+			Code:         AccountEnablePermissionCode,
+			Title:        accountEnablePermissionTitle,
+			Page:         "accounts",
+			Methods:      []string{"EnableAccount"},
+			MerchantOnly: true,
+		},
 		{
 			Code:         "muskdeer:gateway:view",
 			Title:        "查看网关",

@@ -30,6 +30,7 @@ type RouteWalker interface {
 	WalkRoute(fn http.WalkRouteFunc) error
 }
 
+// ApiService manages the administration API catalog.
 type ApiService struct {
 	operatorV1.UnimplementedApiServiceServer
 	log *bLogger.Helper
@@ -39,6 +40,7 @@ type ApiService struct {
 	routeWalker RouteWalker
 }
 
+// NewApiService borrows the administration catalog dependencies.
 func NewApiService(
 	ctx *bootstrap.Context,
 	repo *data.ApiRepo,

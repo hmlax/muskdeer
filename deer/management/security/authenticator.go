@@ -449,6 +449,7 @@ func (a *Authenticator) RevokeUserToken(ctx context.Context, clientType operator
 	return nil
 }
 
+// RevokeTokenByJti revokes the identified user session token.
 func (a *Authenticator) RevokeTokenByJti(ctx context.Context, clientType *operatorV1.ClientType_ClientType, userId uint32, jti string) error {
 	if clientType != nil {
 		if _, err := a.getAuthenticator(*clientType); err != nil {

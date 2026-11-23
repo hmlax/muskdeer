@@ -269,6 +269,7 @@ func (r *UserCredentialRepo) Delete(ctx context.Context, id uint32) error {
 	}
 }
 
+// DeleteByUserId deletes credentials belonging to the specified user.
 func (r *UserCredentialRepo) DeleteByUserId(ctx context.Context, userId uint32) error {
 	builder := r.dbClient.Client().UserCredential.Delete()
 	builder.Where(usercredential.UserIDEQ(userId))

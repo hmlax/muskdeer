@@ -28,6 +28,9 @@ const (
 // ErrConflict requires a refresh instead of retrying a stale management write.
 var ErrConflict = errors.New("strategy instance changed; refresh before retrying")
 
+// ErrAccountDisabled leaves the requested control state and history unchanged.
+var ErrAccountDisabled = errors.New(domain.AccountDisabledMessage)
+
 // ManagementWrite is an authenticated business command, never a persistence model.
 type ManagementWrite struct {
 	Operation              string
@@ -82,14 +85,14 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		}
 		var template model.StrategyTemplate
 		var instrument commonmodel.Instrument
-		var budget commonmodel.TradingAccountPolicy
 		if err := fresh(ctx, tx).Model(&model.StrategyTemplate{}).Where("id = ? AND delete_at IS NULL", row.TemplateId).Take(&template).Error; err != nil {
 			return err
 		}
 		if err := fresh(ctx, tx).Model(&commonmodel.Instrument{}).Where("id = ? AND delete_at IS NULL", row.InstrumentId).Take(&instrument).Error; err != nil {
 			return err
 		}
-		if err := fresh(ctx, tx).Model(&commonmodel.TradingAccountPolicy{}).Where("account_id = ? AND delete_at IS NULL", row.AccountId).Take(&budget).Error; err != nil {
+		budget, err := managementBudget(ctx, tx, row.AccountId, command.Operation)
+		if err != nil {
 			return err
 		}
 		// fromRow validates full binding; a new row gets its real identity on insert.
@@ -102,7 +105,7 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		if direct {
 			input = configuredRow(row)
 		}
-		instance, err := fromRow(input, &template, &instrument, &budget)
+		instance, err := fromRow(input, &template, &instrument, budget)
 		if err != nil {
 			return err
 		}
@@ -143,6 +146,21 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		return nil
 	})
 	return result, err
+}
+
+func managementBudget(ctx context.Context, tx *gorm.DB, account, operation string) (*commonmodel.TradingAccountPolicy, error) {
+	query := fresh(ctx, tx).Model(&commonmodel.TradingAccountPolicy{}).Where("account_id = ? AND delete_at IS NULL", account)
+	if operation == ManagementStart {
+		query = query.Clauses(clause.Locking{Strength: "SHARE"})
+	}
+	var budget commonmodel.TradingAccountPolicy
+	if err := query.Take(&budget).Error; err != nil {
+		return nil, err
+	}
+	if operation == ManagementStart && !budget.Enabled {
+		return nil, ErrAccountDisabled
+	}
+	return &budget, nil
 }
 
 func applyManagement(ctx context.Context, tx *gorm.DB, row *model.StrategyInstance, command ManagementWrite, connection *config.VenueConnection, direct bool) error {

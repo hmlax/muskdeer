@@ -7,6 +7,10 @@ import "admin/v1/muskdeer_types.proto";
 
 // 平台提供公共配置；商户独立配置和操作其账户及策略实例。
 service MuskdeerService {
+ rpc EnableAccount(MuskdeerEnableAccountRequest) returns (MuskdeerAccount) {
+  option (api.post) = "/admin/v1/muskdeer/accounts/:id/enable";
+  option (admin.http.body) = "*";
+ }
  rpc CreateAccount(MuskdeerCreateAccountRequest) returns (MuskdeerAccount) {
   option (api.post) = "/admin/v1/muskdeer/accounts";
   option (admin.http.body) = "*";

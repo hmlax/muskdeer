@@ -11,10 +11,12 @@ import (
 	"github.com/hmlax/muskdeer/deer/management/runtimeconfig"
 	pb "github.com/hmlax/muskdeer/deer/pb/operator/v1"
 	core "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
+	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/operator/internal/data"
 	"github.com/tx7do/go-crud/viewer"
 	"github.com/tx7do/kratos-bootstrap/bootstrap"
 	bLogger "github.com/tx7do/kratos-bootstrap/logger"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -79,6 +81,13 @@ func (s *MuskdeerService) failure(ctx context.Context, err error) error {
 		return nil
 	}
 	s.log.Errorf(ctx, "Muskdeer request failed: %v", err)
+	if status.Code(err) == codes.FailedPrecondition {
+		for _, detail := range status.Convert(err).Details() {
+			if info, ok := detail.(*errdetails.ErrorInfo); ok && info.Reason == domain.AccountDisabledReason {
+				return kratoserrors.New(409, domain.AccountDisabledReason, domain.AccountDisabledMessage)
+			}
+		}
+	}
 	code := 500
 	switch status.Code(err) {
 	case codes.InvalidArgument:
@@ -118,6 +127,8 @@ func (s *MuskdeerService) failure(ctx context.Context, err error) error {
 	}
 	return kratoserrors.New(code, muskdeerErrorReason, message)
 }
+
+// GetOverview returns statistics within the authenticated merchant scope.
 func (s *MuskdeerService) GetOverview(ctx context.Context, in *pb.MuskdeerOverviewRequest) (*pb.MuskdeerOverview, error) {
 	actor, err := s.actor(ctx, true)
 	if err != nil {
@@ -147,6 +158,8 @@ func (s *MuskdeerService) ListTemplates(ctx context.Context, in *pb.MuskdeerList
 	}
 	return fromCoreTemplatePage(result), nil
 }
+
+// ListGateways returns public gateway metadata to the platform.
 func (s *MuskdeerService) ListGateways(ctx context.Context, in *pb.MuskdeerOverviewRequest) (*pb.MuskdeerGatewayPage, error) {
 	if _, err := data.MuskdeerIdentity(ctx, true); err != nil {
 		return nil, s.failure(ctx, err)
