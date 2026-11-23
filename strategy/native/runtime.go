@@ -77,7 +77,7 @@ func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig
 		// This metadata is owned by this worker and has no account state.
 		rules := &targetRules{}
 		workers = append(workers, deer.Worker{
-			Name: "strategy.native." + strings.ToLower(profile.Symbol),
+			Name: "strategy.native." + values.WorkerSymbol(strings.ToLower(profile.Symbol)),
 			Run: func(ctx context.Context) error {
 				failed := false
 				for ctx.Err() == nil {

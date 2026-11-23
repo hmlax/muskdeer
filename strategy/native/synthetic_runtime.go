@@ -32,7 +32,7 @@ func syntheticWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig,
 	var workers []deer.Worker
 	for _, profile := range cfg.Venue.SyntheticTape.Profiles {
 		workers = append(workers, deer.Worker{
-			Name: values.SyntheticWorker + profile.Symbol,
+			Name: values.SyntheticWorker + values.WorkerSymbol(profile.Symbol),
 			Run: func(ctx context.Context) error {
 				for sequence := cfg.ResumeSequence; values.SyntheticSlotAvailable(cfg.Venue.SyntheticTape, sequence) && ctx.Err() == nil; {
 					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)

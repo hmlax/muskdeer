@@ -40,7 +40,7 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 	var workers []deer.Worker
 	for _, profile := range cfg.Venue.SyntheticTape.Profiles {
 		workers = append(workers, deer.Worker{
-			Name: values.SyntheticWorker + profile.Symbol,
+			Name: values.SyntheticWorker + values.WorkerSymbol(profile.Symbol),
 			Run: func(ctx context.Context) error {
 				for ctx.Err() == nil {
 					err := factory.Subscribe(ctx, rpcclient.Target{Service: rpcsecurity.ServiceMarket}, func(work context.Context, conn grpc.ClientConnInterface) error {

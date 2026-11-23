@@ -82,14 +82,14 @@ func (r *Runtime) Workers() []deer.Worker {
 	var result []deer.Worker
 	for _, profile := range r.cfg.Venue.Profiles {
 		result = append(result, deer.Worker{
-			Name: "market.usdm." + strings.ToLower(profile.Symbol),
+			Name: "market.usdm." + native.WorkerSymbol(strings.ToLower(profile.Symbol)),
 			Run:  func(ctx context.Context) error { return r.run(ctx, profile.Symbol) },
 		})
 	}
 	if r.cfg.Venue.GetSyntheticTape().GetEnabled() && r.cfg.Venue.SyntheticTape.Mode == configv1.SyntheticTapeMode_SYNTHETIC_TAPE_MODE_AGG_TRADE {
 		for _, profile := range r.cfg.Venue.SyntheticTape.Profiles {
 			result = append(result, deer.Worker{
-				Name: tradeWorkerPrefix + strings.ToLower(profile.Symbol),
+				Name: tradeWorkerPrefix + native.WorkerSymbol(strings.ToLower(profile.Symbol)),
 				Run:  func(ctx context.Context) error { return r.runTrades(ctx, profile.Symbol) },
 			})
 		}
