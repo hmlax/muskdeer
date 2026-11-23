@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
-import { isAxiosError } from 'axios';
 import { App, Button, Space, Tag, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import type { MuskdeerInstance } from '@/api/generated/admin/v1';
 import { cancelMuskdeerOrders, getMuskdeerInstance, muskdeerReaders, startMuskdeerInstance, stopMuskdeerInstance, useMuskdeerWrite } from '@/api/hooks/muskdeer';
 import { useAccess } from '@/core/access';
+import { isTradingAccountDisabled } from '@/api/hooks/muskdeer-errors';
 import ResourceTable from '../components/ResourceTable';
 import InstanceForm from '../components/InstanceForm';
 
@@ -31,8 +31,7 @@ export default function Instances() {
           message.success(t(kind === 'cancel' ? 'cancelPending' : 'saved'));
         } catch (error) {
           console.error('Instance action failed', error);
-          const accountDisabled = isAxiosError<{ reason?: string }>(error) && error.response?.data?.reason === 'TRADING_ACCOUNT_DISABLED';
-          message.error(t(accountDisabled ? 'enableAccountBeforeStart' : 'failed'));
+          message.error(t(isTradingAccountDisabled(error) ? 'enableAccountBeforeStart' : 'failed'));
         }
         finally { await actionRef.current?.reload(); }
       },
