@@ -164,5 +164,10 @@
   "enableAccount": "启用账户",
   "confirmEnableAccount": "确认启用 {{symbol}} 交易账户？总名义上限 {{maximumNotional}} USDT，单笔上限 {{maximumOrderNotional}} USDT。启用后，已启动或随后启动的策略可按现有额度运行。",
   "accountEnabledSaved": "交易账户已启用",
-  "enableAccountBeforeStart": "请先在交易账户页面启用账户，再启动策略"
+  "enableAccountBeforeStart": "请先在交易账户页面启用账户，再启动策略",
+  "viewParameters": "查看参数",
+  "readOnlyParametersNotice": "当前为只读查看，显示已保存的完整参数。修改参数前请先停止实例。",
+  "templateRevision": "模板版本",
+  "openOnStart": "启动时开首笔",
+  "haltAfterStopLoss": "止损后停止"
 }

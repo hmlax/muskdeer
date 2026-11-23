@@ -8,6 +8,7 @@ import { useAccess } from '@/core/access';
 import { isTradingAccountDisabled } from '@/api/hooks/muskdeer-errors';
 import ResourceTable from '../components/ResourceTable';
 import InstanceForm from '../components/InstanceForm';
+import InstanceParametersDrawer from '../components/InstanceParametersDrawer';
 
 export default function Instances() {
   const { t } = useTranslation('muskdeer');
@@ -15,6 +16,8 @@ export default function Instances() {
   const { hasAccessByCodes } = useAccess();
   const actionRef = useRef<ActionType>(null);
   const [editor, setEditor] = useState<{ current?: MuskdeerInstance }>();
+  const [details, setDetails] = useState<MuskdeerInstance>();
+  const [viewing, setViewing] = useState<number>();
   const start = useMuskdeerWrite(startMuskdeerInstance);
   const stop = useMuskdeerWrite(stopMuskdeerInstance);
   const cancel = useMuskdeerWrite(cancelMuskdeerOrders);
@@ -32,8 +35,9 @@ export default function Instances() {
         } catch (error) {
           console.error('Instance action failed', error);
           message.error(t(isTradingAccountDisabled(error) ? 'enableAccountBeforeStart' : 'failed'));
+        } finally {
+          await actionRef.current?.reload();
         }
-        finally { await actionRef.current?.reload(); }
       },
     });
   };
@@ -67,10 +71,26 @@ export default function Instances() {
     { title: t('controlVersion'), dataIndex: 'controlVersion', hideInSearch: true, width: 90 },
     { title: t('desiredRunning'), hideInSearch: true, width: 110, render: (_, row) => <Tag color={row.desiredRunning ? 'green' : 'default'}>{t(row.desiredRunning ? 'yes' : 'no')}</Tag> },
     { title: t('runtime'), hideInSearch: true, width: 150, render: (_, row) => <Tooltip title={row.runtimes?.map((v) => `${v.service}: ${v.available ? v.revision : '—'}`).join(' · ')}><Tag color={row.restartRequired ? 'orange' : 'green'}>{t(row.restartRequired ? 'restartRequired' : 'loaded')}</Tag></Tooltip> },
-    { title: t('actions'), valueType: 'option', width: 300, fixed: 'right', render: (_, row) => <Space wrap>
+    { title: t('actions'), valueType: 'option', width: 360, fixed: 'right', render: (_, row) => <Space wrap>
+      {allowed('view') && <Button type="link" disabled={viewing !== undefined} loading={viewing === row.id} onClick={async () => {
+        if (!row.id || viewing !== undefined) return;
+        setViewing(row.id);
+        try {
+          setDetails(await getMuskdeerInstance(row.id));
+        } catch (error) {
+          console.error('Load instance parameters failed', error);
+          message.error(t('failed'));
+        } finally {
+          setViewing(undefined);
+        }
+      }}>{t('viewParameters')}</Button>}
       {allowed('update') && <Button type="link" disabled={row.desiredRunning} onClick={async () => {
-        try { if (row.id) setEditor({ current: await getMuskdeerInstance(row.id) }); }
-        catch (error) { console.error('Load current instance failed', error); message.error(t('failed')); }
+        try {
+          if (row.id) setEditor({ current: await getMuskdeerInstance(row.id) });
+        } catch (error) {
+          console.error('Load current instance failed', error);
+          message.error(t('failed'));
+        }
       }}>{t('edit')}</Button>}
       {allowed('start') && <Tooltip title={!row.accountEnabled ? t('enableAccountBeforeStart') : undefined}><span><Button type="link" disabled={!row.accountEnabled || row.desiredRunning || row.restartRequired || start.isPending} onClick={() => act(row, 'start')}>{t('start')}</Button></span></Tooltip>}
       {allowed('stop') && <Button type="link" disabled={!row.desiredRunning || stop.isPending} onClick={() => act(row, 'stop')}>{t('stop')}</Button>}
@@ -81,5 +101,6 @@ export default function Instances() {
     <ResourceTable<MuskdeerInstance> resource="instances" columns={columns} fetch={muskdeerReaders.instances} actionRef={actionRef} notice={t('parameterNotice')} search={{ defaultCollapsed: false }}
       toolbar={allowed('create') ? [<Button key="create" type="primary" onClick={() => setEditor({})}>{t('create')}</Button>] : []} />
     {editor && <InstanceForm current={editor.current} onClose={() => setEditor(undefined)} onSaved={() => void actionRef.current?.reload()} />}
+    {details && <InstanceParametersDrawer current={details} onClose={() => setDetails(undefined)} />}
   </>;
 }

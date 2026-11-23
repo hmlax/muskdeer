@@ -164,5 +164,10 @@
   "enableAccount": "Enable account",
   "confirmEnableAccount": "Enable the {{symbol}} trading account? Total limit: {{maximumNotional}} USDT; per-order limit: {{maximumOrderNotional}} USDT. Running or subsequently started strategies may trade within these existing limits.",
   "accountEnabledSaved": "Trading account enabled",
-  "enableAccountBeforeStart": "Enable the trading account on the accounts page before starting the strategy"
+  "enableAccountBeforeStart": "Enable the trading account on the accounts page before starting the strategy",
+  "viewParameters": "View parameters",
+  "readOnlyParametersNotice": "Read-only view of the complete saved parameters. Stop the instance before editing.",
+  "templateRevision": "Template revision",
+  "openOnStart": "Open on start",
+  "haltAfterStopLoss": "Stop after stop loss"
 }
