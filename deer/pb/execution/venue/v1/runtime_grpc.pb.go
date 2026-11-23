@@ -23,6 +23,7 @@ const (
 	Execution_DescribeInstances_FullMethodName    = "/muskdeer.execution.venue.v1.Execution/DescribeInstances"
 	Execution_GetSnapshot_FullMethodName          = "/muskdeer.execution.venue.v1.Execution/GetSnapshot"
 	Execution_InspectAccount_FullMethodName       = "/muskdeer.execution.venue.v1.Execution/InspectAccount"
+	Execution_UpdateAccountPolicy_FullMethodName  = "/muskdeer.execution.venue.v1.Execution/UpdateAccountPolicy"
 	Execution_CancelInstanceOrders_FullMethodName = "/muskdeer.execution.venue.v1.Execution/CancelInstanceOrders"
 	Execution_Reconcile_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/Reconcile"
 	Execution_PublishSynthetic_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
@@ -38,6 +39,7 @@ type ExecutionClient interface {
 	GetSnapshot(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error)
 	// Read-only enrollment verification, including funds without a strategy yet.
 	InspectAccount(ctx context.Context, in *v1.VenueScope, opts ...grpc.CallOption) (*v1.VenueSnapshot, error)
+	UpdateAccountPolicy(ctx context.Context, in *AccountPolicyUpdate, opts ...grpc.CallOption) (*AccountPolicyResult, error)
 	CancelInstanceOrders(ctx context.Context, in *CancelInstanceRequest, opts ...grpc.CallOption) (*QuoteResult, error)
 	Reconcile(ctx context.Context, in *QuotePlan, opts ...grpc.CallOption) (*QuoteResult, error)
 	PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
@@ -77,6 +79,16 @@ func (c *executionClient) InspectAccount(ctx context.Context, in *v1.VenueScope,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(v1.VenueSnapshot)
 	err := c.cc.Invoke(ctx, Execution_InspectAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *executionClient) UpdateAccountPolicy(ctx context.Context, in *AccountPolicyUpdate, opts ...grpc.CallOption) (*AccountPolicyResult, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccountPolicyResult)
+	err := c.cc.Invoke(ctx, Execution_UpdateAccountPolicy_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -141,6 +153,7 @@ type ExecutionServer interface {
 	GetSnapshot(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error)
 	// Read-only enrollment verification, including funds without a strategy yet.
 	InspectAccount(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error)
+	UpdateAccountPolicy(context.Context, *AccountPolicyUpdate) (*AccountPolicyResult, error)
 	CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error)
 	Reconcile(context.Context, *QuotePlan) (*QuoteResult, error)
 	PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error)
@@ -164,6 +177,9 @@ func (UnimplementedExecutionServer) GetSnapshot(context.Context, *v1.VenueScope)
 }
 func (UnimplementedExecutionServer) InspectAccount(context.Context, *v1.VenueScope) (*v1.VenueSnapshot, error) {
 	return nil, status.Error(codes.Unimplemented, "method InspectAccount not implemented")
+}
+func (UnimplementedExecutionServer) UpdateAccountPolicy(context.Context, *AccountPolicyUpdate) (*AccountPolicyResult, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAccountPolicy not implemented")
 }
 func (UnimplementedExecutionServer) CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelInstanceOrders not implemented")
@@ -251,6 +267,24 @@ func _Execution_InspectAccount_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ExecutionServer).InspectAccount(ctx, req.(*v1.VenueScope))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Execution_UpdateAccountPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountPolicyUpdate)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ExecutionServer).UpdateAccountPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Execution_UpdateAccountPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ExecutionServer).UpdateAccountPolicy(ctx, req.(*AccountPolicyUpdate))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -363,6 +397,10 @@ var Execution_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "InspectAccount",
 			Handler:    _Execution_InspectAccount_Handler,
+		},
+		{
+			MethodName: "UpdateAccountPolicy",
+			Handler:    _Execution_UpdateAccountPolicy_Handler,
 		},
 		{
 			MethodName: "CancelInstanceOrders",

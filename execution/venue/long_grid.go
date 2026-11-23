@@ -18,6 +18,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/longgrid"
 	"github.com/hmlax/muskdeer/deer/trading/native"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 	"github.com/shopspring/decimal"
 )
@@ -53,6 +54,11 @@ func validGridBook(book *common.VenueBook, profile *common.VenueProfilePolicy) b
 
 func (r *Runtime) evaluateLongGrid(ctx context.Context, book *common.VenueBook, opening bool) (*pb.LongGridResult, error) {
 	profile := r.cfg.Venue.Profiles[0]
+	current, err := venueconfig.CurrentProfile(ctx, r.db, profile)
+	if err != nil {
+		return nil, err
+	}
+	profile = current
 	leave, err := r.enter(native.Scope(profile))
 	if err != nil {
 		return nil, err
@@ -143,6 +149,11 @@ func (r *Runtime) evaluateLongGrid(ctx context.Context, book *common.VenueBook, 
 
 func (r *Runtime) sendGridAction(ctx context.Context, action *model.LongGridAction, client gateway.LongGridClient, expires int64) (*pb.LongGridResult, error) {
 	profile := r.cfg.Venue.Profiles[0]
+	current, err := venueconfig.CurrentProfile(ctx, r.db, profile)
+	if err != nil {
+		return nil, err
+	}
+	profile = current
 	price, e1 := domain.ParseLedgerDecimal(action.Price, false, true)
 	quantity, e2 := domain.ParseLedgerDecimal(action.Quantity, false, false)
 	if e1 != nil || e2 != nil {

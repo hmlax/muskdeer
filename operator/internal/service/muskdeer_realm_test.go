@@ -20,6 +20,13 @@ func TestMuskdeerPlatformCannotReachMerchantBusinessEvenWithGlobalAdminPermissio
 		call func(context.Context) error
 	}{
 		{
+			name: "update-account",
+			call: func(ctx context.Context) error {
+				_, err := s.UpdateAccount(ctx, &pb.MuskdeerUpdateAccountRequest{})
+				return err
+			},
+		},
+		{
 			name: "maker-check",
 			call: func(ctx context.Context) error {
 				_, err := s.CheckInstance(ctx, &pb.MuskdeerInstanceRequest{})

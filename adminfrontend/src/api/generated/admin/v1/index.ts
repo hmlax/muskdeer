@@ -3332,6 +3332,7 @@ export type MuskdeerGatewayPage = {
 export type MuskdeerInstance = {
   accountEnabled?: boolean;
   accountId?: string;
+  accountLeverage?: number;
   archived?: boolean;
   controlVersion?: number;
   createdAtMs?: number;
@@ -3558,8 +3559,23 @@ export type MuskdeerMakerCheck = {
   validUntilMs?: number;
 };
 
+export type MuskdeerAccountParameters = {
+  leverage?: number;
+  maximumNotional?: string;
+  maximumOrderNotional?: string;
+};
+
+export type MuskdeerUpdateAccountRequest = {
+  expectedUpdatedAtMs?: number;
+  id?: number;
+  parameters?: MuskdeerAccountParameters;
+};
+
 // 平台提供公共配置；商户独立配置和操作其账户及策略实例。
 export interface MuskdeerService {
+  UpdateAccount(
+    request: MuskdeerUpdateAccountRequest,
+  ): Promise<MuskdeerAccount>;
   EnableAccount(
     request: MuskdeerEnableAccountRequest,
   ): Promise<MuskdeerAccount>;
@@ -3632,6 +3648,17 @@ export function createMuskdeerServiceClient(
   transport: ClientTransport,
 ): MuskdeerService {
   return {
+    UpdateAccount(request) {
+      if (request.id === undefined || request.id === null) {
+        throw new Error('missing required field request.id');
+      }
+      const path = `admin/v1/muskdeer/accounts/${request.id}`;
+      const body = JSON.stringify(request);
+      return transport.unary(path, 'PUT', body, {
+        service: 'MuskdeerService',
+        method: 'UpdateAccount',
+      }) as Promise<MuskdeerAccount>;
+    },
     EnableAccount(request) {
       if (request.id === undefined || request.id === null) {
         throw new Error('missing required field request.id');

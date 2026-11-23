@@ -241,6 +241,17 @@ func (s *MuskdeerServiceProxy) StopInstance(ctx context.Context, in *v11.Muskdee
 	}
 	return toAPIMuskdeerInstance(reply), nil
 }
+func (s *MuskdeerServiceProxy) UpdateAccount(ctx context.Context, in *v11.MuskdeerUpdateAccountRequest) (*v11.MuskdeerAccount, error) {
+	request := toRPCMuskdeerUpdateAccountRequest(in)
+	if err := transport.ValidateRequest(request); err != nil {
+		return nil, err
+	}
+	reply, err := s.client.UpdateAccount(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+	return toAPIMuskdeerAccount(reply), nil
+}
 func (s *MuskdeerServiceProxy) UpdateInstance(ctx context.Context, in *v11.MuskdeerUpdateInstanceRequest) (*v11.MuskdeerInstance, error) {
 	request := toRPCMuskdeerUpdateInstanceRequest(in)
 	if err := transport.ValidateRequest(request); err != nil {

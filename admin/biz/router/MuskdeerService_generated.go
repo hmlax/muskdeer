@@ -8,6 +8,7 @@ import (
 )
 
 func RegisterMuskdeerServiceHertzServer(router *transport.Router, service apiV1.MuskdeerServiceHTTPServer) {
+	router.RegisterHZ("PUT", "/admin/v1/muskdeer/accounts/:id", handler.BindMuskdeerServiceUpdateAccount(service))
 	router.RegisterHZ("POST", "/admin/v1/muskdeer/accounts/:id/enable", handler.BindMuskdeerServiceEnableAccount(service))
 	router.RegisterHZ("POST", "/admin/v1/muskdeer/accounts", handler.BindMuskdeerServiceCreateAccount(service))
 	router.RegisterHZ("GET", "/admin/v1/muskdeer/account-bindings", handler.BindMuskdeerServiceListAccountBindings(service))

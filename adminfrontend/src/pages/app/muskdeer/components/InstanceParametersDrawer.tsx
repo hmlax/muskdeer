@@ -37,6 +37,7 @@ export default function InstanceParametersDrawer({ current, onClose }: {
     size={720} destroyOnHidden onClose={onClose}
     footer={null}>
     <Alert type="info" title={t('readOnlyParametersNotice')} />
+    <Alert type="info" title={t('accountLeverageNotice')} style={{ marginTop: 12 }} />
     <Divider>{t('identity')}</Divider>
     <Descriptions bordered column={1} size="small" items={[
       { key: 'instanceKey', label: t('instanceKey'), children: current.instanceKey },
@@ -44,6 +45,7 @@ export default function InstanceParametersDrawer({ current, onClose }: {
       { key: 'implementation', label: t('implementation'), children: current.implementation },
       { key: 'symbol', label: t('symbol'), children: current.symbol },
       { key: 'accountId', label: t('accountId'), children: current.accountId },
+      { key: 'accountLeverage', label: t('accountLeverage'), children: current.accountLeverage },
       { key: 'templateId', label: t('templateId'), children: current.templateId },
       { key: 'templateRevision', label: t('templateRevision'), children: current.templateRevision },
       { key: 'marketDataSource', label: t('marketDataSource'), children: current.marketDataSource },
@@ -56,7 +58,7 @@ export default function InstanceParametersDrawer({ current, onClose }: {
       pollIntervalMs: 'pollIntervalMs',
       operationTimeoutMs: 'operationTimeoutMs',
       leaseTtlMs: 'leaseTtlMs',
-      leverage: 'leverage',
+      leverage: 'savedLeverage',
     }} />
     {parameters?.marketMaker && <ParameterSection title="market_maker" values={parameters.marketMaker} labels={{
       depth: 'depth',

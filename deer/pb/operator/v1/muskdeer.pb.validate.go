@@ -2407,6 +2407,8 @@ func (m *MuskdeerInstance) validate(all bool) error {
 
 	// no validation rules for AccountEnabled
 
+	// no validation rules for AccountLeverage
+
 	if len(errors) > 0 {
 		return MuskdeerInstanceMultiError(errors)
 	}
@@ -6410,3 +6412,247 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MuskdeerMakerCheckValidationError{}
+
+// Validate checks the field values on MuskdeerAccountParameters with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MuskdeerAccountParameters) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MuskdeerAccountParameters with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MuskdeerAccountParametersMultiError, or nil if none found.
+func (m *MuskdeerAccountParameters) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MuskdeerAccountParameters) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for MaximumNotional
+
+	// no validation rules for MaximumOrderNotional
+
+	// no validation rules for Leverage
+
+	if len(errors) > 0 {
+		return MuskdeerAccountParametersMultiError(errors)
+	}
+
+	return nil
+}
+
+// MuskdeerAccountParametersMultiError is an error wrapping multiple validation
+// errors returned by MuskdeerAccountParameters.ValidateAll() if the
+// designated constraints aren't met.
+type MuskdeerAccountParametersMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MuskdeerAccountParametersMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MuskdeerAccountParametersMultiError) AllErrors() []error { return m }
+
+// MuskdeerAccountParametersValidationError is the validation error returned by
+// MuskdeerAccountParameters.Validate if the designated constraints aren't met.
+type MuskdeerAccountParametersValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MuskdeerAccountParametersValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MuskdeerAccountParametersValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MuskdeerAccountParametersValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MuskdeerAccountParametersValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MuskdeerAccountParametersValidationError) ErrorName() string {
+	return "MuskdeerAccountParametersValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MuskdeerAccountParametersValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMuskdeerAccountParameters.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MuskdeerAccountParametersValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MuskdeerAccountParametersValidationError{}
+
+// Validate checks the field values on MuskdeerUpdateAccountRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MuskdeerUpdateAccountRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MuskdeerUpdateAccountRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MuskdeerUpdateAccountRequestMultiError, or nil if none found.
+func (m *MuskdeerUpdateAccountRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MuskdeerUpdateAccountRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for ExpectedUpdatedAtMs
+
+	if all {
+		switch v := interface{}(m.GetParameters()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MuskdeerUpdateAccountRequestValidationError{
+					field:  "Parameters",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MuskdeerUpdateAccountRequestValidationError{
+					field:  "Parameters",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetParameters()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MuskdeerUpdateAccountRequestValidationError{
+				field:  "Parameters",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return MuskdeerUpdateAccountRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MuskdeerUpdateAccountRequestMultiError is an error wrapping multiple
+// validation errors returned by MuskdeerUpdateAccountRequest.ValidateAll() if
+// the designated constraints aren't met.
+type MuskdeerUpdateAccountRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MuskdeerUpdateAccountRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MuskdeerUpdateAccountRequestMultiError) AllErrors() []error { return m }
+
+// MuskdeerUpdateAccountRequestValidationError is the validation error returned
+// by MuskdeerUpdateAccountRequest.Validate if the designated constraints
+// aren't met.
+type MuskdeerUpdateAccountRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MuskdeerUpdateAccountRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MuskdeerUpdateAccountRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MuskdeerUpdateAccountRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MuskdeerUpdateAccountRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MuskdeerUpdateAccountRequestValidationError) ErrorName() string {
+	return "MuskdeerUpdateAccountRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MuskdeerUpdateAccountRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMuskdeerUpdateAccountRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MuskdeerUpdateAccountRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MuskdeerUpdateAccountRequestValidationError{}

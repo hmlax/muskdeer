@@ -25,7 +25,7 @@ export default function InstanceForm({ current, onClose, onSaved }: Props) {
   const integer = (group: 'execution' | 'marketMaker' | 'grid' | 'washTrade', name: string, min = 0) => (
     <ProFormDigit key={name} name={['parameters', group, name]} label={t(name)} rules={required} fieldProps={{ min, max: Number.MAX_SAFE_INTEGER, precision: 0 }} />
   );
-  const initial: Values = current ? { ...current, kind: current.strategyType ?? '', parameters: current.parameters } : {
+  const initial: Values = current ? { ...current, kind: current.strategyType ?? '', parameters: { ...current.parameters, execution: { ...current.parameters?.execution, leverage: current.accountLeverage ?? current.parameters?.execution?.leverage } } } : {
     kind: 'market_maker', implementation: 'depth_maker_v1', marketDataSource: 'binance', templateRevision: 1,
     parameters: {
       execution: { pollIntervalMs: 200, operationTimeoutMs: 2000, leaseTtlMs: 10000, leverage: 10 },
@@ -64,7 +64,9 @@ export default function InstanceForm({ current, onClose, onSaved }: Props) {
         request={async ({ keyWords }) => (await muskdeerReaders.instruments({ search: keyWords, pageSize: 100 })).items?.map((row) => ({ label: row.symbol, value: row.id })) ?? []} fieldProps={{ filterOption: false }} />
       <ProFormSelect name="marketDataSource" label={t('marketDataSource')} disabled={!!current} rules={required} options={[{ label: 'Binance', value: 'binance' }]} />
       <Divider>{t('execution')}</Divider>
-      {['pollIntervalMs', 'operationTimeoutMs', 'leaseTtlMs', 'leverage'].map((name) => integer('execution', name, 1))}
+      {['pollIntervalMs', 'operationTimeoutMs', 'leaseTtlMs'].map((name) => integer('execution', name, 1))}
+      <ProFormDigit name={['parameters', 'execution', 'leverage']} label={t('accountLeverage')} disabled />
+      <Alert type="info" title={t('accountLeverageNotice')} />
       <Divider>{t('parameters')}</Divider>
       <ProFormDependency name={['kind', 'implementation']}>{({ kind, implementation }) => kind === 'market_maker' ? <>
         {integer('marketMaker', 'depth', 1)}{decimal('marketMaker', 'quantityFraction')}{decimal('marketMaker', 'replacementFraction')}{integer('marketMaker', 'bridgeSlots')}

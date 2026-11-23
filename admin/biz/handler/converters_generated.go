@@ -2480,6 +2480,7 @@ func toAPIMuskdeerInstance(in *v11.MuskdeerInstance) *v1.MuskdeerInstance {
 	out.UpdatedAtMs = in.UpdatedAtMs
 	out.Archived = in.Archived
 	out.AccountEnabled = in.AccountEnabled
+	out.AccountLeverage = in.AccountLeverage
 	return out
 }
 func toRPCMuskdeerEnableAccountRequest(in *v1.MuskdeerEnableAccountRequest) *v11.MuskdeerEnableAccountRequest {
@@ -2743,6 +2744,16 @@ func toRPCMuskdeerRunningRequest(in *v1.MuskdeerRunningRequest) *v11.MuskdeerRun
 	out.Id = in.Id
 	out.ExpectedRevision = in.ExpectedRevision
 	out.ExpectedControlVersion = in.ExpectedControlVersion
+	return out
+}
+func toRPCMuskdeerUpdateAccountRequest(in *v1.MuskdeerUpdateAccountRequest) *v11.MuskdeerUpdateAccountRequest {
+	if in == nil {
+		return nil
+	}
+	out := new(v11.MuskdeerUpdateAccountRequest)
+	out.Id = in.Id
+	out.ExpectedUpdatedAtMs = in.ExpectedUpdatedAtMs
+	out.Parameters = toRPCMuskdeerAccountParameters(in.Parameters)
 	return out
 }
 func toRPCMuskdeerUpdateInstanceRequest(in *v1.MuskdeerUpdateInstanceRequest) *v11.MuskdeerUpdateInstanceRequest {
@@ -6170,6 +6181,16 @@ func toAPIMuskdeerTemplate(in *v11.MuskdeerTemplate) *v1.MuskdeerTemplate {
 			out.ParameterFields[index] = value
 		}
 	}
+	return out
+}
+func toRPCMuskdeerAccountParameters(in *v1.MuskdeerAccountParameters) *v11.MuskdeerAccountParameters {
+	if in == nil {
+		return nil
+	}
+	out := new(v11.MuskdeerAccountParameters)
+	out.MaximumNotional = in.MaximumNotional
+	out.MaximumOrderNotional = in.MaximumOrderNotional
+	out.Leverage = in.Leverage
 	return out
 }
 func toRPCMuskdeerInstanceParameterUpdate(in *v1.MuskdeerInstanceParameterUpdate) *v11.MuskdeerInstanceParameterUpdate {

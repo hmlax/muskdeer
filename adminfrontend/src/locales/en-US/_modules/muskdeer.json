@@ -184,5 +184,18 @@
   "activeBuyOrders": "Active instance buy orders",
   "activeSellOrders": "Active instance sell orders",
   "snapshotObservedAt": "Account observed at",
-  "checkedAt": "Checked at"
+  "checkedAt": "Checked at",
+  "editAccountParameters": "Edit parameters",
+  "accountParametersNotice": "Saving applies immediately to subsequent orders of all linked instances without restarting. Existing orders follow strategy refresh; positions are not adjusted automatically. Stop strategies, cancel orders and close positions before changing leverage. The total limit must cover current matching exposure.",
+  "accountParametersSaved": "Account parameters saved and applied",
+  "accountPolicyConflict": "Account parameters changed; refresh the list before editing again",
+  "accountPolicyExposure": "The new total limit is below current matching exposure; cancel orders or reduce positions first",
+  "accountPolicyPositionLeverage": "Close current positions before changing leverage",
+  "accountPolicyGridLimit": "The new limits are below linked long grid order or position budgets; update the grid first",
+  "accountPolicySnapshotUnavailable": "A fresh matching account observation is unavailable; try saving again later",
+  "accountPolicyFailed": "Save was not confirmed; refresh and verify account parameters before retrying",
+  "accountLeverage": "Current account leverage",
+  "savedLeverage": "Leverage when parameters were saved",
+  "accountLeverageNotice": "Trading account leverage governs orders. Saving account parameters applies to subsequent orders of all linked instances immediately.",
+  "accountPolicyOrderLeverage": "Stop strategies and cancel current orders before changing leverage"
 }

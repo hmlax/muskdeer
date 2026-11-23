@@ -18,6 +18,7 @@ service Console {
  rpc ListAccounts(ListRequest) returns (AccountPage);
  rpc CreateAccount(CreateAccountRequest) returns (Account);
  rpc EnableAccount(EnableAccountRequest) returns (Account);
+ rpc UpdateAccount(UpdateAccountRequest) returns (Account);
  rpc ListOrderRecords(RecordListRequest) returns (OrderPage);
  rpc ListCancellations(RecordListRequest) returns (CancellationPage);
  rpc ListSyntheticRecords(RecordListRequest) returns (SyntheticPage);
@@ -93,6 +94,7 @@ message Instance {
  bool restart_required = 15; repeated RuntimeVersion runtimes = 16;
  int64 created_at_ms = 17; int64 updated_at_ms = 18; bool archived = 19;
  bool account_enabled = 20;
+ uint32 account_leverage = 21;
 }
 message RuntimeVersion { string service = 1; int64 revision = 2; bool available = 3; }
 message InstancePage { repeated Instance items = 1; uint64 total = 2; }
@@ -194,4 +196,12 @@ message MakerCheck {
  string available_quote = 10; int64 checked_at_ms = 11;
  int64 snapshot_observed_at_ms = 12; int64 valid_until_ms = 13;
  int64 revision = 14; int64 control_version = 15;
+}
+
+// AccountParameters are applied to subsequent requests without restarting instances.
+message AccountParameters {
+ string maximum_notional = 1; string maximum_order_notional = 2; uint32 leverage = 3;
+}
+message UpdateAccountRequest {
+ Actor actor = 1; int64 id = 2; int64 expected_updated_at_ms = 3; AccountParameters parameters = 4;
 }

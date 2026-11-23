@@ -1,5 +1,7 @@
 # Muskdeer
 
+2026-11-23：交易账户总名义额度、单笔名义额度与杠杆支持商户后台即时修改，保存后用于所有关联实例的后续报价/委托，无需重启。账户政策为三项的当前权威，实例执行参数中的杠杆仅保留保存时快照；其他策略参数仍需显式重启加载。见[账户即时参数](docs/DATABASE_PARAMETERS.md)。
+
 管理后台与核心服务共用本仓库：`admin/`、`operator/`、`adminfrontend/`，统一 Go module 和构建入口，管理库继续独立。安装、生成、构建和运行见[管理后台](docs/ADMIN_INTEGRATION.md)。
 
 当前开发 WashTrade：订阅行情后计算并直发 SDK，每笔处理零数据库操作；配置与启停独立维护，见 [直发说明](docs/DIRECT_WASH_TRADE.md)。

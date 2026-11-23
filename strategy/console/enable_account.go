@@ -73,7 +73,10 @@ func (s *Server) EnableAccount(ctx context.Context, in *pb.EnableAccountRequest)
 		if snapshot.GetValidUntilMs() <= time.Now().UnixMilli() {
 			return status.Error(codes.FailedPrecondition, messageInvalid)
 		}
-		if err := fresh(ctx, tx).Model(&model.TradingAccountPolicy{}).Where("id = ?", current.Id).Update("enabled", true).Error; err != nil {
+		if err := fresh(ctx, tx).Model(&model.TradingAccountPolicy{}).Where("id = ?", current.Id).Updates(map[string]any{
+			"enabled":   true,
+			"update_at": max(time.Now().UnixMilli(), current.UpdateAt+1),
+		}).Error; err != nil {
 			return err
 		}
 		if err := fresh(ctx, tx).Model(&model.TradingAccountPolicy{}).Where("id = ?", current.Id).Take(current).Error; err != nil {

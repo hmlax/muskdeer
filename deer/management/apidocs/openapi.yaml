@@ -2518,6 +2518,30 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/MuskdeerAccount'
+    /admin/v1/muskdeer/accounts/{id}:
+        put:
+            tags:
+                - MuskdeerService
+            operationId: MuskdeerService_UpdateAccount
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/MuskdeerUpdateAccountRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/MuskdeerAccount'
     /admin/v1/muskdeer/accounts/{id}/enable:
         post:
             tags:
@@ -6851,6 +6875,16 @@ components:
                         $ref: '#/components/schemas/MuskdeerAccount'
                 total:
                     type: string
+        MuskdeerAccountParameters:
+            type: object
+            properties:
+                maximumNotional:
+                    type: string
+                maximumOrderNotional:
+                    type: string
+                leverage:
+                    type: integer
+                    format: uint32
         MuskdeerAccountSnapshot:
             type: object
             properties:
@@ -7087,6 +7121,9 @@ components:
                     type: boolean
                 accountEnabled:
                     type: boolean
+                accountLeverage:
+                    type: integer
+                    format: uint32
         MuskdeerInstanceDraft:
             type: object
             properties:
@@ -7393,6 +7430,15 @@ components:
                         $ref: '#/components/schemas/MuskdeerTemplate'
                 total:
                     type: string
+        MuskdeerUpdateAccountRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                expectedUpdatedAtMs:
+                    type: string
+                parameters:
+                    $ref: '#/components/schemas/MuskdeerAccountParameters'
         MuskdeerUpdateInstanceRequest:
             type: object
             properties:

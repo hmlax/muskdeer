@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	MuskdeerService_CreateAccount_FullMethodName            = "/operator.v1.MuskdeerService/CreateAccount"
 	MuskdeerService_EnableAccount_FullMethodName            = "/operator.v1.MuskdeerService/EnableAccount"
+	MuskdeerService_UpdateAccount_FullMethodName            = "/operator.v1.MuskdeerService/UpdateAccount"
 	MuskdeerService_ListAccountBindings_FullMethodName      = "/operator.v1.MuskdeerService/ListAccountBindings"
 	MuskdeerService_CreateAccountBinding_FullMethodName     = "/operator.v1.MuskdeerService/CreateAccountBinding"
 	MuskdeerService_SetAccountBindingEnabled_FullMethodName = "/operator.v1.MuskdeerService/SetAccountBindingEnabled"
@@ -49,6 +50,7 @@ const (
 type MuskdeerServiceClient interface {
 	CreateAccount(ctx context.Context, in *MuskdeerCreateAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
 	EnableAccount(ctx context.Context, in *MuskdeerEnableAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
+	UpdateAccount(ctx context.Context, in *MuskdeerUpdateAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
 	ListAccountBindings(ctx context.Context, in *MuskdeerBindingListRequest, opts ...grpc.CallOption) (*MuskdeerBindingPage, error)
 	CreateAccountBinding(ctx context.Context, in *MuskdeerCreateBindingRequest, opts ...grpc.CallOption) (*MuskdeerAccountBinding, error)
 	SetAccountBindingEnabled(ctx context.Context, in *MuskdeerSetBindingEnabledRequest, opts ...grpc.CallOption) (*MuskdeerAccountBinding, error)
@@ -93,6 +95,16 @@ func (c *muskdeerServiceClient) EnableAccount(ctx context.Context, in *MuskdeerE
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MuskdeerAccount)
 	err := c.cc.Invoke(ctx, MuskdeerService_EnableAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *muskdeerServiceClient) UpdateAccount(ctx context.Context, in *MuskdeerUpdateAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MuskdeerAccount)
+	err := c.cc.Invoke(ctx, MuskdeerService_UpdateAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -305,6 +317,7 @@ func (c *muskdeerServiceClient) CancelInstanceOrders(ctx context.Context, in *Mu
 type MuskdeerServiceServer interface {
 	CreateAccount(context.Context, *MuskdeerCreateAccountRequest) (*MuskdeerAccount, error)
 	EnableAccount(context.Context, *MuskdeerEnableAccountRequest) (*MuskdeerAccount, error)
+	UpdateAccount(context.Context, *MuskdeerUpdateAccountRequest) (*MuskdeerAccount, error)
 	ListAccountBindings(context.Context, *MuskdeerBindingListRequest) (*MuskdeerBindingPage, error)
 	CreateAccountBinding(context.Context, *MuskdeerCreateBindingRequest) (*MuskdeerAccountBinding, error)
 	SetAccountBindingEnabled(context.Context, *MuskdeerSetBindingEnabledRequest) (*MuskdeerAccountBinding, error)
@@ -340,6 +353,9 @@ func (UnimplementedMuskdeerServiceServer) CreateAccount(context.Context, *Muskde
 }
 func (UnimplementedMuskdeerServiceServer) EnableAccount(context.Context, *MuskdeerEnableAccountRequest) (*MuskdeerAccount, error) {
 	return nil, status.Error(codes.Unimplemented, "method EnableAccount not implemented")
+}
+func (UnimplementedMuskdeerServiceServer) UpdateAccount(context.Context, *MuskdeerUpdateAccountRequest) (*MuskdeerAccount, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAccount not implemented")
 }
 func (UnimplementedMuskdeerServiceServer) ListAccountBindings(context.Context, *MuskdeerBindingListRequest) (*MuskdeerBindingPage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAccountBindings not implemented")
@@ -454,6 +470,24 @@ func _MuskdeerService_EnableAccount_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MuskdeerServiceServer).EnableAccount(ctx, req.(*MuskdeerEnableAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MuskdeerService_UpdateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MuskdeerUpdateAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MuskdeerServiceServer).UpdateAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MuskdeerService_UpdateAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MuskdeerServiceServer).UpdateAccount(ctx, req.(*MuskdeerUpdateAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -832,6 +866,10 @@ var MuskdeerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EnableAccount",
 			Handler:    _MuskdeerService_EnableAccount_Handler,
+		},
+		{
+			MethodName: "UpdateAccount",
+			Handler:    _MuskdeerService_UpdateAccount_Handler,
 		},
 		{
 			MethodName: "ListAccountBindings",

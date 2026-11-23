@@ -3,6 +3,7 @@ syntax = "proto3";
 package muskdeer.execution.venue.v1;
 
 import "deer/proto/common/v1/venue.proto";
+import "deer/proto/common/v1/venue_policy.proto";
 import "deer/proto/common/v1/synthetic.proto";
 
 option go_package = "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1;venuev1";
@@ -12,6 +13,7 @@ service Execution {
   rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
   // Read-only enrollment verification, including funds without a strategy yet.
   rpc InspectAccount(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
+  rpc UpdateAccountPolicy(AccountPolicyUpdate) returns (AccountPolicyResult);
   rpc CancelInstanceOrders(CancelInstanceRequest) returns (QuoteResult);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
@@ -62,4 +64,15 @@ message LongGridResult {
   string state = 1;
   string action = 2;
   string order_id = 3;
+}
+
+// Scope is verified by Console, then serialized with the existing fund writer.
+message AccountPolicyUpdate {
+ int64 id = 1; int64 expected_updated_at_ms = 2;
+ muskdeer.common.v1.VenueScope scope = 3;
+ string maximum_notional = 4; string maximum_order_notional = 5; uint32 leverage = 6;
+}
+message AccountPolicyResult {
+ int64 id = 1; int64 updated_at_ms = 2; bool enabled = 3;
+ muskdeer.common.v1.VenueProfilePolicy profile = 4;
 }

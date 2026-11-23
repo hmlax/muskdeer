@@ -184,5 +184,18 @@
   "activeBuyOrders": "本实例实际买单数",
   "activeSellOrders": "本实例实际卖单数",
   "snapshotObservedAt": "账户观察时间",
-  "checkedAt": "检查时间"
+  "checkedAt": "检查时间",
+  "editAccountParameters": "修改参数",
+  "accountParametersNotice": "保存后立即用于所有关联实例的后续委托，无需重启。现有委托随策略刷新，持仓不自动调整。修改杠杆前请先停止策略、撤净挂单并平仓；总额度不得低于当前撮合敞口。",
+  "accountParametersSaved": "账户参数已保存并生效",
+  "accountPolicyConflict": "账户参数已变化，请刷新列表后重新编辑",
+  "accountPolicyExposure": "新总额度低于当前撮合敞口，请先撤单或减仓",
+  "accountPolicyPositionLeverage": "账户仍有持仓，请先平仓后修改杠杆",
+  "accountPolicyGridLimit": "新额度低于关联只做多网格的订单或持仓预算，请先调整网格参数",
+  "accountPolicySnapshotUnavailable": "缺少新鲜的撮合账户观察，请稍后重新保存",
+  "accountPolicyFailed": "保存未确认，请刷新核对账户参数后重试",
+  "accountLeverage": "当前账户杠杆",
+  "savedLeverage": "参数保存时杠杆",
+  "accountLeverageNotice": "实际下单杠杆由交易账户统一控制。交易账户参数保存后，所有关联实例的后续委托立即使用新值。",
+  "accountPolicyOrderLeverage": "账户仍有挂单，请先停止策略并撤单后修改杠杆"
 }

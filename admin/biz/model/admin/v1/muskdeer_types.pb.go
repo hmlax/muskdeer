@@ -1304,6 +1304,7 @@ type MuskdeerInstance struct {
 	UpdatedAtMs      int64                       `protobuf:"varint,18,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
 	Archived         bool                        `protobuf:"varint,19,opt,name=archived,proto3" json:"archived,omitempty"`
 	AccountEnabled   bool                        `protobuf:"varint,20,opt,name=account_enabled,json=accountEnabled,proto3" json:"account_enabled,omitempty"`
+	AccountLeverage  uint32                      `protobuf:"varint,21,opt,name=account_leverage,json=accountLeverage,proto3" json:"account_leverage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1476,6 +1477,13 @@ func (x *MuskdeerInstance) GetAccountEnabled() bool {
 		return x.AccountEnabled
 	}
 	return false
+}
+
+func (x *MuskdeerInstance) GetAccountLeverage() uint32 {
+	if x != nil {
+		return x.AccountLeverage
+	}
+	return 0
 }
 
 type MuskdeerRuntimeVersion struct {
@@ -3942,6 +3950,126 @@ func (x *MuskdeerMakerCheck) GetControlVersion() int64 {
 	return 0
 }
 
+type MuskdeerAccountParameters struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	MaximumNotional      string                 `protobuf:"bytes,1,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	MaximumOrderNotional string                 `protobuf:"bytes,2,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty"`
+	Leverage             uint32                 `protobuf:"varint,3,opt,name=leverage,proto3" json:"leverage,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *MuskdeerAccountParameters) Reset() {
+	*x = MuskdeerAccountParameters{}
+	mi := &file_admin_v1_muskdeer_types_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MuskdeerAccountParameters) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MuskdeerAccountParameters) ProtoMessage() {}
+
+func (x *MuskdeerAccountParameters) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_muskdeer_types_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MuskdeerAccountParameters.ProtoReflect.Descriptor instead.
+func (*MuskdeerAccountParameters) Descriptor() ([]byte, []int) {
+	return file_admin_v1_muskdeer_types_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *MuskdeerAccountParameters) GetMaximumNotional() string {
+	if x != nil {
+		return x.MaximumNotional
+	}
+	return ""
+}
+
+func (x *MuskdeerAccountParameters) GetMaximumOrderNotional() string {
+	if x != nil {
+		return x.MaximumOrderNotional
+	}
+	return ""
+}
+
+func (x *MuskdeerAccountParameters) GetLeverage() uint32 {
+	if x != nil {
+		return x.Leverage
+	}
+	return 0
+}
+
+type MuskdeerUpdateAccountRequest struct {
+	state               protoimpl.MessageState     `protogen:"open.v1"`
+	Id                  int64                      `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	ExpectedUpdatedAtMs int64                      `protobuf:"varint,3,opt,name=expected_updated_at_ms,json=expectedUpdatedAtMs,proto3" json:"expected_updated_at_ms,omitempty"`
+	Parameters          *MuskdeerAccountParameters `protobuf:"bytes,4,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *MuskdeerUpdateAccountRequest) Reset() {
+	*x = MuskdeerUpdateAccountRequest{}
+	mi := &file_admin_v1_muskdeer_types_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MuskdeerUpdateAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MuskdeerUpdateAccountRequest) ProtoMessage() {}
+
+func (x *MuskdeerUpdateAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_admin_v1_muskdeer_types_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MuskdeerUpdateAccountRequest.ProtoReflect.Descriptor instead.
+func (*MuskdeerUpdateAccountRequest) Descriptor() ([]byte, []int) {
+	return file_admin_v1_muskdeer_types_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *MuskdeerUpdateAccountRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *MuskdeerUpdateAccountRequest) GetExpectedUpdatedAtMs() int64 {
+	if x != nil {
+		return x.ExpectedUpdatedAtMs
+	}
+	return 0
+}
+
+func (x *MuskdeerUpdateAccountRequest) GetParameters() *MuskdeerAccountParameters {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
 var File_admin_v1_muskdeer_types_proto protoreflect.FileDescriptor
 
 const file_admin_v1_muskdeer_types_proto_rawDesc = "" +
@@ -4055,7 +4183,7 @@ const file_admin_v1_muskdeer_types_proto_rawDesc = "" +
 	"configured\"\\\n" +
 	"\x13MuskdeerGatewayPage\x12/\n" +
 	"\x05items\x18\x01 \x03(\v2\x19.admin.v1.MuskdeerGatewayR\x05items\x12\x14\n" +
-	"\x05total\x18\x02 \x01(\x04R\x05total\"\x94\x06\n" +
+	"\x05total\x18\x02 \x01(\x04R\x05total\"\xbf\x06\n" +
 	"\x10MuskdeerInstance\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12!\n" +
 	"\finstance_key\x18\x02 \x01(\tR\vinstanceKey\x12#\n" +
@@ -4081,7 +4209,8 @@ const file_admin_v1_muskdeer_types_proto_rawDesc = "" +
 	"\rcreated_at_ms\x18\x11 \x01(\x03R\vcreatedAtMs\x12\"\n" +
 	"\rupdated_at_ms\x18\x12 \x01(\x03R\vupdatedAtMs\x12\x1a\n" +
 	"\barchived\x18\x13 \x01(\bR\barchived\x12'\n" +
-	"\x0faccount_enabled\x18\x14 \x01(\bR\x0eaccountEnabled\"l\n" +
+	"\x0faccount_enabled\x18\x14 \x01(\bR\x0eaccountEnabled\x12)\n" +
+	"\x10account_leverage\x18\x15 \x01(\rR\x0faccountLeverage\"l\n" +
 	"\x16MuskdeerRuntimeVersion\x12\x18\n" +
 	"\aservice\x18\x01 \x01(\tR\aservice\x12\x1a\n" +
 	"\brevision\x18\x02 \x01(\x03R\brevision\x12\x1c\n" +
@@ -4303,7 +4432,17 @@ const file_admin_v1_muskdeer_types_proto_rawDesc = "" +
 	"\x17snapshot_observed_at_ms\x18\f \x01(\x03R\x14snapshotObservedAtMs\x12$\n" +
 	"\x0evalid_until_ms\x18\r \x01(\x03R\fvalidUntilMs\x12\x1a\n" +
 	"\brevision\x18\x0e \x01(\x03R\brevision\x12'\n" +
-	"\x0fcontrol_version\x18\x0f \x01(\x03R\x0econtrolVersionB<Z:github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpbb\x06proto3"
+	"\x0fcontrol_version\x18\x0f \x01(\x03R\x0econtrolVersion\"\x98\x01\n" +
+	"\x19MuskdeerAccountParameters\x12)\n" +
+	"\x10maximum_notional\x18\x01 \x01(\tR\x0fmaximumNotional\x124\n" +
+	"\x16maximum_order_notional\x18\x02 \x01(\tR\x14maximumOrderNotional\x12\x1a\n" +
+	"\bleverage\x18\x03 \x01(\rR\bleverage\"\xa8\x01\n" +
+	"\x1cMuskdeerUpdateAccountRequest\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\x03R\x02id\x123\n" +
+	"\x16expected_updated_at_ms\x18\x03 \x01(\x03R\x13expectedUpdatedAtMs\x12C\n" +
+	"\n" +
+	"parameters\x18\x04 \x01(\v2#.admin.v1.MuskdeerAccountParametersR\n" +
+	"parametersB<Z:github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpbb\x06proto3"
 
 var (
 	file_admin_v1_muskdeer_types_proto_rawDescOnce sync.Once
@@ -4317,7 +4456,7 @@ func file_admin_v1_muskdeer_types_proto_rawDescGZIP() []byte {
 	return file_admin_v1_muskdeer_types_proto_rawDescData
 }
 
-var file_admin_v1_muskdeer_types_proto_msgTypes = make([]protoimpl.MessageInfo, 50)
+var file_admin_v1_muskdeer_types_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
 var file_admin_v1_muskdeer_types_proto_goTypes = []any{
 	(*MuskdeerOverviewRequest)(nil),          // 0: admin.v1.MuskdeerOverviewRequest
 	(*MuskdeerListRequest)(nil),              // 1: admin.v1.MuskdeerListRequest
@@ -4369,6 +4508,8 @@ var file_admin_v1_muskdeer_types_proto_goTypes = []any{
 	(*MuskdeerAccountDraft)(nil),             // 47: admin.v1.MuskdeerAccountDraft
 	(*MuskdeerCreateAccountRequest)(nil),     // 48: admin.v1.MuskdeerCreateAccountRequest
 	(*MuskdeerMakerCheck)(nil),               // 49: admin.v1.MuskdeerMakerCheck
+	(*MuskdeerAccountParameters)(nil),        // 50: admin.v1.MuskdeerAccountParameters
+	(*MuskdeerUpdateAccountRequest)(nil),     // 51: admin.v1.MuskdeerUpdateAccountRequest
 }
 var file_admin_v1_muskdeer_types_proto_depIdxs = []int32{
 	5,  // 0: admin.v1.MuskdeerCreateInstanceRequest.data:type_name -> admin.v1.MuskdeerInstanceDraft
@@ -4395,11 +4536,12 @@ var file_admin_v1_muskdeer_types_proto_depIdxs = []int32{
 	40, // 21: admin.v1.MuskdeerBindingPage.items:type_name -> admin.v1.MuskdeerAccountBinding
 	43, // 22: admin.v1.MuskdeerCreateBindingRequest.data:type_name -> admin.v1.MuskdeerBindingDraft
 	47, // 23: admin.v1.MuskdeerCreateAccountRequest.data:type_name -> admin.v1.MuskdeerAccountDraft
-	24, // [24:24] is the sub-list for method output_type
-	24, // [24:24] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	50, // 24: admin.v1.MuskdeerUpdateAccountRequest.parameters:type_name -> admin.v1.MuskdeerAccountParameters
+	25, // [25:25] is the sub-list for method output_type
+	25, // [25:25] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_admin_v1_muskdeer_types_proto_init() }
@@ -4420,7 +4562,7 @@ func file_admin_v1_muskdeer_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_admin_v1_muskdeer_types_proto_rawDesc), len(file_admin_v1_muskdeer_types_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   50,
+			NumMessages:   52,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

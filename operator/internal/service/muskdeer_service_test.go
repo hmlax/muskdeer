@@ -27,6 +27,17 @@ type capturingConsole struct {
 	enable  *core.EnableAccountRequest
 }
 
+func (c *capturingConsole) UpdateAccount(_ context.Context, in *core.UpdateAccountRequest, _ ...grpc.CallOption) (*core.Account, error) {
+	c.actor = in.Actor
+	c.calls++
+	return &core.Account{
+		Id:                   in.Id,
+		MaximumNotional:      in.GetParameters().GetMaximumNotional(),
+		MaximumOrderNotional: in.GetParameters().GetMaximumOrderNotional(),
+		Leverage:             in.GetParameters().GetLeverage(),
+	}, nil
+}
+
 func (c *capturingConsole) CheckInstance(_ context.Context, in *core.InstanceRequest, _ ...grpc.CallOption) (*core.MakerCheck, error) {
 	c.actor = in.Actor
 	c.calls++
@@ -105,6 +116,19 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 	require.Equal(t, "3998.123456789012345678", check.TargetNotional)
 	require.Equal(t, []string{"venue/7/7"}, client.actor.AllowedAccountIds)
 
+	updated, err := service.UpdateAccount(ctx, &pb.MuskdeerUpdateAccountRequest{
+		Id:                  17,
+		ExpectedUpdatedAtMs: 12345,
+		Parameters: &pb.MuskdeerAccountParameters{
+			MaximumNotional:      "9007199254740993.123456789012345678",
+			MaximumOrderNotional: "100.000000000000000001",
+			Leverage:             5,
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "9007199254740993.123456789012345678", updated.MaximumNotional)
+	require.Equal(t, "100.000000000000000001", updated.MaximumOrderNotional)
+	require.Equal(t, []string{"venue/7/7"}, client.actor.AllowedAccountIds)
 	enabled, err := service.EnableAccount(ctx, &pb.MuskdeerEnableAccountRequest{
 		Id:                  17,
 		ExpectedUpdatedAtMs: 12345,

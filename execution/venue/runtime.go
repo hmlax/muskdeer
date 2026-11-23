@@ -317,6 +317,9 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 	}
 
 	profile, err := native.Profile(r.cfg.Venue, plan.GetScope())
+	if err == nil && r.cfg.InstanceID > 0 {
+		profile, err = venueconfig.CurrentProfile(ctx, r.db, profile)
+	}
 	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > r.maximumTargets() || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
@@ -339,7 +342,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 }
 
 func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfilePolicy, plan *executionvenuev1.QuotePlan) (*executionvenuev1.QuoteResult, error) {
-	lease, err := r.acquire(ctx, profile)
+	profile, lease, err := r.quoteAccount(ctx, profile)
 	if err != nil {
 		return nil, err
 	}

@@ -20,3 +20,16 @@ export function makerCheckMessageKey(reason: unknown): string {
 export function instanceActionMessageKey(error: unknown): string {
   return makerCheckMessageKey(error !== null && typeof error === 'object' && 'reason' in error ? error.reason : undefined);
 }
+
+export function accountPolicyMessageKey(error: unknown): string {
+  const reason = error !== null && typeof error === 'object' && 'reason' in error ? error.reason : undefined;
+  switch (reason) {
+    case 'ACCOUNT_POLICY_CONFLICT': return 'accountPolicyConflict';
+    case 'ACCOUNT_POLICY_EXPOSURE': return 'accountPolicyExposure';
+    case 'ACCOUNT_POLICY_ORDER_LEVERAGE': return 'accountPolicyOrderLeverage';
+    case 'ACCOUNT_POLICY_POSITION_LEVERAGE': return 'accountPolicyPositionLeverage';
+    case 'ACCOUNT_POLICY_GRID_LIMIT': return 'accountPolicyGridLimit';
+    case 'ACCOUNT_POLICY_SNAPSHOT_UNAVAILABLE': return 'accountPolicySnapshotUnavailable';
+    default: return 'accountPolicyFailed';
+  }
+}

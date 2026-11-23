@@ -39,14 +39,22 @@ func instanceTargets(cfg *venueconfig.RuntimeConfig, profile *commonv1.VenueProf
 	if err != nil {
 		return nil, err
 	}
-	remaining := p.TotalBudget
+	maximum, err := values.Value(profile.MaximumNotional, false, false)
+	if err != nil {
+		return nil, err
+	}
+	single, err := values.Value(profile.MaximumOrderNotional, false, false)
+	if err != nil {
+		return nil, err
+	}
+	remaining := decimal.Min(p.TotalBudget, maximum)
 	var result []*commonv1.VenueTarget
 	for _, level := range prices {
 		room := buyRoom
 		if level.Side == domain.SideSell {
 			room = sellRoom
 		}
-		orderLimit := decimal.Min(p.PerOrderNotional, remaining)
+		orderLimit := decimal.Min(p.PerOrderNotional, remaining, single)
 		lots, _ := orderLimit.QuoRem(level.Price.Mul(step), 0)
 		candidate := &target{
 			side:     level.Side,

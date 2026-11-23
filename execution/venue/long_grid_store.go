@@ -151,7 +151,7 @@ func (r *Runtime) gridOpeningRisk(ctx context.Context, tx *gorm.DB, snapshot *co
 	if err := gridDB(ctx, tx).Model(&commonmodel.TradingAccountPolicy{}).Where("account_id = ? AND enabled AND delete_at IS NULL", AccountID(profile.UserId, profile.FundId)).Clauses(clause.Locking{Strength: "UPDATE"}).Take(&budget).Error; err != nil {
 		return err
 	}
-	if budget.Leverage != profile.Leverage || budget.Symbol != profile.Symbol {
+	if budget.Symbol != profile.Symbol {
 		return ErrRiskLimit
 	}
 	limit, e1 := domain.ParseLedgerDecimal(budget.MaximumOrderNotional, false, false)
@@ -169,7 +169,7 @@ func (r *Runtime) gridOpeningRisk(ctx context.Context, tx *gorm.DB, snapshot *co
 		}
 	}
 	notional := decision.Price.Mul(decision.Quantity)
-	margin, remainder := notional.QuoRem(decimal.NewFromInt(int64(profile.Leverage)), 18)
+	margin, remainder := notional.QuoRem(decimal.NewFromInt(int64(budget.Leverage)), 18)
 	if !remainder.IsZero() {
 		margin = margin.Add(decimal.New(1, -18))
 	}

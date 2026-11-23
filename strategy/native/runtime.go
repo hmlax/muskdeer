@@ -108,6 +108,13 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if active, err := instanceconfig.Active(ctx, db, cfg.InstanceID, cfg.Revision); err != nil || !active {
 		return err
 	}
+	if cfg.InstanceID > 0 {
+		current, err := venueconfig.CurrentProfile(ctx, db, profile)
+		if err != nil {
+			return err
+		}
+		profile = current
+	}
 	descriptor := &commonv1.VenueAuthority{AccountId: values.StrategyKey(profile.UserId, profile.FundId)}
 	if cfg.InstanceID == 0 {
 		token, err := values.KeepLease(ctx, leases, domain.LeaseKey{

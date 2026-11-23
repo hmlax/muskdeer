@@ -494,11 +494,164 @@ func (x *LongGridResult) GetOrderId() string {
 	return ""
 }
 
+// Scope is verified by Console, then serialized with the existing fund writer.
+type AccountPolicyUpdate struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Id                   int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ExpectedUpdatedAtMs  int64                  `protobuf:"varint,2,opt,name=expected_updated_at_ms,json=expectedUpdatedAtMs,proto3" json:"expected_updated_at_ms,omitempty"`
+	Scope                *v1.VenueScope         `protobuf:"bytes,3,opt,name=scope,proto3" json:"scope,omitempty"`
+	MaximumNotional      string                 `protobuf:"bytes,4,opt,name=maximum_notional,json=maximumNotional,proto3" json:"maximum_notional,omitempty"`
+	MaximumOrderNotional string                 `protobuf:"bytes,5,opt,name=maximum_order_notional,json=maximumOrderNotional,proto3" json:"maximum_order_notional,omitempty"`
+	Leverage             uint32                 `protobuf:"varint,6,opt,name=leverage,proto3" json:"leverage,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *AccountPolicyUpdate) Reset() {
+	*x = AccountPolicyUpdate{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountPolicyUpdate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountPolicyUpdate) ProtoMessage() {}
+
+func (x *AccountPolicyUpdate) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountPolicyUpdate.ProtoReflect.Descriptor instead.
+func (*AccountPolicyUpdate) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *AccountPolicyUpdate) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AccountPolicyUpdate) GetExpectedUpdatedAtMs() int64 {
+	if x != nil {
+		return x.ExpectedUpdatedAtMs
+	}
+	return 0
+}
+
+func (x *AccountPolicyUpdate) GetScope() *v1.VenueScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
+func (x *AccountPolicyUpdate) GetMaximumNotional() string {
+	if x != nil {
+		return x.MaximumNotional
+	}
+	return ""
+}
+
+func (x *AccountPolicyUpdate) GetMaximumOrderNotional() string {
+	if x != nil {
+		return x.MaximumOrderNotional
+	}
+	return ""
+}
+
+func (x *AccountPolicyUpdate) GetLeverage() uint32 {
+	if x != nil {
+		return x.Leverage
+	}
+	return 0
+}
+
+type AccountPolicyResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	UpdatedAtMs   int64                  `protobuf:"varint,2,opt,name=updated_at_ms,json=updatedAtMs,proto3" json:"updated_at_ms,omitempty"`
+	Enabled       bool                   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Profile       *v1.VenueProfilePolicy `protobuf:"bytes,4,opt,name=profile,proto3" json:"profile,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccountPolicyResult) Reset() {
+	*x = AccountPolicyResult{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountPolicyResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountPolicyResult) ProtoMessage() {}
+
+func (x *AccountPolicyResult) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountPolicyResult.ProtoReflect.Descriptor instead.
+func (*AccountPolicyResult) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AccountPolicyResult) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AccountPolicyResult) GetUpdatedAtMs() int64 {
+	if x != nil {
+		return x.UpdatedAtMs
+	}
+	return 0
+}
+
+func (x *AccountPolicyResult) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *AccountPolicyResult) GetProfile() *v1.VenueProfilePolicy {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
 var File_deer_proto_execution_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
-	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a$deer/proto/common/v1/synthetic.proto\"\xc6\x02\n" +
+	"+deer/proto/execution/venue/v1/runtime.proto\x12\x1bmuskdeer.execution.venue.v1\x1a deer/proto/common/v1/venue.proto\x1a'deer/proto/common/v1/venue_policy.proto\x1a$deer/proto/common/v1/synthetic.proto\"\xc6\x02\n" +
 	"\x10WashTradeRequest\x120\n" +
 	"\x14strategy_instance_id\x18\x01 \x01(\x03R\x12strategyInstanceId\x12+\n" +
 	"\x11strategy_revision\x18\x02 \x01(\x03R\x10strategyRevision\x12\x16\n" +
@@ -535,11 +688,24 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\x0eLongGridResult\x12\x14\n" +
 	"\x05state\x18\x01 \x01(\tR\x05state\x12\x16\n" +
 	"\x06action\x18\x02 \x01(\tR\x06action\x12\x19\n" +
-	"\border_id\x18\x03 \x01(\tR\aorderId2\xb3\x06\n" +
+	"\border_id\x18\x03 \x01(\tR\aorderId\"\x8d\x02\n" +
+	"\x13AccountPolicyUpdate\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x123\n" +
+	"\x16expected_updated_at_ms\x18\x02 \x01(\x03R\x13expectedUpdatedAtMs\x124\n" +
+	"\x05scope\x18\x03 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x12)\n" +
+	"\x10maximum_notional\x18\x04 \x01(\tR\x0fmaximumNotional\x124\n" +
+	"\x16maximum_order_notional\x18\x05 \x01(\tR\x14maximumOrderNotional\x12\x1a\n" +
+	"\bleverage\x18\x06 \x01(\rR\bleverage\"\xa5\x01\n" +
+	"\x13AccountPolicyResult\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\"\n" +
+	"\rupdated_at_ms\x18\x02 \x01(\x03R\vupdatedAtMs\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\x12@\n" +
+	"\aprofile\x18\x04 \x01(\v2&.muskdeer.common.v1.VenueProfilePolicyR\aprofile2\xae\a\n" +
 	"\tExecution\x12r\n" +
 	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12P\n" +
 	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12S\n" +
-	"\x0eInspectAccount\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12t\n" +
+	"\x0eInspectAccount\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12y\n" +
+	"\x13UpdateAccountPolicy\x120.muskdeer.execution.venue.v1.AccountPolicyUpdate\x1a0.muskdeer.execution.venue.v1.AccountPolicyResult\x12t\n" +
 	"\x14CancelInstanceOrders\x122.muskdeer.execution.venue.v1.CancelInstanceRequest\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12]\n" +
 	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12b\n" +
 	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResult\x12m\n" +
@@ -558,7 +724,7 @@ func file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescData
 }
 
-var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
 	(*WashTradeRequest)(nil),                 // 0: muskdeer.execution.venue.v1.WashTradeRequest
 	(*QuotePlan)(nil),                        // 1: muskdeer.execution.venue.v1.QuotePlan
@@ -566,46 +732,53 @@ var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
 	(*CancelInstanceRequest)(nil),            // 3: muskdeer.execution.venue.v1.CancelInstanceRequest
 	(*LongGridRequest)(nil),                  // 4: muskdeer.execution.venue.v1.LongGridRequest
 	(*LongGridResult)(nil),                   // 5: muskdeer.execution.venue.v1.LongGridResult
-	(*v1.VenueTrade)(nil),                    // 6: muskdeer.common.v1.VenueTrade
-	(*v1.VenueBook)(nil),                     // 7: muskdeer.common.v1.VenueBook
-	(*v1.VenueScope)(nil),                    // 8: muskdeer.common.v1.VenueScope
-	(*v1.VenueAuthority)(nil),                // 9: muskdeer.common.v1.VenueAuthority
-	(*v1.VenueTarget)(nil),                   // 10: muskdeer.common.v1.VenueTarget
-	(*v1.VenueInstanceInventoryRequest)(nil), // 11: muskdeer.common.v1.VenueInstanceInventoryRequest
-	(*v1.SyntheticTapePlan)(nil),             // 12: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.VenueInstanceInventory)(nil),        // 13: muskdeer.common.v1.VenueInstanceInventory
-	(*v1.VenueSnapshot)(nil),                 // 14: muskdeer.common.v1.VenueSnapshot
-	(*v1.SyntheticTapeResult)(nil),           // 15: muskdeer.common.v1.SyntheticTapeResult
+	(*AccountPolicyUpdate)(nil),              // 6: muskdeer.execution.venue.v1.AccountPolicyUpdate
+	(*AccountPolicyResult)(nil),              // 7: muskdeer.execution.venue.v1.AccountPolicyResult
+	(*v1.VenueTrade)(nil),                    // 8: muskdeer.common.v1.VenueTrade
+	(*v1.VenueBook)(nil),                     // 9: muskdeer.common.v1.VenueBook
+	(*v1.VenueScope)(nil),                    // 10: muskdeer.common.v1.VenueScope
+	(*v1.VenueAuthority)(nil),                // 11: muskdeer.common.v1.VenueAuthority
+	(*v1.VenueTarget)(nil),                   // 12: muskdeer.common.v1.VenueTarget
+	(*v1.VenueProfilePolicy)(nil),            // 13: muskdeer.common.v1.VenueProfilePolicy
+	(*v1.VenueInstanceInventoryRequest)(nil), // 14: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*v1.SyntheticTapePlan)(nil),             // 15: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.VenueInstanceInventory)(nil),        // 16: muskdeer.common.v1.VenueInstanceInventory
+	(*v1.VenueSnapshot)(nil),                 // 17: muskdeer.common.v1.VenueSnapshot
+	(*v1.SyntheticTapeResult)(nil),           // 18: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_execution_venue_v1_runtime_proto_depIdxs = []int32{
-	6,  // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
-	7,  // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
-	8,  // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
-	7,  // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
-	9,  // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
-	10, // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
-	7,  // 6: muskdeer.execution.venue.v1.LongGridRequest.book:type_name -> muskdeer.common.v1.VenueBook
-	11, // 7: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
-	8,  // 8: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
-	8,  // 9: muskdeer.execution.venue.v1.Execution.InspectAccount:input_type -> muskdeer.common.v1.VenueScope
-	3,  // 10: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
-	1,  // 11: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
-	12, // 12: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	4,  // 13: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:input_type -> muskdeer.execution.venue.v1.LongGridRequest
-	0,  // 14: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
-	13, // 15: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
-	14, // 16: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
-	14, // 17: muskdeer.execution.venue.v1.Execution.InspectAccount:output_type -> muskdeer.common.v1.VenueSnapshot
-	2,  // 18: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	2,  // 19: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	15, // 20: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	5,  // 21: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:output_type -> muskdeer.execution.venue.v1.LongGridResult
-	15, // 22: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	15, // [15:23] is the sub-list for method output_type
-	7,  // [7:15] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	8,  // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
+	9,  // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	10, // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
+	9,  // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	11, // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	12, // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
+	9,  // 6: muskdeer.execution.venue.v1.LongGridRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	10, // 7: muskdeer.execution.venue.v1.AccountPolicyUpdate.scope:type_name -> muskdeer.common.v1.VenueScope
+	13, // 8: muskdeer.execution.venue.v1.AccountPolicyResult.profile:type_name -> muskdeer.common.v1.VenueProfilePolicy
+	14, // 9: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
+	10, // 10: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	10, // 11: muskdeer.execution.venue.v1.Execution.InspectAccount:input_type -> muskdeer.common.v1.VenueScope
+	6,  // 12: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyUpdate
+	3,  // 13: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
+	1,  // 14: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
+	15, // 15: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	4,  // 16: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:input_type -> muskdeer.execution.venue.v1.LongGridRequest
+	0,  // 17: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
+	16, // 18: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	17, // 19: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	17, // 20: muskdeer.execution.venue.v1.Execution.InspectAccount:output_type -> muskdeer.common.v1.VenueSnapshot
+	7,  // 21: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
+	2,  // 22: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	2,  // 23: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	18, // 24: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	5,  // 25: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:output_type -> muskdeer.execution.venue.v1.LongGridResult
+	18, // 26: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	18, // [18:27] is the sub-list for method output_type
+	9,  // [9:18] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_execution_venue_v1_runtime_proto_init() }
@@ -623,7 +796,7 @@ func file_deer_proto_execution_venue_v1_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc), len(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

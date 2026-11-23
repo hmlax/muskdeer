@@ -1,5 +1,7 @@
 # 架构与状态归属
 
+2026-11-23：TradingAccountPolicy的总名义额度、单笔额度与杠杆改为实时账户控制，策略报价及执行使用规范化新副本读取，不修改共享启动对象。Console核验商户范围后调用execution.UpdateAccountPolicy；现有单执行进程的基金写入门控与下单串行，撮合观察在事务外读取，行锁/CAS事务提交三项及单调更新时间。已有在途远端结果仍以撮合为准；不恢复数据库进程租约或铺单订单日志。其他实例参数保持启动修订边界。
+
 2026-11-20 最新范围：管理后台并入 Muskdeer，采用顶层 admin/operator/adminfrontend 与 Deer 公共代码布局，保持独立进程、单 go.mod、管理库隔离及经过认证的 Console gRPC；此条替代本文历史独立仓库/移除后台入口的范围。边界及命令见[管理后台合并](ADMIN_INTEGRATION.md)。
 
 2026-11-09 最新要求：当前 development_only WashTrade 订阅行情、计算单次量后直接调用 SDK WashTrade，事件处理不进行任何数据库读写；配置/启停独立控制面刷新。旧批次与序号只留历史，不再参与运行，详见 [DIRECT_WASH_TRADE.md](DIRECT_WASH_TRADE.md)。

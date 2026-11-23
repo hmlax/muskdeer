@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -27,7 +28,8 @@ import (
 // Instances dispatches immutable per-instance settings through one SDK session.
 // Fund gates and current matching observations are shared across algorithms.
 type Instances struct {
-	inventory []*commonv1.VenueInstanceRevision
+	policyGates sync.Map
+	inventory   []*commonv1.VenueInstanceRevision
 	executionv1.UnimplementedExecutionServer
 	children   map[int64]*Runtime
 	ordered    []*Runtime

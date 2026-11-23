@@ -161,11 +161,11 @@ func fromRow(row *strategymodelv1.StrategyInstance, template *strategymodelv1.St
 		Symbol:               instrument.Symbol,
 		MaximumNotional:      decimalText(budget.MaximumNotional),
 		MaximumOrderNotional: decimalText(budget.MaximumOrderNotional),
-		Leverage:             row.Parameters.Execution.Leverage,
+		Leverage:             budget.Leverage,
 		PriceTick:            decimalText(instrument.PriceTick),
 		QuantityStep:         decimalText(instrument.QuantityStep),
 	}
-	if budget.DeleteAt != nil || budget.AccountId != native.ScopeKey(budget.UserId, budget.FundId) || budget.Symbol != instrument.Symbol || profile.Leverage != budget.Leverage {
+	if budget.DeleteAt != nil || budget.AccountId != native.ScopeKey(budget.UserId, budget.FundId) || budget.Symbol != instrument.Symbol {
 		return nil, ErrInvalid
 	}
 	profile.MarketDataSource = row.MarketDataSource

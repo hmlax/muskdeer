@@ -6,6 +6,17 @@ import (
 	core "github.com/hmlax/muskdeer/deer/pb/strategy/console/v1"
 )
 
+func fromCoreAccountParameters(in *core.AccountParameters) *pb.MuskdeerAccountParameters {
+	if in == nil {
+		return nil
+	}
+	out := &pb.MuskdeerAccountParameters{
+		MaximumNotional:      in.MaximumNotional,
+		MaximumOrderNotional: in.MaximumOrderNotional,
+		Leverage:             in.Leverage,
+	}
+	return out
+}
 func fromCoreMakerCheck(in *core.MakerCheck) *pb.MuskdeerMakerCheck {
 	if in == nil {
 		return nil
@@ -127,6 +138,7 @@ func fromCoreInstance(in *core.Instance) *pb.MuskdeerInstance {
 		UpdatedAtMs:      in.UpdatedAtMs,
 		Archived:         in.Archived,
 		AccountEnabled:   in.AccountEnabled,
+		AccountLeverage:  in.AccountLeverage,
 	}
 	for _, v := range in.Runtimes {
 		out.Runtimes = append(out.Runtimes, fromCoreRuntimeVersion(v))
@@ -474,6 +486,17 @@ func fromCoreCancelReply(in *core.CancelReply) *pb.MuskdeerCancelReply {
 	}
 	return out
 }
+func toCoreAccountParameters(in *pb.MuskdeerAccountParameters) *core.AccountParameters {
+	if in == nil {
+		return nil
+	}
+	out := &core.AccountParameters{
+		MaximumNotional:      in.MaximumNotional,
+		MaximumOrderNotional: in.MaximumOrderNotional,
+		Leverage:             in.Leverage,
+	}
+	return out
+}
 func toCoreMakerCheck(in *pb.MuskdeerMakerCheck) *core.MakerCheck {
 	if in == nil {
 		return nil
@@ -595,6 +618,7 @@ func toCoreInstance(in *pb.MuskdeerInstance) *core.Instance {
 		UpdatedAtMs:      in.UpdatedAtMs,
 		Archived:         in.Archived,
 		AccountEnabled:   in.AccountEnabled,
+		AccountLeverage:  in.AccountLeverage,
 	}
 	for _, v := range in.Runtimes {
 		out.Runtimes = append(out.Runtimes, toCoreRuntimeVersion(v))

@@ -21,6 +21,7 @@ func TestNativeGridKeepsFixedPricesAndClipsBothFuturesInventoryDirections(t *tes
 		PriceTick:            "0.1",
 		QuantityStep:         "0.001",
 		Leverage:             10,
+		MaximumNotional:      "500",
 		MaximumOrderNotional: "100",
 		StrategyInstanceId:   3,
 	}
@@ -75,6 +76,22 @@ func TestNativeGridKeepsFixedPricesAndClipsBothFuturesInventoryDirections(t *tes
 	}
 	if !buys.IsPositive() || buys.GreaterThan(decimal.RequireFromString("0.5")) || sells.GreaterThan(decimal.RequireFromString("3.5")) {
 		t.Fatal("grid exceeded directional inventory room")
+	}
+	profile.MaximumNotional, profile.MaximumOrderNotional = "20", "7"
+	clipped, err := instanceTargets(cfg, profile, book, snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	total := decimal.Zero
+	for _, target := range clipped {
+		notional := decimal.RequireFromString(target.Price).Mul(decimal.RequireFromString(target.Quantity))
+		if notional.GreaterThan(decimal.NewFromInt(7)) {
+			t.Fatal("grid ignored live single-order limit")
+		}
+		total = total.Add(notional)
+	}
+	if total.GreaterThan(decimal.NewFromInt(20)) {
+		t.Fatal("grid ignored live total limit")
 	}
 	book.Bids[0].Price, book.Asks[0].Price = "120", "121"
 	if _, err := instanceTargets(cfg, profile, book, snapshot); !errors.Is(err, domain.ErrGridReferenceOutside) {

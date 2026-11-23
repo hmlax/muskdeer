@@ -15,6 +15,7 @@ import (
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/deer/trading/repository"
 	"github.com/hmlax/muskdeer/deer/trading/strategyconfig"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
@@ -150,6 +151,13 @@ func orderKey(order *commonv1.VenueOrder) (string, decimal.Decimal, error) {
 }
 
 func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePolicy) error {
+	if r.cfg.InstanceID > 0 {
+		current, err := venueconfig.CurrentProfile(ctx, r.db, profile)
+		if err != nil {
+			return err
+		}
+		profile = current
+	}
 	lease, err := r.acquire(ctx, profile)
 	if err != nil {
 		return err

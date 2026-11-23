@@ -81,10 +81,13 @@ func (s *MuskdeerService) failure(ctx context.Context, err error) error {
 		return nil
 	}
 	s.log.Errorf(ctx, "Muskdeer request failed: %v", err)
-	if status.Code(err) == codes.FailedPrecondition {
+	if status.Code(err) == codes.FailedPrecondition || status.Code(err) == codes.Aborted {
 		for _, detail := range status.Convert(err).Details() {
 			if info, ok := detail.(*errdetails.ErrorInfo); ok {
 				if message, recognized := domain.StartPreconditionMessage(info.Reason); recognized {
+					return kratoserrors.New(409, info.Reason, message)
+				}
+				if message, recognized := domain.AccountPolicyMessage(info.Reason); recognized {
 					return kratoserrors.New(409, info.Reason, message)
 				}
 			}

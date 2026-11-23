@@ -182,6 +182,7 @@ func (s *Server) instance(ctx context.Context, row *model.StrategyInstance, vers
 		UpdatedAtMs:      row.UpdateAt,
 		Archived:         row.DeleteAt != nil,
 		AccountEnabled:   budget.Enabled,
+		AccountLeverage:  budget.Leverage,
 	}
 	for _, v := range versions {
 		revision, found := v.revisions[row.Id]

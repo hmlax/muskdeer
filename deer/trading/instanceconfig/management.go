@@ -113,6 +113,9 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		if err != nil {
 			return err
 		}
+		if _, err := instance.Settings(); err != nil {
+			return err
+		}
 		if !direct && instance.Type == domain.StrategyTemplateWashTrade {
 			if err := resumeTape(ctx, tx, instance, connection); err != nil {
 				return err
@@ -154,7 +157,7 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 
 func managementBudget(ctx context.Context, tx *gorm.DB, account, operation string) (*commonmodel.TradingAccountPolicy, error) {
 	query := fresh(ctx, tx).Model(&commonmodel.TradingAccountPolicy{}).Where("account_id = ? AND delete_at IS NULL", account)
-	if operation == ManagementStart {
+	if operation != ManagementStop {
 		query = query.Clauses(clause.Locking{Strength: "SHARE"})
 	}
 	var budget commonmodel.TradingAccountPolicy

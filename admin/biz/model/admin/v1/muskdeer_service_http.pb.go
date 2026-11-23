@@ -26,6 +26,7 @@ const OperationMuskdeerServiceListTemplates = "/operator.v1.MuskdeerService/List
 const OperationMuskdeerServiceSetAccountBindingEnabled = "/operator.v1.MuskdeerService/SetAccountBindingEnabled"
 const OperationMuskdeerServiceStartInstance = "/operator.v1.MuskdeerService/StartInstance"
 const OperationMuskdeerServiceStopInstance = "/operator.v1.MuskdeerService/StopInstance"
+const OperationMuskdeerServiceUpdateAccount = "/operator.v1.MuskdeerService/UpdateAccount"
 const OperationMuskdeerServiceUpdateInstance = "/operator.v1.MuskdeerService/UpdateInstance"
 
 type MuskdeerServiceHTTPServer interface {
@@ -50,5 +51,6 @@ type MuskdeerServiceHTTPServer interface {
 	SetAccountBindingEnabled(context.Context, *MuskdeerSetBindingEnabledRequest) (*MuskdeerAccountBinding, error)
 	StartInstance(context.Context, *MuskdeerRunningRequest) (*MuskdeerInstance, error)
 	StopInstance(context.Context, *MuskdeerRunningRequest) (*MuskdeerInstance, error)
+	UpdateAccount(context.Context, *MuskdeerUpdateAccountRequest) (*MuskdeerAccount, error)
 	UpdateInstance(context.Context, *MuskdeerUpdateInstanceRequest) (*MuskdeerInstance, error)
 }
