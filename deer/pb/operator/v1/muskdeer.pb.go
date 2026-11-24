@@ -657,6 +657,58 @@ func (x *MuskdeerEnableAccountRequest) GetExpectedUpdatedAtMs() int64 {
 	return 0
 }
 
+type MuskdeerDisableAccountRequest struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  int64                  `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	ExpectedUpdatedAtMs int64                  `protobuf:"varint,3,opt,name=expected_updated_at_ms,json=expectedUpdatedAtMs,proto3" json:"expected_updated_at_ms,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *MuskdeerDisableAccountRequest) Reset() {
+	*x = MuskdeerDisableAccountRequest{}
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MuskdeerDisableAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MuskdeerDisableAccountRequest) ProtoMessage() {}
+
+func (x *MuskdeerDisableAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MuskdeerDisableAccountRequest.ProtoReflect.Descriptor instead.
+func (*MuskdeerDisableAccountRequest) Descriptor() ([]byte, []int) {
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *MuskdeerDisableAccountRequest) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *MuskdeerDisableAccountRequest) GetExpectedUpdatedAtMs() int64 {
+	if x != nil {
+		return x.ExpectedUpdatedAtMs
+	}
+	return 0
+}
+
 type MuskdeerRecordListRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Page          uint32                 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
@@ -672,7 +724,7 @@ type MuskdeerRecordListRequest struct {
 
 func (x *MuskdeerRecordListRequest) Reset() {
 	*x = MuskdeerRecordListRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[11]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -684,7 +736,7 @@ func (x *MuskdeerRecordListRequest) String() string {
 func (*MuskdeerRecordListRequest) ProtoMessage() {}
 
 func (x *MuskdeerRecordListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[11]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -697,7 +749,7 @@ func (x *MuskdeerRecordListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerRecordListRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerRecordListRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{11}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *MuskdeerRecordListRequest) GetPage() uint32 {
@@ -761,7 +813,7 @@ type MuskdeerCancelRequest struct {
 
 func (x *MuskdeerCancelRequest) Reset() {
 	*x = MuskdeerCancelRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[12]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -773,7 +825,7 @@ func (x *MuskdeerCancelRequest) String() string {
 func (*MuskdeerCancelRequest) ProtoMessage() {}
 
 func (x *MuskdeerCancelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[12]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -786,7 +838,7 @@ func (x *MuskdeerCancelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerCancelRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerCancelRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{12}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *MuskdeerCancelRequest) GetInstanceId() int64 {
@@ -820,7 +872,7 @@ type MuskdeerCancelReply struct {
 
 func (x *MuskdeerCancelReply) Reset() {
 	*x = MuskdeerCancelReply{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[13]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -832,7 +884,7 @@ func (x *MuskdeerCancelReply) String() string {
 func (*MuskdeerCancelReply) ProtoMessage() {}
 
 func (x *MuskdeerCancelReply) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[13]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -845,7 +897,7 @@ func (x *MuskdeerCancelReply) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerCancelReply.ProtoReflect.Descriptor instead.
 func (*MuskdeerCancelReply) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{13}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *MuskdeerCancelReply) GetAcknowledged() uint32 {
@@ -879,7 +931,7 @@ type MuskdeerOverview struct {
 
 func (x *MuskdeerOverview) Reset() {
 	*x = MuskdeerOverview{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[14]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -891,7 +943,7 @@ func (x *MuskdeerOverview) String() string {
 func (*MuskdeerOverview) ProtoMessage() {}
 
 func (x *MuskdeerOverview) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[14]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -904,7 +956,7 @@ func (x *MuskdeerOverview) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerOverview.ProtoReflect.Descriptor instead.
 func (*MuskdeerOverview) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{14}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *MuskdeerOverview) GetTemplates() uint64 {
@@ -990,7 +1042,7 @@ type MuskdeerTemplate struct {
 
 func (x *MuskdeerTemplate) Reset() {
 	*x = MuskdeerTemplate{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[15]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1002,7 +1054,7 @@ func (x *MuskdeerTemplate) String() string {
 func (*MuskdeerTemplate) ProtoMessage() {}
 
 func (x *MuskdeerTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[15]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1015,7 +1067,7 @@ func (x *MuskdeerTemplate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerTemplate.ProtoReflect.Descriptor instead.
 func (*MuskdeerTemplate) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{15}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *MuskdeerTemplate) GetId() int64 {
@@ -1112,7 +1164,7 @@ type MuskdeerTemplatePage struct {
 
 func (x *MuskdeerTemplatePage) Reset() {
 	*x = MuskdeerTemplatePage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[16]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1124,7 +1176,7 @@ func (x *MuskdeerTemplatePage) String() string {
 func (*MuskdeerTemplatePage) ProtoMessage() {}
 
 func (x *MuskdeerTemplatePage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[16]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1137,7 +1189,7 @@ func (x *MuskdeerTemplatePage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerTemplatePage.ProtoReflect.Descriptor instead.
 func (*MuskdeerTemplatePage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{16}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *MuskdeerTemplatePage) GetItems() []*MuskdeerTemplate {
@@ -1167,7 +1219,7 @@ type MuskdeerGateway struct {
 
 func (x *MuskdeerGateway) Reset() {
 	*x = MuskdeerGateway{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[17]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1179,7 +1231,7 @@ func (x *MuskdeerGateway) String() string {
 func (*MuskdeerGateway) ProtoMessage() {}
 
 func (x *MuskdeerGateway) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[17]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1192,7 +1244,7 @@ func (x *MuskdeerGateway) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerGateway.ProtoReflect.Descriptor instead.
 func (*MuskdeerGateway) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{17}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *MuskdeerGateway) GetKey() string {
@@ -1240,7 +1292,7 @@ type MuskdeerGatewayPage struct {
 
 func (x *MuskdeerGatewayPage) Reset() {
 	*x = MuskdeerGatewayPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[18]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1252,7 +1304,7 @@ func (x *MuskdeerGatewayPage) String() string {
 func (*MuskdeerGatewayPage) ProtoMessage() {}
 
 func (x *MuskdeerGatewayPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[18]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1265,7 +1317,7 @@ func (x *MuskdeerGatewayPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerGatewayPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerGatewayPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{18}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *MuskdeerGatewayPage) GetItems() []*MuskdeerGateway {
@@ -1311,7 +1363,7 @@ type MuskdeerInstance struct {
 
 func (x *MuskdeerInstance) Reset() {
 	*x = MuskdeerInstance{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[19]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1323,7 +1375,7 @@ func (x *MuskdeerInstance) String() string {
 func (*MuskdeerInstance) ProtoMessage() {}
 
 func (x *MuskdeerInstance) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[19]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1336,7 +1388,7 @@ func (x *MuskdeerInstance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerInstance.ProtoReflect.Descriptor instead.
 func (*MuskdeerInstance) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{19}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *MuskdeerInstance) GetId() int64 {
@@ -1497,7 +1549,7 @@ type MuskdeerRuntimeVersion struct {
 
 func (x *MuskdeerRuntimeVersion) Reset() {
 	*x = MuskdeerRuntimeVersion{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[20]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1509,7 +1561,7 @@ func (x *MuskdeerRuntimeVersion) String() string {
 func (*MuskdeerRuntimeVersion) ProtoMessage() {}
 
 func (x *MuskdeerRuntimeVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[20]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1522,7 +1574,7 @@ func (x *MuskdeerRuntimeVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerRuntimeVersion.ProtoReflect.Descriptor instead.
 func (*MuskdeerRuntimeVersion) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{20}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *MuskdeerRuntimeVersion) GetService() string {
@@ -1556,7 +1608,7 @@ type MuskdeerInstancePage struct {
 
 func (x *MuskdeerInstancePage) Reset() {
 	*x = MuskdeerInstancePage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[21]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1568,7 +1620,7 @@ func (x *MuskdeerInstancePage) String() string {
 func (*MuskdeerInstancePage) ProtoMessage() {}
 
 func (x *MuskdeerInstancePage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[21]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1581,7 +1633,7 @@ func (x *MuskdeerInstancePage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerInstancePage.ProtoReflect.Descriptor instead.
 func (*MuskdeerInstancePage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{21}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *MuskdeerInstancePage) GetItems() []*MuskdeerInstance {
@@ -1614,7 +1666,7 @@ type MuskdeerInstanceParameters struct {
 
 func (x *MuskdeerInstanceParameters) Reset() {
 	*x = MuskdeerInstanceParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[22]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1626,7 +1678,7 @@ func (x *MuskdeerInstanceParameters) String() string {
 func (*MuskdeerInstanceParameters) ProtoMessage() {}
 
 func (x *MuskdeerInstanceParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[22]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1639,7 +1691,7 @@ func (x *MuskdeerInstanceParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerInstanceParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerInstanceParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{22}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *MuskdeerInstanceParameters) GetExecution() *MuskdeerExecutionParameters {
@@ -1732,7 +1784,7 @@ type MuskdeerExecutionParameters struct {
 
 func (x *MuskdeerExecutionParameters) Reset() {
 	*x = MuskdeerExecutionParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[23]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1744,7 +1796,7 @@ func (x *MuskdeerExecutionParameters) String() string {
 func (*MuskdeerExecutionParameters) ProtoMessage() {}
 
 func (x *MuskdeerExecutionParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[23]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1757,7 +1809,7 @@ func (x *MuskdeerExecutionParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerExecutionParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerExecutionParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{23}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *MuskdeerExecutionParameters) GetPollIntervalMs() int64 {
@@ -1800,7 +1852,7 @@ type MuskdeerDepthParameters struct {
 
 func (x *MuskdeerDepthParameters) Reset() {
 	*x = MuskdeerDepthParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[24]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1812,7 +1864,7 @@ func (x *MuskdeerDepthParameters) String() string {
 func (*MuskdeerDepthParameters) ProtoMessage() {}
 
 func (x *MuskdeerDepthParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[24]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1825,7 +1877,7 @@ func (x *MuskdeerDepthParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerDepthParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerDepthParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{24}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *MuskdeerDepthParameters) GetDepth() uint32 {
@@ -1871,7 +1923,7 @@ type MuskdeerGridParameters struct {
 
 func (x *MuskdeerGridParameters) Reset() {
 	*x = MuskdeerGridParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[25]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1883,7 +1935,7 @@ func (x *MuskdeerGridParameters) String() string {
 func (*MuskdeerGridParameters) ProtoMessage() {}
 
 func (x *MuskdeerGridParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[25]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1896,7 +1948,7 @@ func (x *MuskdeerGridParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerGridParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerGridParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{25}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *MuskdeerGridParameters) GetLowerPrice() string {
@@ -1965,7 +2017,7 @@ type MuskdeerWashParameters struct {
 
 func (x *MuskdeerWashParameters) Reset() {
 	*x = MuskdeerWashParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[26]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1977,7 +2029,7 @@ func (x *MuskdeerWashParameters) String() string {
 func (*MuskdeerWashParameters) ProtoMessage() {}
 
 func (x *MuskdeerWashParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[26]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1990,7 +2042,7 @@ func (x *MuskdeerWashParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerWashParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerWashParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{26}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *MuskdeerWashParameters) GetDevelopmentOnly() bool {
@@ -2066,7 +2118,7 @@ type MuskdeerInstrument struct {
 
 func (x *MuskdeerInstrument) Reset() {
 	*x = MuskdeerInstrument{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[27]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2078,7 +2130,7 @@ func (x *MuskdeerInstrument) String() string {
 func (*MuskdeerInstrument) ProtoMessage() {}
 
 func (x *MuskdeerInstrument) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[27]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2091,7 +2143,7 @@ func (x *MuskdeerInstrument) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerInstrument.ProtoReflect.Descriptor instead.
 func (*MuskdeerInstrument) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{27}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *MuskdeerInstrument) GetId() int64 {
@@ -2167,7 +2219,7 @@ type MuskdeerInstrumentPage struct {
 
 func (x *MuskdeerInstrumentPage) Reset() {
 	*x = MuskdeerInstrumentPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[28]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2179,7 +2231,7 @@ func (x *MuskdeerInstrumentPage) String() string {
 func (*MuskdeerInstrumentPage) ProtoMessage() {}
 
 func (x *MuskdeerInstrumentPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[28]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2192,7 +2244,7 @@ func (x *MuskdeerInstrumentPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerInstrumentPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerInstrumentPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{28}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *MuskdeerInstrumentPage) GetItems() []*MuskdeerInstrument {
@@ -2231,7 +2283,7 @@ type MuskdeerAccount struct {
 
 func (x *MuskdeerAccount) Reset() {
 	*x = MuskdeerAccount{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[29]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2243,7 +2295,7 @@ func (x *MuskdeerAccount) String() string {
 func (*MuskdeerAccount) ProtoMessage() {}
 
 func (x *MuskdeerAccount) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[29]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2256,7 +2308,7 @@ func (x *MuskdeerAccount) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerAccount.ProtoReflect.Descriptor instead.
 func (*MuskdeerAccount) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{29}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *MuskdeerAccount) GetId() int64 {
@@ -2367,7 +2419,7 @@ type MuskdeerAccountPage struct {
 
 func (x *MuskdeerAccountPage) Reset() {
 	*x = MuskdeerAccountPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[30]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2379,7 +2431,7 @@ func (x *MuskdeerAccountPage) String() string {
 func (*MuskdeerAccountPage) ProtoMessage() {}
 
 func (x *MuskdeerAccountPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[30]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2392,7 +2444,7 @@ func (x *MuskdeerAccountPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerAccountPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerAccountPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{30}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *MuskdeerAccountPage) GetItems() []*MuskdeerAccount {
@@ -2432,7 +2484,7 @@ type MuskdeerOrderRecord struct {
 
 func (x *MuskdeerOrderRecord) Reset() {
 	*x = MuskdeerOrderRecord{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[31]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2444,7 +2496,7 @@ func (x *MuskdeerOrderRecord) String() string {
 func (*MuskdeerOrderRecord) ProtoMessage() {}
 
 func (x *MuskdeerOrderRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[31]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2457,7 +2509,7 @@ func (x *MuskdeerOrderRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerOrderRecord.ProtoReflect.Descriptor instead.
 func (*MuskdeerOrderRecord) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{31}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *MuskdeerOrderRecord) GetId() int64 {
@@ -2575,7 +2627,7 @@ type MuskdeerOrderPage struct {
 
 func (x *MuskdeerOrderPage) Reset() {
 	*x = MuskdeerOrderPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[32]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2587,7 +2639,7 @@ func (x *MuskdeerOrderPage) String() string {
 func (*MuskdeerOrderPage) ProtoMessage() {}
 
 func (x *MuskdeerOrderPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[32]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2600,7 +2652,7 @@ func (x *MuskdeerOrderPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerOrderPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerOrderPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{32}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *MuskdeerOrderPage) GetItems() []*MuskdeerOrderRecord {
@@ -2632,7 +2684,7 @@ type MuskdeerCancellation struct {
 
 func (x *MuskdeerCancellation) Reset() {
 	*x = MuskdeerCancellation{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[33]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[34]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2644,7 +2696,7 @@ func (x *MuskdeerCancellation) String() string {
 func (*MuskdeerCancellation) ProtoMessage() {}
 
 func (x *MuskdeerCancellation) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[33]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[34]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2657,7 +2709,7 @@ func (x *MuskdeerCancellation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerCancellation.ProtoReflect.Descriptor instead.
 func (*MuskdeerCancellation) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{33}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{34}
 }
 
 func (x *MuskdeerCancellation) GetId() int64 {
@@ -2719,7 +2771,7 @@ type MuskdeerCancellationPage struct {
 
 func (x *MuskdeerCancellationPage) Reset() {
 	*x = MuskdeerCancellationPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[34]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[35]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2731,7 +2783,7 @@ func (x *MuskdeerCancellationPage) String() string {
 func (*MuskdeerCancellationPage) ProtoMessage() {}
 
 func (x *MuskdeerCancellationPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[34]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[35]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2744,7 +2796,7 @@ func (x *MuskdeerCancellationPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerCancellationPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerCancellationPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{34}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{35}
 }
 
 func (x *MuskdeerCancellationPage) GetItems() []*MuskdeerCancellation {
@@ -2782,7 +2834,7 @@ type MuskdeerSyntheticRecord struct {
 
 func (x *MuskdeerSyntheticRecord) Reset() {
 	*x = MuskdeerSyntheticRecord{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[35]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[36]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2794,7 +2846,7 @@ func (x *MuskdeerSyntheticRecord) String() string {
 func (*MuskdeerSyntheticRecord) ProtoMessage() {}
 
 func (x *MuskdeerSyntheticRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[35]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[36]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2807,7 +2859,7 @@ func (x *MuskdeerSyntheticRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerSyntheticRecord.ProtoReflect.Descriptor instead.
 func (*MuskdeerSyntheticRecord) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{35}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{36}
 }
 
 func (x *MuskdeerSyntheticRecord) GetId() int64 {
@@ -2911,7 +2963,7 @@ type MuskdeerSyntheticPage struct {
 
 func (x *MuskdeerSyntheticPage) Reset() {
 	*x = MuskdeerSyntheticPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[36]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[37]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2923,7 +2975,7 @@ func (x *MuskdeerSyntheticPage) String() string {
 func (*MuskdeerSyntheticPage) ProtoMessage() {}
 
 func (x *MuskdeerSyntheticPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[36]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[37]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2936,7 +2988,7 @@ func (x *MuskdeerSyntheticPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerSyntheticPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerSyntheticPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{36}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{37}
 }
 
 func (x *MuskdeerSyntheticPage) GetItems() []*MuskdeerSyntheticRecord {
@@ -2970,7 +3022,7 @@ type MuskdeerAccountSnapshot struct {
 
 func (x *MuskdeerAccountSnapshot) Reset() {
 	*x = MuskdeerAccountSnapshot{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[37]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[38]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2982,7 +3034,7 @@ func (x *MuskdeerAccountSnapshot) String() string {
 func (*MuskdeerAccountSnapshot) ProtoMessage() {}
 
 func (x *MuskdeerAccountSnapshot) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[37]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[38]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2995,7 +3047,7 @@ func (x *MuskdeerAccountSnapshot) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerAccountSnapshot.ProtoReflect.Descriptor instead.
 func (*MuskdeerAccountSnapshot) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{37}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{38}
 }
 
 func (x *MuskdeerAccountSnapshot) GetAccountId() string {
@@ -3069,7 +3121,7 @@ type MuskdeerActiveOrder struct {
 
 func (x *MuskdeerActiveOrder) Reset() {
 	*x = MuskdeerActiveOrder{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[38]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[39]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3081,7 +3133,7 @@ func (x *MuskdeerActiveOrder) String() string {
 func (*MuskdeerActiveOrder) ProtoMessage() {}
 
 func (x *MuskdeerActiveOrder) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[38]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[39]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3094,7 +3146,7 @@ func (x *MuskdeerActiveOrder) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerActiveOrder.ProtoReflect.Descriptor instead.
 func (*MuskdeerActiveOrder) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{38}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{39}
 }
 
 func (x *MuskdeerActiveOrder) GetOrderId() string {
@@ -3158,7 +3210,7 @@ type MuskdeerPosition struct {
 
 func (x *MuskdeerPosition) Reset() {
 	*x = MuskdeerPosition{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[39]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[40]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3170,7 +3222,7 @@ func (x *MuskdeerPosition) String() string {
 func (*MuskdeerPosition) ProtoMessage() {}
 
 func (x *MuskdeerPosition) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[39]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[40]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3183,7 +3235,7 @@ func (x *MuskdeerPosition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerPosition.ProtoReflect.Descriptor instead.
 func (*MuskdeerPosition) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{39}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{40}
 }
 
 func (x *MuskdeerPosition) GetSymbol() string {
@@ -3227,7 +3279,7 @@ type MuskdeerAccountBinding struct {
 
 func (x *MuskdeerAccountBinding) Reset() {
 	*x = MuskdeerAccountBinding{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[40]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3239,7 +3291,7 @@ func (x *MuskdeerAccountBinding) String() string {
 func (*MuskdeerAccountBinding) ProtoMessage() {}
 
 func (x *MuskdeerAccountBinding) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[40]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3252,7 +3304,7 @@ func (x *MuskdeerAccountBinding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerAccountBinding.ProtoReflect.Descriptor instead.
 func (*MuskdeerAccountBinding) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{40}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *MuskdeerAccountBinding) GetId() uint32 {
@@ -3302,7 +3354,7 @@ type MuskdeerBindingListRequest struct {
 
 func (x *MuskdeerBindingListRequest) Reset() {
 	*x = MuskdeerBindingListRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[41]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3314,7 +3366,7 @@ func (x *MuskdeerBindingListRequest) String() string {
 func (*MuskdeerBindingListRequest) ProtoMessage() {}
 
 func (x *MuskdeerBindingListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[41]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3327,7 +3379,7 @@ func (x *MuskdeerBindingListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerBindingListRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerBindingListRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{41}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *MuskdeerBindingListRequest) GetPage() uint32 {
@@ -3368,7 +3420,7 @@ type MuskdeerBindingPage struct {
 
 func (x *MuskdeerBindingPage) Reset() {
 	*x = MuskdeerBindingPage{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[42]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3380,7 +3432,7 @@ func (x *MuskdeerBindingPage) String() string {
 func (*MuskdeerBindingPage) ProtoMessage() {}
 
 func (x *MuskdeerBindingPage) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[42]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3393,7 +3445,7 @@ func (x *MuskdeerBindingPage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerBindingPage.ProtoReflect.Descriptor instead.
 func (*MuskdeerBindingPage) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{42}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *MuskdeerBindingPage) GetItems() []*MuskdeerAccountBinding {
@@ -3421,7 +3473,7 @@ type MuskdeerBindingDraft struct {
 
 func (x *MuskdeerBindingDraft) Reset() {
 	*x = MuskdeerBindingDraft{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[43]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3433,7 +3485,7 @@ func (x *MuskdeerBindingDraft) String() string {
 func (*MuskdeerBindingDraft) ProtoMessage() {}
 
 func (x *MuskdeerBindingDraft) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[43]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3446,7 +3498,7 @@ func (x *MuskdeerBindingDraft) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerBindingDraft.ProtoReflect.Descriptor instead.
 func (*MuskdeerBindingDraft) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{43}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *MuskdeerBindingDraft) GetTenantId() uint32 {
@@ -3479,7 +3531,7 @@ type MuskdeerCreateBindingRequest struct {
 
 func (x *MuskdeerCreateBindingRequest) Reset() {
 	*x = MuskdeerCreateBindingRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[44]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3491,7 +3543,7 @@ func (x *MuskdeerCreateBindingRequest) String() string {
 func (*MuskdeerCreateBindingRequest) ProtoMessage() {}
 
 func (x *MuskdeerCreateBindingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[44]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3504,7 +3556,7 @@ func (x *MuskdeerCreateBindingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerCreateBindingRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerCreateBindingRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{44}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *MuskdeerCreateBindingRequest) GetData() *MuskdeerBindingDraft {
@@ -3525,7 +3577,7 @@ type MuskdeerSetBindingEnabledRequest struct {
 
 func (x *MuskdeerSetBindingEnabledRequest) Reset() {
 	*x = MuskdeerSetBindingEnabledRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[45]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[46]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3537,7 +3589,7 @@ func (x *MuskdeerSetBindingEnabledRequest) String() string {
 func (*MuskdeerSetBindingEnabledRequest) ProtoMessage() {}
 
 func (x *MuskdeerSetBindingEnabledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[45]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[46]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3550,7 +3602,7 @@ func (x *MuskdeerSetBindingEnabledRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerSetBindingEnabledRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerSetBindingEnabledRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{45}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{46}
 }
 
 func (x *MuskdeerSetBindingEnabledRequest) GetId() uint32 {
@@ -3588,7 +3640,7 @@ type MuskdeerLongGridParameters struct {
 
 func (x *MuskdeerLongGridParameters) Reset() {
 	*x = MuskdeerLongGridParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[46]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[47]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3600,7 +3652,7 @@ func (x *MuskdeerLongGridParameters) String() string {
 func (*MuskdeerLongGridParameters) ProtoMessage() {}
 
 func (x *MuskdeerLongGridParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[46]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[47]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3613,7 +3665,7 @@ func (x *MuskdeerLongGridParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerLongGridParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerLongGridParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{46}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{47}
 }
 
 func (x *MuskdeerLongGridParameters) GetSpacingFraction() string {
@@ -3673,7 +3725,7 @@ type MuskdeerAccountDraft struct {
 
 func (x *MuskdeerAccountDraft) Reset() {
 	*x = MuskdeerAccountDraft{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[47]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[48]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3685,7 +3737,7 @@ func (x *MuskdeerAccountDraft) String() string {
 func (*MuskdeerAccountDraft) ProtoMessage() {}
 
 func (x *MuskdeerAccountDraft) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[47]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[48]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3698,7 +3750,7 @@ func (x *MuskdeerAccountDraft) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerAccountDraft.ProtoReflect.Descriptor instead.
 func (*MuskdeerAccountDraft) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{47}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{48}
 }
 
 func (x *MuskdeerAccountDraft) GetUserId() string {
@@ -3759,7 +3811,7 @@ type MuskdeerCreateAccountRequest struct {
 
 func (x *MuskdeerCreateAccountRequest) Reset() {
 	*x = MuskdeerCreateAccountRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[48]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3771,7 +3823,7 @@ func (x *MuskdeerCreateAccountRequest) String() string {
 func (*MuskdeerCreateAccountRequest) ProtoMessage() {}
 
 func (x *MuskdeerCreateAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[48]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3784,7 +3836,7 @@ func (x *MuskdeerCreateAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerCreateAccountRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerCreateAccountRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{48}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *MuskdeerCreateAccountRequest) GetData() *MuskdeerAccountDraft {
@@ -3818,7 +3870,7 @@ type MuskdeerMakerCheck struct {
 
 func (x *MuskdeerMakerCheck) Reset() {
 	*x = MuskdeerMakerCheck{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[49]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[50]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3830,7 +3882,7 @@ func (x *MuskdeerMakerCheck) String() string {
 func (*MuskdeerMakerCheck) ProtoMessage() {}
 
 func (x *MuskdeerMakerCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[49]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[50]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3843,7 +3895,7 @@ func (x *MuskdeerMakerCheck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerMakerCheck.ProtoReflect.Descriptor instead.
 func (*MuskdeerMakerCheck) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{49}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{50}
 }
 
 func (x *MuskdeerMakerCheck) GetCanStart() bool {
@@ -3963,7 +4015,7 @@ type MuskdeerAccountParameters struct {
 
 func (x *MuskdeerAccountParameters) Reset() {
 	*x = MuskdeerAccountParameters{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[50]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3975,7 +4027,7 @@ func (x *MuskdeerAccountParameters) String() string {
 func (*MuskdeerAccountParameters) ProtoMessage() {}
 
 func (x *MuskdeerAccountParameters) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[50]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3988,7 +4040,7 @@ func (x *MuskdeerAccountParameters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerAccountParameters.ProtoReflect.Descriptor instead.
 func (*MuskdeerAccountParameters) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{50}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *MuskdeerAccountParameters) GetMaximumNotional() string {
@@ -4023,7 +4075,7 @@ type MuskdeerUpdateAccountRequest struct {
 
 func (x *MuskdeerUpdateAccountRequest) Reset() {
 	*x = MuskdeerUpdateAccountRequest{}
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[51]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4035,7 +4087,7 @@ func (x *MuskdeerUpdateAccountRequest) String() string {
 func (*MuskdeerUpdateAccountRequest) ProtoMessage() {}
 
 func (x *MuskdeerUpdateAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_operator_v1_muskdeer_proto_msgTypes[51]
+	mi := &file_operator_v1_muskdeer_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4048,7 +4100,7 @@ func (x *MuskdeerUpdateAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuskdeerUpdateAccountRequest.ProtoReflect.Descriptor instead.
 func (*MuskdeerUpdateAccountRequest) Descriptor() ([]byte, []int) {
-	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{51}
+	return file_operator_v1_muskdeer_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *MuskdeerUpdateAccountRequest) GetId() int64 {
@@ -4126,6 +4178,9 @@ const file_operator_v1_muskdeer_proto_rawDesc = "" +
 	"\n" +
 	"account_id\x18\x02 \x01(\tR\taccountId\"c\n" +
 	"\x1cMuskdeerEnableAccountRequest\x12\x0e\n" +
+	"\x02id\x18\x02 \x01(\x03R\x02id\x123\n" +
+	"\x16expected_updated_at_ms\x18\x03 \x01(\x03R\x13expectedUpdatedAtMs\"d\n" +
+	"\x1dMuskdeerDisableAccountRequest\x12\x0e\n" +
 	"\x02id\x18\x02 \x01(\x03R\x02id\x123\n" +
 	"\x16expected_updated_at_ms\x18\x03 \x01(\x03R\x13expectedUpdatedAtMs\"\xd1\x01\n" +
 	"\x19MuskdeerRecordListRequest\x12\x12\n" +
@@ -4444,9 +4499,10 @@ const file_operator_v1_muskdeer_proto_rawDesc = "" +
 	"\x16expected_updated_at_ms\x18\x03 \x01(\x03R\x13expectedUpdatedAtMs\x12F\n" +
 	"\n" +
 	"parameters\x18\x04 \x01(\v2&.operator.v1.MuskdeerAccountParametersR\n" +
-	"parameters2\xd9\x10\n" +
+	"parameters2\xb5\x11\n" +
 	"\x0fMuskdeerService\x12X\n" +
-	"\rCreateAccount\x12).operator.v1.MuskdeerCreateAccountRequest\x1a\x1c.operator.v1.MuskdeerAccount\x12X\n" +
+	"\rCreateAccount\x12).operator.v1.MuskdeerCreateAccountRequest\x1a\x1c.operator.v1.MuskdeerAccount\x12Z\n" +
+	"\x0eDisableAccount\x12*.operator.v1.MuskdeerDisableAccountRequest\x1a\x1c.operator.v1.MuskdeerAccount\x12X\n" +
 	"\rEnableAccount\x12).operator.v1.MuskdeerEnableAccountRequest\x1a\x1c.operator.v1.MuskdeerAccount\x12X\n" +
 	"\rUpdateAccount\x12).operator.v1.MuskdeerUpdateAccountRequest\x1a\x1c.operator.v1.MuskdeerAccount\x12`\n" +
 	"\x13ListAccountBindings\x12'.operator.v1.MuskdeerBindingListRequest\x1a .operator.v1.MuskdeerBindingPage\x12f\n" +
@@ -4482,7 +4538,7 @@ func file_operator_v1_muskdeer_proto_rawDescGZIP() []byte {
 	return file_operator_v1_muskdeer_proto_rawDescData
 }
 
-var file_operator_v1_muskdeer_proto_msgTypes = make([]protoimpl.MessageInfo, 52)
+var file_operator_v1_muskdeer_proto_msgTypes = make([]protoimpl.MessageInfo, 53)
 var file_operator_v1_muskdeer_proto_goTypes = []any{
 	(*MuskdeerOverviewRequest)(nil),          // 0: operator.v1.MuskdeerOverviewRequest
 	(*MuskdeerListRequest)(nil),              // 1: operator.v1.MuskdeerListRequest
@@ -4495,122 +4551,125 @@ var file_operator_v1_muskdeer_proto_goTypes = []any{
 	(*MuskdeerRunningRequest)(nil),           // 8: operator.v1.MuskdeerRunningRequest
 	(*MuskdeerAccountRequest)(nil),           // 9: operator.v1.MuskdeerAccountRequest
 	(*MuskdeerEnableAccountRequest)(nil),     // 10: operator.v1.MuskdeerEnableAccountRequest
-	(*MuskdeerRecordListRequest)(nil),        // 11: operator.v1.MuskdeerRecordListRequest
-	(*MuskdeerCancelRequest)(nil),            // 12: operator.v1.MuskdeerCancelRequest
-	(*MuskdeerCancelReply)(nil),              // 13: operator.v1.MuskdeerCancelReply
-	(*MuskdeerOverview)(nil),                 // 14: operator.v1.MuskdeerOverview
-	(*MuskdeerTemplate)(nil),                 // 15: operator.v1.MuskdeerTemplate
-	(*MuskdeerTemplatePage)(nil),             // 16: operator.v1.MuskdeerTemplatePage
-	(*MuskdeerGateway)(nil),                  // 17: operator.v1.MuskdeerGateway
-	(*MuskdeerGatewayPage)(nil),              // 18: operator.v1.MuskdeerGatewayPage
-	(*MuskdeerInstance)(nil),                 // 19: operator.v1.MuskdeerInstance
-	(*MuskdeerRuntimeVersion)(nil),           // 20: operator.v1.MuskdeerRuntimeVersion
-	(*MuskdeerInstancePage)(nil),             // 21: operator.v1.MuskdeerInstancePage
-	(*MuskdeerInstanceParameters)(nil),       // 22: operator.v1.MuskdeerInstanceParameters
-	(*MuskdeerExecutionParameters)(nil),      // 23: operator.v1.MuskdeerExecutionParameters
-	(*MuskdeerDepthParameters)(nil),          // 24: operator.v1.MuskdeerDepthParameters
-	(*MuskdeerGridParameters)(nil),           // 25: operator.v1.MuskdeerGridParameters
-	(*MuskdeerWashParameters)(nil),           // 26: operator.v1.MuskdeerWashParameters
-	(*MuskdeerInstrument)(nil),               // 27: operator.v1.MuskdeerInstrument
-	(*MuskdeerInstrumentPage)(nil),           // 28: operator.v1.MuskdeerInstrumentPage
-	(*MuskdeerAccount)(nil),                  // 29: operator.v1.MuskdeerAccount
-	(*MuskdeerAccountPage)(nil),              // 30: operator.v1.MuskdeerAccountPage
-	(*MuskdeerOrderRecord)(nil),              // 31: operator.v1.MuskdeerOrderRecord
-	(*MuskdeerOrderPage)(nil),                // 32: operator.v1.MuskdeerOrderPage
-	(*MuskdeerCancellation)(nil),             // 33: operator.v1.MuskdeerCancellation
-	(*MuskdeerCancellationPage)(nil),         // 34: operator.v1.MuskdeerCancellationPage
-	(*MuskdeerSyntheticRecord)(nil),          // 35: operator.v1.MuskdeerSyntheticRecord
-	(*MuskdeerSyntheticPage)(nil),            // 36: operator.v1.MuskdeerSyntheticPage
-	(*MuskdeerAccountSnapshot)(nil),          // 37: operator.v1.MuskdeerAccountSnapshot
-	(*MuskdeerActiveOrder)(nil),              // 38: operator.v1.MuskdeerActiveOrder
-	(*MuskdeerPosition)(nil),                 // 39: operator.v1.MuskdeerPosition
-	(*MuskdeerAccountBinding)(nil),           // 40: operator.v1.MuskdeerAccountBinding
-	(*MuskdeerBindingListRequest)(nil),       // 41: operator.v1.MuskdeerBindingListRequest
-	(*MuskdeerBindingPage)(nil),              // 42: operator.v1.MuskdeerBindingPage
-	(*MuskdeerBindingDraft)(nil),             // 43: operator.v1.MuskdeerBindingDraft
-	(*MuskdeerCreateBindingRequest)(nil),     // 44: operator.v1.MuskdeerCreateBindingRequest
-	(*MuskdeerSetBindingEnabledRequest)(nil), // 45: operator.v1.MuskdeerSetBindingEnabledRequest
-	(*MuskdeerLongGridParameters)(nil),       // 46: operator.v1.MuskdeerLongGridParameters
-	(*MuskdeerAccountDraft)(nil),             // 47: operator.v1.MuskdeerAccountDraft
-	(*MuskdeerCreateAccountRequest)(nil),     // 48: operator.v1.MuskdeerCreateAccountRequest
-	(*MuskdeerMakerCheck)(nil),               // 49: operator.v1.MuskdeerMakerCheck
-	(*MuskdeerAccountParameters)(nil),        // 50: operator.v1.MuskdeerAccountParameters
-	(*MuskdeerUpdateAccountRequest)(nil),     // 51: operator.v1.MuskdeerUpdateAccountRequest
+	(*MuskdeerDisableAccountRequest)(nil),    // 11: operator.v1.MuskdeerDisableAccountRequest
+	(*MuskdeerRecordListRequest)(nil),        // 12: operator.v1.MuskdeerRecordListRequest
+	(*MuskdeerCancelRequest)(nil),            // 13: operator.v1.MuskdeerCancelRequest
+	(*MuskdeerCancelReply)(nil),              // 14: operator.v1.MuskdeerCancelReply
+	(*MuskdeerOverview)(nil),                 // 15: operator.v1.MuskdeerOverview
+	(*MuskdeerTemplate)(nil),                 // 16: operator.v1.MuskdeerTemplate
+	(*MuskdeerTemplatePage)(nil),             // 17: operator.v1.MuskdeerTemplatePage
+	(*MuskdeerGateway)(nil),                  // 18: operator.v1.MuskdeerGateway
+	(*MuskdeerGatewayPage)(nil),              // 19: operator.v1.MuskdeerGatewayPage
+	(*MuskdeerInstance)(nil),                 // 20: operator.v1.MuskdeerInstance
+	(*MuskdeerRuntimeVersion)(nil),           // 21: operator.v1.MuskdeerRuntimeVersion
+	(*MuskdeerInstancePage)(nil),             // 22: operator.v1.MuskdeerInstancePage
+	(*MuskdeerInstanceParameters)(nil),       // 23: operator.v1.MuskdeerInstanceParameters
+	(*MuskdeerExecutionParameters)(nil),      // 24: operator.v1.MuskdeerExecutionParameters
+	(*MuskdeerDepthParameters)(nil),          // 25: operator.v1.MuskdeerDepthParameters
+	(*MuskdeerGridParameters)(nil),           // 26: operator.v1.MuskdeerGridParameters
+	(*MuskdeerWashParameters)(nil),           // 27: operator.v1.MuskdeerWashParameters
+	(*MuskdeerInstrument)(nil),               // 28: operator.v1.MuskdeerInstrument
+	(*MuskdeerInstrumentPage)(nil),           // 29: operator.v1.MuskdeerInstrumentPage
+	(*MuskdeerAccount)(nil),                  // 30: operator.v1.MuskdeerAccount
+	(*MuskdeerAccountPage)(nil),              // 31: operator.v1.MuskdeerAccountPage
+	(*MuskdeerOrderRecord)(nil),              // 32: operator.v1.MuskdeerOrderRecord
+	(*MuskdeerOrderPage)(nil),                // 33: operator.v1.MuskdeerOrderPage
+	(*MuskdeerCancellation)(nil),             // 34: operator.v1.MuskdeerCancellation
+	(*MuskdeerCancellationPage)(nil),         // 35: operator.v1.MuskdeerCancellationPage
+	(*MuskdeerSyntheticRecord)(nil),          // 36: operator.v1.MuskdeerSyntheticRecord
+	(*MuskdeerSyntheticPage)(nil),            // 37: operator.v1.MuskdeerSyntheticPage
+	(*MuskdeerAccountSnapshot)(nil),          // 38: operator.v1.MuskdeerAccountSnapshot
+	(*MuskdeerActiveOrder)(nil),              // 39: operator.v1.MuskdeerActiveOrder
+	(*MuskdeerPosition)(nil),                 // 40: operator.v1.MuskdeerPosition
+	(*MuskdeerAccountBinding)(nil),           // 41: operator.v1.MuskdeerAccountBinding
+	(*MuskdeerBindingListRequest)(nil),       // 42: operator.v1.MuskdeerBindingListRequest
+	(*MuskdeerBindingPage)(nil),              // 43: operator.v1.MuskdeerBindingPage
+	(*MuskdeerBindingDraft)(nil),             // 44: operator.v1.MuskdeerBindingDraft
+	(*MuskdeerCreateBindingRequest)(nil),     // 45: operator.v1.MuskdeerCreateBindingRequest
+	(*MuskdeerSetBindingEnabledRequest)(nil), // 46: operator.v1.MuskdeerSetBindingEnabledRequest
+	(*MuskdeerLongGridParameters)(nil),       // 47: operator.v1.MuskdeerLongGridParameters
+	(*MuskdeerAccountDraft)(nil),             // 48: operator.v1.MuskdeerAccountDraft
+	(*MuskdeerCreateAccountRequest)(nil),     // 49: operator.v1.MuskdeerCreateAccountRequest
+	(*MuskdeerMakerCheck)(nil),               // 50: operator.v1.MuskdeerMakerCheck
+	(*MuskdeerAccountParameters)(nil),        // 51: operator.v1.MuskdeerAccountParameters
+	(*MuskdeerUpdateAccountRequest)(nil),     // 52: operator.v1.MuskdeerUpdateAccountRequest
 }
 var file_operator_v1_muskdeer_proto_depIdxs = []int32{
 	5,  // 0: operator.v1.MuskdeerCreateInstanceRequest.data:type_name -> operator.v1.MuskdeerInstanceDraft
-	22, // 1: operator.v1.MuskdeerInstanceDraft.parameters:type_name -> operator.v1.MuskdeerInstanceParameters
+	23, // 1: operator.v1.MuskdeerInstanceDraft.parameters:type_name -> operator.v1.MuskdeerInstanceParameters
 	7,  // 2: operator.v1.MuskdeerUpdateInstanceRequest.data:type_name -> operator.v1.MuskdeerInstanceParameterUpdate
-	22, // 3: operator.v1.MuskdeerInstanceParameterUpdate.parameters:type_name -> operator.v1.MuskdeerInstanceParameters
-	15, // 4: operator.v1.MuskdeerTemplatePage.items:type_name -> operator.v1.MuskdeerTemplate
-	17, // 5: operator.v1.MuskdeerGatewayPage.items:type_name -> operator.v1.MuskdeerGateway
-	22, // 6: operator.v1.MuskdeerInstance.parameters:type_name -> operator.v1.MuskdeerInstanceParameters
-	20, // 7: operator.v1.MuskdeerInstance.runtimes:type_name -> operator.v1.MuskdeerRuntimeVersion
-	19, // 8: operator.v1.MuskdeerInstancePage.items:type_name -> operator.v1.MuskdeerInstance
-	23, // 9: operator.v1.MuskdeerInstanceParameters.execution:type_name -> operator.v1.MuskdeerExecutionParameters
-	24, // 10: operator.v1.MuskdeerInstanceParameters.market_maker:type_name -> operator.v1.MuskdeerDepthParameters
-	25, // 11: operator.v1.MuskdeerInstanceParameters.grid:type_name -> operator.v1.MuskdeerGridParameters
-	26, // 12: operator.v1.MuskdeerInstanceParameters.wash_trade:type_name -> operator.v1.MuskdeerWashParameters
-	46, // 13: operator.v1.MuskdeerInstanceParameters.long_grid:type_name -> operator.v1.MuskdeerLongGridParameters
-	27, // 14: operator.v1.MuskdeerInstrumentPage.items:type_name -> operator.v1.MuskdeerInstrument
-	29, // 15: operator.v1.MuskdeerAccountPage.items:type_name -> operator.v1.MuskdeerAccount
-	31, // 16: operator.v1.MuskdeerOrderPage.items:type_name -> operator.v1.MuskdeerOrderRecord
-	33, // 17: operator.v1.MuskdeerCancellationPage.items:type_name -> operator.v1.MuskdeerCancellation
-	35, // 18: operator.v1.MuskdeerSyntheticPage.items:type_name -> operator.v1.MuskdeerSyntheticRecord
-	38, // 19: operator.v1.MuskdeerAccountSnapshot.orders:type_name -> operator.v1.MuskdeerActiveOrder
-	39, // 20: operator.v1.MuskdeerAccountSnapshot.positions:type_name -> operator.v1.MuskdeerPosition
-	40, // 21: operator.v1.MuskdeerBindingPage.items:type_name -> operator.v1.MuskdeerAccountBinding
-	43, // 22: operator.v1.MuskdeerCreateBindingRequest.data:type_name -> operator.v1.MuskdeerBindingDraft
-	47, // 23: operator.v1.MuskdeerCreateAccountRequest.data:type_name -> operator.v1.MuskdeerAccountDraft
-	50, // 24: operator.v1.MuskdeerUpdateAccountRequest.parameters:type_name -> operator.v1.MuskdeerAccountParameters
-	48, // 25: operator.v1.MuskdeerService.CreateAccount:input_type -> operator.v1.MuskdeerCreateAccountRequest
-	10, // 26: operator.v1.MuskdeerService.EnableAccount:input_type -> operator.v1.MuskdeerEnableAccountRequest
-	51, // 27: operator.v1.MuskdeerService.UpdateAccount:input_type -> operator.v1.MuskdeerUpdateAccountRequest
-	41, // 28: operator.v1.MuskdeerService.ListAccountBindings:input_type -> operator.v1.MuskdeerBindingListRequest
-	44, // 29: operator.v1.MuskdeerService.CreateAccountBinding:input_type -> operator.v1.MuskdeerCreateBindingRequest
-	45, // 30: operator.v1.MuskdeerService.SetAccountBindingEnabled:input_type -> operator.v1.MuskdeerSetBindingEnabledRequest
-	0,  // 31: operator.v1.MuskdeerService.GetOverview:input_type -> operator.v1.MuskdeerOverviewRequest
-	1,  // 32: operator.v1.MuskdeerService.ListTemplates:input_type -> operator.v1.MuskdeerListRequest
-	0,  // 33: operator.v1.MuskdeerService.ListGateways:input_type -> operator.v1.MuskdeerOverviewRequest
-	2,  // 34: operator.v1.MuskdeerService.ListInstances:input_type -> operator.v1.MuskdeerInstanceListRequest
-	3,  // 35: operator.v1.MuskdeerService.GetInstance:input_type -> operator.v1.MuskdeerInstanceRequest
-	3,  // 36: operator.v1.MuskdeerService.CheckInstance:input_type -> operator.v1.MuskdeerInstanceRequest
-	4,  // 37: operator.v1.MuskdeerService.CreateInstance:input_type -> operator.v1.MuskdeerCreateInstanceRequest
-	6,  // 38: operator.v1.MuskdeerService.UpdateInstance:input_type -> operator.v1.MuskdeerUpdateInstanceRequest
-	8,  // 39: operator.v1.MuskdeerService.StartInstance:input_type -> operator.v1.MuskdeerRunningRequest
-	8,  // 40: operator.v1.MuskdeerService.StopInstance:input_type -> operator.v1.MuskdeerRunningRequest
-	1,  // 41: operator.v1.MuskdeerService.ListInstruments:input_type -> operator.v1.MuskdeerListRequest
-	1,  // 42: operator.v1.MuskdeerService.ListAccounts:input_type -> operator.v1.MuskdeerListRequest
-	11, // 43: operator.v1.MuskdeerService.ListOrderRecords:input_type -> operator.v1.MuskdeerRecordListRequest
-	11, // 44: operator.v1.MuskdeerService.ListCancellations:input_type -> operator.v1.MuskdeerRecordListRequest
-	11, // 45: operator.v1.MuskdeerService.ListSyntheticRecords:input_type -> operator.v1.MuskdeerRecordListRequest
-	9,  // 46: operator.v1.MuskdeerService.GetAccountSnapshot:input_type -> operator.v1.MuskdeerAccountRequest
-	12, // 47: operator.v1.MuskdeerService.CancelInstanceOrders:input_type -> operator.v1.MuskdeerCancelRequest
-	29, // 48: operator.v1.MuskdeerService.CreateAccount:output_type -> operator.v1.MuskdeerAccount
-	29, // 49: operator.v1.MuskdeerService.EnableAccount:output_type -> operator.v1.MuskdeerAccount
-	29, // 50: operator.v1.MuskdeerService.UpdateAccount:output_type -> operator.v1.MuskdeerAccount
-	42, // 51: operator.v1.MuskdeerService.ListAccountBindings:output_type -> operator.v1.MuskdeerBindingPage
-	40, // 52: operator.v1.MuskdeerService.CreateAccountBinding:output_type -> operator.v1.MuskdeerAccountBinding
-	40, // 53: operator.v1.MuskdeerService.SetAccountBindingEnabled:output_type -> operator.v1.MuskdeerAccountBinding
-	14, // 54: operator.v1.MuskdeerService.GetOverview:output_type -> operator.v1.MuskdeerOverview
-	16, // 55: operator.v1.MuskdeerService.ListTemplates:output_type -> operator.v1.MuskdeerTemplatePage
-	18, // 56: operator.v1.MuskdeerService.ListGateways:output_type -> operator.v1.MuskdeerGatewayPage
-	21, // 57: operator.v1.MuskdeerService.ListInstances:output_type -> operator.v1.MuskdeerInstancePage
-	19, // 58: operator.v1.MuskdeerService.GetInstance:output_type -> operator.v1.MuskdeerInstance
-	49, // 59: operator.v1.MuskdeerService.CheckInstance:output_type -> operator.v1.MuskdeerMakerCheck
-	19, // 60: operator.v1.MuskdeerService.CreateInstance:output_type -> operator.v1.MuskdeerInstance
-	19, // 61: operator.v1.MuskdeerService.UpdateInstance:output_type -> operator.v1.MuskdeerInstance
-	19, // 62: operator.v1.MuskdeerService.StartInstance:output_type -> operator.v1.MuskdeerInstance
-	19, // 63: operator.v1.MuskdeerService.StopInstance:output_type -> operator.v1.MuskdeerInstance
-	28, // 64: operator.v1.MuskdeerService.ListInstruments:output_type -> operator.v1.MuskdeerInstrumentPage
-	30, // 65: operator.v1.MuskdeerService.ListAccounts:output_type -> operator.v1.MuskdeerAccountPage
-	32, // 66: operator.v1.MuskdeerService.ListOrderRecords:output_type -> operator.v1.MuskdeerOrderPage
-	34, // 67: operator.v1.MuskdeerService.ListCancellations:output_type -> operator.v1.MuskdeerCancellationPage
-	36, // 68: operator.v1.MuskdeerService.ListSyntheticRecords:output_type -> operator.v1.MuskdeerSyntheticPage
-	37, // 69: operator.v1.MuskdeerService.GetAccountSnapshot:output_type -> operator.v1.MuskdeerAccountSnapshot
-	13, // 70: operator.v1.MuskdeerService.CancelInstanceOrders:output_type -> operator.v1.MuskdeerCancelReply
-	48, // [48:71] is the sub-list for method output_type
-	25, // [25:48] is the sub-list for method input_type
+	23, // 3: operator.v1.MuskdeerInstanceParameterUpdate.parameters:type_name -> operator.v1.MuskdeerInstanceParameters
+	16, // 4: operator.v1.MuskdeerTemplatePage.items:type_name -> operator.v1.MuskdeerTemplate
+	18, // 5: operator.v1.MuskdeerGatewayPage.items:type_name -> operator.v1.MuskdeerGateway
+	23, // 6: operator.v1.MuskdeerInstance.parameters:type_name -> operator.v1.MuskdeerInstanceParameters
+	21, // 7: operator.v1.MuskdeerInstance.runtimes:type_name -> operator.v1.MuskdeerRuntimeVersion
+	20, // 8: operator.v1.MuskdeerInstancePage.items:type_name -> operator.v1.MuskdeerInstance
+	24, // 9: operator.v1.MuskdeerInstanceParameters.execution:type_name -> operator.v1.MuskdeerExecutionParameters
+	25, // 10: operator.v1.MuskdeerInstanceParameters.market_maker:type_name -> operator.v1.MuskdeerDepthParameters
+	26, // 11: operator.v1.MuskdeerInstanceParameters.grid:type_name -> operator.v1.MuskdeerGridParameters
+	27, // 12: operator.v1.MuskdeerInstanceParameters.wash_trade:type_name -> operator.v1.MuskdeerWashParameters
+	47, // 13: operator.v1.MuskdeerInstanceParameters.long_grid:type_name -> operator.v1.MuskdeerLongGridParameters
+	28, // 14: operator.v1.MuskdeerInstrumentPage.items:type_name -> operator.v1.MuskdeerInstrument
+	30, // 15: operator.v1.MuskdeerAccountPage.items:type_name -> operator.v1.MuskdeerAccount
+	32, // 16: operator.v1.MuskdeerOrderPage.items:type_name -> operator.v1.MuskdeerOrderRecord
+	34, // 17: operator.v1.MuskdeerCancellationPage.items:type_name -> operator.v1.MuskdeerCancellation
+	36, // 18: operator.v1.MuskdeerSyntheticPage.items:type_name -> operator.v1.MuskdeerSyntheticRecord
+	39, // 19: operator.v1.MuskdeerAccountSnapshot.orders:type_name -> operator.v1.MuskdeerActiveOrder
+	40, // 20: operator.v1.MuskdeerAccountSnapshot.positions:type_name -> operator.v1.MuskdeerPosition
+	41, // 21: operator.v1.MuskdeerBindingPage.items:type_name -> operator.v1.MuskdeerAccountBinding
+	44, // 22: operator.v1.MuskdeerCreateBindingRequest.data:type_name -> operator.v1.MuskdeerBindingDraft
+	48, // 23: operator.v1.MuskdeerCreateAccountRequest.data:type_name -> operator.v1.MuskdeerAccountDraft
+	51, // 24: operator.v1.MuskdeerUpdateAccountRequest.parameters:type_name -> operator.v1.MuskdeerAccountParameters
+	49, // 25: operator.v1.MuskdeerService.CreateAccount:input_type -> operator.v1.MuskdeerCreateAccountRequest
+	11, // 26: operator.v1.MuskdeerService.DisableAccount:input_type -> operator.v1.MuskdeerDisableAccountRequest
+	10, // 27: operator.v1.MuskdeerService.EnableAccount:input_type -> operator.v1.MuskdeerEnableAccountRequest
+	52, // 28: operator.v1.MuskdeerService.UpdateAccount:input_type -> operator.v1.MuskdeerUpdateAccountRequest
+	42, // 29: operator.v1.MuskdeerService.ListAccountBindings:input_type -> operator.v1.MuskdeerBindingListRequest
+	45, // 30: operator.v1.MuskdeerService.CreateAccountBinding:input_type -> operator.v1.MuskdeerCreateBindingRequest
+	46, // 31: operator.v1.MuskdeerService.SetAccountBindingEnabled:input_type -> operator.v1.MuskdeerSetBindingEnabledRequest
+	0,  // 32: operator.v1.MuskdeerService.GetOverview:input_type -> operator.v1.MuskdeerOverviewRequest
+	1,  // 33: operator.v1.MuskdeerService.ListTemplates:input_type -> operator.v1.MuskdeerListRequest
+	0,  // 34: operator.v1.MuskdeerService.ListGateways:input_type -> operator.v1.MuskdeerOverviewRequest
+	2,  // 35: operator.v1.MuskdeerService.ListInstances:input_type -> operator.v1.MuskdeerInstanceListRequest
+	3,  // 36: operator.v1.MuskdeerService.GetInstance:input_type -> operator.v1.MuskdeerInstanceRequest
+	3,  // 37: operator.v1.MuskdeerService.CheckInstance:input_type -> operator.v1.MuskdeerInstanceRequest
+	4,  // 38: operator.v1.MuskdeerService.CreateInstance:input_type -> operator.v1.MuskdeerCreateInstanceRequest
+	6,  // 39: operator.v1.MuskdeerService.UpdateInstance:input_type -> operator.v1.MuskdeerUpdateInstanceRequest
+	8,  // 40: operator.v1.MuskdeerService.StartInstance:input_type -> operator.v1.MuskdeerRunningRequest
+	8,  // 41: operator.v1.MuskdeerService.StopInstance:input_type -> operator.v1.MuskdeerRunningRequest
+	1,  // 42: operator.v1.MuskdeerService.ListInstruments:input_type -> operator.v1.MuskdeerListRequest
+	1,  // 43: operator.v1.MuskdeerService.ListAccounts:input_type -> operator.v1.MuskdeerListRequest
+	12, // 44: operator.v1.MuskdeerService.ListOrderRecords:input_type -> operator.v1.MuskdeerRecordListRequest
+	12, // 45: operator.v1.MuskdeerService.ListCancellations:input_type -> operator.v1.MuskdeerRecordListRequest
+	12, // 46: operator.v1.MuskdeerService.ListSyntheticRecords:input_type -> operator.v1.MuskdeerRecordListRequest
+	9,  // 47: operator.v1.MuskdeerService.GetAccountSnapshot:input_type -> operator.v1.MuskdeerAccountRequest
+	13, // 48: operator.v1.MuskdeerService.CancelInstanceOrders:input_type -> operator.v1.MuskdeerCancelRequest
+	30, // 49: operator.v1.MuskdeerService.CreateAccount:output_type -> operator.v1.MuskdeerAccount
+	30, // 50: operator.v1.MuskdeerService.DisableAccount:output_type -> operator.v1.MuskdeerAccount
+	30, // 51: operator.v1.MuskdeerService.EnableAccount:output_type -> operator.v1.MuskdeerAccount
+	30, // 52: operator.v1.MuskdeerService.UpdateAccount:output_type -> operator.v1.MuskdeerAccount
+	43, // 53: operator.v1.MuskdeerService.ListAccountBindings:output_type -> operator.v1.MuskdeerBindingPage
+	41, // 54: operator.v1.MuskdeerService.CreateAccountBinding:output_type -> operator.v1.MuskdeerAccountBinding
+	41, // 55: operator.v1.MuskdeerService.SetAccountBindingEnabled:output_type -> operator.v1.MuskdeerAccountBinding
+	15, // 56: operator.v1.MuskdeerService.GetOverview:output_type -> operator.v1.MuskdeerOverview
+	17, // 57: operator.v1.MuskdeerService.ListTemplates:output_type -> operator.v1.MuskdeerTemplatePage
+	19, // 58: operator.v1.MuskdeerService.ListGateways:output_type -> operator.v1.MuskdeerGatewayPage
+	22, // 59: operator.v1.MuskdeerService.ListInstances:output_type -> operator.v1.MuskdeerInstancePage
+	20, // 60: operator.v1.MuskdeerService.GetInstance:output_type -> operator.v1.MuskdeerInstance
+	50, // 61: operator.v1.MuskdeerService.CheckInstance:output_type -> operator.v1.MuskdeerMakerCheck
+	20, // 62: operator.v1.MuskdeerService.CreateInstance:output_type -> operator.v1.MuskdeerInstance
+	20, // 63: operator.v1.MuskdeerService.UpdateInstance:output_type -> operator.v1.MuskdeerInstance
+	20, // 64: operator.v1.MuskdeerService.StartInstance:output_type -> operator.v1.MuskdeerInstance
+	20, // 65: operator.v1.MuskdeerService.StopInstance:output_type -> operator.v1.MuskdeerInstance
+	29, // 66: operator.v1.MuskdeerService.ListInstruments:output_type -> operator.v1.MuskdeerInstrumentPage
+	31, // 67: operator.v1.MuskdeerService.ListAccounts:output_type -> operator.v1.MuskdeerAccountPage
+	33, // 68: operator.v1.MuskdeerService.ListOrderRecords:output_type -> operator.v1.MuskdeerOrderPage
+	35, // 69: operator.v1.MuskdeerService.ListCancellations:output_type -> operator.v1.MuskdeerCancellationPage
+	37, // 70: operator.v1.MuskdeerService.ListSyntheticRecords:output_type -> operator.v1.MuskdeerSyntheticPage
+	38, // 71: operator.v1.MuskdeerService.GetAccountSnapshot:output_type -> operator.v1.MuskdeerAccountSnapshot
+	14, // 72: operator.v1.MuskdeerService.CancelInstanceOrders:output_type -> operator.v1.MuskdeerCancelReply
+	49, // [49:73] is the sub-list for method output_type
+	25, // [25:49] is the sub-list for method input_type
 	25, // [25:25] is the sub-list for extension type_name
 	25, // [25:25] is the sub-list for extension extendee
 	0,  // [0:25] is the sub-list for field type_name
@@ -4622,7 +4681,7 @@ func file_operator_v1_muskdeer_proto_init() {
 		return
 	}
 	file_operator_v1_muskdeer_proto_msgTypes[2].OneofWrappers = []any{}
-	file_operator_v1_muskdeer_proto_msgTypes[22].OneofWrappers = []any{
+	file_operator_v1_muskdeer_proto_msgTypes[23].OneofWrappers = []any{
 		(*MuskdeerInstanceParameters_MarketMaker)(nil),
 		(*MuskdeerInstanceParameters_Grid)(nil),
 		(*MuskdeerInstanceParameters_WashTrade)(nil),
@@ -4634,7 +4693,7 @@ func file_operator_v1_muskdeer_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_operator_v1_muskdeer_proto_rawDesc), len(file_operator_v1_muskdeer_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   52,
+			NumMessages:   53,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

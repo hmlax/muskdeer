@@ -760,6 +760,67 @@ func (x *WashMarketRules) GetValidUntilMs() int64 {
 	return 0
 }
 
+// An explicit risk-reducing command; existing orders and controls are preserved.
+type AccountPolicyDisable struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	ExpectedUpdatedAtMs int64                  `protobuf:"varint,2,opt,name=expected_updated_at_ms,json=expectedUpdatedAtMs,proto3" json:"expected_updated_at_ms,omitempty"`
+	Scope               *v1.VenueScope         `protobuf:"bytes,3,opt,name=scope,proto3" json:"scope,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *AccountPolicyDisable) Reset() {
+	*x = AccountPolicyDisable{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountPolicyDisable) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountPolicyDisable) ProtoMessage() {}
+
+func (x *AccountPolicyDisable) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountPolicyDisable.ProtoReflect.Descriptor instead.
+func (*AccountPolicyDisable) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AccountPolicyDisable) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *AccountPolicyDisable) GetExpectedUpdatedAtMs() int64 {
+	if x != nil {
+		return x.ExpectedUpdatedAtMs
+	}
+	return 0
+}
+
+func (x *AccountPolicyDisable) GetScope() *v1.VenueScope {
+	if x != nil {
+		return x.Scope
+	}
+	return nil
+}
+
 var File_deer_proto_execution_venue_v1_runtime_proto protoreflect.FileDescriptor
 
 const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
@@ -820,11 +881,16 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\x06symbol\x18\x03 \x01(\tR\x06symbol\"p\n" +
 	"\x0fWashMarketRules\x127\n" +
 	"\x06market\x18\x01 \x01(\v2\x1f.muskdeer.common.v1.VenueMarketR\x06market\x12$\n" +
-	"\x0evalid_until_ms\x18\x02 \x01(\x03R\fvalidUntilMs2\x9d\b\n" +
+	"\x0evalid_until_ms\x18\x02 \x01(\x03R\fvalidUntilMs\"\x91\x01\n" +
+	"\x14AccountPolicyDisable\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x123\n" +
+	"\x16expected_updated_at_ms\x18\x02 \x01(\x03R\x13expectedUpdatedAtMs\x124\n" +
+	"\x05scope\x18\x03 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope2\x9a\t\n" +
 	"\tExecution\x12r\n" +
 	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12P\n" +
 	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12S\n" +
-	"\x0eInspectAccount\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12y\n" +
+	"\x0eInspectAccount\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12{\n" +
+	"\x14DisableAccountPolicy\x121.muskdeer.execution.venue.v1.AccountPolicyDisable\x1a0.muskdeer.execution.venue.v1.AccountPolicyResult\x12y\n" +
 	"\x13UpdateAccountPolicy\x120.muskdeer.execution.venue.v1.AccountPolicyUpdate\x1a0.muskdeer.execution.venue.v1.AccountPolicyResult\x12t\n" +
 	"\x14CancelInstanceOrders\x122.muskdeer.execution.venue.v1.CancelInstanceRequest\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12]\n" +
 	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12b\n" +
@@ -845,7 +911,7 @@ func file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescData
 }
 
-var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
 	(*WashTradeRequest)(nil),                 // 0: muskdeer.execution.venue.v1.WashTradeRequest
 	(*QuotePlan)(nil),                        // 1: muskdeer.execution.venue.v1.QuotePlan
@@ -857,55 +923,59 @@ var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
 	(*AccountPolicyResult)(nil),              // 7: muskdeer.execution.venue.v1.AccountPolicyResult
 	(*WashMarketRequest)(nil),                // 8: muskdeer.execution.venue.v1.WashMarketRequest
 	(*WashMarketRules)(nil),                  // 9: muskdeer.execution.venue.v1.WashMarketRules
-	(*v1.VenueTrade)(nil),                    // 10: muskdeer.common.v1.VenueTrade
-	(*v1.VenueBook)(nil),                     // 11: muskdeer.common.v1.VenueBook
-	(*v1.VenueScope)(nil),                    // 12: muskdeer.common.v1.VenueScope
-	(*v1.VenueAuthority)(nil),                // 13: muskdeer.common.v1.VenueAuthority
-	(*v1.VenueTarget)(nil),                   // 14: muskdeer.common.v1.VenueTarget
-	(*v1.VenueProfilePolicy)(nil),            // 15: muskdeer.common.v1.VenueProfilePolicy
-	(*v1.VenueMarket)(nil),                   // 16: muskdeer.common.v1.VenueMarket
-	(*v1.VenueInstanceInventoryRequest)(nil), // 17: muskdeer.common.v1.VenueInstanceInventoryRequest
-	(*v1.SyntheticTapePlan)(nil),             // 18: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.VenueInstanceInventory)(nil),        // 19: muskdeer.common.v1.VenueInstanceInventory
-	(*v1.VenueSnapshot)(nil),                 // 20: muskdeer.common.v1.VenueSnapshot
-	(*v1.SyntheticTapeResult)(nil),           // 21: muskdeer.common.v1.SyntheticTapeResult
+	(*AccountPolicyDisable)(nil),             // 10: muskdeer.execution.venue.v1.AccountPolicyDisable
+	(*v1.VenueTrade)(nil),                    // 11: muskdeer.common.v1.VenueTrade
+	(*v1.VenueBook)(nil),                     // 12: muskdeer.common.v1.VenueBook
+	(*v1.VenueScope)(nil),                    // 13: muskdeer.common.v1.VenueScope
+	(*v1.VenueAuthority)(nil),                // 14: muskdeer.common.v1.VenueAuthority
+	(*v1.VenueTarget)(nil),                   // 15: muskdeer.common.v1.VenueTarget
+	(*v1.VenueProfilePolicy)(nil),            // 16: muskdeer.common.v1.VenueProfilePolicy
+	(*v1.VenueMarket)(nil),                   // 17: muskdeer.common.v1.VenueMarket
+	(*v1.VenueInstanceInventoryRequest)(nil), // 18: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*v1.SyntheticTapePlan)(nil),             // 19: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.VenueInstanceInventory)(nil),        // 20: muskdeer.common.v1.VenueInstanceInventory
+	(*v1.VenueSnapshot)(nil),                 // 21: muskdeer.common.v1.VenueSnapshot
+	(*v1.SyntheticTapeResult)(nil),           // 22: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_execution_venue_v1_runtime_proto_depIdxs = []int32{
-	10, // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
-	11, // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
-	12, // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
-	11, // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
-	13, // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
-	14, // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
-	11, // 6: muskdeer.execution.venue.v1.LongGridRequest.book:type_name -> muskdeer.common.v1.VenueBook
-	12, // 7: muskdeer.execution.venue.v1.AccountPolicyUpdate.scope:type_name -> muskdeer.common.v1.VenueScope
-	15, // 8: muskdeer.execution.venue.v1.AccountPolicyResult.profile:type_name -> muskdeer.common.v1.VenueProfilePolicy
-	16, // 9: muskdeer.execution.venue.v1.WashMarketRules.market:type_name -> muskdeer.common.v1.VenueMarket
-	17, // 10: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
-	12, // 11: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
-	12, // 12: muskdeer.execution.venue.v1.Execution.InspectAccount:input_type -> muskdeer.common.v1.VenueScope
-	6,  // 13: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyUpdate
-	3,  // 14: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
-	1,  // 15: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
-	18, // 16: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	4,  // 17: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:input_type -> muskdeer.execution.venue.v1.LongGridRequest
-	8,  // 18: muskdeer.execution.venue.v1.Execution.GetWashMarket:input_type -> muskdeer.execution.venue.v1.WashMarketRequest
-	0,  // 19: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
-	19, // 20: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
-	20, // 21: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
-	20, // 22: muskdeer.execution.venue.v1.Execution.InspectAccount:output_type -> muskdeer.common.v1.VenueSnapshot
-	7,  // 23: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
-	2,  // 24: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	2,  // 25: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	21, // 26: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	5,  // 27: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:output_type -> muskdeer.execution.venue.v1.LongGridResult
-	9,  // 28: muskdeer.execution.venue.v1.Execution.GetWashMarket:output_type -> muskdeer.execution.venue.v1.WashMarketRules
-	21, // 29: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	20, // [20:30] is the sub-list for method output_type
-	10, // [10:20] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	11, // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
+	12, // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	13, // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
+	12, // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	14, // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	15, // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
+	12, // 6: muskdeer.execution.venue.v1.LongGridRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	13, // 7: muskdeer.execution.venue.v1.AccountPolicyUpdate.scope:type_name -> muskdeer.common.v1.VenueScope
+	16, // 8: muskdeer.execution.venue.v1.AccountPolicyResult.profile:type_name -> muskdeer.common.v1.VenueProfilePolicy
+	17, // 9: muskdeer.execution.venue.v1.WashMarketRules.market:type_name -> muskdeer.common.v1.VenueMarket
+	13, // 10: muskdeer.execution.venue.v1.AccountPolicyDisable.scope:type_name -> muskdeer.common.v1.VenueScope
+	18, // 11: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
+	13, // 12: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	13, // 13: muskdeer.execution.venue.v1.Execution.InspectAccount:input_type -> muskdeer.common.v1.VenueScope
+	10, // 14: muskdeer.execution.venue.v1.Execution.DisableAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyDisable
+	6,  // 15: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyUpdate
+	3,  // 16: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
+	1,  // 17: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
+	19, // 18: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	4,  // 19: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:input_type -> muskdeer.execution.venue.v1.LongGridRequest
+	8,  // 20: muskdeer.execution.venue.v1.Execution.GetWashMarket:input_type -> muskdeer.execution.venue.v1.WashMarketRequest
+	0,  // 21: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
+	20, // 22: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	21, // 23: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	21, // 24: muskdeer.execution.venue.v1.Execution.InspectAccount:output_type -> muskdeer.common.v1.VenueSnapshot
+	7,  // 25: muskdeer.execution.venue.v1.Execution.DisableAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
+	7,  // 26: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
+	2,  // 27: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	2,  // 28: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	22, // 29: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	5,  // 30: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:output_type -> muskdeer.execution.venue.v1.LongGridResult
+	9,  // 31: muskdeer.execution.venue.v1.Execution.GetWashMarket:output_type -> muskdeer.execution.venue.v1.WashMarketRules
+	22, // 32: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	22, // [22:33] is the sub-list for method output_type
+	11, // [11:22] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_deer_proto_execution_venue_v1_runtime_proto_init() }
@@ -923,7 +993,7 @@ func file_deer_proto_execution_venue_v1_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc), len(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

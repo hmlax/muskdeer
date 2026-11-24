@@ -1,53 +1,71 @@
-import { formatTimestampMs } from '../components/timestamp';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
-import { App, Button, Space, Tag } from 'antd';
+import { App, Button, Switch } from 'antd';
 import { useAccess } from '@/core/access';
 import type { MuskdeerAccount } from '@/api/generated/admin/v1';
-import { enableMuskdeerAccount, muskdeerReaders, useMuskdeerWrite } from '@/api/hooks/muskdeer';
+import { enableMuskdeerAccount, disableMuskdeerAccount, muskdeerReaders, useMuskdeerWrite } from '@/api/hooks/muskdeer';
 import ResourceTable from '../components/ResourceTable';
 import AccountForm from '../components/AccountForm';
 import AccountParametersForm from '../components/AccountParametersForm';
+import { formatTimestampMs } from '../components/timestamp';
+import { formatNotional } from '../components/notional';
+
 export default function Page() {
- const { t } = useTranslation('muskdeer');
- const { hasAccessByCodes } = useAccess();
- const { modal, message } = App.useApp();
- const enable = useMuskdeerWrite(enableMuskdeerAccount);
- const actionRef = useRef<ActionType>(null);
- const [adding, setAdding] = useState(false);
- const [editing, setEditing] = useState<MuskdeerAccount>();
- const columns: ProColumns<MuskdeerAccount>[] = [
-{ title: t('search'), dataIndex: 'search', hideInTable: true },
-{ title: t('accountId'), dataIndex: 'accountId', hideInSearch: true, width: 160 },
-{ title: t('symbol'), dataIndex: 'symbol', hideInSearch: true, width: 160 },
-{ title: t('userId'), dataIndex: 'userId', hideInSearch: true, width: 160 },
-{ title: t('fundId'), dataIndex: 'fundId', hideInSearch: true, width: 160 },
-{ title: t('enabled'), dataIndex: 'enabled', hideInSearch: true, width: 160, render: (_, row) => <Tag color={row.enabled ? 'green' : 'default'}>{t(row.enabled ? 'yes' : 'no')}</Tag> },
-{ title: t('maximumNotional'), dataIndex: 'maximumNotional', hideInSearch: true, width: 160 },
-{ title: t('maximumOrderNotional'), dataIndex: 'maximumOrderNotional', hideInSearch: true, width: 160 },
-{ title: t('leverage'), dataIndex: 'leverage', hideInSearch: true, width: 160 },
-{ title: t('observedNotional'), dataIndex: 'observedNotional', hideInSearch: true, width: 160 },
-{ title: t('reservedNotional'), dataIndex: 'reservedNotional', hideInSearch: true, width: 160 },
-{ title: t('availableQuote'), dataIndex: 'availableQuote', hideInSearch: true, width: 160 },
-{ title: t('snapshotExpiresAtMs'), dataIndex: 'snapshotExpiresAtMs', hideInSearch: true, width: 160, render: (_, row) => formatTimestampMs(row.snapshotExpiresAtMs) },
-{ title: t('actions'), valueType: 'option', fixed: 'right', width: 240, render: (_, row) => <Space wrap>
- {hasAccessByCodes(['muskdeer:account:update', 'sys:tenant_manager']) && <Button type="link" onClick={() => setEditing(row)}>{t('editAccountParameters')}</Button>}
- {hasAccessByCodes(['muskdeer:account:enable', 'sys:tenant_manager']) && <Button type="link" disabled={row.enabled || enable.isPending} onClick={() => modal.confirm({
- title: t('enableAccount'),
- content: t('confirmEnableAccount', { symbol: row.symbol, maximumNotional: row.maximumNotional, maximumOrderNotional: row.maximumOrderNotional }),
- onOk: async () => {
-  try { await enable.mutateAsync({ id: row.id, expectedUpdatedAtMs: row.updatedAtMs }); message.success(t('accountEnabledSaved')); }
-  catch (error) { console.error('Enable trading account failed', error); message.error(t('failed')); throw error; }
-  finally { await actionRef.current?.reload(); }
- },
-})}>{t('enableAccount')}</Button>}
- </Space> },
-];
- return <>
-  <ResourceTable<MuskdeerAccount> resource="accounts" columns={columns} fetch={muskdeerReaders.accounts} actionRef={actionRef}
-   toolbar={hasAccessByCodes(['muskdeer:account:create']) ? [<Button key="create" type="primary" onClick={() => setAdding(true)}>{t('addAccount')}</Button>] : []} />
-  {editing && <AccountParametersForm current={editing} onClose={() => setEditing(undefined)} onSaved={() => void actionRef.current?.reload()} />}
-  {adding && <AccountForm onClose={() => setAdding(false)} onSaved={() => void actionRef.current?.reload()} />}
- </>;
+  const { t } = useTranslation('muskdeer');
+  const { hasAccessByCodes } = useAccess();
+  const { modal, message } = App.useApp();
+  const toggle = useMuskdeerWrite(({ enabled, id, expectedUpdatedAtMs }: { enabled: boolean; id?: number; expectedUpdatedAtMs?: number }) =>
+    enabled ? enableMuskdeerAccount({ id, expectedUpdatedAtMs }) : disableMuskdeerAccount({ id, expectedUpdatedAtMs }));
+  const actionRef = useRef<ActionType>(null);
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<MuskdeerAccount>();
+  const [confirming, setConfirming] = useState<number>();
+  const columns: ProColumns<MuskdeerAccount>[] = [
+    { title: t('search'), dataIndex: 'search', hideInTable: true },
+    { title: t('accountId'), dataIndex: 'accountId', hideInSearch: true, width: 160 },
+    { title: t('symbol'), dataIndex: 'symbol', hideInSearch: true, width: 160 },
+    { title: t('userId'), dataIndex: 'userId', hideInSearch: true, width: 160 },
+    { title: t('fundId'), dataIndex: 'fundId', hideInSearch: true, width: 160 },
+    { title: t('enabled'), dataIndex: 'enabled', hideInSearch: true, width: 100, render: (_, row) => <Switch checked={!!row.enabled}
+      aria-label={t(row.enabled ? 'disableAccountFor' : 'enableAccountFor', { symbol: row.symbol })}
+      checkedChildren={t('yes')} unCheckedChildren={t('no')}
+      loading={toggle.isPending && toggle.variables?.id === row.id}
+      disabled={confirming !== undefined || toggle.isPending || !hasAccessByCodes([row.enabled ? 'muskdeer:account:disable' : 'muskdeer:account:enable', 'sys:tenant_manager'])}
+      onChange={(enabled) => {
+        setConfirming(row.id);
+        modal.confirm({
+          title: t(enabled ? 'enableAccount' : 'disableAccount'),
+          content: t(enabled ? 'confirmEnableAccount' : 'confirmDisableAccount', { symbol: row.symbol }),
+          afterClose: () => setConfirming(undefined),
+          onOk: async () => {
+            try {
+              await toggle.mutateAsync({ id: row.id, expectedUpdatedAtMs: row.updatedAtMs, enabled });
+              message.success(t(enabled ? 'accountEnabledSaved' : 'accountDisabledSaved'));
+            } catch (error) {
+              console.error('Set trading account enablement failed', error);
+              message.error(t('failed'));
+              throw error;
+            } finally {
+              await actionRef.current?.reload();
+            }
+          },
+        });
+      }} /> },
+    { title: t('maximumNotional'), dataIndex: 'maximumNotional', hideInSearch: true, width: 160, render: (_, row) => formatNotional(row.maximumNotional) },
+    { title: t('maximumOrderNotional'), dataIndex: 'maximumOrderNotional', hideInSearch: true, width: 160, render: (_, row) => formatNotional(row.maximumOrderNotional) },
+    { title: t('leverage'), dataIndex: 'leverage', hideInSearch: true, width: 100 },
+    { title: t('observedNotional'), dataIndex: 'observedNotional', hideInSearch: true, width: 160, render: (_, row) => formatNotional(row.observedNotional) },
+    { title: t('reservedNotional'), dataIndex: 'reservedNotional', hideInSearch: true, width: 160, render: (_, row) => formatNotional(row.reservedNotional) },
+    { title: t('availableQuote'), dataIndex: 'availableQuote', hideInSearch: true, width: 160, render: (_, row) => formatNotional(row.availableQuote) },
+    { title: t('snapshotExpiresAtMs'), dataIndex: 'snapshotExpiresAtMs', hideInSearch: true, width: 160, render: (_, row) => formatTimestampMs(row.snapshotExpiresAtMs) },
+    { title: t('actions'), valueType: 'option', fixed: 'right', width: 100, render: (_, row) => hasAccessByCodes(['muskdeer:account:update', 'sys:tenant_manager'])
+      ? <Button type="link" onClick={() => setEditing(row)}>{t('accountDetails')}</Button> : null },
+  ];
+  return <>
+    <ResourceTable<MuskdeerAccount> resource="accounts" columns={columns} fetch={muskdeerReaders.accounts} actionRef={actionRef}
+      toolbar={hasAccessByCodes(['muskdeer:account:create']) ? [<Button key="create" type="primary" onClick={() => setAdding(true)}>{t('addAccount')}</Button>] : []} />
+    {editing && <AccountParametersForm current={editing} onClose={() => setEditing(undefined)} onSaved={() => void actionRef.current?.reload()} />}
+    {adding && <AccountForm onClose={() => setAdding(false)} onSaved={() => void actionRef.current?.reload()} />}
+  </>;
 }

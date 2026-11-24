@@ -4,6 +4,7 @@ import { DrawerForm, ProFormDigit, ProFormText, type ProFormInstance } from '@an
 import { useTranslation } from 'react-i18next';
 import type { MuskdeerAccount, MuskdeerAccountParameters } from '@/api/generated/admin/v1';
 import { updateMuskdeerAccount, useMuskdeerWrite } from '@/api/hooks/muskdeer';
+import { editableNotional } from './notional';
 import { accountPolicyMessageKey } from '@/api/hooks/muskdeer-errors';
 import { useDrawerCloseGuard } from '@/components/common/use-drawer-close-guard';
 
@@ -17,16 +18,23 @@ export default function AccountParametersForm({ current, onClose, onSaved }: {
   const formRef = useRef<ProFormInstance<MuskdeerAccountParameters>>(undefined);
   const save = useMuskdeerWrite(updateMuskdeerAccount);
   const { guardClose, handleValuesChange } = useDrawerCloseGuard(true, onClose);
+  const initialMaximum = editableNotional(current.maximumNotional);
+  const initialOrderMaximum = editableNotional(current.maximumOrderNotional);
   const required = [{ required: true, message: t('required') }];
   const decimal = [...required, { pattern: /^(?!0(?:\.0+)?$)(0|[1-9]\d*)(\.\d+)?$/, message: t('decimalRequired') }];
-  return <DrawerForm<MuskdeerAccountParameters> open title={`${t('editAccountParameters')} · ${current.symbol ?? ''}`} formRef={formRef}
-    initialValues={{ maximumNotional: current.maximumNotional, maximumOrderNotional: current.maximumOrderNotional, leverage: current.leverage }}
+  return <DrawerForm<MuskdeerAccountParameters> open title={`${t('accountDetails')} · ${current.symbol ?? ''}`} formRef={formRef}
+    initialValues={{ maximumNotional: initialMaximum, maximumOrderNotional: initialOrderMaximum, leverage: current.leverage }}
     onValuesChange={handleValuesChange} onOpenChange={(open) => {
       if (!open) guardClose();
     }}
     drawerProps={{ destroyOnHidden: true, maskClosable: false, onClose: guardClose }}
     submitter={{ searchConfig: { submitText: t('save'), resetText: t('close') }, resetButtonProps: { onClick: guardClose }, submitButtonProps: { loading: save.isPending } }}
-    onFinish={async (parameters) => {
+    onFinish={async (values) => {
+      const parameters = {
+        ...values,
+        maximumNotional: values.maximumNotional === initialMaximum ? current.maximumNotional : values.maximumNotional,
+        maximumOrderNotional: values.maximumOrderNotional === initialOrderMaximum ? current.maximumOrderNotional : values.maximumOrderNotional,
+      };
       try {
         await save.mutateAsync({ id: current.id, expectedUpdatedAtMs: current.updatedAtMs, parameters });
         message.success(t('accountParametersSaved'));

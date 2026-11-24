@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { MuskdeerInstance } from '@/api/generated/admin/v1';
 import { checkMuskdeerInstance, useMuskdeerScope } from '@/api/hooks/muskdeer';
 import { makerCheckMessageKey } from '@/api/hooks/muskdeer-errors';
+import { formatNotional } from './notional';
 import { formatTimestampMs } from './timestamp';
 
 export default function MakerCheckDrawer({ current, onClose }: {
@@ -26,9 +27,9 @@ export default function MakerCheckDrawer({ current, onClose }: {
         <Alert type={result.canStart ? 'success' : 'warning'} title={t(makerCheckMessageKey(result.reason))} />
         <Descriptions bordered column={1} size="small" items={[
           { key: 'instance', label: t('instanceKey'), children: current.instanceKey },
-          { key: 'target', label: t('targetNotional'), children: result.targetNotional || '—' },
-          { key: 'maximum', label: t('maximumNotional'), children: result.maximumNotional || '—' },
-          { key: 'single', label: t('maximumOrderNotional'), children: result.maximumOrderNotional || '—' },
+          { key: 'target', label: t('targetNotional'), children: formatNotional(result.targetNotional) },
+          { key: 'maximum', label: t('maximumNotional'), children: formatNotional(result.maximumNotional) },
+          { key: 'single', label: t('maximumOrderNotional'), children: formatNotional(result.maximumOrderNotional) },
           { key: 'count', label: t('targetOrderCount'), children: result.targetNotional ? result.targetOrderCount ?? 0 : '—' },
           { key: 'buy', label: t('activeBuyOrders'), children: observed ? result.activeBuyOrders ?? 0 : '—' },
           { key: 'sell', label: t('activeSellOrders'), children: observed ? result.activeSellOrders ?? 0 : '—' },

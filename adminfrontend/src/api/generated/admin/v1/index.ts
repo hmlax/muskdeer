@@ -3262,6 +3262,11 @@ export type MuskdeerEnableAccountRequest = {
   id?: number;
 };
 
+export type MuskdeerDisableAccountRequest = {
+  expectedUpdatedAtMs?: number;
+  id?: number;
+};
+
 export type MuskdeerRecordListRequest = {
   accountId?: string;
   instanceId?: number;
@@ -3576,6 +3581,9 @@ export interface MuskdeerService {
   UpdateAccount(
     request: MuskdeerUpdateAccountRequest,
   ): Promise<MuskdeerAccount>;
+  DisableAccount(
+    request: MuskdeerDisableAccountRequest,
+  ): Promise<MuskdeerAccount>;
   EnableAccount(
     request: MuskdeerEnableAccountRequest,
   ): Promise<MuskdeerAccount>;
@@ -3657,6 +3665,17 @@ export function createMuskdeerServiceClient(
       return transport.unary(path, 'PUT', body, {
         service: 'MuskdeerService',
         method: 'UpdateAccount',
+      }) as Promise<MuskdeerAccount>;
+    },
+    DisableAccount(request) {
+      if (request.id === undefined || request.id === null) {
+        throw new Error('missing required field request.id');
+      }
+      const path = `admin/v1/muskdeer/accounts/${request.id}/disable`;
+      const body = JSON.stringify(request);
+      return transport.unary(path, 'POST', body, {
+        service: 'MuskdeerService',
+        method: 'DisableAccount',
       }) as Promise<MuskdeerAccount>;
     },
     EnableAccount(request) {

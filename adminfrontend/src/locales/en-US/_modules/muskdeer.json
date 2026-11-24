@@ -162,7 +162,7 @@
   "tradingIDRequired": "Enter a valid positive account ID",
   "accountAdded": "Trading account added",
   "enableAccount": "Enable account",
-  "confirmEnableAccount": "Enable the {{symbol}} trading account? Total limit: {{maximumNotional}} USDT; per-order limit: {{maximumOrderNotional}} USDT. Running or subsequently started strategies may trade within these existing limits.",
+  "confirmEnableAccount": "Enable the {{symbol}} trading account?",
   "accountEnabledSaved": "Trading account enabled",
   "enableAccountBeforeStart": "Enable the trading account on the accounts page before starting the strategy",
   "viewParameters": "View parameters",
@@ -197,5 +197,11 @@
   "accountLeverage": "Current account leverage",
   "savedLeverage": "Leverage when parameters were saved",
   "accountLeverageNotice": "Trading account leverage governs orders. Saving account parameters applies to subsequent orders of all linked instances immediately.",
-  "accountPolicyOrderLeverage": "Stop strategies and cancel current orders before changing leverage"
+  "accountPolicyOrderLeverage": "Stop strategies and cancel current orders before changing leverage",
+  "accountDetails": "Details",
+  "disableAccount": "Disable account",
+  "enableAccountFor": "Enable {{symbol}} trading account",
+  "disableAccountFor": "Disable {{symbol}} trading account",
+  "confirmDisableAccount": "Disable the {{symbol}} trading account? New orders will be blocked. Existing orders must be cancelled separately.",
+  "accountDisabledSaved": "Account disabled"
 }

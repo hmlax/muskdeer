@@ -10,6 +10,7 @@ const OperationMuskdeerServiceCheckInstance = "/operator.v1.MuskdeerService/Chec
 const OperationMuskdeerServiceCreateAccountBinding = "/operator.v1.MuskdeerService/CreateAccountBinding"
 const OperationMuskdeerServiceCreateAccount = "/operator.v1.MuskdeerService/CreateAccount"
 const OperationMuskdeerServiceCreateInstance = "/operator.v1.MuskdeerService/CreateInstance"
+const OperationMuskdeerServiceDisableAccount = "/operator.v1.MuskdeerService/DisableAccount"
 const OperationMuskdeerServiceEnableAccount = "/operator.v1.MuskdeerService/EnableAccount"
 const OperationMuskdeerServiceGetAccountSnapshot = "/operator.v1.MuskdeerService/GetAccountSnapshot"
 const OperationMuskdeerServiceGetInstance = "/operator.v1.MuskdeerService/GetInstance"
@@ -35,6 +36,7 @@ type MuskdeerServiceHTTPServer interface {
 	CreateAccountBinding(context.Context, *MuskdeerCreateBindingRequest) (*MuskdeerAccountBinding, error)
 	CreateAccount(context.Context, *MuskdeerCreateAccountRequest) (*MuskdeerAccount, error)
 	CreateInstance(context.Context, *MuskdeerCreateInstanceRequest) (*MuskdeerInstance, error)
+	DisableAccount(context.Context, *MuskdeerDisableAccountRequest) (*MuskdeerAccount, error)
 	EnableAccount(context.Context, *MuskdeerEnableAccountRequest) (*MuskdeerAccount, error)
 	GetAccountSnapshot(context.Context, *MuskdeerAccountRequest) (*MuskdeerAccountSnapshot, error)
 	GetInstance(context.Context, *MuskdeerInstanceRequest) (*MuskdeerInstance, error)

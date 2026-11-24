@@ -2483,6 +2483,15 @@ func toAPIMuskdeerInstance(in *v11.MuskdeerInstance) *v1.MuskdeerInstance {
 	out.AccountLeverage = in.AccountLeverage
 	return out
 }
+func toRPCMuskdeerDisableAccountRequest(in *v1.MuskdeerDisableAccountRequest) *v11.MuskdeerDisableAccountRequest {
+	if in == nil {
+		return nil
+	}
+	out := new(v11.MuskdeerDisableAccountRequest)
+	out.Id = in.Id
+	out.ExpectedUpdatedAtMs = in.ExpectedUpdatedAtMs
+	return out
+}
 func toRPCMuskdeerEnableAccountRequest(in *v1.MuskdeerEnableAccountRequest) *v11.MuskdeerEnableAccountRequest {
 	if in == nil {
 		return nil

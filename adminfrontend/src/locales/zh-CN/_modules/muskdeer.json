@@ -162,7 +162,7 @@
   "tradingIDRequired": "请输入有效的正整数账户 ID",
   "accountAdded": "交易账户已添加",
   "enableAccount": "启用账户",
-  "confirmEnableAccount": "确认启用 {{symbol}} 交易账户？总名义上限 {{maximumNotional}} USDT，单笔上限 {{maximumOrderNotional}} USDT。启用后，已启动或随后启动的策略可按现有额度运行。",
+  "confirmEnableAccount": "确认启用 {{symbol}} 交易账户？",
   "accountEnabledSaved": "交易账户已启用",
   "enableAccountBeforeStart": "请先在交易账户页面启用账户，再启动策略",
   "viewParameters": "查看参数",
@@ -197,5 +197,11 @@
   "accountLeverage": "当前账户杠杆",
   "savedLeverage": "参数保存时杠杆",
   "accountLeverageNotice": "实际下单杠杆由交易账户统一控制。交易账户参数保存后，所有关联实例的后续委托立即使用新值。",
-  "accountPolicyOrderLeverage": "账户仍有挂单，请先停止策略并撤单后修改杠杆"
+  "accountPolicyOrderLeverage": "账户仍有挂单，请先停止策略并撤单后修改杠杆",
+  "accountDetails": "详情",
+  "disableAccount": "停用账户",
+  "enableAccountFor": "启用 {{symbol}} 交易账户",
+  "disableAccountFor": "停用 {{symbol}} 交易账户",
+  "confirmDisableAccount": "确认停用 {{symbol}} 交易账户？停用后禁止新单，已有挂单需另行撤销。",
+  "accountDisabledSaved": "账户已停用"
 }

@@ -3,21 +3,23 @@ package muskdeer
 
 // Management catalog identifiers remain stable across repository relocation.
 const (
-	Module                       = "muskdeer"
-	ServiceTag                   = "MuskdeerService"
-	RootName                     = "Muskdeer"
-	RootPath                     = "/muskdeer"
-	RetiredSyntheticMenuName     = "MuskdeerSynthetic"
-	RetiredOverviewMenuName      = "MuskdeerOverview"
-	OverviewPermissionCode       = "muskdeer:overview:view"
-	OverviewDashboardMenuName    = "Dashboard"
-	OverviewAnalyticsMenuName    = "Analytics"
-	AccountCreatePermissionCode  = "muskdeer:account:create"
-	AccountUpdatePermissionCode  = "muskdeer:account:update"
-	accountUpdatePermissionTitle = "修改交易账户参数"
-	AccountEnablePermissionCode  = "muskdeer:account:enable"
-	accountEnablePermissionTitle = "启用交易账户"
-	accountCreatePermissionTitle = "添加交易账户"
+	Module                        = "muskdeer"
+	ServiceTag                    = "MuskdeerService"
+	RootName                      = "Muskdeer"
+	RootPath                      = "/muskdeer"
+	RetiredSyntheticMenuName      = "MuskdeerSynthetic"
+	RetiredOverviewMenuName       = "MuskdeerOverview"
+	OverviewPermissionCode        = "muskdeer:overview:view"
+	OverviewDashboardMenuName     = "Dashboard"
+	OverviewAnalyticsMenuName     = "Analytics"
+	AccountCreatePermissionCode   = "muskdeer:account:create"
+	AccountUpdatePermissionCode   = "muskdeer:account:update"
+	accountUpdatePermissionTitle  = "修改交易账户参数"
+	AccountDisablePermissionCode  = "muskdeer:account:disable"
+	accountDisablePermissionTitle = "停用交易账户"
+	AccountEnablePermissionCode   = "muskdeer:account:enable"
+	accountEnablePermissionTitle  = "启用交易账户"
+	accountCreatePermissionTitle  = "添加交易账户"
 )
 
 // Page describes one portal page.
@@ -165,6 +167,13 @@ func MenuAllowed(name string, platform bool) bool {
 // Capabilities returns the separately authorized API capabilities.
 func Capabilities() []Capability {
 	return []Capability{
+		{
+			Code:         AccountDisablePermissionCode,
+			Title:        accountDisablePermissionTitle,
+			Page:         "accounts",
+			Methods:      []string{"DisableAccount"},
+			MerchantOnly: true,
+		},
 		{
 			Code:         AccountUpdatePermissionCode,
 			Title:        accountUpdatePermissionTitle,

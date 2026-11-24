@@ -66,3 +66,20 @@ func (s *MuskdeerService) CreateAccount(ctx context.Context, in *pb.MuskdeerCrea
 	}
 	return fromCoreAccount(result), nil
 }
+
+// DisableAccount forwards only the trusted merchant's scoped stop command.
+func (s *MuskdeerService) DisableAccount(ctx context.Context, in *pb.MuskdeerDisableAccountRequest) (*pb.MuskdeerAccount, error) {
+	actor, err := s.actor(ctx, true)
+	if err != nil {
+		return nil, err
+	}
+	result, err := s.client.DisableAccount(ctx, &core.DisableAccountRequest{
+		Actor:               actor,
+		Id:                  in.GetId(),
+		ExpectedUpdatedAtMs: in.GetExpectedUpdatedAtMs(),
+	})
+	if err != nil {
+		return nil, s.failure(ctx, err)
+	}
+	return fromCoreAccount(result), nil
+}

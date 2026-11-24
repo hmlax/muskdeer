@@ -48,3 +48,5 @@ export const enableMuskdeerAccount = (input: { id?: number; expectedUpdatedAtMs?
 export const checkMuskdeerInstance = (id: number) => apiClient.muskdeerService.CheckInstance({ id });
 
 export const updateMuskdeerAccount = (input: MuskdeerUpdateAccountRequest) => apiClient.muskdeerService.UpdateAccount(input);
+
+export const disableMuskdeerAccount = (input: { id?: number; expectedUpdatedAtMs?: number }) => apiClient.muskdeerService.DisableAccount(input);

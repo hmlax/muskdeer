@@ -4,6 +4,7 @@ option go_package = "github.com/hmlax/muskdeer/deer/pb/operator/v1;operatorpb";
 
 service MuskdeerService {
  rpc CreateAccount(MuskdeerCreateAccountRequest) returns (MuskdeerAccount);
+ rpc DisableAccount(MuskdeerDisableAccountRequest) returns (MuskdeerAccount);
  rpc EnableAccount(MuskdeerEnableAccountRequest) returns (MuskdeerAccount);
  rpc UpdateAccount(MuskdeerUpdateAccountRequest) returns (MuskdeerAccount);
  rpc ListAccountBindings(MuskdeerBindingListRequest) returns (MuskdeerBindingPage);
@@ -53,6 +54,7 @@ message MuskdeerRunningRequest {
 }
 message MuskdeerAccountRequest { string account_id = 2; }
 message MuskdeerEnableAccountRequest { int64 id = 2; int64 expected_updated_at_ms = 3; }
+message MuskdeerDisableAccountRequest { int64 id = 2; int64 expected_updated_at_ms = 3; }
 message MuskdeerRecordListRequest {
  uint32 page = 2; uint32 page_size = 3; string symbol = 4;
  string account_id = 5; string state = 6; int64 instance_id = 7;

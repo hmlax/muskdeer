@@ -41,6 +41,7 @@ type Server struct {
 	connection           *configv1.VenueConnection
 	revisions            map[int64]int64
 	accountPolicyUpdater func(context.Context, *execution.AccountPolicyUpdate) (*execution.AccountPolicyResult, error)
+	accountDisabler      func(context.Context, *execution.AccountPolicyDisable) (*execution.AccountPolicyResult, error)
 	accountInspector     func(context.Context, *common.VenueScope) (*common.VenueSnapshot, error)
 	bookInspector        func(context.Context, string) (*common.VenueBook, error)
 }

@@ -24,6 +24,7 @@ type capturingConsole struct {
 	running bool
 	calls   int
 	filter  *core.InstanceListRequest
+	disable *core.DisableAccountRequest
 	enable  *core.EnableAccountRequest
 }
 
@@ -138,6 +139,14 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 	require.Equal(t, int64(17), client.enable.Id)
 	require.Equal(t, int64(12345), client.enable.ExpectedUpdatedAtMs)
 	require.Equal(t, []string{"venue/7/7"}, client.enable.Actor.AllowedAccountIds)
+	disabled, err := service.DisableAccount(ctx, &pb.MuskdeerDisableAccountRequest{
+		Id:                  17,
+		ExpectedUpdatedAtMs: 12345,
+	})
+	require.NoError(t, err)
+	require.False(t, disabled.Enabled)
+	require.Equal(t, int64(12345), client.disable.ExpectedUpdatedAtMs)
+	require.Equal(t, []string{"venue/7/7"}, client.disable.Actor.AllowedAccountIds)
 	_, err = service.StartInstance(ctx, &pb.MuskdeerRunningRequest{Id: 12})
 	require.NoError(t, err)
 	require.True(t, client.running)
@@ -155,7 +164,7 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, calls, client.calls)
 	// Identity/scope fields cannot be supplied in browser or gateway request DTOs.
-	for _, request := range []proto.Message{&pb.MuskdeerListRequest{}, &pb.MuskdeerCreateInstanceRequest{}, &pb.MuskdeerRunningRequest{}, &pb.MuskdeerEnableAccountRequest{}} {
+	for _, request := range []proto.Message{&pb.MuskdeerListRequest{}, &pb.MuskdeerCreateInstanceRequest{}, &pb.MuskdeerRunningRequest{}, &pb.MuskdeerEnableAccountRequest{}, &pb.MuskdeerDisableAccountRequest{}} {
 		fields := request.ProtoReflect().Descriptor().Fields()
 		require.Nil(t, fields.ByName("actor"))
 		require.Nil(t, fields.ByName("allowed_account_ids"))
@@ -178,4 +187,15 @@ func TestLongGridParametersSurviveCoreAndOperatorMapping(t *testing.T) {
 	require.NotNil(t, mapped.GetLongGrid())
 	require.Equal(t, "0.005", mapped.GetLongGrid().StopLossFraction)
 	require.True(t, proto.Equal(input, toCoreInstanceParameters(mapped)))
+}
+
+func (c *capturingConsole) DisableAccount(_ context.Context, in *core.DisableAccountRequest, _ ...grpc.CallOption) (*core.Account, error) {
+	c.actor = in.Actor
+	c.calls++
+	c.disable = proto.CloneOf(in)
+	return &core.Account{
+		Id:          in.Id,
+		Enabled:     false,
+		UpdatedAtMs: in.ExpectedUpdatedAtMs + 1,
+	}, nil
 }

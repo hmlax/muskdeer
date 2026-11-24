@@ -11,6 +11,10 @@ service MuskdeerService {
   option (api.put) = "/admin/v1/muskdeer/accounts/:id";
   option (admin.http.body) = "*";
  }
+ rpc DisableAccount(MuskdeerDisableAccountRequest) returns (MuskdeerAccount) {
+  option (api.post) = "/admin/v1/muskdeer/accounts/:id/disable";
+  option (admin.http.body) = "*";
+ }
  rpc EnableAccount(MuskdeerEnableAccountRequest) returns (MuskdeerAccount) {
   option (api.post) = "/admin/v1/muskdeer/accounts/:id/enable";
   option (admin.http.body) = "*";

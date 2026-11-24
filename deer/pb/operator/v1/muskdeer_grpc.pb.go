@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	MuskdeerService_CreateAccount_FullMethodName            = "/operator.v1.MuskdeerService/CreateAccount"
+	MuskdeerService_DisableAccount_FullMethodName           = "/operator.v1.MuskdeerService/DisableAccount"
 	MuskdeerService_EnableAccount_FullMethodName            = "/operator.v1.MuskdeerService/EnableAccount"
 	MuskdeerService_UpdateAccount_FullMethodName            = "/operator.v1.MuskdeerService/UpdateAccount"
 	MuskdeerService_ListAccountBindings_FullMethodName      = "/operator.v1.MuskdeerService/ListAccountBindings"
@@ -49,6 +50,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MuskdeerServiceClient interface {
 	CreateAccount(ctx context.Context, in *MuskdeerCreateAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
+	DisableAccount(ctx context.Context, in *MuskdeerDisableAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
 	EnableAccount(ctx context.Context, in *MuskdeerEnableAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
 	UpdateAccount(ctx context.Context, in *MuskdeerUpdateAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error)
 	ListAccountBindings(ctx context.Context, in *MuskdeerBindingListRequest, opts ...grpc.CallOption) (*MuskdeerBindingPage, error)
@@ -85,6 +87,16 @@ func (c *muskdeerServiceClient) CreateAccount(ctx context.Context, in *MuskdeerC
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MuskdeerAccount)
 	err := c.cc.Invoke(ctx, MuskdeerService_CreateAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *muskdeerServiceClient) DisableAccount(ctx context.Context, in *MuskdeerDisableAccountRequest, opts ...grpc.CallOption) (*MuskdeerAccount, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MuskdeerAccount)
+	err := c.cc.Invoke(ctx, MuskdeerService_DisableAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -316,6 +328,7 @@ func (c *muskdeerServiceClient) CancelInstanceOrders(ctx context.Context, in *Mu
 // for forward compatibility.
 type MuskdeerServiceServer interface {
 	CreateAccount(context.Context, *MuskdeerCreateAccountRequest) (*MuskdeerAccount, error)
+	DisableAccount(context.Context, *MuskdeerDisableAccountRequest) (*MuskdeerAccount, error)
 	EnableAccount(context.Context, *MuskdeerEnableAccountRequest) (*MuskdeerAccount, error)
 	UpdateAccount(context.Context, *MuskdeerUpdateAccountRequest) (*MuskdeerAccount, error)
 	ListAccountBindings(context.Context, *MuskdeerBindingListRequest) (*MuskdeerBindingPage, error)
@@ -350,6 +363,9 @@ type UnimplementedMuskdeerServiceServer struct{}
 
 func (UnimplementedMuskdeerServiceServer) CreateAccount(context.Context, *MuskdeerCreateAccountRequest) (*MuskdeerAccount, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateAccount not implemented")
+}
+func (UnimplementedMuskdeerServiceServer) DisableAccount(context.Context, *MuskdeerDisableAccountRequest) (*MuskdeerAccount, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableAccount not implemented")
 }
 func (UnimplementedMuskdeerServiceServer) EnableAccount(context.Context, *MuskdeerEnableAccountRequest) (*MuskdeerAccount, error) {
 	return nil, status.Error(codes.Unimplemented, "method EnableAccount not implemented")
@@ -452,6 +468,24 @@ func _MuskdeerService_CreateAccount_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(MuskdeerServiceServer).CreateAccount(ctx, req.(*MuskdeerCreateAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MuskdeerService_DisableAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MuskdeerDisableAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MuskdeerServiceServer).DisableAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MuskdeerService_DisableAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MuskdeerServiceServer).DisableAccount(ctx, req.(*MuskdeerDisableAccountRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -862,6 +896,10 @@ var MuskdeerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateAccount",
 			Handler:    _MuskdeerService_CreateAccount_Handler,
+		},
+		{
+			MethodName: "DisableAccount",
+			Handler:    _MuskdeerService_DisableAccount_Handler,
 		},
 		{
 			MethodName: "EnableAccount",

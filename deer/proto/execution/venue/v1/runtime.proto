@@ -13,6 +13,7 @@ service Execution {
   rpc GetSnapshot(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
   // Read-only enrollment verification, including funds without a strategy yet.
   rpc InspectAccount(muskdeer.common.v1.VenueScope) returns (muskdeer.common.v1.VenueSnapshot);
+  rpc DisableAccountPolicy(AccountPolicyDisable) returns (AccountPolicyResult);
   rpc UpdateAccountPolicy(AccountPolicyUpdate) returns (AccountPolicyResult);
   rpc CancelInstanceOrders(CancelInstanceRequest) returns (QuoteResult);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
@@ -87,4 +88,11 @@ message WashMarketRequest {
 message WashMarketRules {
  muskdeer.common.v1.VenueMarket market = 1;
  int64 valid_until_ms = 2;
+}
+
+// An explicit risk-reducing command; existing orders and controls are preserved.
+message AccountPolicyDisable {
+ int64 id = 1;
+ int64 expected_updated_at_ms = 2;
+ muskdeer.common.v1.VenueScope scope = 3;
 }

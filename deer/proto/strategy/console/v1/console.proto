@@ -17,6 +17,7 @@ service Console {
  rpc ListInstruments(ListRequest) returns (InstrumentPage);
  rpc ListAccounts(ListRequest) returns (AccountPage);
  rpc CreateAccount(CreateAccountRequest) returns (Account);
+ rpc DisableAccount(DisableAccountRequest) returns (Account);
  rpc EnableAccount(EnableAccountRequest) returns (Account);
  rpc UpdateAccount(UpdateAccountRequest) returns (Account);
  rpc ListOrderRecords(RecordListRequest) returns (OrderPage);
@@ -145,6 +146,7 @@ message AccountDraft {
  string maximum_order_notional = 6; uint32 leverage = 7;
 }
 message CreateAccountRequest { Actor actor = 1; AccountDraft data = 2; }
+message DisableAccountRequest { Actor actor = 1; int64 id = 2; int64 expected_updated_at_ms = 3; }
 message EnableAccountRequest { Actor actor = 1; int64 id = 2; int64 expected_updated_at_ms = 3; }
 message OrderRecord {
  int64 id = 1; int64 created_at_ms = 2; int64 updated_at_ms = 3;

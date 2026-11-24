@@ -78,4 +78,63 @@ func verifyAccountParameterScope(ctx context.Context, t *testing.T, db *gorm.DB,
 	if _, err := server.UpdateAccount(trusted, request); err != nil || calls != 1 {
 		t.Fatalf("scoped update failed: %v", err)
 	}
+	verifyAccountDisableScope(ctx, t, db, actor)
+}
+
+func verifyAccountDisableScope(ctx context.Context, t *testing.T, db *gorm.DB, actor *pb.Actor) {
+	t.Helper()
+	var policy model.TradingAccountPolicy
+	if err := db.WithContext(ctx).Model(&model.TradingAccountPolicy{}).Where("account_id = ?", actor.AllowedAccountIds[0]).Take(&policy).Error; err != nil {
+		t.Fatal(err)
+	}
+	profile, err := venueconfig.ProfileFromBudget(&policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	server := &Server{
+		db:       db,
+		controls: true,
+		accountDisabler: func(_ context.Context, in *execution.AccountPolicyDisable) (*execution.AccountPolicyResult, error) {
+			calls++
+			if in.Scope.UserId != policy.UserId || in.Scope.FundId != policy.FundId {
+				t.Fatal("merchant scope lost")
+			}
+			return &execution.AccountPolicyResult{
+				Id:          policy.Id,
+				Enabled:     false,
+				UpdatedAtMs: policy.UpdateAt + 1,
+				Profile:     profile,
+			}, nil
+		},
+	}
+	request := &pb.DisableAccountRequest{
+		Actor: &pb.Actor{
+			Subject:           "user:2",
+			TenantId:          7,
+			RequestId:         "account-disable-console-test",
+			AllowedAccountIds: []string{"foreign"},
+		},
+		Id:                  policy.Id,
+		ExpectedUpdatedAtMs: policy.UpdateAt,
+	}
+	trusted := operatorContext(ctx, rpcsecurity.ServiceOperator)
+	if _, err := server.DisableAccount(ctx, request); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("untrusted disable admitted")
+	}
+	if _, err := server.DisableAccount(trusted, request); status.Code(err) != codes.NotFound {
+		t.Fatal("foreign disable admitted")
+	}
+	request.Actor.AllowedAccountIds = actor.AllowedAccountIds
+	request.ExpectedUpdatedAtMs--
+	if _, err := server.DisableAccount(trusted, request); err == nil {
+		t.Fatal("stale disable admitted")
+	}
+	if calls != 0 {
+		t.Fatal("rejected disable reached fund writer")
+	}
+	request.ExpectedUpdatedAtMs = policy.UpdateAt
+	if result, err := server.DisableAccount(trusted, request); err != nil || result.GetEnabled() || calls != 1 {
+		t.Fatalf("scoped disable failed: %v %v", result, err)
+	}
 }
