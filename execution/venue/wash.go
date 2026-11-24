@@ -2,6 +2,7 @@ package venue
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -17,7 +18,8 @@ import (
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-// WashTrade checks memory settings/source only, then makes one SDK call.
+// WashTrade checks memory settings/source, then requests one SDK publication.
+// The adapter filters events that do not satisfy current venue market rules.
 // There are deliberately no database, batch, sequence, or receipt operations.
 func (r *Runtime) WashTrade(ctx context.Context, input *pb.WashTradeRequest) (*common.SyntheticTapeResult, error) {
 	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
@@ -61,6 +63,15 @@ func (r *Runtime) WashTrade(ctx context.Context, input *pb.WashTradeRequest) (*c
 		Price:    input.Price,
 		Quantity: input.Quantity,
 	})
+	if errors.Is(sendErr, gateway.ErrBelowMarketMinimum) {
+		return &common.SyntheticTapeResult{
+			State:       native.SyntheticSkippedMinimum,
+			SourceTrade: proto.CloneOf(input.GetTrade()),
+		}, nil
+	}
+	if errors.Is(sendErr, gateway.ErrNotDispatched) {
+		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
+	}
 	state := native.SyntheticPublished
 	if sendErr != nil || !validWashReceipt(input, response) {
 		state = native.SyntheticUnknown

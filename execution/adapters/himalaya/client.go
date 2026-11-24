@@ -5,11 +5,13 @@ import (
 	"crypto/sha256"
 	"errors"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	orderclient "gitlab.com/himalaya/lukla-go"
 	pb "gitlab.com/himalaya/lukla-go/pb"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 
@@ -20,9 +22,11 @@ import (
 // Client owns one upstream SDK connection. A nil guard disables journalled
 // Submit/Cancel; explicit maker operations use SubmitQuote/CancelQuote.
 type Client struct {
-	sdk     *orderclient.Client
-	guard   SubmissionGuard
-	timeout time.Duration
+	washMarkets     sync.Map
+	washMarketLoads singleflight.Group
+	sdk             *orderclient.Client
+	guard           SubmissionGuard
+	timeout         time.Duration
 }
 
 // NewClient configures the supplied SDK and disables configured write retries.

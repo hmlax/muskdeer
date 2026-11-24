@@ -25,10 +25,11 @@ const (
 // ErrInvalidConfig, ErrInvalidSubmit, ErrInvalidSnapshot and ErrNotDispatched
 // are stable boundary errors shared by business and transport implementations.
 var (
-	ErrInvalidConfig   = errors.New(messageInvalidConfig)
-	ErrInvalidSubmit   = errors.New(messageInvalidSubmit)
-	ErrInvalidSnapshot = errors.New(messageInvalidSnapshot)
-	ErrNotDispatched   = errors.New(messageNotDispatched)
+	ErrInvalidConfig      = errors.New(messageInvalidConfig)
+	ErrInvalidSubmit      = errors.New(messageInvalidSubmit)
+	ErrInvalidSnapshot    = errors.New(messageInvalidSnapshot)
+	ErrNotDispatched      = errors.New(messageNotDispatched)
+	ErrBelowMarketMinimum = domain.ErrBelowMarketMinimum
 )
 
 // Config is immutable connection setup supplied by the execution lifecycle.

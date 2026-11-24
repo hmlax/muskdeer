@@ -167,6 +167,8 @@ type sdkPeer struct {
 	cancelCalls       int
 	openOrders        []*pb.OrderRow
 	syntheticRequests []*pb.WashTradeRequest
+	washMarket        *pb.MarketView
+	marketCalls       int
 }
 
 func (p *sdkPeer) Place(ctx context.Context, request *pb.PlaceRequest) (*pb.PlaceOrderResponse, error) {
@@ -216,11 +218,23 @@ func (p *sdkPeer) placeReply(ctx context.Context, clientID string) (*pb.PlaceOrd
 	}, nil
 }
 
-func (*sdkPeer) GetMarket(_ context.Context, request *pb.GetMarketRequest) (*pb.GetMarketResponse, error) {
+func (p *sdkPeer) GetMarket(_ context.Context, request *pb.GetMarketRequest) (*pb.GetMarketResponse, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.marketCalls++
+	if p.washMarket != nil {
+		return &pb.GetMarketResponse{Market: proto.CloneOf(p.washMarket)}, nil
+	}
 	return &pb.GetMarketResponse{Market: &pb.MarketView{
-		Symbol:       request.Symbol,
-		MakerFeeRate: "0.0002",
-		TakerFeeRate: "0.0005",
+		Symbol:                  request.Symbol,
+		Status:                  1,
+		EffectiveQuotePrecision: 2,
+		EffectiveBasePrecision:  3,
+		PriceTickTicks:          1,
+		BaseIncrement:           1,
+		BaseMinSize:             1,
+		MakerFeeRate:            "0.0002",
+		TakerFeeRate:            "0.0005",
 	}}, nil
 }
 

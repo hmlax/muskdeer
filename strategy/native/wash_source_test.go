@@ -177,3 +177,20 @@ func TestSourceWashStopJoinsItsInFlightCall(t *testing.T) {
 		}
 	})
 }
+
+func TestSourceWashMinimumFilterIsCountedWithoutInflatingPublication(t *testing.T) {
+	cfg := sourceWashConfig()
+	stats := &washSourceStats{}
+	calls := 0
+	send := func(context.Context, *pb.WashTradeRequest) error { calls++; return domain.ErrBelowMarketMinimum }
+	event := &washObservation{trade: sourceWashTrade("41")}
+	publishWashSource(t.Context(), cfg, "BTCUSDT", event, send, stats)
+	publishWashSource(t.Context(), cfg, "BTCUSDT", event, send, stats)
+	if calls != 1 || stats.tooSmall != 1 || stats.duplicate != 1 || stats.submitted != 0 || stats.published != 0 || stats.unknown != 0 || stats.failed != 0 {
+		t.Fatalf("filtered source stats are inaccurate: %+v", stats)
+	}
+	publishWashSource(t.Context(), cfg, "BTCUSDT", &washObservation{trade: sourceWashTrade("42")}, func(context.Context, *pb.WashTradeRequest) error { return nil }, stats)
+	if stats.published != 1 || stats.submitted != 1 {
+		t.Fatal("valid source event after a filter was blocked")
+	}
+}

@@ -17,6 +17,12 @@ func TestOrderObservationForCancellationDoesNotRequireTradingReadiness(t *testin
 		Symbol: "BTCUSDT",
 	}
 	peer := &sdkPeer{
+		// This fixture deliberately has no trading readiness or effective scales.
+		washMarket: &pb.MarketView{
+			Symbol:       scope.Symbol,
+			MakerFeeRate: "0.0002",
+			TakerFeeRate: "0.0005",
+		},
 		openOrders: []*pb.OrderRow{
 			{
 				OrderId:  42,

@@ -2,9 +2,12 @@ package himalaya
 
 import (
 	"context"
+	"errors"
 
 	"github.com/shopspring/decimal"
 	pb "gitlab.com/himalaya/lukla-go/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -23,13 +26,13 @@ func (c *Client) PublishSynthetic(ctx context.Context, input *gateway.SyntheticR
 // WashTrade sends one development publication without any persistence guard.
 func (c *Client) WashTrade(ctx context.Context, input *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
 	if c == nil || c.sdk == nil || ctx == nil || input == nil || !validSymbol(input.Symbol) {
-		return nil, ErrInvalidSubmit
+		return nil, errors.Join(gateway.ErrNotDispatched, ErrInvalidSubmit)
 	}
 	if _, err := native.Value(input.Price, false, false); err != nil {
-		return nil, ErrInvalidSubmit
+		return nil, errors.Join(gateway.ErrNotDispatched, ErrInvalidSubmit)
 	}
 	if _, err := native.Value(input.Quantity, false, false); err != nil {
-		return nil, ErrInvalidSubmit
+		return nil, errors.Join(gateway.ErrNotDispatched, ErrInvalidSubmit)
 	}
 	var side int32
 	switch input.Side {
@@ -38,16 +41,31 @@ func (c *Client) WashTrade(ctx context.Context, input *gateway.SyntheticRequest)
 	case domain.SideSell:
 		side = int32(pb.Side_SIDE_SELL)
 	default:
-		return nil, ErrInvalidSubmit
+		return nil, errors.Join(gateway.ErrNotDispatched, ErrInvalidSubmit)
 	}
 	op, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
+	rules, err := c.washRules(op, input.Symbol)
+	if err != nil {
+		return nil, errors.Join(gateway.ErrNotDispatched, err)
+	}
+	if err := rules.validate(input); err != nil {
+		return nil, errors.Join(gateway.ErrNotDispatched, err)
+	}
+	if err := op.Err(); err != nil {
+		return nil, errors.Join(gateway.ErrNotDispatched, err)
+	}
 	response, err := c.sdk.WashTrade(op, &pb.WashTradeRequest{
 		Symbol:   input.Symbol,
 		Side:     side,
 		Price:    input.Price,
 		Quantity: input.Quantity,
 	})
+	if status.Code(err) == codes.InvalidArgument {
+		// Never retry this write. A changed venue rule must be fetched for the next event.
+		c.washMarkets.Delete(input.Symbol)
+		return nil, errors.Join(gateway.ErrNotDispatched, err)
+	}
 	if response == nil {
 		return nil, err
 	}

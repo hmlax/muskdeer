@@ -30,12 +30,16 @@ import (
 
 type washTestClient struct {
 	gateway.Client
-	calls   int
-	failure bool
+	calls    int
+	failure  bool
+	filtered bool
 }
 
 func (c *washTestClient) WashTrade(_ context.Context, request *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
 	c.calls++
+	if c.filtered {
+		return nil, errors.Join(gateway.ErrNotDispatched, gateway.ErrBelowMarketMinimum)
+	}
 	if c.failure {
 		return nil, errors.New("lost reply")
 	}

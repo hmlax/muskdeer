@@ -58,6 +58,9 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 								tracing.RecordError(send, err)
 								return err
 							}
+							if reply.GetState() == values.SyntheticSkippedMinimum {
+								return domain.ErrBelowMarketMinimum
+							}
 							if reply.GetState() == values.SyntheticUnknown {
 								tracing.RecordError(send, domain.ErrOutcomeUnknown)
 								return domain.ErrOutcomeUnknown
@@ -172,7 +175,7 @@ func subscribeWash(ctx context.Context, cfg *venueconfig.RuntimeConfig, symbol s
 				} else {
 					side = domain.SideBuy
 				}
-				if err != nil && work.Err() == nil && status.Code(err) != codes.FailedPrecondition && status.Code(err) != codes.ResourceExhausted {
+				if err != nil && !errors.Is(err, domain.ErrBelowMarketMinimum) && work.Err() == nil && status.Code(err) != codes.FailedPrecondition && status.Code(err) != codes.ResourceExhausted {
 					if err := logger.LogAttrs(work, slog.LevelWarn, values.StateRecovering, slog.String("symbol", symbol)); err != nil {
 						return err
 					}

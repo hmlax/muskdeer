@@ -14,9 +14,10 @@ import (
 
 // Synthetic audit states describe market-data publication, never financial fills.
 const (
-	SyntheticPublished = "SYNTHETIC_PUBLISHED"
-	SyntheticUnknown   = "SYNTHETIC_UNKNOWN"
-	SyntheticWorker    = "strategy.synthetic."
+	SyntheticPublished      = "SYNTHETIC_PUBLISHED"
+	SyntheticUnknown        = "SYNTHETIC_UNKNOWN"
+	SyntheticSkippedMinimum = "SYNTHETIC_SKIPPED_MINIMUM"
+	SyntheticWorker         = "strategy.synthetic."
 )
 
 // SyntheticExecutionKey identifies a market-data run, never a financial fund.

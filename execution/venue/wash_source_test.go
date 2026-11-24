@@ -113,5 +113,22 @@ func TestSourceWashRejectsDuplicateUnknownWithoutInterval(t *testing.T) {
 		if _, err := runtime.WashTrade(ctx, input); status.Code(err) != codes.AlreadyExists || client.calls != 2 {
 			t.Fatalf("reversed source reached SDK: %v", err)
 		}
+		client.failure, client.filtered = false, true
+		skipped := proto.CloneOf(next)
+		skipped.GetTrade().EventId = "42"
+		result, err := runtime.WashTrade(ctx, skipped)
+		if err != nil || result.GetState() != native.SyntheticSkippedMinimum || client.calls != 3 {
+			t.Fatalf("minimum filter became unknown or published: %v %v", result, err)
+		}
+		if _, err := runtime.WashTrade(ctx, skipped); status.Code(err) != codes.AlreadyExists || client.calls != 3 {
+			t.Fatal("filtered event was replayed")
+		}
+		client.filtered = false
+		fresh := proto.CloneOf(skipped)
+		fresh.GetTrade().EventId = "43"
+		if result, err := runtime.WashTrade(ctx, fresh); err != nil || result.GetState() != native.SyntheticPublished || client.calls != 4 {
+			t.Fatalf("minimum filter blocked subsequent valid event: %v %v", result, err)
+		}
+
 	})
 }

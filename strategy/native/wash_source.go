@@ -91,6 +91,9 @@ func publishWashSource(ctx context.Context, cfg *venueconfig.RuntimeConfig, symb
 	stats.submitted++
 	err = send(op, input)
 	switch {
+	case errors.Is(err, domain.ErrBelowMarketMinimum):
+		stats.submitted--
+		stats.tooSmall++
 	case err == nil:
 		stats.published++
 	case errors.Is(err, domain.ErrOutcomeUnknown):
