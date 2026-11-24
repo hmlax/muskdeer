@@ -203,5 +203,9 @@
   "enableAccountFor": "启用 {{symbol}} 交易账户",
   "disableAccountFor": "停用 {{symbol}} 交易账户",
   "confirmDisableAccount": "确认停用 {{symbol}} 交易账户？停用后禁止新单，已有挂单需另行撤销。",
-  "accountDisabledSaved": "账户已停用"
+  "accountDisabledSaved": "账户已停用",
+  "instanceDetails": "详情",
+  "stopBeforeEdit": "请先停止实例后再修改参数",
+  "startInstanceFor": "启动 {{instance}}",
+  "stopInstanceFor": "停止 {{instance}}"
 }

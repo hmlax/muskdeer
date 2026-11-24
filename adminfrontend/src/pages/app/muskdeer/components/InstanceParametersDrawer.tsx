@@ -1,4 +1,4 @@
-import { Alert, Descriptions, Divider, Drawer } from 'antd';
+import { Alert, Button, Descriptions, Divider, Drawer, Space, Tooltip } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { MuskdeerInstance } from '@/api/generated/admin/v1';
 
@@ -27,15 +27,22 @@ function ParameterSection<T extends object>({
   </>;
 }
 
-export default function InstanceParametersDrawer({ current, onClose }: {
+export default function InstanceParametersDrawer({ current, onClose, onEdit, editLoading = false }: {
   current: MuskdeerInstance;
   onClose: () => void;
+  onEdit?: () => void | Promise<void>;
+  editLoading?: boolean;
 }) {
   const { t } = useTranslation('muskdeer');
   const parameters = current.parameters;
-  return <Drawer open title={`${t('viewParameters')} · ${current.symbol ?? current.instanceKey ?? ''}`}
+  return <Drawer open title={`${t('instanceDetails')} · ${current.instanceKey ?? current.symbol ?? ''}`}
     size={720} destroyOnHidden onClose={onClose}
-    footer={null}>
+    footer={<Space>
+      <Button onClick={onClose}>{t('close')}</Button>
+      {onEdit && <Tooltip title={current.desiredRunning ? t('stopBeforeEdit') : undefined}>
+        <span><Button type="primary" disabled={!!current.desiredRunning} loading={editLoading} onClick={onEdit}>{t('edit')}</Button></span>
+      </Tooltip>}
+    </Space>}>
     <Alert type="info" title={t('readOnlyParametersNotice')} />
     <Alert type="info" title={t('accountLeverageNotice')} style={{ marginTop: 12 }} />
     <Divider>{t('identity')}</Divider>

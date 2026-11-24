@@ -203,5 +203,9 @@
   "enableAccountFor": "Enable {{symbol}} trading account",
   "disableAccountFor": "Disable {{symbol}} trading account",
   "confirmDisableAccount": "Disable the {{symbol}} trading account? New orders will be blocked. Existing orders must be cancelled separately.",
-  "accountDisabledSaved": "Account disabled"
+  "accountDisabledSaved": "Account disabled",
+  "instanceDetails": "Details",
+  "stopBeforeEdit": "Stop the instance before editing parameters",
+  "startInstanceFor": "Start {{instance}}",
+  "stopInstanceFor": "Stop {{instance}}"
 }
