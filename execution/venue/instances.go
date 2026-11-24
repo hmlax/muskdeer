@@ -258,3 +258,12 @@ func (r *Instances) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope)
 	}
 	return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 }
+
+// GetWashMarket routes the current development instance's read-only rule query.
+func (r *Instances) GetWashMarket(ctx context.Context, p *executionv1.WashMarketRequest) (*executionv1.WashMarketRules, error) {
+	child, err := r.selected(p.GetStrategyInstanceId(), p.GetStrategyRevision(), true)
+	if err != nil {
+		return nil, err
+	}
+	return child.GetWashMarket(ctx, p)
+}

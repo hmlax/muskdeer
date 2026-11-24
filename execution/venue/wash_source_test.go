@@ -1,6 +1,7 @@
 package venue
 
 import (
+	"context"
 	"io"
 	"sync/atomic"
 	"testing"
@@ -130,5 +131,36 @@ func TestSourceWashRejectsDuplicateUnknownWithoutInterval(t *testing.T) {
 			t.Fatalf("minimum filter blocked subsequent valid event: %v %v", result, err)
 		}
 
+		checkMinimumTargetAndMarketRPC(ctx, t, runtime, client, fresh)
 	})
+}
+
+func checkMinimumTargetAndMarketRPC(ctx context.Context, t *testing.T, runtime *Runtime, client *washTestClient, fresh *pb.WashTradeRequest) {
+	t.Helper()
+
+	client.minimumNotional = "1"
+	raised := proto.CloneOf(fresh)
+	raised.GetTrade().EventId = "44"
+	if _, err := runtime.WashTrade(ctx, raised); status.Code(err) != codes.InvalidArgument || client.calls != 4 {
+		t.Fatal("unraised target bypassed venue minimum")
+	}
+	raised.Quantity = "0.01"
+	if result, err := runtime.WashTrade(ctx, raised); err != nil || result.GetState() != native.SyntheticPublished || client.calls != 5 {
+		t.Fatalf("strategy minimum target was not accepted: %v %v", result, err)
+	}
+	marketRequest := &pb.WashMarketRequest{
+		StrategyInstanceId: 7,
+		StrategyRevision:   3,
+		Symbol:             "BTCUSDT",
+	}
+	if reply, err := runtime.GetWashMarket(ctx, marketRequest); err != nil || reply.GetMarket().GetMinimumNotional() != "1" || reply.GetValidUntilMs() <= time.Now().UnixMilli() {
+		t.Fatalf("current minimum metadata unavailable: %v %v", reply, err)
+	}
+	if _, err := runtime.GetWashMarket(t.Context(), marketRequest); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("unauthorized rule query admitted")
+	}
+	marketRequest.StrategyRevision++
+	if _, err := runtime.GetWashMarket(ctx, marketRequest); status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("old configuration admitted")
+	}
 }

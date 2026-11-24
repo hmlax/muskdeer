@@ -18,6 +18,7 @@ service Execution {
   rpc Reconcile(QuotePlan) returns (QuoteResult);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
   rpc EvaluateLongGrid(LongGridRequest) returns (LongGridResult);
+  rpc GetWashMarket(WashMarketRequest) returns (WashMarketRules);
   rpc WashTrade(WashTradeRequest) returns (muskdeer.common.v1.SyntheticTapeResult);
 }
 
@@ -75,4 +76,15 @@ message AccountPolicyUpdate {
 message AccountPolicyResult {
  int64 id = 1; int64 updated_at_ms = 2; bool enabled = 3;
  muskdeer.common.v1.VenueProfilePolicy profile = 4;
+}
+
+// Current venue trading rules only; no account observation or database work.
+message WashMarketRequest {
+ int64 strategy_instance_id = 1;
+ int64 strategy_revision = 2;
+ string symbol = 3;
+}
+message WashMarketRules {
+ muskdeer.common.v1.VenueMarket market = 1;
+ int64 valid_until_ms = 2;
 }

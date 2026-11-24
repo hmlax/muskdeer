@@ -30,9 +30,10 @@ import (
 
 type washTestClient struct {
 	gateway.Client
-	calls    int
-	failure  bool
-	filtered bool
+	calls           int
+	failure         bool
+	filtered        bool
+	minimumNotional string
 }
 
 func (c *washTestClient) WashTrade(_ context.Context, request *gateway.SyntheticRequest) (*gateway.SyntheticResult, error) {
@@ -169,4 +170,24 @@ func TestWashEventNeedsNoDatabaseAndNeverReplaysUnknown(t *testing.T) {
 			t.Fatal("stale controls accepted")
 		}
 	})
+}
+
+func (c *washTestClient) WashMarket(context.Context, string) (*gateway.WashMarketRules, error) {
+	return &gateway.WashMarketRules{
+		Market: &common.VenueMarket{
+			PriceTick:       "0.1",
+			QuantityStep:    "0.001",
+			MinimumQuantity: "0",
+			MaximumQuantity: "0",
+			MinimumNotional: c.washMinimumNotional(),
+		},
+		ValidUntil: time.Now().Add(time.Second),
+	}, nil
+}
+
+func (c *washTestClient) washMinimumNotional() string {
+	if c.minimumNotional != "" {
+		return c.minimumNotional
+	}
+	return "0"
 }

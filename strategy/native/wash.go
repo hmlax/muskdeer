@@ -42,6 +42,7 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 		workers = append(workers, deer.Worker{
 			Name: values.SyntheticWorker + values.WorkerSymbol(profile.Symbol),
 			Run: func(ctx context.Context) error {
+				sender := &washSender{cfg: cfg}
 				for ctx.Err() == nil {
 					err := factory.Subscribe(ctx, rpcclient.Target{Service: rpcsecurity.ServiceMarket}, func(work context.Context, conn grpc.ClientConnInterface) error {
 						return subscribeWash(work, cfg, profile.Symbol, market.NewMarketClient(conn), func(send context.Context, input *execution.WashTradeRequest) error {
@@ -53,7 +54,7 @@ func washWorkers(cfg *venueconfig.RuntimeConfig, factory *rpcclient.Factory, log
 								tracing.RecordError(send, err)
 								return err
 							}
-							reply, err := execution.NewExecutionClient(client).WashTrade(send, input)
+							reply, err := sender.send(send, execution.NewExecutionClient(client), input)
 							if err != nil {
 								tracing.RecordError(send, err)
 								return err

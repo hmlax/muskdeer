@@ -65,7 +65,14 @@ type QuoteClient interface {
 
 // WashClient publishes one development market-data event without persistence.
 type WashClient interface {
+	WashMarket(context.Context, string) (*WashMarketRules, error)
 	WashTrade(context.Context, *SyntheticRequest) (*SyntheticResult, error)
+}
+
+// WashMarketRules is an expiring, account-independent venue observation.
+type WashMarketRules struct {
+	Market     *commonv1.VenueMarket
+	ValidUntil time.Time
 }
 
 // Admission authorizes one durable intent at the final external call.

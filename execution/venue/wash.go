@@ -12,7 +12,6 @@ import (
 
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
-	"github.com/hmlax/muskdeer/deer/rpcsecurity"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
@@ -22,26 +21,13 @@ import (
 // The adapter filters events that do not satisfy current venue market rules.
 // There are deliberately no database, batch, sequence, or receipt operations.
 func (r *Runtime) WashTrade(ctx context.Context, input *pb.WashTradeRequest) (*common.SyntheticTapeResult, error) {
-	if !rpcsecurity.HasService(ctx, rpcsecurity.ServiceStrategy) {
-		return nil, status.Error(codes.PermissionDenied, native.MessageInvalid)
-	}
-	if r.closing.Load() || r.client.Load() == nil || r.cfg.Template != domain.StrategyTemplateWashTrade || r.cfg.InstanceID <= 0 || input.GetStrategyInstanceId() != r.cfg.InstanceID || input.GetStrategyRevision() != r.cfg.Revision {
-		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
-	}
-	control := r.washControl.Load()
-	if control == nil || !control.active || time.Since(control.observed) > washControlAge {
-		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
-	}
-	target, err := native.WashTarget(r.cfg.Venue, input)
-	if err != nil || target.GetPrice() != input.GetPrice() || target.GetQuantity() != input.GetQuantity() || target.GetSide() != input.GetSide() {
-		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
-	}
-	now := time.Now()
-	if err := ctx.Err(); err != nil {
-		return nil, status.FromContextError(err).Err()
-	}
-	if err := r.admitWashFrequency(input, now); err != nil {
+	client, err := r.currentWashClient(ctx, input.GetStrategyInstanceId(), input.GetStrategyRevision(), input.GetSymbol())
+	if err != nil {
 		return nil, err
+	}
+	base, err := native.WashTarget(r.cfg.Venue, input)
+	if err != nil || base.GetPrice() != input.GetPrice() || base.GetSide() != input.GetSide() {
+		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
 	until := input.GetBook().GetValidUntilMs()
 	if input.GetTrade() != nil {
@@ -51,12 +37,25 @@ func (r *Runtime) WashTrade(ctx context.Context, input *pb.WashTradeRequest) (*c
 	if left <= 0 {
 		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
 	}
-	client, ok := r.client.Load().Client.(gateway.WashClient)
-	if !ok {
-		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
-	}
 	op, cancel := context.WithTimeout(ctx, left)
 	defer cancel()
+	rules, err := client.WashMarket(op, input.Symbol)
+	if err != nil || rules == nil || !time.Now().Before(rules.ValidUntil) {
+		return nil, status.Error(codes.FailedPrecondition, native.MessageInvalid)
+	}
+	target, err := native.WashTargetForMarket(r.cfg.Venue, input, rules.Market)
+	if errors.Is(err, native.ErrWashMinimumAboveLimit) {
+		return nil, status.Error(codes.FailedPrecondition, native.MessageWashMinimumAboveLimit)
+	}
+	if err != nil || target.GetQuantity() != input.Quantity {
+		return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
+	}
+	if err := op.Err(); err != nil {
+		return nil, status.FromContextError(err).Err()
+	}
+	if err := r.admitWashFrequency(input, time.Now()); err != nil {
+		return nil, err
+	}
 	response, sendErr := client.WashTrade(op, &gateway.SyntheticRequest{
 		Symbol:   input.Symbol,
 		Side:     domain.Side(input.Side),
@@ -87,7 +86,7 @@ func (r *Runtime) WashTrade(ctx context.Context, input *pb.WashTradeRequest) (*c
 	if state == native.SyntheticUnknown {
 		level = slog.LevelWarn
 	}
-	if err := r.logger.LogAttrs(ctx, level, state, slog.String("symbol", input.Symbol)); err != nil {
+	if err := r.logger.LogAttrs(ctx, level, state, slog.String("symbol", input.Symbol), slog.String("price", input.Price), slog.String("quantity", input.Quantity), slog.Bool("minimum_adjusted", target.Quantity != base.Quantity)); err != nil {
 		return nil, err
 	}
 	return result, nil

@@ -7,6 +7,7 @@ import (
 	"github.com/shopspring/decimal"
 	pb "gitlab.com/himalaya/lukla-go/pb"
 
+	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
@@ -103,4 +104,27 @@ func (r *washMarketRules) validate(input *gateway.SyntheticRequest) error {
 		return ErrInvalidSubmit
 	}
 	return nil
+}
+
+// WashMarket returns only current venue size/price rules, without account state.
+func (c *Client) WashMarket(ctx context.Context, symbol string) (*gateway.WashMarketRules, error) {
+	if c == nil || c.sdk == nil || ctx == nil || !validSymbol(symbol) {
+		return nil, ErrInvalidSubmit
+	}
+	op, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	rules, err := c.washRules(op, symbol)
+	if err != nil {
+		return nil, err
+	}
+	return &gateway.WashMarketRules{
+		Market: &common.VenueMarket{
+			PriceTick:       rules.tick.String(),
+			QuantityStep:    rules.step.String(),
+			MinimumQuantity: rules.minimumQuantity.String(),
+			MaximumQuantity: rules.maximumQuantity.String(),
+			MinimumNotional: rules.minimumNotional.String(),
+		},
+		ValidUntil: rules.validUntil,
+	}, nil
 }
