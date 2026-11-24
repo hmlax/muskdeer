@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 
+	pb "gitlab.com/himalaya/lukla-go/pb"
+
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
 
-// SubmitQuote sends a maker order once, without a local intent or receipt.
+// SubmitQuote sends an ordinary GTC limit quote once, without a local journal.
 func (c *Client) SubmitQuote(ctx context.Context, request gateway.QuoteRequest) (*gateway.SubmitResult, error) {
 	if c == nil || c.sdk == nil || ctx == nil {
 		return nil, ErrInvalidSubmit
@@ -21,7 +23,7 @@ func (c *Client) SubmitQuote(ctx context.Context, request gateway.QuoteRequest) 
 		Price:    request.Price,
 		Quantity: request.Quantity,
 		Leverage: request.Leverage,
-	})
+	}, pb.OrderKind_ORDER_KIND_LIMIT)
 	if err != nil {
 		return nil, err
 	}

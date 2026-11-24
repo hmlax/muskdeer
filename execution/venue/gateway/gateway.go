@@ -47,7 +47,7 @@ type Scope struct {
 	Symbol string
 }
 
-// QuoteRequest is a direct maker command with no local persistence identity.
+// QuoteRequest is an ordinary GTC limit maker command without a local journal.
 type QuoteRequest struct {
 	Scope    Scope
 	ClientID string

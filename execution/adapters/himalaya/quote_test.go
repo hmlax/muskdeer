@@ -5,6 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	pb "gitlab.com/himalaya/lukla-go/pb"
+
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/execution/venue/gateway"
 )
@@ -36,6 +38,9 @@ func TestDirectMakerSDKUsesNoPersistenceIdentityOrGuard(t *testing.T) {
 	}
 	if server.received.ClientId != request.ClientID || server.received.Price != request.Price.String() {
 		t.Fatal("direct quote lost wire identity/decimal")
+	}
+	if server.received.OrderKind != pb.OrderKind_ORDER_KIND_LIMIT || server.received.TimeInForce != pb.TimeInForce_TIME_IN_FORCE_GTC {
+		t.Fatalf("direct maker SDK order kind/TIF = %v/%v, want LIMIT/GTC", server.received.OrderKind, server.received.TimeInForce)
 	}
 	if err := client.CancelQuote(t.Context(), gateway.CancelRequest{
 		Scope:   request.Scope,
@@ -83,6 +88,32 @@ func TestDirectCancellationBeforeDispatchIsDistinguishable(t *testing.T) {
 			defer server.mu.Unlock()
 			if server.cancelCalls != 0 {
 				t.Fatal("pre-dispatch failure reached SDK")
+			}
+		})
+	}
+}
+
+func TestDirectMakerLimitAppliesToBothSidesAndReplacementOrders(t *testing.T) {
+	t.Parallel()
+	for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
+		t.Run(string(side), func(t *testing.T) {
+			t.Parallel()
+			server := &sdkPeer{}
+			client := sdkClient(t, server, nil)
+			request := directOrder()
+			request.Side = side
+			for _, clientID := range []string{"maker-first", "maker-replacement"} {
+				request.ClientID = clientID
+				if _, err := client.SubmitQuote(t.Context(), request); err != nil {
+					t.Fatalf("SubmitQuote(%s, %s) = %v", side, clientID, err)
+				}
+				if server.received.OrderKind != pb.OrderKind_ORDER_KIND_LIMIT || server.received.TimeInForce != pb.TimeInForce_TIME_IN_FORCE_GTC ||
+					server.received.ClientId != clientID || server.received.Quantity != request.Quantity.String() || server.received.Price != request.Price.String() {
+					t.Fatalf("SubmitQuote(%s, %s) wire = %v, want unchanged exact limit order with GTC", side, clientID, server.received)
+				}
+			}
+			if server.count() != 2 {
+				t.Fatalf("SDK sends = %d, want exactly two independent quotes", server.count())
 			}
 		})
 	}

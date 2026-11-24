@@ -149,10 +149,10 @@ func sdkInput(request SubmitRequest) (*pb.PlaceRequest, error) {
 	if request.IntentID <= 0 || !identityValid {
 		return nil, ErrInvalidSubmit
 	}
-	return sdkOrderInput(request)
+	return sdkOrderInput(request, pb.OrderKind_ORDER_KIND_POST_ONLY)
 }
 
-func sdkOrderInput(request SubmitRequest) (*pb.PlaceRequest, error) {
+func sdkOrderInput(request SubmitRequest, kind pb.OrderKind) (*pb.PlaceRequest, error) {
 	if request.UserID <= 0 || request.FundID <= 0 ||
 		!validSymbol(request.Symbol) || !validIdentity(request.ClientID) || request.Leverage == 0 || request.Leverage > 150 {
 		return nil, ErrInvalidSubmit
@@ -181,7 +181,7 @@ func sdkOrderInput(request SubmitRequest) (*pb.PlaceRequest, error) {
 		FundId:       request.FundID,
 		Symbol:       request.Symbol,
 		Side:         side,
-		OrderKind:    pb.OrderKind_ORDER_KIND_POST_ONLY,
+		OrderKind:    kind,
 		Price:        request.Price.String(),
 		Quantity:     request.Quantity.String(),
 		TimeInForce:  pb.TimeInForce_TIME_IN_FORCE_GTC,
