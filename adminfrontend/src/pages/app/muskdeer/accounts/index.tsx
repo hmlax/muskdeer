@@ -77,7 +77,7 @@ export default function Page() {
       ? <Button type="link" onClick={() => setEditing(row)}>{t('accountDetails')}</Button> : null },
   ];
   return <>
-    <ResourceTable<MuskdeerAccount> resource="accounts" columns={columns} search={{ defaultCollapsed: false }} fetch={muskdeerReaders.accounts} actionRef={actionRef}
+    <ResourceTable<MuskdeerAccount> resource="accounts" columns={columns} search={{ defaultCollapsed: false }} form={{ ignoreRules: false }} fetch={muskdeerReaders.accounts} actionRef={actionRef}
       toolbar={hasAccessByCodes(['muskdeer:account:create']) ? [<Button key="create" type="primary" onClick={() => setAdding(true)}>{t('addAccount')}</Button>] : []} />
     {editing && <AccountParametersForm current={editing} onClose={() => setEditing(undefined)} onSaved={() => void actionRef.current?.reload()} />}
     {adding && <AccountForm onClose={() => setAdding(false)} onSaved={() => void actionRef.current?.reload()} />}

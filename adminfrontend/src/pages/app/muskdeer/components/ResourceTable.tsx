@@ -18,8 +18,9 @@ type Props<T extends object> = {
  actionRef?: React.RefObject<ActionType | null>;
  notice?: string;
  search?: ProTableProps<T, ListQuery>['search'];
+ form?: ProTableProps<T, ListQuery>['form'];
 };
-export default function ResourceTable<T extends object>({ resource, rowKey = 'id', columns, fetch, toolbar, actionRef, notice, search }: Props<T>) {
+export default function ResourceTable<T extends object>({ resource, rowKey = 'id', columns, fetch, toolbar, actionRef, notice, search, form }: Props<T>) {
  const localRef = useRef<ActionType>(null);
  const client = useQueryClient();
  const scope = useMuskdeerScope();
@@ -27,7 +28,7 @@ export default function ResourceTable<T extends object>({ resource, rowKey = 'id
  return <ContentContainer heightMode="fixed" padding="16px" bottomMargin={0}>
   {notice && <Alert type="info" title={notice} style={{ marginBottom: 12 }} />}
   <ListTable<T> rowKey={rowKey} actionRef={actionRef ?? localRef} headerTitle={t(resource)} columns={columns}
-   search={search}
+   search={search} form={form}
    scroll={{ x: 'max-content' }} pagination={{ defaultPageSize: 20, pageSizeOptions: [20, 50, 100, 200], showSizeChanger: true }}
    toolBarRender={() => toolbar ?? []}
    request={async (params) => {
