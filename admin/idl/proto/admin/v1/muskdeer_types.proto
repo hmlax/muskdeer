@@ -4,6 +4,13 @@ option go_package = "github.com/hmlax/muskdeer/admin/biz/model/admin/v1;adminpb"
 
 message MuskdeerOverviewRequest { }
 message MuskdeerListRequest { uint32 page = 2; uint32 page_size = 3; string search = 4; string account_id = 5; }
+// User ID stays decimal text to preserve the full int64 identifier in browsers.
+message MuskdeerAccountListRequest {
+ uint32 page = 2; uint32 page_size = 3; string search = 4;
+ string account_id = 5; string user_id = 6;
+ // Absent means all accounts; false explicitly selects disabled accounts.
+ optional bool enabled = 7;
+}
 message MuskdeerInstanceListRequest {
  uint32 page = 2; uint32 page_size = 3; string search = 4;
  string strategy_type = 5; string account_id = 6;

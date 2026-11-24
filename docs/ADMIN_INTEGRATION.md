@@ -1,5 +1,7 @@
 # 同仓库管理后台
 
+2026-11-24：商户做市管理的交易账户查询支持用户ID精确筛选和启用状态筛选（全部/已启用/已停用），可与原品种搜索组合。用户ID以规范正整数文本传递，保留完整int64数字；enabled省略与false明确区分。HTTP和operator使用独立的MuskdeerAccountListRequest。operator先确定商户账户范围，再读取全部可访问的Console账户页进行筛选、计数和分页；只保存所需输出页，不截断到当前页或固定账户数。核心Console协议不变，升级仅需operator/admin/商户前端，不需重启四核心或迁移业务表。
+
 2026-11-23：商户交易账户列表提供“修改参数”，独立权限muskdeer:account:update；PUT /admin/v1/muskdeer/accounts/:id通过独立强类型HTTP、operator及Console请求传递expected_updated_at_ms和三项参数。保存后新报价/委托立即使用当前额度和杠杆，已有仓位不自动调整；账户有持仓或挂单时拒绝改杠杆，降低总额度受当前撮合敞口约束。并发/过期更新明确拒绝；网络结果未确认时应刷新核对，写请求不自动重试。实例详情同时显示当前账户杠杆及原保存时快照，实例编辑不再独立改变当前账户杠杆。
 
 按用户 2026-11-20 要求，参考 Bullfrog 的顶层后台服务/前端及共享库布局，Muskdeer 保持一个 Go module、Go 1.27.3。来源为 hmlax/admin 的 codex/muskdeer-console 分支 022e626fe；框架 MIT 许可证保存在 deer/management/LICENSE。来源提交仅记录溯源，构建不需要另一份 admin 或 Bullfrog 工作区。

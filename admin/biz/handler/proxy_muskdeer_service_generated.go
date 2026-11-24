@@ -131,8 +131,8 @@ func (s *MuskdeerServiceProxy) ListAccountBindings(ctx context.Context, in *v11.
 	}
 	return toAPIMuskdeerBindingPage(reply), nil
 }
-func (s *MuskdeerServiceProxy) ListAccounts(ctx context.Context, in *v11.MuskdeerListRequest) (*v11.MuskdeerAccountPage, error) {
-	request := toRPCMuskdeerListRequest(in)
+func (s *MuskdeerServiceProxy) ListAccounts(ctx context.Context, in *v11.MuskdeerAccountListRequest) (*v11.MuskdeerAccountPage, error) {
+	request := toRPCMuskdeerAccountListRequest(in)
 	if err := transport.ValidateRequest(request); err != nil {
 		return nil, err
 	}

@@ -66,7 +66,7 @@ func (s *MuskdeerServiceAdapter) StopInstance(ctx context.Context, in *v1.Muskde
 func (s *MuskdeerServiceAdapter) ListInstruments(ctx context.Context, in *v1.MuskdeerListRequest) (*v1.MuskdeerInstrumentPage, error) {
 	return s.inner.ListInstruments(ctx, in)
 }
-func (s *MuskdeerServiceAdapter) ListAccounts(ctx context.Context, in *v1.MuskdeerListRequest) (*v1.MuskdeerAccountPage, error) {
+func (s *MuskdeerServiceAdapter) ListAccounts(ctx context.Context, in *v1.MuskdeerAccountListRequest) (*v1.MuskdeerAccountPage, error) {
 	return s.inner.ListAccounts(ctx, in)
 }
 func (s *MuskdeerServiceAdapter) ListOrderRecords(ctx context.Context, in *v1.MuskdeerRecordListRequest) (*v1.MuskdeerOrderPage, error) {

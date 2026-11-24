@@ -99,7 +99,7 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 		UserId:   42,
 		TenantId: &tenantID,
 	})
-	accounts, err := service.ListAccounts(ctx, &pb.MuskdeerListRequest{AccountId: "foreign/account"})
+	accounts, err := service.ListAccounts(ctx, &pb.MuskdeerAccountListRequest{AccountId: "foreign/account"})
 	require.NoError(t, err)
 	require.Equal(t, []string{"venue/7/7"}, client.actor.AllowedAccountIds)
 	require.Equal(t, uint64(7), client.actor.TenantId)
@@ -160,11 +160,11 @@ func TestMuskdeerFacadeDerivesScopeAndFixesStartStopIntent(t *testing.T) {
 	}})
 	require.Error(t, err)
 	require.Equal(t, calls, client.calls, "merchant cannot reach core platform binding verification")
-	_, err = service.ListAccounts(t.Context(), &pb.MuskdeerListRequest{})
+	_, err = service.ListAccounts(t.Context(), &pb.MuskdeerAccountListRequest{})
 	require.Error(t, err)
 	require.Equal(t, calls, client.calls)
 	// Identity/scope fields cannot be supplied in browser or gateway request DTOs.
-	for _, request := range []proto.Message{&pb.MuskdeerListRequest{}, &pb.MuskdeerCreateInstanceRequest{}, &pb.MuskdeerRunningRequest{}, &pb.MuskdeerEnableAccountRequest{}, &pb.MuskdeerDisableAccountRequest{}} {
+	for _, request := range []proto.Message{&pb.MuskdeerAccountListRequest{}, &pb.MuskdeerListRequest{}, &pb.MuskdeerCreateInstanceRequest{}, &pb.MuskdeerRunningRequest{}, &pb.MuskdeerEnableAccountRequest{}, &pb.MuskdeerDisableAccountRequest{}} {
 		fields := request.ProtoReflect().Descriptor().Fields()
 		require.Nil(t, fields.ByName("actor"))
 		require.Nil(t, fields.ByName("allowed_account_ids"))

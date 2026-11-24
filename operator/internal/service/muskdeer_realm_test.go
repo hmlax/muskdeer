@@ -56,7 +56,10 @@ func TestMuskdeerPlatformCannotReachMerchantBusinessEvenWithGlobalAdminPermissio
 		},
 		{
 			name: "accounts",
-			call: func(ctx context.Context) error { _, err := s.ListAccounts(ctx, &pb.MuskdeerListRequest{}); return err },
+			call: func(ctx context.Context) error {
+				_, err := s.ListAccounts(ctx, &pb.MuskdeerAccountListRequest{})
+				return err
+			},
 		},
 		{
 			name: "create-account",

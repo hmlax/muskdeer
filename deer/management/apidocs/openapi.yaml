@@ -2494,6 +2494,15 @@ paths:
                   in: query
                   schema:
                     type: string
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+                - name: enabled
+                  in: query
+                  description: Absent means all accounts; false explicitly selects disabled accounts.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK

@@ -10,6 +10,7 @@ import AccountForm from '../components/AccountForm';
 import AccountParametersForm from '../components/AccountParametersForm';
 import { formatTimestampMs } from '../components/timestamp';
 import { formatNotional } from '../components/notional';
+import { validTradingID } from '../components/account-options';
 
 export default function Page() {
   const { t } = useTranslation('muskdeer');
@@ -25,7 +26,20 @@ export default function Page() {
     { title: t('search'), dataIndex: 'search', hideInTable: true },
     { title: t('accountId'), dataIndex: 'accountId', hideInSearch: true, width: 160 },
     { title: t('symbol'), dataIndex: 'symbol', hideInSearch: true, width: 160 },
-    { title: t('userId'), dataIndex: 'userId', hideInSearch: true, width: 160 },
+    {
+      title: t('userId'), dataIndex: 'userId', width: 160,
+      formItemProps: { rules: [{ validator: (_rule, value) => value === undefined || value === '' || validTradingID(value)
+        ? Promise.resolve() : Promise.reject(new Error(t('tradingIDRequired'))) }] },
+    },
+    {
+      title: t('accountStatus'), dataIndex: 'enabledFilter', hideInTable: true, valueType: 'select',
+      fieldProps: { options: [
+        { label: t('allStatuses'), value: '' },
+        { label: t('accountEnabledStatus'), value: 'true' },
+        { label: t('accountDisabledStatus'), value: 'false' },
+      ] },
+      search: { transform: (value) => value === 'true' || value === 'false' ? { enabled: value === 'true' } : {} },
+    },
     { title: t('fundId'), dataIndex: 'fundId', hideInSearch: true, width: 160 },
     { title: t('enabled'), dataIndex: 'enabled', hideInSearch: true, width: 100, render: (_, row) => <Switch checked={!!row.enabled}
       aria-label={t(row.enabled ? 'disableAccountFor' : 'enableAccountFor', { symbol: row.symbol })}
@@ -63,7 +77,7 @@ export default function Page() {
       ? <Button type="link" onClick={() => setEditing(row)}>{t('accountDetails')}</Button> : null },
   ];
   return <>
-    <ResourceTable<MuskdeerAccount> resource="accounts" columns={columns} fetch={muskdeerReaders.accounts} actionRef={actionRef}
+    <ResourceTable<MuskdeerAccount> resource="accounts" columns={columns} search={{ defaultCollapsed: false }} fetch={muskdeerReaders.accounts} actionRef={actionRef}
       toolbar={hasAccessByCodes(['muskdeer:account:create']) ? [<Button key="create" type="primary" onClick={() => setAdding(true)}>{t('addAccount')}</Button>] : []} />
     {editing && <AccountParametersForm current={editing} onClose={() => setEditing(undefined)} onSaved={() => void actionRef.current?.reload()} />}
     {adding && <AccountForm onClose={() => setAdding(false)} onSaved={() => void actionRef.current?.reload()} />}

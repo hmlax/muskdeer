@@ -67,7 +67,7 @@ type MuskdeerServiceClient interface {
 	StartInstance(ctx context.Context, in *MuskdeerRunningRequest, opts ...grpc.CallOption) (*MuskdeerInstance, error)
 	StopInstance(ctx context.Context, in *MuskdeerRunningRequest, opts ...grpc.CallOption) (*MuskdeerInstance, error)
 	ListInstruments(ctx context.Context, in *MuskdeerListRequest, opts ...grpc.CallOption) (*MuskdeerInstrumentPage, error)
-	ListAccounts(ctx context.Context, in *MuskdeerListRequest, opts ...grpc.CallOption) (*MuskdeerAccountPage, error)
+	ListAccounts(ctx context.Context, in *MuskdeerAccountListRequest, opts ...grpc.CallOption) (*MuskdeerAccountPage, error)
 	ListOrderRecords(ctx context.Context, in *MuskdeerRecordListRequest, opts ...grpc.CallOption) (*MuskdeerOrderPage, error)
 	ListCancellations(ctx context.Context, in *MuskdeerRecordListRequest, opts ...grpc.CallOption) (*MuskdeerCancellationPage, error)
 	ListSyntheticRecords(ctx context.Context, in *MuskdeerRecordListRequest, opts ...grpc.CallOption) (*MuskdeerSyntheticPage, error)
@@ -263,7 +263,7 @@ func (c *muskdeerServiceClient) ListInstruments(ctx context.Context, in *Muskdee
 	return out, nil
 }
 
-func (c *muskdeerServiceClient) ListAccounts(ctx context.Context, in *MuskdeerListRequest, opts ...grpc.CallOption) (*MuskdeerAccountPage, error) {
+func (c *muskdeerServiceClient) ListAccounts(ctx context.Context, in *MuskdeerAccountListRequest, opts ...grpc.CallOption) (*MuskdeerAccountPage, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MuskdeerAccountPage)
 	err := c.cc.Invoke(ctx, MuskdeerService_ListAccounts_FullMethodName, in, out, cOpts...)
@@ -345,7 +345,7 @@ type MuskdeerServiceServer interface {
 	StartInstance(context.Context, *MuskdeerRunningRequest) (*MuskdeerInstance, error)
 	StopInstance(context.Context, *MuskdeerRunningRequest) (*MuskdeerInstance, error)
 	ListInstruments(context.Context, *MuskdeerListRequest) (*MuskdeerInstrumentPage, error)
-	ListAccounts(context.Context, *MuskdeerListRequest) (*MuskdeerAccountPage, error)
+	ListAccounts(context.Context, *MuskdeerAccountListRequest) (*MuskdeerAccountPage, error)
 	ListOrderRecords(context.Context, *MuskdeerRecordListRequest) (*MuskdeerOrderPage, error)
 	ListCancellations(context.Context, *MuskdeerRecordListRequest) (*MuskdeerCancellationPage, error)
 	ListSyntheticRecords(context.Context, *MuskdeerRecordListRequest) (*MuskdeerSyntheticPage, error)
@@ -415,7 +415,7 @@ func (UnimplementedMuskdeerServiceServer) StopInstance(context.Context, *Muskdee
 func (UnimplementedMuskdeerServiceServer) ListInstruments(context.Context, *MuskdeerListRequest) (*MuskdeerInstrumentPage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListInstruments not implemented")
 }
-func (UnimplementedMuskdeerServiceServer) ListAccounts(context.Context, *MuskdeerListRequest) (*MuskdeerAccountPage, error) {
+func (UnimplementedMuskdeerServiceServer) ListAccounts(context.Context, *MuskdeerAccountListRequest) (*MuskdeerAccountPage, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListAccounts not implemented")
 }
 func (UnimplementedMuskdeerServiceServer) ListOrderRecords(context.Context, *MuskdeerRecordListRequest) (*MuskdeerOrderPage, error) {
@@ -779,7 +779,7 @@ func _MuskdeerService_ListInstruments_Handler(srv interface{}, ctx context.Conte
 }
 
 func _MuskdeerService_ListAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MuskdeerListRequest)
+	in := new(MuskdeerAccountListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -791,7 +791,7 @@ func _MuskdeerService_ListAccounts_Handler(srv interface{}, ctx context.Context,
 		FullMethod: MuskdeerService_ListAccounts_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MuskdeerServiceServer).ListAccounts(ctx, req.(*MuskdeerListRequest))
+		return srv.(MuskdeerServiceServer).ListAccounts(ctx, req.(*MuskdeerAccountListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

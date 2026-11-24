@@ -3156,6 +3156,17 @@ export type MuskdeerListRequest = {
   search?: string;
 };
 
+// User ID stays decimal text to preserve the full int64 identifier in browsers.
+export type MuskdeerAccountListRequest = {
+  accountId?: string;
+  // Absent means all accounts; false explicitly selects disabled accounts.
+  enabled?: boolean;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  userId?: string;
+};
+
 export type MuskdeerInstanceListRequest = {
   accountId?: string;
   desiredRunning?: boolean;
@@ -3633,7 +3644,7 @@ export interface MuskdeerService {
     request: MuskdeerListRequest,
   ): Promise<MuskdeerInstrumentPage>;
   ListAccounts(
-    request: MuskdeerListRequest,
+    request: MuskdeerAccountListRequest,
   ): Promise<MuskdeerAccountPage>;
   ListOrderRecords(
     request: MuskdeerRecordListRequest,
@@ -3877,6 +3888,8 @@ export function createMuskdeerServiceClient(
         ['pageSize', request.pageSize],
         ['search', request.search],
         ['accountId', request.accountId],
+        ['userId', request.userId],
+        ['enabled', request.enabled],
       ]);
       let uri = path;
       if (queryParams.length > 0) {

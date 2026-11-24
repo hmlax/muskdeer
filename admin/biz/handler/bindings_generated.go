@@ -2294,7 +2294,7 @@ func BindMuskdeerServiceListAccounts(service v1.MuskdeerServiceHTTPServer) trans
 		Operation: v1.OperationMuskdeerServiceListAccounts,
 		Stream:    false,
 		Handler: func(ctx context.Context, c *app.RequestContext) {
-			in := new(v1.MuskdeerListRequest)
+			in := new(v1.MuskdeerAccountListRequest)
 			if err := transport.BindRequest(c, in, ""); err != nil {
 				transport.FailRequest(c, err)
 				return

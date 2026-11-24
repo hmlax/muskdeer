@@ -21,7 +21,7 @@ service MuskdeerService {
  rpc StartInstance(MuskdeerRunningRequest) returns (MuskdeerInstance);
  rpc StopInstance(MuskdeerRunningRequest) returns (MuskdeerInstance);
  rpc ListInstruments(MuskdeerListRequest) returns (MuskdeerInstrumentPage);
- rpc ListAccounts(MuskdeerListRequest) returns (MuskdeerAccountPage);
+ rpc ListAccounts(MuskdeerAccountListRequest) returns (MuskdeerAccountPage);
  rpc ListOrderRecords(MuskdeerRecordListRequest) returns (MuskdeerOrderPage);
  rpc ListCancellations(MuskdeerRecordListRequest) returns (MuskdeerCancellationPage);
  rpc ListSyntheticRecords(MuskdeerRecordListRequest) returns (MuskdeerSyntheticPage);
@@ -31,6 +31,13 @@ service MuskdeerService {
 
 message MuskdeerOverviewRequest { }
 message MuskdeerListRequest { uint32 page = 2; uint32 page_size = 3; string search = 4; string account_id = 5; }
+// User ID stays decimal text to preserve the full int64 identifier in browsers.
+message MuskdeerAccountListRequest {
+ uint32 page = 2; uint32 page_size = 3; string search = 4;
+ string account_id = 5; string user_id = 6;
+ // Absent means all accounts; false explicitly selects disabled accounts.
+ optional bool enabled = 7;
+}
 message MuskdeerInstanceListRequest {
  uint32 page = 2; uint32 page_size = 3; string search = 4;
  string strategy_type = 5; string account_id = 6;

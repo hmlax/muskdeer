@@ -42,7 +42,7 @@ type MuskdeerServiceHTTPServer interface {
 	GetInstance(context.Context, *MuskdeerInstanceRequest) (*MuskdeerInstance, error)
 	GetOverview(context.Context, *MuskdeerOverviewRequest) (*MuskdeerOverview, error)
 	ListAccountBindings(context.Context, *MuskdeerBindingListRequest) (*MuskdeerBindingPage, error)
-	ListAccounts(context.Context, *MuskdeerListRequest) (*MuskdeerAccountPage, error)
+	ListAccounts(context.Context, *MuskdeerAccountListRequest) (*MuskdeerAccountPage, error)
 	ListCancellations(context.Context, *MuskdeerRecordListRequest) (*MuskdeerCancellationPage, error)
 	ListGateways(context.Context, *MuskdeerOverviewRequest) (*MuskdeerGatewayPage, error)
 	ListInstances(context.Context, *MuskdeerInstanceListRequest) (*MuskdeerInstancePage, error)

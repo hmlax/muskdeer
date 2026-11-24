@@ -8,7 +8,7 @@ import ListTable from '@/components/common/ListTable';
 import ContentContainer from '@/layouts/components/PageContainer/ContentContainer';
 import { useMuskdeerScope } from '@/api/hooks/muskdeer';
 
-export type ListQuery = { page?: number; pageSize?: number; search?: string; symbol?: string; accountId?: string; state?: string; runId?: string; strategyType?: string; desiredRunning?: boolean; instanceId?: number; tenantId?: number };
+export type ListQuery = { page?: number; pageSize?: number; search?: string; symbol?: string; accountId?: string; userId?: string; enabled?: boolean; state?: string; runId?: string; strategyType?: string; desiredRunning?: boolean; instanceId?: number; tenantId?: number };
 type Props<T extends object> = {
  resource: string;
  rowKey?: string;

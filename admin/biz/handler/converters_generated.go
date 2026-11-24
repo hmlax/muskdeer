@@ -2582,15 +2582,20 @@ func toAPIMuskdeerBindingPage(in *v11.MuskdeerBindingPage) *v1.MuskdeerBindingPa
 	out.Total = in.Total
 	return out
 }
-func toRPCMuskdeerListRequest(in *v1.MuskdeerListRequest) *v11.MuskdeerListRequest {
+func toRPCMuskdeerAccountListRequest(in *v1.MuskdeerAccountListRequest) *v11.MuskdeerAccountListRequest {
 	if in == nil {
 		return nil
 	}
-	out := new(v11.MuskdeerListRequest)
+	out := new(v11.MuskdeerAccountListRequest)
 	out.Page = in.Page
 	out.PageSize = in.PageSize
 	out.Search = in.Search
 	out.AccountId = in.AccountId
+	out.UserId = in.UserId
+	if in.Enabled != nil {
+		value := *in.Enabled
+		out.Enabled = &value
+	}
 	return out
 }
 func toAPIMuskdeerAccountPage(in *v11.MuskdeerAccountPage) *v1.MuskdeerAccountPage {
@@ -2677,6 +2682,17 @@ func toAPIMuskdeerInstancePage(in *v11.MuskdeerInstancePage) *v1.MuskdeerInstanc
 		}
 	}
 	out.Total = in.Total
+	return out
+}
+func toRPCMuskdeerListRequest(in *v1.MuskdeerListRequest) *v11.MuskdeerListRequest {
+	if in == nil {
+		return nil
+	}
+	out := new(v11.MuskdeerListRequest)
+	out.Page = in.Page
+	out.PageSize = in.PageSize
+	out.Search = in.Search
+	out.AccountId = in.AccountId
 	return out
 }
 func toAPIMuskdeerInstrumentPage(in *v11.MuskdeerInstrumentPage) *v1.MuskdeerInstrumentPage {

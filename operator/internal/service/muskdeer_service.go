@@ -200,23 +200,6 @@ func (s *MuskdeerService) ListInstruments(ctx context.Context, in *pb.MuskdeerLi
 	}
 	return fromCoreInstrumentPage(result), nil
 }
-func (s *MuskdeerService) ListAccounts(ctx context.Context, in *pb.MuskdeerListRequest) (*pb.MuskdeerAccountPage, error) {
-	actor, err := s.actor(ctx, true)
-	if err != nil {
-		return nil, err
-	}
-	result, err := s.client.ListAccounts(ctx, &core.ListRequest{
-		Actor:     actor,
-		Page:      in.GetPage(),
-		PageSize:  in.GetPageSize(),
-		Search:    in.GetSearch(),
-		AccountId: in.GetAccountId(),
-	})
-	if err != nil {
-		return nil, s.failure(ctx, err)
-	}
-	return fromCoreAccountPage(result), nil
-}
 func (s *MuskdeerService) ListInstances(ctx context.Context, in *pb.MuskdeerInstanceListRequest) (*pb.MuskdeerInstancePage, error) {
 	actor, err := s.actor(ctx, true)
 	if err != nil {

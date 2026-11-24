@@ -71,7 +71,7 @@ service MuskdeerService {
  rpc ListInstruments(MuskdeerListRequest) returns (MuskdeerInstrumentPage) {
   option (api.get) = "/admin/v1/muskdeer/instruments";
  }
- rpc ListAccounts(MuskdeerListRequest) returns (MuskdeerAccountPage) {
+ rpc ListAccounts(MuskdeerAccountListRequest) returns (MuskdeerAccountPage) {
   option (api.get) = "/admin/v1/muskdeer/accounts";
  }
  rpc ListOrderRecords(MuskdeerRecordListRequest) returns (MuskdeerOrderPage) {
