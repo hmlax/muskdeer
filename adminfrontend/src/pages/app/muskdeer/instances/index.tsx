@@ -28,10 +28,10 @@ export default function Instances() {
   const cancel = useMuskdeerWrite(cancelMuskdeerOrders);
   const allowed = (action: string) => hasAccessByCodes([`muskdeer:instance:${action}`, "sys:tenant_manager"]);
   const busy = confirming !== undefined || start.isPending || stop.isPending || cancel.isPending;
-  const act = (row: MuskdeerInstance, kind: 'start' | 'stop' | 'cancel') => {
+  const act = async (row: MuskdeerInstance, kind: 'start' | 'stop' | 'cancel') => {
     if (busy) return;
     setConfirming(row.id);
-    modal.confirm({
+    await modal.confirm({
       afterClose: () => setConfirming(undefined),
       title: t(kind === 'start' ? 'confirmStart' : kind === 'stop' ? 'confirmStop' : 'confirmCancel'),
       onOk: async () => {
@@ -119,14 +119,14 @@ export default function Instances() {
     { title: t('marketDataSource'), dataIndex: 'marketDataSource', hideInSearch: true, width: 120 },
     { title: t('revision'), dataIndex: 'revision', hideInSearch: true, width: 90 },
     { title: t('controlVersion'), dataIndex: 'controlVersion', hideInSearch: true, width: 90 },
-    { title: t('desiredRunning'), hideInSearch: true, width: 110, render: (_, row) => <Tooltip title={!row.desiredRunning && !row.accountEnabled ? t('enableAccountBeforeStart') : !row.desiredRunning && row.restartRequired ? t('restartRequired') : undefined}>
+    { title: t('runtime'), hideInSearch: true, width: 150, render: (_, row) => <Tooltip title={row.runtimes?.map((v) => `${v.service}: ${v.available ? v.revision : '—'}`).join(' · ')}><Tag color={row.restartRequired ? 'orange' : 'green'}>{t(row.restartRequired ? 'restartRequired' : 'loaded')}</Tag></Tooltip> },
+    { title: t('desiredRunning'), key: 'running', hideInSearch: true, fixed: 'right', width: 110, render: (_, row) => <Tooltip title={!row.desiredRunning && !row.accountEnabled ? t('enableAccountBeforeStart') : !row.desiredRunning && row.restartRequired ? t('restartRequired') : undefined}>
       <span><Switch checked={!!row.desiredRunning} checkedChildren={t('started')} unCheckedChildren={t('stopped')}
         aria-label={t(row.desiredRunning ? 'stopInstanceFor' : 'startInstanceFor', { instance: row.instanceKey })}
         loading={(start.isPending && start.variables?.id === row.id) || (stop.isPending && stop.variables?.id === row.id)}
         disabled={busy || (row.desiredRunning ? !allowed('stop') : !allowed('start') || !row.accountEnabled || row.restartRequired)}
         onChange={(running) => act(row, running ? 'start' : 'stop')} /></span>
     </Tooltip> },
-    { title: t('runtime'), hideInSearch: true, width: 150, render: (_, row) => <Tooltip title={row.runtimes?.map((v) => `${v.service}: ${v.available ? v.revision : '—'}`).join(' · ')}><Tag color={row.restartRequired ? 'orange' : 'green'}>{t(row.restartRequired ? 'restartRequired' : 'loaded')}</Tag></Tooltip> },
     { title: t('actions'), valueType: 'option', width: 260, fixed: 'right', render: (_, row) => <Space wrap>
       {allowed('view') && <Button type="link" disabled={viewing !== undefined} loading={viewing === row.id} onClick={() => void openDetails(row)}>{t('instanceDetails')}</Button>}
       {allowed('view') && row.strategyType === 'market_maker' && <Button type="link" onClick={() => setChecking(row)}>{t('checkMaker')}</Button>}

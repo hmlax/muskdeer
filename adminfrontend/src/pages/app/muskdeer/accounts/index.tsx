@@ -32,9 +32,9 @@ export default function Page() {
       checkedChildren={t('yes')} unCheckedChildren={t('no')}
       loading={toggle.isPending && toggle.variables?.id === row.id}
       disabled={confirming !== undefined || toggle.isPending || !hasAccessByCodes([row.enabled ? 'muskdeer:account:disable' : 'muskdeer:account:enable', 'sys:tenant_manager'])}
-      onChange={(enabled) => {
+      onChange={async (enabled) => {
         setConfirming(row.id);
-        modal.confirm({
+        await modal.confirm({
           title: t(enabled ? 'enableAccount' : 'disableAccount'),
           content: t(enabled ? 'confirmEnableAccount' : 'confirmDisableAccount', { symbol: row.symbol }),
           afterClose: () => setConfirming(undefined),
