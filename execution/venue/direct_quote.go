@@ -77,11 +77,13 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 	// Keep a process-wide budget for optional full-safe size refreshes. A
 	// burst of quantity changes must not occupy every transport/SDK owner
 	// while another fund needs a replacement at its new best price.
+	finishAdmission := traceQuoteAdmission(ctx, r.quoteSlots, quoteOperationPlace)
 	if !urgent && r.quoteRefreshSlots != nil {
 		select {
 		case r.quoteRefreshSlots <- struct{}{}:
 			defer func() { <-r.quoteRefreshSlots }()
 		default:
+			finishAdmission(errQuoteRefreshBusy)
 			return errQuoteRefreshBusy
 		}
 	}
@@ -90,17 +92,20 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 			select {
 			case r.quoteSlots <- struct{}{}:
 			case <-admit.Done():
+				finishAdmission(admit.Err())
 				return admit.Err()
 			}
 		} else {
 			select {
 			case r.quoteSlots <- struct{}{}:
 			default:
+				finishAdmission(errQuoteRefreshBusy)
 				return errQuoteRefreshBusy
 			}
 		}
 		defer func() { <-r.quoteSlots }()
 	}
+	finishAdmission(nil)
 	if err := r.checkDirectQuoteConfig(ctx, cycle.profile); err != nil {
 		return err
 	}

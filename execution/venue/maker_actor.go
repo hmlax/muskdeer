@@ -90,15 +90,29 @@ func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenuePro
 	}
 	defer leave()
 	if plan == nil {
-		return quoteFailed(quoteStepProtection, r.protect(ctx, profile))
+		return quoteFailed(quoteStepProtection, r.protectMakerIntent(ctx, profile))
 	}
-	_, reconcileErr := r.reconcile(ctx, profile, plan)
+	work, span := tracing.StartChild(ctx, "execution.quote.reconcile")
+	_, reconcileErr := r.reconcile(work, profile, plan)
+	span.SetAttributes(attribute.String("quote.step", quoteFailureStep(reconcileErr)), attribute.String("quote.reason", safeReason(reconcileErr)))
+	tracing.RecordError(work, reconcileErr)
+	span.End()
 	if reconcileErr == nil || ctx.Err() != nil {
 		return reconcileErr
 	}
 	// Failed replacement must still run risk reduction under the same writer
 	// and deadline. No source, account or configuration guard is bypassed.
-	return errors.Join(reconcileErr, quoteFailed(quoteStepProtection, r.protect(ctx, profile)))
+	return errors.Join(reconcileErr, quoteFailed(quoteStepProtection, r.protectMakerIntent(ctx, profile)))
+}
+
+func (r *Runtime) protectMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy) (err error) {
+	work, span := tracing.StartChild(ctx, "execution.quote.protection")
+	defer func() {
+		span.SetAttributes(attribute.String("quote.reason", safeReason(err)))
+		tracing.RecordError(work, err)
+		span.End()
+	}()
+	return r.protect(work, profile)
 }
 
 func (r *Runtime) newerMakerIntent(previous *pb.QuotePlan) *pb.QuotePlan {

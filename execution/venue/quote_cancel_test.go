@@ -8,6 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -155,5 +160,62 @@ func TestMakerCancellationWaitConsumesSharedTransportDeadline(t *testing.T) {
 	err := runtime.sendQuoteCancellation(ctx, domain.LeaseToken{}, &common.VenueProfilePolicy{}, &common.VenueOrder{OrderId: "1"})
 	if !errors.Is(err, context.DeadlineExceeded) || client.calls.Load() != 0 || len(runtime.quoteSlots) != 1 {
 		t.Fatalf("wait error=%v calls=%d slots=%d", err, client.calls.Load(), len(runtime.quoteSlots))
+	}
+}
+
+func TestQuoteAdmissionTraceSeparatesQueueFromSDKAndPreservesCancellation(t *testing.T) {
+	for _, blocked := range []bool{false, true} {
+		t.Run(strconv.FormatBool(blocked), func(t *testing.T) {
+			exporter := tracetest.NewInMemoryExporter()
+			provider := sdktrace.NewTracerProvider(sdktrace.WithSyncer(exporter))
+			t.Cleanup(func() {
+				if err := provider.Shutdown(context.Background()); err != nil {
+					t.Error(err)
+				}
+			})
+			ctx, root := provider.Tracer("test").Start(t.Context(), "execution.quote")
+			defer root.End()
+			ctx, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+			defer cancel()
+			client := &heldCancelClient{
+				started: make(chan uint64, 1),
+				release: make(chan struct{}),
+			}
+			runtime := &Runtime{
+				cfg: &venueconfig.RuntimeConfig{
+					InstanceID: 1,
+					Template:   domain.StrategyTemplateMarketMaker,
+				},
+				client:     &atomic.Pointer[gatewaySession]{},
+				quoteSlots: make(chan struct{}, 1),
+			}
+			runtime.client.Store(&gatewaySession{Client: client})
+			if blocked {
+				runtime.quoteSlots <- struct{}{}
+			} else {
+				close(client.release)
+			}
+			err := runtime.sendQuoteCancellation(ctx, domain.LeaseToken{}, &common.VenueProfilePolicy{}, &common.VenueOrder{OrderId: "1"})
+			if blocked && (!errors.Is(err, context.DeadlineExceeded) || client.calls.Load() != 0 || len(runtime.quoteSlots) != 1) {
+				t.Fatalf("blocked admission err=%v calls=%d slots=%d", err, client.calls.Load(), len(runtime.quoteSlots))
+			}
+			if !blocked && (err != nil || client.calls.Load() != 1 || len(runtime.quoteSlots) != 0) {
+				t.Fatalf("admitted send err=%v calls=%d slots=%d", err, client.calls.Load(), len(runtime.quoteSlots))
+			}
+			spans := exporter.GetSpans()
+			if len(spans) != 1 || spans[0].Name != "execution.quote.admission" || spans[0].Parent.SpanID() != root.SpanContext().SpanID() {
+				t.Fatalf("admission not independently traced under its quote: %v", spans)
+			}
+			attrs := make(map[attribute.Key]attribute.Value)
+			for _, attr := range spans[0].Attributes {
+				attrs[attr.Key] = attr.Value
+			}
+			if attrs["quote.operation"].AsString() != "cancel" || attrs["quote.admission.capacity"].AsInt64() != 1 || attrs["quote.admission.admitted"].AsBool() == blocked || attrs["quote.admission.in_use"].AsInt64() != int64(len(runtime.quoteSlots)) {
+				t.Fatalf("incorrect admission observations: %v", attrs)
+			}
+			if blocked && (spans[0].Status.Code != codes.Error || attrs["quote.admission.wait_ms"].AsInt64() < 50 || attrs["quote.reason"].AsString() != "DEADLINE_EXCEEDED") {
+				t.Fatalf("queue timeout not visible: %v", spans[0])
+			}
+		})
 	}
 }

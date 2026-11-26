@@ -75,14 +75,17 @@ func (r *Runtime) sendQuoteCancellation(ctx context.Context, lease domain.LeaseT
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	finishAdmission := traceQuoteAdmission(ctx, r.quoteSlots, quoteOperationCancel)
 	if r.quoteSlots != nil {
 		select {
 		case r.quoteSlots <- struct{}{}:
 		case <-ctx.Done():
+			finishAdmission(ctx.Err())
 			return ctx.Err()
 		}
 		defer func() { <-r.quoteSlots }()
 	}
+	finishAdmission(nil)
 	if err := ctx.Err(); err != nil {
 		return err
 	}

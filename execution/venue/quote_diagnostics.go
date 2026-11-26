@@ -7,7 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
+	"github.com/hmlax/muskdeer/deer/tracing"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
 )
@@ -26,7 +29,31 @@ const (
 	reasonInvalidConfig       = "INVALID_CONFIG"
 	reasonNotDispatched       = "NOT_DISPATCHED"
 	reasonOutcomeUnknown      = "OUTCOME_UNKNOWN"
+	quoteOperationPlace       = "place"
+	quoteOperationCancel      = "cancel"
 )
+
+// Trace only the wait for the existing process-wide send budget. It ends before
+// configuration checks or SDK dispatch and never changes admission or deadlines.
+func traceQuoteAdmission(ctx context.Context, slots chan struct{}, operation string) func(error) {
+	work, span := tracing.StartChild(ctx, "execution.quote.admission")
+	if !span.IsRecording() {
+		return func(error) { span.End() }
+	}
+	started := time.Now()
+	span.SetAttributes(attribute.String("quote.operation", operation),
+		attribute.Int("quote.admission.in_use", len(slots)), attribute.Int("quote.admission.capacity", cap(slots)))
+	return func(err error) {
+		span.SetAttributes(attribute.Int64("quote.admission.wait_ms", time.Since(started).Milliseconds()),
+			attribute.Bool("quote.admission.admitted", err == nil), attribute.Int("quote.admission.in_use_after", len(slots)),
+			attribute.String("quote.reason", safeReason(err)))
+		if deadline, ok := ctx.Deadline(); ok {
+			span.SetAttributes(attribute.Int64("quote.operation_left_ms", time.Until(deadline).Milliseconds()))
+		}
+		tracing.RecordError(work, err)
+		span.End()
+	}
+}
 
 type quoteStepError struct {
 	step  string
