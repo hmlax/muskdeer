@@ -247,9 +247,51 @@ func TestQuoteTurnDoesNotStrandSDKCapacityDuringObservations(t *testing.T) {
 		t.Fatalf("admission context cancellation leaked into SDK parent: %v", err)
 	}
 	releaseWave()
-	if runtime.quoteBudget.active != 0 || runtime.quoteTurns.active != 1 {
-		t.Fatal("SDK capacity was retained during post-wave observation")
+	if runtime.quoteBudget.active != 0 || runtime.quoteTurns.active != 0 {
+		t.Fatal("SDK or preparation capacity was retained during post-wave observation")
 	}
+}
+
+func TestQuoteSDKWaitDoesNotHoldObservationAdmission(t *testing.T) {
+	runtime := &Runtime{
+		cfg:         &venueconfig.RuntimeConfig{OperationTimeout: time.Second},
+		quoteTurns:  newQuoteSendBudget(1),
+		quoteBudget: newQuoteSendBudget(1),
+	}
+	occupied, err := runtime.quoteBudget.acquire(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.release()
+	ctx, cancel := context.WithCancel(t.Context())
+	work, releaseTurn, err := runtime.admitMakerTurn(ctx)
+	if err != nil {
+		cancel()
+		t.Fatal(err)
+	}
+	defer releaseTurn()
+	done := make(chan error, 1)
+	go func() {
+		_, _, release, err := runtime.reserveQuoteWave(work, 1, quoteOperationPlace, time.Now().Add(time.Second))
+		if release != nil {
+			release()
+		}
+		done <- err
+	}()
+	defer func() {
+		cancel()
+		if err := <-done; !errors.Is(err, context.Canceled) {
+			t.Errorf("blocked SDK wave result=%v", err)
+		}
+	}()
+	waitQuoteOwners(t, runtime.quoteBudget, 1)
+	next, stop := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer stop()
+	_, releaseNext, err := runtime.admitMakerTurn(next)
+	if err != nil {
+		t.Fatalf("an SDK wait blocked the next fund's fresh observation: %v", err)
+	}
+	releaseNext()
 }
 
 type delayedQuoteDeadline struct {

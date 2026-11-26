@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// The observation turns and SDK waves use separate FIFO budgets. A turn waits
-// before observing, but never holds send capacity while reading. An SDK wave
-// reserves one send and borrows spare capacity only without waiting peers.
+// Observation preparation and SDK waves use separate FIFO budgets. Preparation
+// ends before waiting for the first SDK wave, and never holds send capacity.
+// An SDK wave borrows spare capacity only without waiting peers.
 type quoteSendBudget struct {
 	mu      sync.Mutex
 	limit   int
@@ -175,6 +175,13 @@ func (r *Runtime) reserveQuoteSend(ctx context.Context) (context.Context, func()
 }
 
 func (r *Runtime) reserveQuoteWave(ctx context.Context, wanted int, operation string, until time.Time) (context.Context, int, func(), error) {
+	if wanted > 0 {
+		if permit := quoteTurnPermitFrom(ctx); permit != nil {
+			// The latest target and initial observations are ready. Do not
+			// block another fund's preparation during SDK waits or execution.
+			permit.release()
+		}
+	}
 	if r.quoteBudget == nil || quoteSendPermitFrom(ctx) != nil || wanted == 0 {
 		width, release := quoteWaveSize(ctx, wanted)
 		return ctx, width, release, nil
