@@ -61,7 +61,7 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 		work, span := r.factory.StartOperation(work, "execution.quote")
 		defer span.End()
 		span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
-		if permit := quoteSendPermitFrom(work); permit != nil {
+		if permit := quoteTurnPermitFrom(work); permit != nil {
 			span.SetAttributes(attribute.Int64("quote.owner.wait_ms", permit.waited.Milliseconds()))
 		}
 		if plan == nil && hadTarget {
@@ -84,7 +84,7 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 }
 
 func (r *Runtime) admitMakerTurn(ctx context.Context) (context.Context, func(), error) {
-	if r.quoteBudget == nil {
+	if r.quoteTurns == nil {
 		return ctx, func() {}, nil
 	}
 	wait, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
@@ -100,7 +100,7 @@ func (r *Runtime) admitMakerTurn(ctx context.Context) (context.Context, func(), 
 			span.End()
 		}
 	}
-	permit, err := r.quoteBudget.acquire(wait)
+	permit, err := r.quoteTurns.acquire(wait)
 	finish(err)
 	if err != nil {
 		return ctx, nil, err
@@ -109,7 +109,7 @@ func (r *Runtime) admitMakerTurn(ctx context.Context) (context.Context, func(), 
 	// Load the latest pending plan and create its original work budget afterwards.
 	// Keep the lifecycle parent: cancelling the admission context must not cancel
 	// the fresh observation or the subsequently bounded SDK calls.
-	return withQuoteSendPermit(ctx, permit), permit.release, nil
+	return context.WithValue(ctx, quoteTurnPermitKey{}, permit), permit.release, nil
 }
 
 func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan) error {

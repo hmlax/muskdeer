@@ -135,7 +135,12 @@ func (r *Runtime) fillDirectQuoteDepth(ctx context.Context, cycle *quoteCycle) e
 }
 
 func (r *Runtime) sendQuoteWave(ctx context.Context, cycle *quoteCycle, requests []gateway.QuoteRequest) error {
-	width, release := quoteWaveSize(ctx, min(maximumQuoteWave, len(requests)))
+	until := time.UnixMilli(min(cycle.authority.Book.GetValidUntilMs(), cycle.snapshot.GetValidUntilMs())).Add(-minimumLiveSDKWindow - 50*time.Millisecond)
+	work, width, release, err := r.reserveQuoteWave(ctx, min(maximumQuoteWave, len(requests)), quoteOperationPlace, until)
+	if err != nil {
+		return err
+	}
+	ctx = work
 	defer release()
 	for cursor := 0; cursor < len(requests); cursor += width {
 		batch := requests[cursor:min(cursor+width, len(requests))]

@@ -36,7 +36,11 @@ const (
 // Trace only the wait for the existing process-wide send budget. It ends before
 // configuration checks or SDK dispatch and never changes admission or deadlines.
 func (r *Runtime) traceQuoteAdmission(ctx context.Context, operation string) func(error) {
-	work, span := tracing.StartChild(ctx, "execution.quote.admission")
+	return r.traceQuoteAdmissionStage(ctx, "execution.quote.admission", operation)
+}
+
+func (r *Runtime) traceQuoteAdmissionStage(ctx context.Context, name, operation string) func(error) {
+	work, span := tracing.StartChild(ctx, name)
 	if !span.IsRecording() {
 		return func(error) { span.End() }
 	}

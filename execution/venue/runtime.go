@@ -50,6 +50,7 @@ type Runtime struct {
 	gates              map[string]chan struct{}
 	quoteSlots         chan struct{}
 	quoteBudget        *quoteSendBudget
+	quoteTurns         *quoteSendBudget
 	quoteRefreshSlots  chan struct{}
 	quoteCancellations sync.Map
 	plans              map[string]*atomic.Int64

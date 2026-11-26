@@ -192,6 +192,67 @@ func TestMakerQuoteWavesShareTransportBound(t *testing.T) {
 	}
 }
 
+func TestConfiguredQuoteWaveReturnsSDKCapacityBeforeFurtherObservation(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
+	runtime.quoteTurns = newQuoteSendBudget(2)
+	runtime.quoteBudget = newQuoteSendBudget(2)
+	runtime.cfg.OperationTimeout = 2 * time.Second
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	work, releaseTurn, err := runtime.admitMakerTurn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseTurn()
+	done := make(chan error, 1)
+	go func() { done <- runtime.fillQuoteDepth(work, cycle) }()
+	for range 2 {
+		select {
+		case <-client.started:
+		case <-ctx.Done():
+			t.Fatal("ready configured wave failed to borrow idle SDK capacity")
+		}
+	}
+	close(client.release)
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	runtime.quoteBudget.mu.Lock()
+	active := runtime.quoteBudget.active
+	runtime.quoteBudget.mu.Unlock()
+	if active != 0 || cycle.result.Placed != 8 || client.maximum.Load() > 2 || client.calls.Load() != 8 {
+		t.Fatalf("wave retained SDK capacity or changed dispatch: held=%d placed=%d max=%d calls=%d", active, cycle.result.Placed, client.maximum.Load(), client.calls.Load())
+	}
+}
+
+func TestConfiguredQuoteWaveCannotWaitBeyondSourceAdmissionWindow(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 4)
+	runtime.quoteTurns = newQuoteSendBudget(1)
+	runtime.quoteBudget = newQuoteSendBudget(1)
+	runtime.cfg.OperationTimeout = 2 * time.Second
+	occupied, err := runtime.quoteBudget.acquire(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.release()
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	defer cancel()
+	work, releaseTurn, err := runtime.admitMakerTurn(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseTurn()
+	request, err := runtime.prepareDirectQuote(work, cycle, cycle.targets[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	cycle.authority.Book.ValidUntilMs = time.Now().Add(650 * time.Millisecond).UnixMilli()
+	err = runtime.sendQuoteWave(work, cycle, []gateway.QuoteRequest{request})
+	if !errors.Is(err, context.DeadlineExceeded) || client.calls.Load() != 0 {
+		t.Fatalf("queued configured wave used expired source: err=%v sends=%d", err, client.calls.Load())
+	}
+}
+
 func TestFullDepthRefreshDoesNotQueueAheadOfRefill(t *testing.T) {
 	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)

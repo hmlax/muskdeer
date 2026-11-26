@@ -222,6 +222,68 @@ func TestReservedQuoteWaveStopsUnsentSiblingsAfterAmbiguousFailure(t *testing.T)
 	}
 }
 
+func TestQuoteTurnDoesNotStrandSDKCapacityDuringObservations(t *testing.T) {
+	runtime := &Runtime{
+		cfg:         &venueconfig.RuntimeConfig{OperationTimeout: time.Second},
+		quoteTurns:  newQuoteSendBudget(1),
+		quoteBudget: newQuoteSendBudget(4),
+	}
+	work, releaseTurn, err := runtime.admitMakerTurn(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseTurn()
+	if quoteTurnPermitFrom(work) == nil || quoteSendPermitFrom(work) != nil || runtime.quoteBudget.active != 0 {
+		t.Fatal("account observation stranded SDK send capacity")
+	}
+	send, width, releaseWave, err := runtime.reserveQuoteWave(work, 4, quoteOperationPlace, time.Now().Add(time.Second))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if width != 4 || quoteSendPermitFrom(send) == nil || runtime.quoteBudget.active != 4 {
+		t.Fatal("idle SDK capacity was unavailable to a ready wave")
+	}
+	if err := send.Err(); err != nil {
+		t.Fatalf("admission context cancellation leaked into SDK parent: %v", err)
+	}
+	releaseWave()
+	if runtime.quoteBudget.active != 0 || runtime.quoteTurns.active != 1 {
+		t.Fatal("SDK capacity was retained during post-wave observation")
+	}
+}
+
+type delayedQuoteDeadline struct {
+	context.Context
+	deadline time.Time
+}
+
+func (c delayedQuoteDeadline) Deadline() (time.Time, bool) { return c.deadline, true }
+
+func TestQuoteBudgetRejectsExpiredDeadlineBeforeTimerDelivery(t *testing.T) {
+	budget := newQuoteSendBudget(1)
+	ctx := delayedQuoteDeadline{
+		Context:  t.Context(),
+		deadline: time.Now().Add(-time.Millisecond),
+	}
+	permit, err := budget.acquire(ctx)
+	if permit != nil || !errors.Is(err, context.DeadlineExceeded) || budget.active != 0 {
+		t.Fatalf("late timer admitted an expired request: permit=%v error=%v", permit, err)
+	}
+}
+
+func TestQuoteWaveWaitCannotUseExpiredObservation(t *testing.T) {
+	runtime := &Runtime{quoteBudget: newQuoteSendBudget(1)}
+	occupied, err := runtime.quoteBudget.acquire(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer occupied.release()
+	_, _, release, err := runtime.reserveQuoteWave(t.Context(), 4, quoteOperationPlace, time.Now().Add(30*time.Millisecond))
+	if !errors.Is(err, context.DeadlineExceeded) || release != nil || runtime.quoteBudget.active != 1 {
+		t.Fatalf("expired wave err=%v capacity=%d", err, runtime.quoteBudget.active)
+	}
+}
+
 func TestQuoteBudgetCancelledOwnerNeverConsumesReleasedCapacity(t *testing.T) {
 	for range 100 {
 		budget := newQuoteSendBudget(1)

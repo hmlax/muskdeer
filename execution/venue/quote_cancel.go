@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
@@ -57,7 +58,11 @@ func (r *Runtime) cancelOrders(ctx context.Context, lease domain.LeaseToken, pro
 // Selection already assumes every cancellation succeeds. Concurrency changes
 // neither that worst-case floor nor the requirement for visible replacements.
 func (r *Runtime) cancelQuoteWave(ctx context.Context, lease domain.LeaseToken, profile *common.VenueProfilePolicy, orders []*common.VenueOrder, result *pb.QuoteResult) error {
-	width, release := quoteWaveSize(ctx, min(maximumQuoteWave, len(orders)))
+	work, width, release, err := r.reserveQuoteWave(ctx, min(maximumQuoteWave, len(orders)), quoteOperationCancel, time.Time{})
+	if err != nil {
+		return err
+	}
+	ctx = work
 	defer release()
 	for cursor := 0; cursor < len(orders); cursor += width {
 		batch := orders[cursor:min(cursor+width, len(orders))]

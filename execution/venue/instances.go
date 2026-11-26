@@ -61,6 +61,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 	gates := make(map[string]chan struct{})
 	quoteSlots := make(chan struct{}, maximumConcurrentQuoteSends)
 	quoteBudget := newQuoteSendBudget(maximumConcurrentQuoteSends)
+	quoteTurns := newQuoteSendBudget(maximumConcurrentQuoteSends)
 	quoteRefreshSlots := make(chan struct{}, maximumOptionalQuoteSends)
 	for _, instance := range instances {
 		result.inventory = append(result.inventory, &commonv1.VenueInstanceRevision{
@@ -93,6 +94,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 			gates:             gates,
 			quoteSlots:        quoteSlots,
 			quoteBudget:       quoteBudget,
+			quoteTurns:        quoteTurns,
 			quoteRefreshSlots: quoteRefreshSlots,
 			plans:             map[string]*atomic.Int64{key: {}},
 			mailbox:           newQuoteMailbox(),

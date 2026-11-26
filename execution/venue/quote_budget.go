@@ -7,10 +7,9 @@ import (
 	"time"
 )
 
-// Each existing maker lifecycle can queue one declarative turn. Capacity is
-// granted FIFO before loading observations or starting the operation deadline.
-// A turn reserves one SDK send; spare capacity can widen its joined waves only
-// when no other owner is waiting. The process send bound remains unchanged.
+// The observation turns and SDK waves use separate FIFO budgets. A turn waits
+// before observing, but never holds send capacity while reading. An SDK wave
+// reserves one send and borrows spare capacity only without waiting peers.
 type quoteSendBudget struct {
 	mu      sync.Mutex
 	limit   int
@@ -31,6 +30,17 @@ type quoteSendPermit struct {
 }
 
 type quoteSendPermitKey struct{}
+type quoteTurnPermitKey struct{}
+
+func quoteBudgetContextError(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+		return context.DeadlineExceeded
+	}
+	return nil
+}
 
 func newQuoteSendBudget(limit int) *quoteSendBudget {
 	return &quoteSendBudget{limit: limit}
@@ -39,7 +49,7 @@ func newQuoteSendBudget(limit int) *quoteSendBudget {
 func (b *quoteSendBudget) acquire(ctx context.Context) (*quoteSendPermit, error) {
 	started := time.Now()
 	b.mu.Lock()
-	if err := ctx.Err(); err != nil {
+	if err := quoteBudgetContextError(ctx); err != nil {
 		b.mu.Unlock()
 		return nil, err
 	}
@@ -60,7 +70,7 @@ func (b *quoteSendBudget) acquire(ctx context.Context) (*quoteSendPermit, error)
 	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if err := ctx.Err(); err != nil {
+	if err := quoteBudgetContextError(ctx); err != nil {
 		if waiter.granted {
 			b.give(1)
 		} else {
@@ -88,7 +98,7 @@ func (b *quoteSendBudget) give(count int) {
 		waiter := b.waiting[0]
 		b.waiting[0] = nil
 		b.waiting = b.waiting[1:]
-		if waiter.ctx.Err() == nil {
+		if quoteBudgetContextError(waiter.ctx) == nil {
 			waiter.granted = true
 			b.active++
 		}
@@ -126,6 +136,11 @@ func quoteSendPermitFrom(ctx context.Context) *quoteSendPermit {
 	return permit
 }
 
+func quoteTurnPermitFrom(ctx context.Context) *quoteSendPermit {
+	permit, _ := ctx.Value(quoteTurnPermitKey{}).(*quoteSendPermit)
+	return permit
+}
+
 func quoteWaveSize(ctx context.Context, wanted int) (int, func()) {
 	permit := quoteSendPermitFrom(ctx)
 	if permit == nil || wanted == 0 {
@@ -157,4 +172,31 @@ func (r *Runtime) reserveQuoteSend(ctx context.Context) (context.Context, func()
 		return ctx, nil, err
 	}
 	return withQuoteSendPermit(ctx, permit), permit.release, nil
+}
+
+func (r *Runtime) reserveQuoteWave(ctx context.Context, wanted int, operation string, until time.Time) (context.Context, int, func(), error) {
+	if r.quoteBudget == nil || quoteSendPermitFrom(ctx) != nil || wanted == 0 {
+		width, release := quoteWaveSize(ctx, wanted)
+		return ctx, width, release, nil
+	}
+	queue := ctx
+	if !until.IsZero() {
+		var cancel context.CancelFunc
+		queue, cancel = context.WithDeadline(ctx, until)
+		defer cancel()
+	}
+	finish := r.traceQuoteAdmissionStage(queue, "execution.quote.wave.admission", operation)
+	reserved, release, err := r.reserveQuoteSend(queue)
+	finish(err)
+	if err != nil {
+		return ctx, 0, nil, err
+	}
+	// Acquisition used its shorter queue deadline. The SDK call keeps the
+	// original parent and rechecks its unchanged source/account send window.
+	work := withQuoteSendPermit(ctx, quoteSendPermitFrom(reserved))
+	width, releaseExtra := quoteWaveSize(work, wanted)
+	return work, width, func() {
+		releaseExtra()
+		release()
+	}, nil
 }
