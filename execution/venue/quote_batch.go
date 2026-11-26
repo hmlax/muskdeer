@@ -136,22 +136,21 @@ func (r *Runtime) fillDirectQuoteDepth(ctx context.Context, cycle *quoteCycle) e
 
 func (r *Runtime) sendQuoteWave(ctx context.Context, cycle *quoteCycle, requests []gateway.QuoteRequest) error {
 	until := time.UnixMilli(min(cycle.authority.Book.GetValidUntilMs(), cycle.snapshot.GetValidUntilMs())).Add(-minimumLiveSDKWindow - 50*time.Millisecond)
-	work, width, release, err := r.reserveQuoteWave(ctx, min(maximumQuoteWave, len(requests)), quoteOperationPlace, until)
-	if err != nil {
-		return err
-	}
-	ctx = work
-	defer release()
-	for cursor := 0; cursor < len(requests); cursor += width {
+	for cursor := 0; cursor < len(requests); {
+		work, width, release, err := r.reserveQuoteWave(ctx, min(maximumQuoteWave, len(requests)-cursor), quoteOperationPlace, until)
+		if err != nil {
+			return err
+		}
 		batch := requests[cursor:min(cursor+width, len(requests))]
 		results := make([]error, len(batch))
 		var group sync.WaitGroup
 		for index, request := range batch {
-			group.Go(func() { results[index] = r.sendDirectQuote(ctx, cycle, request) })
+			group.Go(func() { results[index] = r.sendDirectQuote(work, cycle, request) })
 		}
 		// Join every accepted sibling before releasing any capacity or writer.
 		// Never replay an ambiguous send or dispatch the remaining batch on failure.
 		group.Wait()
+		release()
 		var failures []error
 		for _, err := range results {
 			if err == nil {
@@ -167,6 +166,7 @@ func (r *Runtime) sendQuoteWave(ctx context.Context, cycle *quoteCycle, requests
 		if len(failures) > 0 {
 			return errors.Join(failures...)
 		}
+		cursor += width
 	}
 	return nil
 }

@@ -58,20 +58,19 @@ func (r *Runtime) cancelOrders(ctx context.Context, lease domain.LeaseToken, pro
 // Selection already assumes every cancellation succeeds. Concurrency changes
 // neither that worst-case floor nor the requirement for visible replacements.
 func (r *Runtime) cancelQuoteWave(ctx context.Context, lease domain.LeaseToken, profile *common.VenueProfilePolicy, orders []*common.VenueOrder, result *pb.QuoteResult) error {
-	work, width, release, err := r.reserveQuoteWave(ctx, min(maximumQuoteWave, len(orders)), quoteOperationCancel, time.Time{})
-	if err != nil {
-		return err
-	}
-	ctx = work
-	defer release()
-	for cursor := 0; cursor < len(orders); cursor += width {
+	for cursor := 0; cursor < len(orders); {
+		work, width, release, err := r.reserveQuoteWave(ctx, min(maximumQuoteWave, len(orders)-cursor), quoteOperationCancel, time.Time{})
+		if err != nil {
+			return err
+		}
 		batch := orders[cursor:min(cursor+width, len(orders))]
 		failures := make([]error, len(batch))
 		var group sync.WaitGroup
 		for index, order := range batch {
-			group.Go(func() { failures[index] = r.sendQuoteCancellation(ctx, lease, profile, order) })
+			group.Go(func() { failures[index] = r.sendQuoteCancellation(work, lease, profile, order) })
 		}
 		group.Wait()
+		release()
 		for _, err := range failures {
 			if err == nil {
 				result.Cancelled++
@@ -80,6 +79,7 @@ func (r *Runtime) cancelQuoteWave(ctx context.Context, lease domain.LeaseToken, 
 		if err := errors.Join(failures...); err != nil {
 			return err
 		}
+		cursor += width
 	}
 	return nil
 }

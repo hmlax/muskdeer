@@ -294,6 +294,61 @@ func TestQuoteSDKWaitDoesNotHoldObservationAdmission(t *testing.T) {
 	releaseNext()
 }
 
+func TestQuoteWaveReturnsCapacityToWaitingPeerAfterJoinedSubBatch(t *testing.T) {
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	client := &heldCancelClient{
+		started: make(chan uint64, 4),
+		release: make(chan struct{}),
+	}
+	runtime := &Runtime{
+		cfg: &venueconfig.RuntimeConfig{
+			InstanceID: 1,
+			Template:   domain.StrategyTemplateMarketMaker,
+		},
+		client:      &atomic.Pointer[gatewaySession]{},
+		quoteBudget: newQuoteSendBudget(1),
+	}
+	runtime.client.Store(&gatewaySession{Client: client})
+	done := make(chan error, 2)
+	var workers sync.WaitGroup
+	defer func() { cancel(); workers.Wait() }()
+	workers.Go(func() {
+		done <- runtime.cancelQuoteWave(ctx, domain.LeaseToken{}, &common.VenueProfilePolicy{},
+			[]*common.VenueOrder{{OrderId: "1"}, {OrderId: "2"}, {OrderId: "3"}}, &pb.QuoteResult{})
+	})
+	select {
+	case id := <-client.started:
+		if id != 1 {
+			t.Fatal("unexpected first SDK request")
+		}
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	workers.Go(func() {
+		done <- runtime.cancelQuoteWave(ctx, domain.LeaseToken{}, &common.VenueProfilePolicy{},
+			[]*common.VenueOrder{{OrderId: "99"}}, &pb.QuoteResult{})
+	})
+	waitQuoteOwners(t, runtime.quoteBudget, 1)
+	close(client.release)
+	select {
+	case id := <-client.started:
+		if id != 99 {
+			t.Fatalf("completed SDK sub-batch retained capacity ahead of waiting peer: next=%d", id)
+		}
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	for range 2 {
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	}
+	workers.Wait()
+	if client.calls.Load() != 4 || client.maximum.Load() != 1 || client.active.Load() != 0 || runtime.quoteBudget.active != 0 {
+		t.Fatal("fair SDK batches leaked capacity, duplicated requests or exceeded the bound")
+	}
+}
+
 type delayedQuoteDeadline struct {
 	context.Context
 	deadline time.Time

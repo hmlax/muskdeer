@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -250,6 +251,48 @@ func TestConfiguredQuoteWaveCannotWaitBeyondSourceAdmissionWindow(t *testing.T) 
 	err = runtime.sendQuoteWave(work, cycle, []gateway.QuoteRequest{request})
 	if !errors.Is(err, context.DeadlineExceeded) || client.calls.Load() != 0 {
 		t.Fatalf("queued configured wave used expired source: err=%v sends=%d", err, client.calls.Load())
+	}
+}
+
+func TestConfiguredPlaceSubBatchYieldsToQueuedFund(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
+	runtime.quoteBudget = newQuoteSendBudget(1)
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
+	var workers sync.WaitGroup
+	defer func() { cancel(); workers.Wait() }()
+	done := make(chan error, 1)
+	workers.Go(func() { done <- runtime.fillQuoteDepth(ctx, cycle) })
+	select {
+	case <-client.started:
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	peerStarted, releasePeer := make(chan error, 1), make(chan struct{})
+	workers.Go(func() {
+		permit, err := runtime.quoteBudget.acquire(ctx)
+		peerStarted <- err
+		if err != nil {
+			return
+		}
+		defer permit.release()
+		select {
+		case <-releasePeer:
+		case <-ctx.Done():
+		}
+	})
+	waitQuoteOwners(t, runtime.quoteBudget, 1)
+	close(client.release)
+	select {
+	case err := <-peerStarted:
+		if err != nil || client.calls.Load() != 1 {
+			t.Fatalf("place batch delayed queued fund until %d SDK calls: %v", client.calls.Load(), err)
+		}
+	case <-ctx.Done():
+		t.Fatal(ctx.Err())
+	}
+	close(releasePeer)
+	if err := <-done; err != nil || cycle.result.Placed != 8 || client.calls.Load() != 8 || client.maximum.Load() != 1 {
+		t.Fatalf("yield changed SDK dispatch: placed=%d calls=%d concurrent=%d error=%v", cycle.result.Placed, client.calls.Load(), client.maximum.Load(), err)
 	}
 }
 
