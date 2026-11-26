@@ -3,9 +3,12 @@ package nacos
 import (
 	"context"
 	"errors"
+	"io"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -14,11 +17,16 @@ var ErrNotPublished = errors.New("nacos instance is not published")
 
 // Stay below Nacos's 15-second unhealthy threshold. A failed attempt never
 // extends the deadline established by the last successful heartbeat.
-const heartbeatFreshness = 2 * maximumBeat
+const (
+	heartbeatFreshness   = 2 * maximumBeat
+	minimumRecoveryDelay = 250 * time.Millisecond
+	maximumRecoveryDelay = 5 * time.Second
+)
 
 // Publication owns one ephemeral registration and its heartbeat. Construct it
 // before startup, Start once after listeners/dependencies are ready, and Stop
-// before closing Client. Observe Failures to stop a service that loses discovery.
+// before closing Client. Transient outages expire readiness without terminating
+// the owner. Observe Failures for permanent registration or protocol failures.
 type Publication struct {
 	client      *Client
 	record      Registration
@@ -154,6 +162,8 @@ func (p *Publication) maintain(ctx context.Context) {
 	defer close(p.done)
 	timer := time.NewTimer(p.interval)
 	defer timer.Stop()
+	backoff := max(p.interval, minimumRecoveryDelay)
+	republish := false
 	for {
 		select {
 		case <-ctx.Done():
@@ -163,34 +173,80 @@ func (p *Publication) maintain(ctx context.Context) {
 		p.mu.Lock()
 		until := p.lastSuccess.Add(heartbeatFreshness)
 		p.mu.Unlock()
-		attempt, cancel := context.WithDeadline(ctx, until)
-		recommended, err := p.client.Beat(attempt, p.record)
-		cancel()
+		recommended, err := p.renew(ctx, republish, until)
 		p.mu.Lock()
 		if p.closed || ctx.Err() != nil {
 			p.mu.Unlock()
 			return
 		}
 		if err != nil {
-			if retryHeartbeat(err) && time.Now().Before(until) {
+			switch {
+			case !republish && missingHeartbeat(err) && !time.Now().Before(until):
+				// Long outages can expire an ephemeral record. Restore only
+				// this endpoint's original identity; a fresh missing record
+				// remains a terminal removal, as before.
+				p.registered = false
+				republish = true
+			case retryHeartbeat(err):
+				// A timed-out register can have succeeded remotely. Probe its
+				// original identity before deciding to publish again.
+				republish = false
+			default:
+				p.err = err
 				p.mu.Unlock()
-				timer.Reset(min(p.interval, time.Until(until)))
-				continue
+				p.failures <- err
+				return
 			}
-			p.err = err
 			p.mu.Unlock()
-			p.failures <- err
-			return
+			timer.Reset(publicationRetryDelay(backoff))
+			backoff = min(2*backoff, maximumRecoveryDelay)
+			continue
 		}
+		p.registered = true
 		p.lastSuccess = time.Now()
 		p.mu.Unlock()
+		republish = false
+		backoff = max(p.interval, minimumRecoveryDelay)
 		timer.Reset(min(p.interval, recommended))
 	}
 }
 
-// Only this publication owns heartbeat recovery. Authentication, a missing
-// registration and malformed protocol replies remain terminal; recovery never
-// issues a new registration or retries financial operations.
+func (p *Publication) renew(ctx context.Context, republish bool, until time.Time) (time.Duration, error) {
+	now := time.Now()
+	deadline := now.Add(p.client.cfg.CommandTimeout.AsDuration())
+	if now.Before(until) && until.Before(deadline) {
+		deadline = until
+	}
+	// Expired discovery cannot lend its old deadline to a future probe. Each
+	// attempt still has one bounded command budget under the lifecycle parent.
+	attempt, cancel := context.WithDeadline(ctx, deadline)
+	defer cancel()
+	recommended := p.interval
+	var err error
+	if republish {
+		err = p.client.Register(attempt, p.record)
+	} else {
+		recommended, err = p.client.Beat(attempt, p.record)
+	}
+	// A late timer or scheduling pause must not turn an expired receipt into
+	// a new freshness acknowledgement, even before Context.Err is delivered.
+	if actual, ok := attempt.Deadline(); err == nil && ok && !time.Now().Before(actual) {
+		err = context.DeadlineExceeded
+	}
+	return recommended, err
+}
+
+func publicationRetryDelay(backoff time.Duration) time.Duration {
+	return backoff - time.Duration(rand.Int64N(int64(backoff/4)+1))
+}
+
+func missingHeartbeat(err error) bool {
+	var failure *APIError
+	return errors.As(err, &failure) && failure.HTTPStatus == 0 && failure.Code == beatMissingCode
+}
+
+// Only this publication owns bounded heartbeat recovery. Authentication, fresh
+// removal and malformed replies remain terminal. No financial request is retried.
 func retryHeartbeat(err error) bool {
 	var failure *APIError
 	if errors.As(err, &failure) {
@@ -206,7 +262,8 @@ func retryHeartbeat(err error) bool {
 			return false
 		}
 	}
-	if errors.Is(err, context.DeadlineExceeded) {
+	if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.ECONNREFUSED) || errors.Is(err, syscall.EPIPE) {
 		return true
 	}
 	var network net.Error

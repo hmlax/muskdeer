@@ -13,15 +13,16 @@ import (
 )
 
 type publicationFixture struct {
-	registrations atomic.Int32
-	deletions     atomic.Int32
-	missing       atomic.Bool
-	reject        atomic.Bool
-	hold          atomic.Bool
-	beatTimeout   atomic.Bool
-	beatStatus    atomic.Int32
-	entered       chan struct{}
-	beats         chan struct{}
+	registrations   atomic.Int32
+	deletions       atomic.Int32
+	missing         atomic.Bool
+	reject          atomic.Bool
+	hold            atomic.Bool
+	beatTimeout     atomic.Bool
+	beatStatus      atomic.Int32
+	registerTimeout atomic.Bool
+	entered         chan struct{}
+	beats           chan struct{}
 }
 
 func TestPublicationStopsHeartbeatsAndDeregistersOnce(t *testing.T) {
@@ -187,11 +188,18 @@ func publicationClient(t *testing.T) (*Client, *publicationFixture) {
 				return
 			}
 			var metadata instanceMetadata
-			if err := json.Unmarshal([]byte(r.Form.Get("metadata")), &metadata); err != nil || metadata.ID != testRegistration().ID || metadata.Kind != "grpc" {
+			record := testRegistration()
+			if err := json.Unmarshal([]byte(r.Form.Get("metadata")), &metadata); err != nil || metadata.ID != record.ID || metadata.Kind != grpcKind || metadata.Version != record.Version ||
+				r.Form.Get("ip") != record.IP || r.Form.Get("port") != "8081" || r.Form.Get("namespaceId") != "unit-test" || r.Form.Get("groupName") != "MUSKDEER_TEST" || r.Form.Get("clusterName") != "TEST" {
 				t.Error("registration lost typed identity metadata")
 			}
 			if fixture.reject.Load() {
 				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			fixture.missing.Store(false)
+			if fixture.registerTimeout.Swap(false) {
+				<-r.Context().Done()
 				return
 			}
 			writeFixture(t, w, r, `{"code":0,"data":"ok"}`)

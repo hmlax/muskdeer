@@ -16,6 +16,7 @@ const (
 	instancePath    = "/nacos/v2/ns/instance"
 	beatPath        = "/nacos/v1/ns/instance/beat"
 	beatSuccessCode = 10200
+	beatMissingCode = 20404
 	grpcKind        = "grpc"
 	minimumBeat     = 50 * time.Millisecond
 	maximumBeat     = 5 * time.Second
