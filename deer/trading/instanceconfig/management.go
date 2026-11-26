@@ -113,7 +113,7 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		if err != nil {
 			return err
 		}
-		if _, err := instance.Settings(); err != nil {
+		if err := validateManagementSettings(instance, command.Operation); err != nil {
 			return err
 		}
 		if !direct && instance.Type == domain.StrategyTemplateWashTrade {
@@ -153,6 +153,17 @@ func manage(ctx context.Context, db *gorm.DB, command ManagementWrite, connectio
 		return nil
 	})
 	return result, err
+}
+
+func validateManagementSettings(instance *Instance, operation string) error {
+	// Stopping adds no exposure. A live policy reduction must not prevent
+	// stopping an otherwise valid bound instance whose old order size is now
+	// above that policy; create/update/start still require executable settings.
+	if operation == ManagementStop {
+		return nil
+	}
+	_, err := instance.Settings()
+	return err
 }
 
 func managementBudget(ctx context.Context, tx *gorm.DB, account, operation string) (*commonmodel.TradingAccountPolicy, error) {
