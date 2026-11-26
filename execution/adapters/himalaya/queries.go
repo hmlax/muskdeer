@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pb "gitlab.com/himalaya/lukla-go/pb"
+	"golang.org/x/sync/errgroup"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -69,12 +70,23 @@ func (c *Client) readSDK(ctx context.Context, scope Scope) (*SDKSnapshot, error)
 	op, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 	started := time.Now()
-	market, err := c.sdk.Raw().GetMarket(op, &pb.GetMarketRequest{Symbol: scope.Symbol})
-	if err != nil {
-		return nil, err
-	}
-	account, err := c.sdk.GetAccountForFund(op, scope.UserID, scope.FundID)
-	if err != nil {
+	var market *pb.GetMarketResponse
+	var account *pb.GetAccountResponse
+	// Instrument metadata and account balances have no ordering dependency.
+	// Exactly two joined read-only calls share the original observation deadline;
+	// failure cancels the other read and never starts an order/position query.
+	group, reads := errgroup.WithContext(op)
+	group.Go(func() error {
+		var err error
+		market, err = c.sdk.Raw().GetMarket(reads, &pb.GetMarketRequest{Symbol: scope.Symbol})
+		return err
+	})
+	group.Go(func() error {
+		var err error
+		account, err = c.sdk.GetAccountForFund(reads, scope.UserID, scope.FundID)
+		return err
+	})
+	if err := group.Wait(); err != nil {
 		return nil, err
 	}
 	// Read opening obligations before positions: a fill between these queries
