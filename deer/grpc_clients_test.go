@@ -154,7 +154,7 @@ func TestRPCFactoryRejectsInvalidLimitsWithoutIO(t *testing.T) {
 	}
 }
 
-func TestRPCFactoryFreshDiscoveryOwnerSelectionAndNoReplay(t *testing.T) {
+func TestRPCFactoryFailedBusinessResponseDoesNotReplay(t *testing.T) {
 	t.Parallel()
 	ca := testcert.New(t)
 	probe := &rpcFactoryProbe{}
@@ -179,21 +179,9 @@ func TestRPCFactoryFreshDiscoveryOwnerSelectionAndNoReplay(t *testing.T) {
 	if status.Code(err) != codes.Unavailable || probe.calls.Load() != 1 {
 		t.Fatalf("failed business RPC replayed: status=%v, calls=%d", err, probe.calls.Load())
 	}
-	discovery.mu.Lock()
-	discovery.instances[0].ID = "execution-b"
-	discovery.mu.Unlock()
-	_, err = client.Multiply(t.Context(), &probev1.MultiplyRequest{Price: "0.1"})
-	if status.Code(err) != codes.Unavailable || probe.calls.Load() != 1 {
-		t.Fatalf("missing owner fell back to another instance: %v, calls=%d", err, probe.calls.Load())
-	}
-	discovery.mu.Lock()
-	discovery.failure = errors.New("fixture discovery unavailable")
-	lookups := discovery.lookups
-	discovery.mu.Unlock()
-	_, err = client.Multiply(t.Context(), &probev1.MultiplyRequest{Price: "0.1"})
-	if err == nil || probe.calls.Load() != 1 || lookups != 2 {
-		t.Fatalf("lookup failure used a stale endpoint: %v, calls=%d, earlier lookups=%d", err, probe.calls.Load(), lookups)
-	}
+	// Membership changes and failure now publish asynchronously; the pool tests
+	// verify removal/failure at that boundary without invoking an obsolete owner.
+
 	if _, err := factory.Client(rpcclient.Target{Service: "market.grpc"}); err == nil {
 		t.Fatal("factory allowed an unconfigured service")
 	}

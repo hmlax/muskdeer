@@ -3,13 +3,9 @@ package rpcclient
 import (
 	"context"
 	"errors"
-	"net"
 
-	"github.com/hmlax/muskdeer/deer/tracing"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -37,6 +33,7 @@ func (f *Factory) Subscribe(ctx context.Context, target Target, consume func(con
 	f.wait.Add(1)
 	f.mu.Unlock()
 	defer func() {
+		result = contextualError(work, result)
 		cancel()
 		f.mu.Lock()
 		delete(f.active, id)
@@ -44,37 +41,13 @@ func (f *Factory) Subscribe(ctx context.Context, target Target, consume func(con
 		f.wait.Done()
 	}()
 	setup, end := context.WithTimeout(work, f.cfg.ConnectTimeout.AsDuration()+f.cfg.RequestTimeout.AsDuration())
-	instances, err := f.discovery.GetService(setup, target.Service)
+	conn, err := f.transport(setup, target)
+	if err == nil {
+		err = f.waitReady(setup, target, conn)
+	}
 	if err != nil {
 		end()
 		return err
-	}
-	instance, err := f.selectInstance(target, instances)
-	if err != nil {
-		end()
-		return err
-	}
-	dialer := &net.Dialer{Timeout: f.cfg.ConnectTimeout.AsDuration()}
-	conn, err := grpc.NewClient("passthrough:///"+instance.Address,
-		grpc.WithTransportCredentials(credentials.NewTLS(f.security[target.Service])),
-		grpc.WithNoProxy(), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(),
-		grpc.WithStatsHandler(tracing.ClientHandler(f.provider)),
-		grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
-			return dialer.DialContext(ctx, "tcp", address)
-		}),
-		grpc.WithDefaultCallOptions(grpc.MaxRetryRPCBufferSize(0), grpc.MaxCallSendMsgSize(int(f.cfg.MaxRequestBytes)), grpc.MaxCallRecvMsgSize(int(f.cfg.MaxResponseBytes))),
-	)
-	if err != nil {
-		end()
-		return err
-	}
-	defer func() { result = errors.Join(result, conn.Close()) }()
-	conn.Connect()
-	for state := conn.GetState(); state != connectivity.Ready; state = conn.GetState() {
-		if state == connectivity.Shutdown || !conn.WaitForStateChange(setup, state) {
-			end()
-			return status.Error(codes.Unavailable, missingProvider)
-		}
 	}
 	end()
 	return consume(work, &subscriptionConnection{

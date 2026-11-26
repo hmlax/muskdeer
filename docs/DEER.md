@@ -24,7 +24,7 @@ Ready/WaitReady 表示监听开始接受连接且尚未停止；CheckReady(ctx) 
 
 所有五个服务必须配置 gRPC。Deer 自动注册标准 `grpc.health.v1.Health/Check`、`List`、`Watch`；service 可为空或 `<name>.grpc`，Check 对未知名称返回 NotFound。Watch 有容量和调用期限限制。健康服务与业务共用认证监听，不绕过 mTLS。SERVING 是运行就绪信号，不能代替行情可靠、风险、租约或对账门禁。
 
-非 loopback gRPC 必须双向 TLS，校验受信 CA、有效证书和服务 DNS SAN 许可；只允许本地测试使用字面量 loopback 明文。gRPC 客户端通过 Nacos 每次发现指定服务/实例，不缓存过期 owner，不把 execution/market 请求改投 operator；非幂等下单不透明重试。方法级业务身份校验继续保留。
+非 loopback gRPC 必须双向 TLS，校验受信 CA、有效证书和服务 DNS SAN 许可；只允许本地测试使用字面量 loopback 明文。gRPC 客户端通过 Nacos 按服务合并刷新健康节点，复用同一服务/实例/版本/地址的长连接；节点移除或发现失败使旧通道退役，指定实例不回退其他 owner，不把 execution/market 请求改投 operator；断线重连不重放已发送的业务请求。方法级业务身份校验继续保留。
 
 Hertz 只保留公共 loopback 监控：`/livez`、`/readyz`、`/metrics`。它与 gRPC 同属 Deer/Kratos 的启动、停止、排空与失败回滚。没有管理 HTTP 封装或公开路由装配入口。监控响应有 deadline、请求 ID 和有界 probe 指标；metrics 抓取不统计自身。测试使用私有合成路由验证公共传输排空和请求关联，不构成可运行的 API 服务。
 
@@ -33,3 +33,9 @@ Hertz 只保留公共 loopback 监控：`/livez`、`/readyz`、`/metrics`。它�
 PostgreSQL 使用 GORM，所有数据操作显式 WithContext/Model，Proto 是持久化结构唯一来源；启动不 AutoMigrate。Redis 是辅助缓存。JetStream 负责可靠投递，业务去重、资金预留、outbox/inbox 事务和最终 fencing 继续由共享交易合同及事务仓储保证。持久 claim 类型、错误和 subject 在 deer/trading/outboxcontract，执行工作器在 execution/outbox。
 
 每个实例独立 JSON 日志及按大小轮转文件，日志/指标不含凭据、完整敏感请求或订单 ID 高基数标签。公共组件与服务归属见 [目录约定](PROJECT_LAYOUT.md)，生成与清理合同见 [Wire 装配](WIRING.md)。
+
+## RPC连接与发现生命周期（2026-11-26）
+
+Factory首次使用某服务时建立一个独立于请求取消的发现所有者，通常每秒刷新；断线通知合并并限频，最多4个发现请求同时运行，为Nacos其他生命周期操作保留空间。节点列表超过5秒未成功更新时拒绝新调用，发现失败或节点删除/地址与版本变化时退役相应通道。没有回退到过期列表，也不把路由缓存作为资金或执行所有权授权。
+
+通道按服务、实例ID、版本、地址复用，最多对应允许服务的当前有效节点集合，按需创建；空闲1分钟后由gRPC释放底层传输，节点退役则关闭通道。断线由gRPC按有界退避重连，当前已发送调用仍只发送一次；包中的invokeOnce及REFUSED_STREAM回归保持。Factory关闭停止新准入，取消发现、普通调用和订阅，关闭通道并等待所有者退出；发现客户端由外层随后关闭。只读订阅与unary共用通道，订阅不占unary准入位置。

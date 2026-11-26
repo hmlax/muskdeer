@@ -18,7 +18,7 @@ FindOrder 使用 typed oneof 的 intent_id/client_order_id，查询原核心身�
 
 P06.10增加客户端路由依据 `repository.NewExecutionRouting(...).ExecutionInstance`：每次按准确账户读取数据库当前未删除、正epoch且未过期的ExecutionShardLease，使用数据库时间；从经ownerid.Valid校验的incarnation解析完整实例名（支持名字中的点）。缺失、过期、退役或畸形owner返回ErrLeaseLost，不读取Nacos来推定所有者、不创建租约或缓存旧路由。它仅给出待选实例；所选执行端仍取得/验证自身租约并在最终效果重新fencing。
 
-P06.11的 `executiongrpc.NewStrategyClient` 借用Deer factory及上述路由，Submit/Cancel每次选择明确InstanceID；空owner拒绝。FindOrder/FindCancellation、订单分页及账户观察使用无状态读取端，每次由factory新鲜发现，不需要旧owner仍在线。客户端无重试循环；写RPC发出后的传输错误或回包校验失败均带ErrOutcomeUnknown及原始cause，公开错误只使用固定未知结果消息，不能当作“没有执行”。稳定意图client ID公式收敛到domain.IntentClientOrderID并与execution共用，历史SHA-256身份不变。查询不存在不授权换新键。
+P06.11的 `executiongrpc.NewStrategyClient` 借用Deer factory及上述路由，Submit/Cancel每次选择明确InstanceID；空owner拒绝。FindOrder/FindCancellation、订单分页及账户观察使用无状态读取端，由factory的有界刷新节点视图选择并复用认证连接，不需要旧owner仍在线。客户端无重试循环；写RPC发出后的传输错误或回包校验失败均带ErrOutcomeUnknown及原始cause，公开错误只使用固定未知结果消息，不能当作“没有执行”。稳定意图client ID公式收敛到domain.IntentClientOrderID并与execution共用，历史SHA-256身份不变。查询不存在不授权换新键。
 
 客户端先验证有界typed decimal，再转换为请求字符串，极端指数不进入String格式化；回包验证wrapper/枚举、准确账户/订单/原撤单键、价格数量、分页顺序/游标及资产唯一性。观察保留真实created_at、精确余额和不确定状态，不制造owner授权。资源与取消仍由Deer拥有的factory负责，客户端构造不发请求、不启动任务；策略持久动作和独立strategy循环继续后续P06。
 

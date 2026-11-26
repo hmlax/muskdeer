@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -16,8 +15,6 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/connectivity"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -27,7 +24,6 @@ import (
 	configv1 "github.com/hmlax/muskdeer/deer/pb/common/config/v1"
 	"github.com/hmlax/muskdeer/deer/requestid"
 	"github.com/hmlax/muskdeer/deer/rpcsecurity"
-	"github.com/hmlax/muskdeer/deer/tracing"
 	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/trace/noop"
 )
@@ -53,22 +49,27 @@ type Target struct {
 	InstanceID string
 }
 
-// Factory owns per-call connections and cancels/joins admitted work on Close.
-// It retains no caller context, endpoint cache, resolver watch or background loop.
+// Factory owns reusable authenticated channels and bounded discovery refreshes.
+// Close cancels and joins calls, subscriptions and refresh owners.
 type Factory struct {
-	cfg       *configv1.GRPCClients
-	provider  trace.TracerProvider
-	discovery Discovery
-	security  map[string]*tls.Config
-	slots     chan struct{}
-	closing   chan struct{}
-	next      atomic.Uint64
-	mu        sync.Mutex
-	active    map[uint64]context.CancelFunc
-	sequence  uint64
-	closed    bool
-	wait      sync.WaitGroup
-	once      sync.Once
+	cfg           *configv1.GRPCClients
+	provider      trace.TracerProvider
+	discovery     Discovery
+	security      map[string]*tls.Config
+	slots         chan struct{}
+	closing       chan struct{}
+	next          atomic.Uint64
+	mu            sync.Mutex
+	active        map[uint64]context.CancelFunc
+	sequence      uint64
+	closed        bool
+	wait          sync.WaitGroup
+	once          sync.Once
+	closeErr      error
+	retirementErr error
+	routes        map[string]*serviceRoute
+	connections   map[endpointKey]*pooledConnection
+	lookupSlots   chan struct{}
 }
 
 type connection struct {
@@ -113,13 +114,16 @@ func New(ctx context.Context, cfg *configv1.GRPCClients, service string, discove
 		provider = providers[0]
 	}
 	return &Factory{
-		cfg:       cfg,
-		provider:  provider,
-		discovery: discovery,
-		security:  security,
-		slots:     make(chan struct{}, cfg.MaxInflight),
-		closing:   make(chan struct{}),
-		active:    make(map[uint64]context.CancelFunc),
+		cfg:         cfg,
+		provider:    provider,
+		discovery:   discovery,
+		security:    security,
+		slots:       make(chan struct{}, cfg.MaxInflight),
+		closing:     make(chan struct{}),
+		active:      make(map[uint64]context.CancelFunc),
+		routes:      make(map[string]*serviceRoute),
+		connections: make(map[endpointKey]*pooledConnection),
+		lookupSlots: make(chan struct{}, min(maxDiscoveryInflight, len(security))),
 	}, nil
 }
 
@@ -138,7 +142,7 @@ func Validate(cfg *configv1.GRPCClients) error {
 }
 
 // Client returns a typed-client-compatible unary facade without network I/O.
-// Each Invoke discovers again; the facade never exposes an owned raw connection.
+// Invocations share current membership and channels; callers never own the transport.
 func (f *Factory) Client(target Target) (grpc.ClientConnInterface, error) {
 
 	if _, exists := f.security[target.Service]; !exists || !validInstanceID(target.InstanceID) {
@@ -162,17 +166,30 @@ func (f *Factory) Close() error {
 		f.mu.Lock()
 		f.closed = true
 		close(f.closing)
+		for _, route := range f.routes {
+			route.cancel()
+		}
 		for _, cancel := range f.active {
 			cancel()
 		}
+		connections := make([]*pooledConnection, 0, len(f.connections))
+		for _, connection := range f.connections {
+			connections = append(connections, connection)
+		}
+		clear(f.connections)
 		f.mu.Unlock()
+		for _, connection := range connections {
+			f.closeErr = errors.Join(f.closeErr, connection.close())
+		}
 		f.wait.Wait()
+		f.mu.Lock()
+		f.closeErr = errors.Join(f.closeErr, f.retirementErr)
+		f.mu.Unlock()
 	})
-	return nil
+	return f.closeErr
 }
 
-// Health checks local factory ownership. Remote providers are checked afresh by
-// Invoke, so readiness does not invent a persistent connection or cached route.
+// Health checks local ownership; bounded membership freshness is checked on use.
 func (f *Factory) Health() error {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -213,34 +230,12 @@ func (c *connection) Invoke(ctx context.Context, method string, request, reply a
 	if proto.Size(message) > int(f.cfg.MaxRequestBytes) {
 		return status.Error(codes.ResourceExhausted, "RPC request exceeds the configured size limit")
 	}
-	instances, err := f.discovery.GetService(bounded, c.target.Service)
-	if err != nil {
-		return fmt.Errorf("discover RPC target: %w", err)
-	}
-	instance, err := f.selectInstance(c.target, instances)
+	conn, err := f.transport(bounded, c.target)
 	if err != nil {
 		return err
 	}
-	dialer := &net.Dialer{Timeout: f.cfg.ConnectTimeout.AsDuration()}
-	conn, err := grpc.NewClient("passthrough:///"+instance.Address,
-		grpc.WithTransportCredentials(credentials.NewTLS(f.security[c.target.Service])),
-		grpc.WithNoProxy(), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(),
-		grpc.WithStatsHandler(tracing.ClientHandler(f.provider)),
-		grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
-			return dialer.DialContext(ctx, "tcp", address)
-		}),
-	)
-	if err != nil {
+	if err := f.waitReady(bounded, c.target, conn); err != nil {
 		return err
-	}
-	defer func() { result = errors.Join(result, conn.Close()) }()
-	connect, cancel := context.WithTimeout(bounded, f.cfg.ConnectTimeout.AsDuration())
-	defer cancel()
-	conn.Connect()
-	for state := conn.GetState(); state != connectivity.Ready; state = conn.GetState() {
-		if state == connectivity.Shutdown || !conn.WaitForStateChange(connect, state) {
-			return contextualError(connect, status.Error(codes.Unavailable, "RPC transport did not become ready"))
-		}
 	}
 	// Pin these after caller options; callers cannot raise payload caps.
 	options = append(options, grpc.MaxRetryRPCBufferSize(0),
@@ -285,23 +280,8 @@ func (f *Factory) selectInstance(target Target, instances []nacos.Instance) (nac
 	if len(instances) == 0 {
 		return nacos.Instance{}, status.Error(codes.Unavailable, missingProvider)
 	}
-	if len(instances) > 1024 {
-		return nacos.Instance{}, errors.New("discovery exceeded the provider limit")
-	}
-	identities := make(map[string]struct{}, len(instances))
-	for _, instance := range instances {
-		if instance.Service != target.Service {
-			return nacos.Instance{}, errors.New("discovery returned a different service")
-		}
-		host, port, err := net.SplitHostPort(instance.Address)
-		number, portErr := strconv.ParseUint(port, 10, 16)
-		if err != nil || net.ParseIP(host) == nil || portErr != nil || number == 0 {
-			return nacos.Instance{}, errors.New("discovery returned an invalid literal endpoint")
-		}
-		if _, duplicate := identities[instance.ID]; duplicate || instance.ID == "" || !validInstanceID(instance.ID) {
-			return nacos.Instance{}, errors.New("discovery returned an invalid or duplicate identity")
-		}
-		identities[instance.ID] = struct{}{}
+	if err := validateInstances(target.Service, instances); err != nil {
+		return nacos.Instance{}, err
 	}
 	if target.InstanceID != "" {
 		for _, instance := range instances {
@@ -312,6 +292,28 @@ func (f *Factory) selectInstance(target Target, instances []nacos.Instance) (nac
 		return nacos.Instance{}, status.Error(codes.Unavailable, missingProvider)
 	}
 	return instances[(f.next.Add(1)-1)%uint64(len(instances))], nil
+}
+
+func validateInstances(service string, instances []nacos.Instance) error {
+	if len(instances) > 1024 {
+		return errors.New("discovery exceeded the provider limit")
+	}
+	identities := make(map[string]struct{}, len(instances))
+	for _, instance := range instances {
+		if instance.Service != service {
+			return errors.New("discovery returned a different service")
+		}
+		host, port, err := net.SplitHostPort(instance.Address)
+		number, portErr := strconv.ParseUint(port, 10, 16)
+		if err != nil || net.ParseIP(host) == nil || portErr != nil || number == 0 {
+			return errors.New("discovery returned an invalid literal endpoint")
+		}
+		if _, duplicate := identities[instance.ID]; duplicate || instance.ID == "" || !validInstanceID(instance.ID) {
+			return errors.New("discovery returned an invalid or duplicate identity")
+		}
+		identities[instance.ID] = struct{}{}
+	}
+	return nil
 }
 
 func (f *Factory) begin(ctx context.Context) (context.Context, func(), error) {
