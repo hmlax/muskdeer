@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/shopspring/decimal"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/status"
 
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
@@ -169,7 +171,7 @@ func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePol
 	if !active {
 		return r.cancelManaged(ctx, profile)
 	}
-	_, snapshot, readErr := r.read(ctx, profile)
+	snapshot, readErr := r.protectionObservation(ctx, profile)
 	book, bookErr := r.book(ctx, profile.Symbol)
 	if bookErr != nil || readErr != nil {
 		return r.cancelManaged(ctx, profile)
@@ -179,6 +181,22 @@ func (r *Runtime) protect(ctx context.Context, profile *commonv1.VenueProfilePol
 		book:     book,
 		snapshot: snapshot,
 	})
+}
+
+func (r *Runtime) protectionObservation(ctx context.Context, profile *commonv1.VenueProfilePolicy) (*commonv1.VenueSnapshot, error) {
+	var snapshot *commonv1.VenueSnapshot
+	if r.directMaker() {
+		snapshot = cachedQuoteObservation(ctx, profile)
+	}
+	trace.SpanFromContext(ctx).SetAttributes(attribute.Bool("quote.snapshot.reused", snapshot != nil))
+	var readErr error
+	if snapshot == nil {
+		_, snapshot, readErr = r.read(ctx, profile)
+		if readErr == nil && r.directMaker() {
+			rememberQuoteObservation(ctx, snapshot)
+		}
+	}
+	return snapshot, readErr
 }
 
 func (r *Runtime) protectObserved(ctx context.Context, profile *commonv1.VenueProfilePolicy, observation quoteObservation) error {
@@ -240,13 +258,18 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProf
 	if err != nil {
 		return err
 	}
-	orders, err := r.client.Load().ReadOrders(ctx, Scope{
-		UserID: profile.UserId,
-		FundID: profile.FundId,
-		Symbol: profile.Symbol,
-	})
-	if err != nil {
-		return err
+	var orders []*commonv1.VenueOrder
+	if snapshot := cachedQuoteObservation(ctx, profile); r.directMaker() && snapshot != nil {
+		orders = snapshot.Orders
+	} else {
+		orders, err = r.client.Load().ReadOrders(ctx, Scope{
+			UserID: profile.UserId,
+			FundID: profile.FundId,
+			Symbol: profile.Symbol,
+		})
+		if err != nil {
+			return err
+		}
 	}
 	budget, err := r.store.Budget(ctx, lease.Key.AccountID)
 	if err != nil {
@@ -270,6 +293,9 @@ func (r *Runtime) cancelManaged(ctx context.Context, profile *commonv1.VenueProf
 		if err := r.cancelOne(ctx, lease, profile, order); err != nil {
 			return err
 		}
+	}
+	if r.directMaker() {
+		return nil // The next turn observes outcomes; no unused post-cancel read.
 	}
 	_, err = r.refresh(ctx, profile, lease, nil)
 	return err

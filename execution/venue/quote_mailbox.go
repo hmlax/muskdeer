@@ -2,6 +2,7 @@ package venue
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"time"
 
@@ -48,6 +49,10 @@ func quoteObservedAt(plan *pb.QuotePlan) int64 {
 // The existing lifecycle goroutine calls step synchronously. Cancellation joins
 // its in-flight SDK work; a wake never spawns a second financial writer.
 func (m *quoteMailbox) run(ctx context.Context, timeout time.Duration, step func(context.Context, *pb.QuotePlan) error) error {
+	return m.runAdmitted(ctx, timeout, nil, step)
+}
+
+func (m *quoteMailbox) runAdmitted(ctx context.Context, timeout time.Duration, admit func(context.Context) (context.Context, func(), error), step func(context.Context, *pb.QuotePlan) error) error {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for ctx.Err() == nil {
@@ -60,13 +65,30 @@ func (m *quoteMailbox) run(ctx context.Context, timeout time.Duration, step func
 		if err := ctx.Err(); err != nil {
 			return err
 		}
+		owner, release := ctx, func() {}
+		if admit != nil {
+			var err error
+			owner, release, err = admit(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return ctx.Err()
+				}
+				if errors.Is(err, context.DeadlineExceeded) {
+					continue // No observation, SDK payload or identity was queued.
+				}
+				return err
+			}
+		}
 		plan := m.pending.Load()
 		if plan.GetBook().GetValidUntilMs() <= time.Now().UnixMilli() {
 			plan = nil
 		}
-		work, cancel := context.WithTimeout(ctx, timeout)
-		err := step(work, plan)
-		cancel()
+		err := func() error {
+			defer release()
+			work, cancel := context.WithTimeout(owner, timeout)
+			defer cancel()
+			return step(work, plan)
+		}()
 		if err != nil {
 			return err
 		}

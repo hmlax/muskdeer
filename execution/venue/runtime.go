@@ -49,6 +49,7 @@ type Runtime struct {
 	closing            *atomic.Bool
 	gates              map[string]chan struct{}
 	quoteSlots         chan struct{}
+	quoteBudget        *quoteSendBudget
 	quoteRefreshSlots  chan struct{}
 	quoteCancellations sync.Map
 	plans              map[string]*atomic.Int64
@@ -462,6 +463,7 @@ func (r *Runtime) refresh(ctx context.Context, profile *commonv1.VenueProfilePol
 		return nil, err
 	}
 	if r.directMaker() {
+		rememberQuoteObservation(ctx, snapshot)
 		return snapshot, nil
 	}
 	if r.cfg.InstanceID > 0 {
@@ -594,7 +596,13 @@ func (r *Runtime) cancelOne(ctx context.Context, lease domain.LeaseToken, profil
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		err := client.CancelQuote(ctx, CancelRequest{
+		work, release, err := r.reserveQuoteSend(ctx)
+		if err != nil {
+			return err
+		}
+		defer release()
+		markQuoteObservationDirty(work)
+		err = client.CancelQuote(work, CancelRequest{
 			Scope: Scope{
 				UserID: profile.UserId,
 				FundID: profile.FundId,

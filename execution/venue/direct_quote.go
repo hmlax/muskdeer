@@ -77,7 +77,7 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 	// Keep a process-wide budget for optional full-safe size refreshes. A
 	// burst of quantity changes must not occupy every transport/SDK owner
 	// while another fund needs a replacement at its new best price.
-	finishAdmission := traceQuoteAdmission(ctx, r.quoteSlots, quoteOperationPlace)
+	finishAdmission := r.traceQuoteAdmission(ctx, quoteOperationPlace)
 	if !urgent && r.quoteRefreshSlots != nil {
 		select {
 		case r.quoteRefreshSlots <- struct{}{}:
@@ -87,7 +87,20 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 			return errQuoteRefreshBusy
 		}
 	}
-	if r.quoteSlots != nil {
+	if r.quoteBudget != nil {
+		if quoteSendPermitFrom(ctx) == nil {
+			permit, err := r.quoteBudget.acquire(admit)
+			if err != nil {
+				finishAdmission(err)
+				return err
+			}
+			defer permit.release()
+			ctx = withQuoteSendPermit(ctx, permit)
+		} else if _, _, err := r.reserveQuoteSend(ctx); err != nil {
+			finishAdmission(err)
+			return err
+		}
+	} else if r.quoteSlots != nil {
 		if urgent {
 			select {
 			case r.quoteSlots <- struct{}{}:
@@ -114,6 +127,7 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 	}
 	bounded, cancel := context.WithTimeout(ctx, min(time.Until(until), maximumOperationTimeout))
 	defer cancel()
+	markQuoteObservationDirty(bounded)
 	if _, err := client.SubmitQuote(bounded, request); err != nil {
 		return err
 	}

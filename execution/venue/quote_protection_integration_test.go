@@ -27,6 +27,19 @@ func assertCurrentQuoteContinuity(ctx context.Context, t *testing.T, setup *curr
 	profile.StrategyInstanceId = setup.instance.Id
 	profile.MaximumOrderNotional = "100"
 	runtime.cfg.Venue = &common.VenuePolicy{LeaseTtl: durationpb.New(10 * time.Second)}
+	// This legacy fixture invokes observations directly instead of running the
+	// lease-owning lifecycle. Re-establish its normal live-owner precondition;
+	// the source expiry and deliberate strategy-epoch loss assertions stay intact.
+	renewOwners := func() {
+		for _, token := range []*domain.LeaseToken{&setup.lease, &setup.strategyLease, &setup.sourceLease} {
+			renewed, err := runtime.leases.Renew(ctx, *token, 10*time.Second)
+			if err != nil {
+				t.Fatal(err)
+			}
+			*token = renewed
+		}
+	}
+	renewOwners()
 	if err := setup.db.WithContext(ctx).Model(&model.TradingAccountPolicy{}).Where("id = ?", setup.budget.Id).Update("maximum_notional", "10000").Error; err != nil {
 		t.Fatal(err)
 	}
@@ -69,6 +82,7 @@ func assertCurrentQuoteContinuity(ctx context.Context, t *testing.T, setup *curr
 	}
 	fresh := func() quoteObservation {
 		book.ValidUntilMs = time.Now().Add(native.BookAge).UnixMilli()
+		book.Publisher = native.Authority(setup.sourceLease)
 		snapshot := proto.CloneOf(client.snapshot)
 		snapshot.StartedAtMs = time.Now().UnixMilli()
 		snapshot.ObservedAtMs = snapshot.StartedAtMs
@@ -88,6 +102,8 @@ func assertCurrentQuoteContinuity(ctx context.Context, t *testing.T, setup *curr
 	if err := runtime.protectObserved(ctx, profile, fresh()); err != nil || client.cancellations.Load() != beforeUnsafe+1 {
 		t.Fatalf("protectObserved(one newly crossed quote) cancelled=%d err=%v, want only 1", client.cancellations.Load(), err)
 	}
+	renewOwners()
+	runtime.rememberQuotePlan(profile, &execution.QuotePlan{Strategy: native.Authority(setup.strategyLease)}, fresh().book)
 	if err := setup.db.WithContext(ctx).Model(&model.ExecutionShardLease{}).Where("account_id = ?", setup.strategyLease.Key.AccountID).UpdateColumn("epoch", setup.strategyLease.Epoch+1).Error; err != nil {
 		t.Fatal(err)
 	}

@@ -56,9 +56,9 @@ func (c *blockedQuoteClient) SubmitQuote(ctx context.Context, request gateway.Qu
 }
 
 func TestMakerDepthRefillDoesNotWaitForEachAcknowledgement(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	done := make(chan error, 1)
 	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
 	seen := make(map[string]bool)
@@ -92,9 +92,9 @@ func TestMakerDepthRefillDoesNotWaitForEachAcknowledgement(t *testing.T) {
 }
 
 func TestMakerQuoteWaveReservesAggregateBudgetBeforeSending(t *testing.T) {
+	runtime, cycle, client, setup := batchQuoteSetup(t.Context(), t, 4)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, setup := batchQuoteSetup(ctx, t, 4)
 	close(client.release)
 	if err := setup.db.WithContext(ctx).Model(&model.TradingAccountPolicy{}).Where("id = ?", setup.budget.Id).Update("maximum_notional", "130").Error; err != nil {
 		t.Fatal(err)
@@ -106,9 +106,9 @@ func TestMakerQuoteWaveReservesAggregateBudgetBeforeSending(t *testing.T) {
 }
 
 func TestMakerQuoteWaveJoinsCancelledSiblings(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 4)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 4)
 	done := make(chan error, 1)
 	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
 	for range 4 {
@@ -126,9 +126,9 @@ func TestMakerQuoteWaveJoinsCancelledSiblings(t *testing.T) {
 }
 
 func TestMakerQuoteWaveJoinsPartialFailureWithoutRetry(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	failed := errors.New("ambiguous SDK outcome")
 	client.firstError = failed
 	done := make(chan error, 1)
@@ -154,9 +154,9 @@ func TestMakerQuoteWaveJoinsPartialFailureWithoutRetry(t *testing.T) {
 }
 
 func TestMakerQuoteAdmissionCannotExtendSourceFreshness(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 4)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 4)
 	runtime.quoteSlots = make(chan struct{}, 1)
 	runtime.quoteSlots <- struct{}{} // Other funds already occupy transport capacity.
 	cycle.authority.Book.ValidUntilMs = time.Now().Add(650 * time.Millisecond).UnixMilli()
@@ -167,9 +167,9 @@ func TestMakerQuoteAdmissionCannotExtendSourceFreshness(t *testing.T) {
 }
 
 func TestMakerQuoteWavesShareTransportBound(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	runtime.quoteSlots = make(chan struct{}, 2)
 	done := make(chan error, 1)
 	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
@@ -193,9 +193,9 @@ func TestMakerQuoteWavesShareTransportBound(t *testing.T) {
 }
 
 func TestFullDepthRefreshDoesNotQueueAheadOfRefill(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	cycle.bridgeSlots = 1
 	for index, target := range cycle.targets {
 		cycle.snapshot.Orders = append(cycle.snapshot.Orders, &common.VenueOrder{
@@ -226,7 +226,10 @@ func TestFullDepthRefreshDoesNotQueueAheadOfRefill(t *testing.T) {
 
 func batchQuoteSetup(ctx context.Context, t *testing.T, count int) (*Runtime, *quoteCycle, *blockedQuoteClient, *currentStateTest) {
 	t.Helper()
-	setup := newCurrentStateTest(ctx, t)
+	// Database construction is fixture work, not part of the SDK wave deadline.
+	setupCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+	setup := newCurrentStateTest(setupCtx, t)
 	runtime := setup.runtime
 	runtime.quoteSlots = make(chan struct{}, maximumConcurrentQuoteSends)
 	runtime.cfg.Template = domain.StrategyTemplateMarketMaker

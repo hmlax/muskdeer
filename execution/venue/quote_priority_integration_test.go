@@ -29,9 +29,9 @@ func fullSafeRefresh(cycle *quoteCycle) {
 }
 
 func TestOptionalRefreshCannotUseReservedRefillConcurrency(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	fullSafeRefresh(cycle)
 	runtime.quoteRefreshSlots = make(chan struct{}, maximumOptionalQuoteSends)
 	for range maximumOptionalQuoteSends {
@@ -52,9 +52,9 @@ func TestOptionalRefreshCannotUseReservedRefillConcurrency(t *testing.T) {
 }
 
 func TestMissingDepthBypassesFullOptionalBudget(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	runtime.quoteRefreshSlots = make(chan struct{}, maximumOptionalQuoteSends)
 	for range maximumOptionalQuoteSends {
 		runtime.quoteRefreshSlots <- struct{}{}
@@ -69,9 +69,9 @@ func TestMissingDepthBypassesFullOptionalBudget(t *testing.T) {
 }
 
 func TestMissingBestPriceBypassesFullOptionalBudget(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	fullSafeRefresh(cycle)
 	cycle.snapshot.Orders[0].Price = "98.2"
 	if cycle.needsQuoteDepth() {
@@ -91,9 +91,9 @@ func TestMissingBestPriceBypassesFullOptionalBudget(t *testing.T) {
 }
 
 func TestCancelledOptionalSendsReturnBothBudgets(t *testing.T) {
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
-	runtime, cycle, client, _ := batchQuoteSetup(ctx, t, 8)
 	fullSafeRefresh(cycle)
 	runtime.quoteRefreshSlots = make(chan struct{}, 1)
 	done := make(chan error, 1)

@@ -135,25 +135,33 @@ func (r *Runtime) fillDirectQuoteDepth(ctx context.Context, cycle *quoteCycle) e
 }
 
 func (r *Runtime) sendQuoteWave(ctx context.Context, cycle *quoteCycle, requests []gateway.QuoteRequest) error {
-	results := make([]error, len(requests))
-	var group sync.WaitGroup
-	for index, request := range requests {
-		group.Go(func() { results[index] = r.sendDirectQuote(ctx, cycle, request) })
-	}
-	// A failure cannot release the fund writer while siblings still send. Never
-	// retry an ambiguous send; the next cycle starts from a new venue observation.
-	group.Wait()
-	var failures []error
-	for _, err := range results {
-		if err == nil {
-			cycle.result.Placed++
-			continue
+	width, release := quoteWaveSize(ctx, min(maximumQuoteWave, len(requests)))
+	defer release()
+	for cursor := 0; cursor < len(requests); cursor += width {
+		batch := requests[cursor:min(cursor+width, len(requests))]
+		results := make([]error, len(batch))
+		var group sync.WaitGroup
+		for index, request := range batch {
+			group.Go(func() { results[index] = r.sendDirectQuote(ctx, cycle, request) })
 		}
-		if errors.Is(err, errQuoteRefreshBusy) {
-			cycle.retained.pending = true
-			continue
+		// Join every accepted sibling before releasing any capacity or writer.
+		// Never replay an ambiguous send or dispatch the remaining batch on failure.
+		group.Wait()
+		var failures []error
+		for _, err := range results {
+			if err == nil {
+				cycle.result.Placed++
+				continue
+			}
+			if errors.Is(err, errQuoteRefreshBusy) {
+				cycle.retained.pending = true
+				continue
+			}
+			failures = append(failures, err)
 		}
-		failures = append(failures, err)
+		if len(failures) > 0 {
+			return errors.Join(failures...)
+		}
 	}
-	return errors.Join(failures...)
+	return nil
 }

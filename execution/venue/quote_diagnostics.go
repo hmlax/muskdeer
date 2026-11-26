@@ -35,17 +35,28 @@ const (
 
 // Trace only the wait for the existing process-wide send budget. It ends before
 // configuration checks or SDK dispatch and never changes admission or deadlines.
-func traceQuoteAdmission(ctx context.Context, slots chan struct{}, operation string) func(error) {
+func (r *Runtime) traceQuoteAdmission(ctx context.Context, operation string) func(error) {
 	work, span := tracing.StartChild(ctx, "execution.quote.admission")
 	if !span.IsRecording() {
 		return func(error) { span.End() }
 	}
 	started := time.Now()
+	usage := func() (int, int) {
+		if r.quoteBudget == nil {
+			return len(r.quoteSlots), cap(r.quoteSlots)
+		}
+		r.quoteBudget.mu.Lock()
+		defer r.quoteBudget.mu.Unlock()
+		return r.quoteBudget.active, r.quoteBudget.limit
+	}
+	active, capacity := usage()
 	span.SetAttributes(attribute.String("quote.operation", operation),
-		attribute.Int("quote.admission.in_use", len(slots)), attribute.Int("quote.admission.capacity", cap(slots)))
+		attribute.Int("quote.admission.in_use", active), attribute.Int("quote.admission.capacity", capacity),
+		attribute.Bool("quote.owner.reserved", quoteSendPermitFrom(ctx) != nil))
 	return func(err error) {
+		active, _ := usage()
 		span.SetAttributes(attribute.Int64("quote.admission.wait_ms", time.Since(started).Milliseconds()),
-			attribute.Bool("quote.admission.admitted", err == nil), attribute.Int("quote.admission.in_use_after", len(slots)),
+			attribute.Bool("quote.admission.admitted", err == nil), attribute.Int("quote.admission.in_use_after", active),
 			attribute.String("quote.reason", safeReason(err)))
 		if deadline, ok := ctx.Deadline(); ok {
 			span.SetAttributes(attribute.Int64("quote.operation_left_ms", time.Until(deadline).Milliseconds()))

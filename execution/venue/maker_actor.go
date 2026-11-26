@@ -57,10 +57,13 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 	profile := r.cfg.Venue.Profiles[0]
 	failed := false
 	hadTarget := false
-	return r.mailbox.run(ctx, r.cfg.OperationTimeout, func(work context.Context, plan *pb.QuotePlan) error {
+	return r.mailbox.runAdmitted(ctx, r.cfg.OperationTimeout, r.admitMakerTurn, func(work context.Context, plan *pb.QuotePlan) error {
 		work, span := r.factory.StartOperation(work, "execution.quote")
 		defer span.End()
 		span.SetAttributes(attribute.String("market.symbol", profile.Symbol))
+		if permit := quoteSendPermitFrom(work); permit != nil {
+			span.SetAttributes(attribute.Int64("quote.owner.wait_ms", permit.waited.Milliseconds()))
+		}
 		if plan == nil && hadTarget {
 			if err := r.logger.LogAttrs(work, slog.LevelWarn, native.StateRecovering, slog.String("symbol", profile.Symbol), slog.String("reason", reasonQuoteTargetExpired)); err != nil {
 				return err
@@ -80,6 +83,35 @@ func (r *Runtime) maintainMaker(ctx context.Context) error {
 	})
 }
 
+func (r *Runtime) admitMakerTurn(ctx context.Context) (context.Context, func(), error) {
+	if r.quoteBudget == nil {
+		return ctx, func() {}, nil
+	}
+	wait, cancel := context.WithTimeout(ctx, r.cfg.OperationTimeout)
+	defer cancel()
+	finish := func(error) {}
+	if r.factory != nil {
+		work, span := r.factory.StartOperation(wait, "execution.quote.owner")
+		span.SetAttributes(attribute.String("market.symbol", r.cfg.Venue.Profiles[0].Symbol))
+		wait = work
+		finish = func(err error) {
+			span.SetAttributes(attribute.String("quote.reason", safeReason(err)))
+			tracing.RecordError(work, err)
+			span.End()
+		}
+	}
+	permit, err := r.quoteBudget.acquire(wait)
+	finish(err)
+	if err != nil {
+		return ctx, nil, err
+	}
+	// The capacity wait belongs to this lifecycle, not to a previously sent RPC.
+	// Load the latest pending plan and create its original work budget afterwards.
+	// Keep the lifecycle parent: cancelling the admission context must not cancel
+	// the fresh observation or the subsequently bounded SDK calls.
+	return withQuoteSendPermit(ctx, permit), permit.release, nil
+}
+
 func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan) error {
 	leave, err := r.enter(native.Scope(profile))
 	if errors.Is(err, domain.ErrLeaseHeld) {
@@ -89,6 +121,7 @@ func (r *Runtime) applyMakerIntent(ctx context.Context, profile *common.VenuePro
 		return err
 	}
 	defer leave()
+	ctx = withQuoteAttemptObservation(ctx)
 	if plan == nil {
 		return quoteFailed(quoteStepProtection, r.protectMakerIntent(ctx, profile))
 	}

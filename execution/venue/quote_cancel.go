@@ -57,26 +57,42 @@ func (r *Runtime) cancelOrders(ctx context.Context, lease domain.LeaseToken, pro
 // Selection already assumes every cancellation succeeds. Concurrency changes
 // neither that worst-case floor nor the requirement for visible replacements.
 func (r *Runtime) cancelQuoteWave(ctx context.Context, lease domain.LeaseToken, profile *common.VenueProfilePolicy, orders []*common.VenueOrder, result *pb.QuoteResult) error {
-	failures := make([]error, len(orders))
-	var group sync.WaitGroup
-	for index, order := range orders {
-		group.Go(func() { failures[index] = r.sendQuoteCancellation(ctx, lease, profile, order) })
-	}
-	group.Wait()
-	for _, err := range failures {
-		if err == nil {
-			result.Cancelled++
+	width, release := quoteWaveSize(ctx, min(maximumQuoteWave, len(orders)))
+	defer release()
+	for cursor := 0; cursor < len(orders); cursor += width {
+		batch := orders[cursor:min(cursor+width, len(orders))]
+		failures := make([]error, len(batch))
+		var group sync.WaitGroup
+		for index, order := range batch {
+			group.Go(func() { failures[index] = r.sendQuoteCancellation(ctx, lease, profile, order) })
+		}
+		group.Wait()
+		for _, err := range failures {
+			if err == nil {
+				result.Cancelled++
+			}
+		}
+		if err := errors.Join(failures...); err != nil {
+			return err
 		}
 	}
-	return errors.Join(failures...)
+	return nil
 }
 
 func (r *Runtime) sendQuoteCancellation(ctx context.Context, lease domain.LeaseToken, profile *common.VenueProfilePolicy, order *common.VenueOrder) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	finishAdmission := traceQuoteAdmission(ctx, r.quoteSlots, quoteOperationCancel)
-	if r.quoteSlots != nil {
+	finishAdmission := r.traceQuoteAdmission(ctx, quoteOperationCancel)
+	if r.quoteBudget != nil {
+		work, release, err := r.reserveQuoteSend(ctx)
+		if err != nil {
+			finishAdmission(err)
+			return err
+		}
+		defer release()
+		ctx = work
+	} else if r.quoteSlots != nil {
 		select {
 		case r.quoteSlots <- struct{}{}:
 		case <-ctx.Done():
