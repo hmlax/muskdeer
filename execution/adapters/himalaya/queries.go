@@ -128,16 +128,27 @@ func (c *Client) Read(ctx context.Context, scope Scope) (*gateway.Observation, e
 
 // ReadOrders supports controlled cancellation even when mark-price health is invalid.
 func (c *Client) ReadOrders(ctx context.Context, scope Scope) ([]*commonv1.VenueOrder, error) {
-	raw, err := c.readSDK(ctx, scope)
+	if c == nil || c.sdk == nil || ctx == nil || scope.UserID <= 0 || scope.FundID <= 0 || !validSymbol(scope.Symbol) {
+		return nil, ErrInvalidConfig
+	}
+	op, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	// Cancellation needs order identity and quantity scales, not a trading
+	// balance/position snapshot. A failed risk read must not block this query.
+	market, err := c.sdk.Raw().GetMarket(op, &pb.GetMarketRequest{Symbol: scope.Symbol})
 	if err != nil {
 		return nil, err
 	}
-	precision := raw.Market.GetMarket().GetEffectiveBasePrecision()
-	if precision < 0 || precision > 18 {
+	precision := market.GetMarket().GetEffectiveBasePrecision()
+	if market.GetMarket().GetSymbol() != scope.Symbol || precision < 0 || precision > 18 {
 		return nil, ErrInvalidSnapshot
 	}
-	orders := make([]*commonv1.VenueOrder, 0, len(raw.Orders))
-	for _, row := range raw.Orders {
+	response, err := c.sdk.ListOrdersForFund(op, scope.UserID, scope.FundID, "")
+	if err != nil {
+		return nil, err
+	}
+	orders := make([]*commonv1.VenueOrder, 0, len(response.GetOrders()))
+	for _, row := range response.GetOrders() {
 		order, err := normalizeOrder(row, scope, -int32(precision))
 		if err != nil {
 			return nil, err

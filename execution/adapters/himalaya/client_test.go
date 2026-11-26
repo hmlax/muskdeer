@@ -295,7 +295,7 @@ func (p *sdkPeer) count() int {
 	return p.calls
 }
 
-func sdkClient(t *testing.T, peer *sdkPeer, admission SubmissionGuard) *Client {
+func sdkClient(t *testing.T, peer pb.OrderServer, admission SubmissionGuard) *Client {
 	t.Helper()
 	listener := bufconn.Listen(1 << 20)
 	server := grpc.NewServer()
