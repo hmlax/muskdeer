@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check sdk-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-prepare compose-up compose-down compose-status core-test
+.PHONY: doctor test-tooling tools contract-check policy-test generate generate-check wire wire-check sdk-check fmt fmt-check lint test test-race build verify build-fixtures integration dev-up dev-down dev-status dev-test image image-test e2e soak soak-smoke compose-source compose-prepare compose-up compose-down compose-status core-test
 
 # Freeze one version/build record for every binary in this Make invocation.
 # scripts/build.py injects -X main.Name, -X main.Version and -X main.Build.
@@ -122,6 +122,9 @@ soak-smoke: build-fixtures
 
 compose-prepare:
 	$(PYTHON) scripts/compose.py prepare
+
+compose-source:
+	$(PYTHON) scripts/compose.py source
 
 compose-up: compose-prepare
 	docker compose --env-file .cache/compose/compose.env build --build-arg VERSION --build-arg BUILD

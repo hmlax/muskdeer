@@ -47,6 +47,32 @@ def install_default_environment():
     return True
 
 
+def use_repository_source():
+    """Change prepared build provenance without touching runtime resources."""
+    prepared = DIRECTORY / 'compose.env'
+    if not prepared.is_file():
+        raise ValueError('prepared compose.env is required; no resources were initialized')
+    source = str(ROOT.resolve())
+    if any(character in source for character in ("'", '\n', '\r')):
+        raise ValueError('repository path cannot be represented in Compose environment')
+    key = 'MUSKDEER_BUILD_CONTEXT='
+    lines = prepared.read_text().splitlines(keepends=True)
+    replacement = key + "'" + source + "'\n"
+    updated = [replacement if line.startswith(key) else line for line in lines]
+    if not any(line.startswith(key) for line in lines):
+        if updated and not updated[-1].endswith('\n'):
+            updated[-1] += '\n'
+        updated.append(replacement)
+    state_path = DIRECTORY / 'credentials.json'
+    if state_path.exists():
+        state = json.loads(state_path.read_text())
+        state['source'] = source
+        write(state_path, json.dumps(state, indent=2) + '\n')
+    write(prepared, ''.join(updated))
+    install_default_environment()
+    print('Prepared Docker build source now uses the repository; runtime resources were not changed')
+
+
 def run(arguments, **options):
     return subprocess.run(arguments, check=True, capture_output=True, text=True, timeout=30, **options).stdout
 
@@ -219,7 +245,7 @@ def prepare(source):
         'database_password': secrets.token_hex(32), 'ownership': secrets.token_hex(16),
     }
     # Retain credentials after partial setup so a retry never resets a password.
-    state['source'] = str(Path(source or state.get('source', ROOT)).resolve())
+    state['source'] = str(Path(source or ROOT).resolve())
     write(state_path, json.dumps(state, indent=2) + '\n')
     prepare_database(snapshots['postgres'], state, fresh)
     prepare_namespace(snapshots['nacos'], credential)
@@ -272,13 +298,17 @@ def bootstrap():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['prepare', 'bootstrap'])
+    parser.add_argument('action', choices=['prepare', 'bootstrap', 'source'])
     parser.add_argument('--source', help='explicit Docker build source (default: repository)')
     args = parser.parse_args()
     DIRECTORY.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (DIRECTORY / 'operation.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        if args.action == 'prepare':
+        if args.action == 'source':
+            if args.source is not None:
+                raise ValueError('source action always uses this repository')
+            use_repository_source()
+        elif args.action == 'prepare':
             prepare(args.source)
         else:
             bootstrap()

@@ -11,6 +11,33 @@ import compose
 
 
 class ComposeEnvironmentTest(unittest.TestCase):
+    def test_source_switch_keeps_runtime_settings_and_credentials(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            runtime = root / '.cache/compose'
+            original = "MUSKDEER_BUILD_CONTEXT='retired-cache'\nOTHER_SETTING='keep-me'\n"
+            state = {'source': 'retired-cache', 'database_password': 'test-secret', 'ownership': 'test-owner'}
+            with mock.patch.object(compose, 'ROOT', root), mock.patch.object(compose, 'DIRECTORY', runtime):
+                compose.write(runtime / 'compose.env', original)
+                compose.write(runtime / 'credentials.json', json.dumps(state))
+                with mock.patch.object(compose, 'prepare_database') as database, mock.patch.object(compose, 'prepare_namespace') as namespace:
+                    compose.use_repository_source()
+                self.assertEqual((runtime / 'compose.env').read_text(),
+                                 "MUSKDEER_BUILD_CONTEXT='" + str(root) + "'\nOTHER_SETTING='keep-me'\n")
+                expected = dict(state, source=str(root))
+                self.assertEqual(json.loads((runtime / 'credentials.json').read_text()), expected)
+                self.assertEqual((root / '.env').read_text(), (runtime / 'compose.env').read_text())
+                database.assert_not_called()
+                namespace.assert_not_called()
+
+    def test_source_switch_without_prepared_environment_does_not_initialize(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with mock.patch.object(compose, 'ROOT', root), mock.patch.object(compose, 'DIRECTORY', root / '.cache/compose'):
+                with self.assertRaisesRegex(ValueError, 'prepared compose.env'):
+                    compose.use_repository_source()
+            self.assertEqual(list(root.iterdir()), [])
+
     def test_default_environment_follows_prepared_settings_after_repeated_prepare(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
