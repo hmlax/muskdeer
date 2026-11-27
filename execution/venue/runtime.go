@@ -268,6 +268,7 @@ func (r *Runtime) GetSnapshot(ctx context.Context, scope *commonv1.VenueScope) (
 }
 
 func (r *Runtime) read(ctx context.Context, profile *commonv1.VenueProfilePolicy) (*gateway.Observation, *commonv1.VenueSnapshot, error) {
+	defer releaseQuotePreparation(ctx)
 	scope := Scope{
 		UserID: profile.UserId,
 		FundID: profile.FundId,

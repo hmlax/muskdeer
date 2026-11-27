@@ -141,6 +141,14 @@ func quoteTurnPermitFrom(ctx context.Context) *quoteSendPermit {
 	return permit
 }
 
+// Preparation bounds initial observations, not the subsequent target work or
+// financial writer. The turn cleanup may safely call release again.
+func releaseQuotePreparation(ctx context.Context) {
+	if permit := quoteTurnPermitFrom(ctx); permit != nil {
+		permit.release()
+	}
+}
+
 func quoteWaveSize(ctx context.Context, wanted int) (int, func()) {
 	permit := quoteSendPermitFrom(ctx)
 	if permit == nil || wanted == 0 {
@@ -158,6 +166,7 @@ func quoteWaveSize(ctx context.Context, wanted int) (int, func()) {
 }
 
 func (r *Runtime) reserveQuoteSend(ctx context.Context) (context.Context, func(), error) {
+	releaseQuotePreparation(ctx)
 	if r.quoteBudget == nil {
 		return ctx, func() {}, nil
 	}
