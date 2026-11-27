@@ -124,12 +124,12 @@ func (cycle *quoteCycle) quoteMakerMaintenanceOrder() []*commonv1.VenueTarget {
 	for _, target := range cycle.targets {
 		desired[domain.Side(target.Side)]++
 	}
-	full := make(map[domain.Side]bool)
+	bestFirst := cycle.visibleOuterQuoteCoverage()
 	for side, count := range desired {
-		full[side] = depth[side] >= count
+		bestFirst[side] = bestFirst[side] || depth[side] >= count
 	}
 	queues := make(map[domain.Side][]*commonv1.VenueTarget)
-	for _, target := range quoteCoverageOrder(missing, full) {
+	for _, target := range quoteCoverageOrder(missing, bestFirst) {
 		side := domain.Side(target.Side)
 		queues[side] = append(queues[side], target)
 	}
@@ -137,7 +137,7 @@ func (cycle *quoteCycle) quoteMakerMaintenanceOrder() []*commonv1.VenueTarget {
 	touch := make(map[domain.Side]*commonv1.VenueTarget)
 	for _, target := range missing {
 		side := domain.Side(target.Side)
-		if full[side] && target == best[side] {
+		if bestFirst[side] && target == best[side] {
 			touch[side] = target
 		}
 	}
@@ -168,7 +168,7 @@ func quoteBestTargets(targets []*commonv1.VenueTarget) map[domain.Side]*commonv1
 
 func quoteMaintenanceSide(queues map[domain.Side][]*commonv1.VenueTarget, depth map[domain.Side]int, touch map[domain.Side]*commonv1.VenueTarget, selected int) domain.Side {
 	// Two proposals cover the shallow side's outer edge and its best price.
-	// A full opposite side must not wait for an entire depth rebuild to touch.
+	// An outer-covered opposite side need not wait for an entire depth rebuild.
 	if selected == maximumQuoteWave/2 {
 		for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
 			if len(queues[side]) > 0 && queues[side][0] == touch[side] {
@@ -206,10 +206,10 @@ func quoteMaintenanceTargets(targets []*commonv1.VenueTarget, snapshot *commonv1
 	return missing, refresh
 }
 
-// A shallow side seeds its outer edge before the best price so another source
-// move cannot immediately remove that side. A full side already has safe outer
-// coverage and refreshes its best price first to avoid a stale, widening spread.
-func quoteCoverageOrder(targets []*commonv1.VenueTarget, full map[domain.Side]bool) []*commonv1.VenueTarget {
+// A side without stable outer coverage seeds its outer edge first. Existing
+// visible coverage, including a shallow side's far bridge, lets the best price
+// lead without spending the first scarce SDK slot on another outer quote.
+func quoteCoverageOrder(targets []*commonv1.VenueTarget, bestFirst map[domain.Side]bool) []*commonv1.VenueTarget {
 	sides := make([][]*commonv1.VenueTarget, 2)
 	for _, target := range targets {
 		side := 0
@@ -239,7 +239,7 @@ func quoteCoverageOrder(targets []*commonv1.VenueTarget, full map[domain.Side]bo
 				kind = domain.SideSell
 			}
 			index := level
-			if !full[kind] {
+			if !bestFirst[kind] {
 				index = len(quotes) - 1 - level/2
 				if level%2 != 0 {
 					index = level / 2

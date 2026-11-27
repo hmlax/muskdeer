@@ -21,12 +21,14 @@ func TestFullQuoteSideRefreshesBestPriceBeforeItsOuterEdge(t *testing.T) {
 			switch kind {
 			case "shallow_ask":
 				cycle.snapshot.Orders = cycle.snapshot.Orders[:4]
-				wantAsk = "100.3"
+				// Its visible ask is already beyond the outer target edge.
+				wantAsk = "100.1"
 			case "duplicate_bid":
 				for _, order := range cycle.snapshot.Orders[:3] {
 					order.Price = "98.9"
 				}
-				wantBid = "99.7"
+				// One unique safe outer price still supplies outer coverage.
+				wantBid = "99.9"
 			case "foreign_bid":
 				for _, order := range cycle.snapshot.Orders[:3] {
 					order.ClientId = "other_instance"
