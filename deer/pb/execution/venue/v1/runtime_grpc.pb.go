@@ -27,6 +27,7 @@ const (
 	Execution_UpdateAccountPolicy_FullMethodName  = "/muskdeer.execution.venue.v1.Execution/UpdateAccountPolicy"
 	Execution_CancelInstanceOrders_FullMethodName = "/muskdeer.execution.venue.v1.Execution/CancelInstanceOrders"
 	Execution_Reconcile_FullMethodName            = "/muskdeer.execution.venue.v1.Execution/Reconcile"
+	Execution_SubscribeQuoteFlows_FullMethodName  = "/muskdeer.execution.venue.v1.Execution/SubscribeQuoteFlows"
 	Execution_PublishSynthetic_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/PublishSynthetic"
 	Execution_EvaluateLongGrid_FullMethodName     = "/muskdeer.execution.venue.v1.Execution/EvaluateLongGrid"
 	Execution_GetWashMarket_FullMethodName        = "/muskdeer.execution.venue.v1.Execution/GetWashMarket"
@@ -45,6 +46,8 @@ type ExecutionClient interface {
 	UpdateAccountPolicy(ctx context.Context, in *AccountPolicyUpdate, opts ...grpc.CallOption) (*AccountPolicyResult, error)
 	CancelInstanceOrders(ctx context.Context, in *CancelInstanceRequest, opts ...grpc.CallOption) (*QuoteResult, error)
 	Reconcile(ctx context.Context, in *QuotePlan, opts ...grpc.CallOption) (*QuoteResult, error)
+	// Ephemeral, read-only diagnostics; overflow terminates rather than losing data silently.
+	SubscribeQuoteFlows(ctx context.Context, in *QuoteFlowRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[QuoteFlow], error)
 	PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error)
 	EvaluateLongGrid(ctx context.Context, in *LongGridRequest, opts ...grpc.CallOption) (*LongGridResult, error)
 	GetWashMarket(ctx context.Context, in *WashMarketRequest, opts ...grpc.CallOption) (*WashMarketRules, error)
@@ -129,6 +132,25 @@ func (c *executionClient) Reconcile(ctx context.Context, in *QuotePlan, opts ...
 	return out, nil
 }
 
+func (c *executionClient) SubscribeQuoteFlows(ctx context.Context, in *QuoteFlowRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[QuoteFlow], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Execution_ServiceDesc.Streams[0], Execution_SubscribeQuoteFlows_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[QuoteFlowRequest, QuoteFlow]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Execution_SubscribeQuoteFlowsClient = grpc.ServerStreamingClient[QuoteFlow]
+
 func (c *executionClient) PublishSynthetic(ctx context.Context, in *v1.SyntheticTapePlan, opts ...grpc.CallOption) (*v1.SyntheticTapeResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(v1.SyntheticTapeResult)
@@ -181,6 +203,8 @@ type ExecutionServer interface {
 	UpdateAccountPolicy(context.Context, *AccountPolicyUpdate) (*AccountPolicyResult, error)
 	CancelInstanceOrders(context.Context, *CancelInstanceRequest) (*QuoteResult, error)
 	Reconcile(context.Context, *QuotePlan) (*QuoteResult, error)
+	// Ephemeral, read-only diagnostics; overflow terminates rather than losing data silently.
+	SubscribeQuoteFlows(*QuoteFlowRequest, grpc.ServerStreamingServer[QuoteFlow]) error
 	PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error)
 	EvaluateLongGrid(context.Context, *LongGridRequest) (*LongGridResult, error)
 	GetWashMarket(context.Context, *WashMarketRequest) (*WashMarketRules, error)
@@ -215,6 +239,9 @@ func (UnimplementedExecutionServer) CancelInstanceOrders(context.Context, *Cance
 }
 func (UnimplementedExecutionServer) Reconcile(context.Context, *QuotePlan) (*QuoteResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method Reconcile not implemented")
+}
+func (UnimplementedExecutionServer) SubscribeQuoteFlows(*QuoteFlowRequest, grpc.ServerStreamingServer[QuoteFlow]) error {
+	return status.Error(codes.Unimplemented, "method SubscribeQuoteFlows not implemented")
 }
 func (UnimplementedExecutionServer) PublishSynthetic(context.Context, *v1.SyntheticTapePlan) (*v1.SyntheticTapeResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method PublishSynthetic not implemented")
@@ -375,6 +402,17 @@ func _Execution_Reconcile_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Execution_SubscribeQuoteFlows_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(QuoteFlowRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ExecutionServer).SubscribeQuoteFlows(m, &grpc.GenericServerStream[QuoteFlowRequest, QuoteFlow]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Execution_SubscribeQuoteFlowsServer = grpc.ServerStreamingServer[QuoteFlow]
+
 func _Execution_PublishSynthetic_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(v1.SyntheticTapePlan)
 	if err := dec(in); err != nil {
@@ -499,6 +537,12 @@ var Execution_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Execution_WashTrade_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SubscribeQuoteFlows",
+			Handler:       _Execution_SubscribeQuoteFlows_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "deer/proto/execution/venue/v1/runtime.proto",
 }

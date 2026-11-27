@@ -17,6 +17,8 @@ service Execution {
   rpc UpdateAccountPolicy(AccountPolicyUpdate) returns (AccountPolicyResult);
   rpc CancelInstanceOrders(CancelInstanceRequest) returns (QuoteResult);
   rpc Reconcile(QuotePlan) returns (QuoteResult);
+  // Ephemeral, read-only diagnostics; overflow terminates rather than losing data silently.
+  rpc SubscribeQuoteFlows(QuoteFlowRequest) returns (stream QuoteFlow);
   rpc PublishSynthetic(muskdeer.common.v1.SyntheticTapePlan) returns (muskdeer.common.v1.SyntheticTapeResult);
   rpc EvaluateLongGrid(LongGridRequest) returns (LongGridResult);
   rpc GetWashMarket(WashMarketRequest) returns (WashMarketRules);
@@ -45,6 +47,37 @@ message QuotePlan {
   string request_id = 5;
   int64 strategy_instance_id = 6;
   int64 strategy_revision = 7;
+  // Diagnostics only: never used for financial admission or freshness.
+  int64 proposed_at_unix_nano = 8;
+  int64 accepted_at_unix_nano = 9;
+}
+
+message QuoteFlowRequest { repeated string symbols = 1; }
+
+// One actual SDK attempt, not a journal or a claim that the order is book-visible.
+message QuoteFlow {
+  string target_id = 1;
+  string client_id = 2;
+  string order_id = 3;
+  string symbol = 4;
+  string side = 5;
+  string price = 6;
+  int64 source_sequence = 7;
+  int64 source_event_at_ms = 8;
+  int64 source_received_at_ms = 9;
+  int64 source_snapshot_started_at_ms = 10;
+  int64 source_valid_until_ms = 11;
+  int64 proposed_at_unix_nano = 12;
+  int64 accepted_at_unix_nano = 13;
+  int64 turn_started_at_unix_nano = 14;
+  int64 preparation_wait_nano = 15;
+  int64 sdk_started_at_unix_nano = 16;
+  int64 sdk_finished_at_unix_nano = 17;
+  bool acknowledged = 18;
+  string reason = 19;
+  int64 strategy_instance_id = 20;
+  string source = 21;
+  string segment = 22;
 }
 
 message QuoteResult {

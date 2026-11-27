@@ -3,6 +3,7 @@ package venue
 import (
 	"context"
 	"crypto/rand"
+	"time"
 
 	"github.com/shopspring/decimal"
 
@@ -15,6 +16,7 @@ import (
 // quoteCycle is owned by one admitted reconcile call; all request pointers are
 // borrowed and immutable, while retention and result belong only to that call.
 type quoteCycle struct {
+	startedAt   time.Time
 	profile     *commonv1.VenueProfilePolicy
 	plan        *executionvenuev1.QuotePlan
 	bridgeSlots uint32

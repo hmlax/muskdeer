@@ -24,6 +24,7 @@ func newQuoteMailbox() *quoteMailbox {
 
 func (m *quoteMailbox) offer(plan *pb.QuotePlan) {
 	next := proto.CloneOf(plan)
+	next.AcceptedAtUnixNano = time.Now().UnixNano()
 	for {
 		previous := m.pending.Load()
 		if previous != nil && (previous.Book.Sequence > next.Book.Sequence || previous.Book.Sequence == next.Book.Sequence && quoteObservedAt(previous) > quoteObservedAt(next)) {

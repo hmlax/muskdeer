@@ -128,7 +128,10 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 	bounded, cancel := context.WithTimeout(ctx, min(time.Until(until), maximumOperationTimeout))
 	defer cancel()
 	markQuoteObservationDirty(bounded)
-	if _, err := client.SubmitQuote(bounded, request); err != nil {
+	started := time.Now()
+	response, err := client.SubmitQuote(bounded, request)
+	r.publishQuoteFlow(bounded, cycle, request, response, started, time.Now(), err)
+	if err != nil {
 		return err
 	}
 	return nil

@@ -97,6 +97,12 @@ func TestMakerQuoteNeverReadsOrWritesDatabaseOrders(t *testing.T) {
 		t.Fatal(err)
 	}
 	forbidden := denyMakerOrderStorage(t, setup.db)
+	runtime.quoteFlows = newQuoteFlowHub()
+	reader, err := runtime.quoteFlows.subscribe([]string{setup.profile.Symbol})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer runtime.quoteFlows.unsubscribe(reader)
 	book := &common.VenueBook{
 		Symbol:       setup.profile.Symbol,
 		Source:       native.Source,
@@ -112,6 +118,10 @@ func TestMakerQuoteNeverReadsOrWritesDatabaseOrders(t *testing.T) {
 		t.Fatal(err)
 	}
 	cycle := &quoteCycle{
+		plan: &execution.QuotePlan{
+			RequestId: "actual-target",
+			Book:      book,
+		},
 		profile:  setup.profile,
 		lease:    lease,
 		snapshot: snapshot,
@@ -129,6 +139,10 @@ func TestMakerQuoteNeverReadsOrWritesDatabaseOrders(t *testing.T) {
 		Quantity: "1",
 	}); err != nil {
 		t.Fatalf("direct maker placement accessed storage or failed: %v", err)
+	}
+	flow := <-reader.events
+	if !flow.Acknowledged || flow.TargetId != cycle.plan.RequestId || flow.SourceSequence != book.Sequence || flow.ClientId == "" || flow.OrderId != "9001" || flow.Price != "99" || flow.SdkStartedAtUnixNano > flow.SdkFinishedAtUnixNano {
+		t.Fatalf("actual SDK identity/source did not reach diagnostics: %v", flow)
 	}
 	snapshot, err = runtime.refresh(ctx, setup.profile, lease, book)
 	if err != nil || len(snapshot.GetOrders()) != 1 {

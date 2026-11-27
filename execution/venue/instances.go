@@ -39,6 +39,7 @@ type Instances struct {
 	client     *atomic.Pointer[gatewaySession]
 	closing    *atomic.Bool
 	store      *Store
+	quoteFlows *quoteFlowHub
 }
 
 // NewInstances assembles one shared SDK session without starting work.
@@ -52,6 +53,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 	}
 	result := &Instances{
 		children:   make(map[int64]*Runtime),
+		quoteFlows: newQuoteFlowHub(),
 		connection: deps.Connection,
 		gateway:    deps.Gateway,
 		timeout:    time.Second,
@@ -95,6 +97,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 			quoteSlots:        quoteSlots,
 			quoteBudget:       quoteBudget,
 			quoteTurns:        quoteTurns,
+			quoteFlows:        result.quoteFlows,
 			quoteRefreshSlots: quoteRefreshSlots,
 			plans:             map[string]*atomic.Int64{key: {}},
 			mailbox:           newQuoteMailbox(),

@@ -51,6 +51,7 @@ type Runtime struct {
 	quoteSlots         chan struct{}
 	quoteBudget        *quoteSendBudget
 	quoteTurns         *quoteSendBudget
+	quoteFlows         *quoteFlowHub
 	quoteRefreshSlots  chan struct{}
 	quoteCancellations sync.Map
 	plans              map[string]*atomic.Int64
@@ -345,6 +346,7 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 }
 
 func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfilePolicy, plan *executionvenuev1.QuotePlan) (*executionvenuev1.QuoteResult, error) {
+	started := time.Now()
 	profile, lease, err := r.quoteAccount(ctx, profile)
 	if err != nil {
 		return nil, err
@@ -388,6 +390,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 	// while cancellation proofs settle; it does not authorize new submissions.
 	r.rememberQuotePlan(profile, plan, book)
 	cycle := &quoteCycle{
+		startedAt:   started,
 		profile:     profile,
 		plan:        plan,
 		bridgeSlots: r.cfg.BridgeSlots,

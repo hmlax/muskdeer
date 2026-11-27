@@ -162,6 +162,9 @@ type QuotePlan struct {
 	RequestId          string                 `protobuf:"bytes,5,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	StrategyInstanceId int64                  `protobuf:"varint,6,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
 	StrategyRevision   int64                  `protobuf:"varint,7,opt,name=strategy_revision,json=strategyRevision,proto3" json:"strategy_revision,omitempty"`
+	// Diagnostics only: never used for financial admission or freshness.
+	ProposedAtUnixNano int64 `protobuf:"varint,8,opt,name=proposed_at_unix_nano,json=proposedAtUnixNano,proto3" json:"proposed_at_unix_nano,omitempty"`
+	AcceptedAtUnixNano int64 `protobuf:"varint,9,opt,name=accepted_at_unix_nano,json=acceptedAtUnixNano,proto3" json:"accepted_at_unix_nano,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -245,6 +248,277 @@ func (x *QuotePlan) GetStrategyRevision() int64 {
 	return 0
 }
 
+func (x *QuotePlan) GetProposedAtUnixNano() int64 {
+	if x != nil {
+		return x.ProposedAtUnixNano
+	}
+	return 0
+}
+
+func (x *QuotePlan) GetAcceptedAtUnixNano() int64 {
+	if x != nil {
+		return x.AcceptedAtUnixNano
+	}
+	return 0
+}
+
+type QuoteFlowRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Symbols       []string               `protobuf:"bytes,1,rep,name=symbols,proto3" json:"symbols,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *QuoteFlowRequest) Reset() {
+	*x = QuoteFlowRequest{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuoteFlowRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuoteFlowRequest) ProtoMessage() {}
+
+func (x *QuoteFlowRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuoteFlowRequest.ProtoReflect.Descriptor instead.
+func (*QuoteFlowRequest) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *QuoteFlowRequest) GetSymbols() []string {
+	if x != nil {
+		return x.Symbols
+	}
+	return nil
+}
+
+// One actual SDK attempt, not a journal or a claim that the order is book-visible.
+type QuoteFlow struct {
+	state                     protoimpl.MessageState `protogen:"open.v1"`
+	TargetId                  string                 `protobuf:"bytes,1,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	ClientId                  string                 `protobuf:"bytes,2,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	OrderId                   string                 `protobuf:"bytes,3,opt,name=order_id,json=orderId,proto3" json:"order_id,omitempty"`
+	Symbol                    string                 `protobuf:"bytes,4,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	Side                      string                 `protobuf:"bytes,5,opt,name=side,proto3" json:"side,omitempty"`
+	Price                     string                 `protobuf:"bytes,6,opt,name=price,proto3" json:"price,omitempty"`
+	SourceSequence            int64                  `protobuf:"varint,7,opt,name=source_sequence,json=sourceSequence,proto3" json:"source_sequence,omitempty"`
+	SourceEventAtMs           int64                  `protobuf:"varint,8,opt,name=source_event_at_ms,json=sourceEventAtMs,proto3" json:"source_event_at_ms,omitempty"`
+	SourceReceivedAtMs        int64                  `protobuf:"varint,9,opt,name=source_received_at_ms,json=sourceReceivedAtMs,proto3" json:"source_received_at_ms,omitempty"`
+	SourceSnapshotStartedAtMs int64                  `protobuf:"varint,10,opt,name=source_snapshot_started_at_ms,json=sourceSnapshotStartedAtMs,proto3" json:"source_snapshot_started_at_ms,omitempty"`
+	SourceValidUntilMs        int64                  `protobuf:"varint,11,opt,name=source_valid_until_ms,json=sourceValidUntilMs,proto3" json:"source_valid_until_ms,omitempty"`
+	ProposedAtUnixNano        int64                  `protobuf:"varint,12,opt,name=proposed_at_unix_nano,json=proposedAtUnixNano,proto3" json:"proposed_at_unix_nano,omitempty"`
+	AcceptedAtUnixNano        int64                  `protobuf:"varint,13,opt,name=accepted_at_unix_nano,json=acceptedAtUnixNano,proto3" json:"accepted_at_unix_nano,omitempty"`
+	TurnStartedAtUnixNano     int64                  `protobuf:"varint,14,opt,name=turn_started_at_unix_nano,json=turnStartedAtUnixNano,proto3" json:"turn_started_at_unix_nano,omitempty"`
+	PreparationWaitNano       int64                  `protobuf:"varint,15,opt,name=preparation_wait_nano,json=preparationWaitNano,proto3" json:"preparation_wait_nano,omitempty"`
+	SdkStartedAtUnixNano      int64                  `protobuf:"varint,16,opt,name=sdk_started_at_unix_nano,json=sdkStartedAtUnixNano,proto3" json:"sdk_started_at_unix_nano,omitempty"`
+	SdkFinishedAtUnixNano     int64                  `protobuf:"varint,17,opt,name=sdk_finished_at_unix_nano,json=sdkFinishedAtUnixNano,proto3" json:"sdk_finished_at_unix_nano,omitempty"`
+	Acknowledged              bool                   `protobuf:"varint,18,opt,name=acknowledged,proto3" json:"acknowledged,omitempty"`
+	Reason                    string                 `protobuf:"bytes,19,opt,name=reason,proto3" json:"reason,omitempty"`
+	StrategyInstanceId        int64                  `protobuf:"varint,20,opt,name=strategy_instance_id,json=strategyInstanceId,proto3" json:"strategy_instance_id,omitempty"`
+	Source                    string                 `protobuf:"bytes,21,opt,name=source,proto3" json:"source,omitempty"`
+	Segment                   string                 `protobuf:"bytes,22,opt,name=segment,proto3" json:"segment,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
+}
+
+func (x *QuoteFlow) Reset() {
+	*x = QuoteFlow{}
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *QuoteFlow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*QuoteFlow) ProtoMessage() {}
+
+func (x *QuoteFlow) ProtoReflect() protoreflect.Message {
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use QuoteFlow.ProtoReflect.Descriptor instead.
+func (*QuoteFlow) Descriptor() ([]byte, []int) {
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *QuoteFlow) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetClientId() string {
+	if x != nil {
+		return x.ClientId
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetOrderId() string {
+	if x != nil {
+		return x.OrderId
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetSide() string {
+	if x != nil {
+		return x.Side
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetPrice() string {
+	if x != nil {
+		return x.Price
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetSourceSequence() int64 {
+	if x != nil {
+		return x.SourceSequence
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSourceEventAtMs() int64 {
+	if x != nil {
+		return x.SourceEventAtMs
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSourceReceivedAtMs() int64 {
+	if x != nil {
+		return x.SourceReceivedAtMs
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSourceSnapshotStartedAtMs() int64 {
+	if x != nil {
+		return x.SourceSnapshotStartedAtMs
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSourceValidUntilMs() int64 {
+	if x != nil {
+		return x.SourceValidUntilMs
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetProposedAtUnixNano() int64 {
+	if x != nil {
+		return x.ProposedAtUnixNano
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetAcceptedAtUnixNano() int64 {
+	if x != nil {
+		return x.AcceptedAtUnixNano
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetTurnStartedAtUnixNano() int64 {
+	if x != nil {
+		return x.TurnStartedAtUnixNano
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetPreparationWaitNano() int64 {
+	if x != nil {
+		return x.PreparationWaitNano
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSdkStartedAtUnixNano() int64 {
+	if x != nil {
+		return x.SdkStartedAtUnixNano
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSdkFinishedAtUnixNano() int64 {
+	if x != nil {
+		return x.SdkFinishedAtUnixNano
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetAcknowledged() bool {
+	if x != nil {
+		return x.Acknowledged
+	}
+	return false
+}
+
+func (x *QuoteFlow) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetStrategyInstanceId() int64 {
+	if x != nil {
+		return x.StrategyInstanceId
+	}
+	return 0
+}
+
+func (x *QuoteFlow) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *QuoteFlow) GetSegment() string {
+	if x != nil {
+		return x.Segment
+	}
+	return ""
+}
+
 type QuoteResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Placed        uint32                 `protobuf:"varint,1,opt,name=placed,proto3" json:"placed,omitempty"`
@@ -257,7 +531,7 @@ type QuoteResult struct {
 
 func (x *QuoteResult) Reset() {
 	*x = QuoteResult{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -269,7 +543,7 @@ func (x *QuoteResult) String() string {
 func (*QuoteResult) ProtoMessage() {}
 
 func (x *QuoteResult) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[2]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -282,7 +556,7 @@ func (x *QuoteResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QuoteResult.ProtoReflect.Descriptor instead.
 func (*QuoteResult) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{2}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *QuoteResult) GetPlaced() uint32 {
@@ -324,7 +598,7 @@ type CancelInstanceRequest struct {
 
 func (x *CancelInstanceRequest) Reset() {
 	*x = CancelInstanceRequest{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[3]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -336,7 +610,7 @@ func (x *CancelInstanceRequest) String() string {
 func (*CancelInstanceRequest) ProtoMessage() {}
 
 func (x *CancelInstanceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[3]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -349,7 +623,7 @@ func (x *CancelInstanceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CancelInstanceRequest.ProtoReflect.Descriptor instead.
 func (*CancelInstanceRequest) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{3}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CancelInstanceRequest) GetId() int64 {
@@ -385,7 +659,7 @@ type LongGridRequest struct {
 
 func (x *LongGridRequest) Reset() {
 	*x = LongGridRequest{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[4]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +671,7 @@ func (x *LongGridRequest) String() string {
 func (*LongGridRequest) ProtoMessage() {}
 
 func (x *LongGridRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[4]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +684,7 @@ func (x *LongGridRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongGridRequest.ProtoReflect.Descriptor instead.
 func (*LongGridRequest) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{4}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LongGridRequest) GetStrategyInstanceId() int64 {
@@ -445,7 +719,7 @@ type LongGridResult struct {
 
 func (x *LongGridResult) Reset() {
 	*x = LongGridResult{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[5]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -457,7 +731,7 @@ func (x *LongGridResult) String() string {
 func (*LongGridResult) ProtoMessage() {}
 
 func (x *LongGridResult) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[5]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -470,7 +744,7 @@ func (x *LongGridResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LongGridResult.ProtoReflect.Descriptor instead.
 func (*LongGridResult) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{5}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *LongGridResult) GetState() string {
@@ -509,7 +783,7 @@ type AccountPolicyUpdate struct {
 
 func (x *AccountPolicyUpdate) Reset() {
 	*x = AccountPolicyUpdate{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[6]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -521,7 +795,7 @@ func (x *AccountPolicyUpdate) String() string {
 func (*AccountPolicyUpdate) ProtoMessage() {}
 
 func (x *AccountPolicyUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[6]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -534,7 +808,7 @@ func (x *AccountPolicyUpdate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountPolicyUpdate.ProtoReflect.Descriptor instead.
 func (*AccountPolicyUpdate) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{6}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *AccountPolicyUpdate) GetId() int64 {
@@ -591,7 +865,7 @@ type AccountPolicyResult struct {
 
 func (x *AccountPolicyResult) Reset() {
 	*x = AccountPolicyResult{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[7]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -603,7 +877,7 @@ func (x *AccountPolicyResult) String() string {
 func (*AccountPolicyResult) ProtoMessage() {}
 
 func (x *AccountPolicyResult) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[7]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -616,7 +890,7 @@ func (x *AccountPolicyResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountPolicyResult.ProtoReflect.Descriptor instead.
 func (*AccountPolicyResult) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{7}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AccountPolicyResult) GetId() int64 {
@@ -659,7 +933,7 @@ type WashMarketRequest struct {
 
 func (x *WashMarketRequest) Reset() {
 	*x = WashMarketRequest{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[8]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +945,7 @@ func (x *WashMarketRequest) String() string {
 func (*WashMarketRequest) ProtoMessage() {}
 
 func (x *WashMarketRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[8]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +958,7 @@ func (x *WashMarketRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WashMarketRequest.ProtoReflect.Descriptor instead.
 func (*WashMarketRequest) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{8}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *WashMarketRequest) GetStrategyInstanceId() int64 {
@@ -718,7 +992,7 @@ type WashMarketRules struct {
 
 func (x *WashMarketRules) Reset() {
 	*x = WashMarketRules{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[9]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -730,7 +1004,7 @@ func (x *WashMarketRules) String() string {
 func (*WashMarketRules) ProtoMessage() {}
 
 func (x *WashMarketRules) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[9]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -743,7 +1017,7 @@ func (x *WashMarketRules) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WashMarketRules.ProtoReflect.Descriptor instead.
 func (*WashMarketRules) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{9}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *WashMarketRules) GetMarket() *v1.VenueMarket {
@@ -772,7 +1046,7 @@ type AccountPolicyDisable struct {
 
 func (x *AccountPolicyDisable) Reset() {
 	*x = AccountPolicyDisable{}
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[10]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -784,7 +1058,7 @@ func (x *AccountPolicyDisable) String() string {
 func (*AccountPolicyDisable) ProtoMessage() {}
 
 func (x *AccountPolicyDisable) ProtoReflect() protoreflect.Message {
-	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[10]
+	mi := &file_deer_proto_execution_venue_v1_runtime_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -797,7 +1071,7 @@ func (x *AccountPolicyDisable) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AccountPolicyDisable.ProtoReflect.Descriptor instead.
 func (*AccountPolicyDisable) Descriptor() ([]byte, []int) {
-	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{10}
+	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *AccountPolicyDisable) GetId() int64 {
@@ -835,7 +1109,7 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\bquantity\x18\x06 \x01(\tR\bquantity\x126\n" +
 	"\x05trade\x18\a \x01(\v2\x1e.muskdeer.common.v1.VenueTradeH\x00R\x05trade\x123\n" +
 	"\x04book\x18\b \x01(\v2\x1d.muskdeer.common.v1.VenueBookH\x00R\x04bookB\b\n" +
-	"\x06source\"\xed\x02\n" +
+	"\x06source\"\xd3\x03\n" +
 	"\tQuotePlan\x124\n" +
 	"\x05scope\x18\x01 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope\x121\n" +
 	"\x04book\x18\x02 \x01(\v2\x1d.muskdeer.common.v1.VenueBookR\x04book\x12>\n" +
@@ -844,7 +1118,35 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\n" +
 	"request_id\x18\x05 \x01(\tR\trequestId\x120\n" +
 	"\x14strategy_instance_id\x18\x06 \x01(\x03R\x12strategyInstanceId\x12+\n" +
-	"\x11strategy_revision\x18\a \x01(\x03R\x10strategyRevision\"u\n" +
+	"\x11strategy_revision\x18\a \x01(\x03R\x10strategyRevision\x121\n" +
+	"\x15proposed_at_unix_nano\x18\b \x01(\x03R\x12proposedAtUnixNano\x121\n" +
+	"\x15accepted_at_unix_nano\x18\t \x01(\x03R\x12acceptedAtUnixNano\",\n" +
+	"\x10QuoteFlowRequest\x12\x18\n" +
+	"\asymbols\x18\x01 \x03(\tR\asymbols\"\x86\a\n" +
+	"\tQuoteFlow\x12\x1b\n" +
+	"\ttarget_id\x18\x01 \x01(\tR\btargetId\x12\x1b\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12\x19\n" +
+	"\border_id\x18\x03 \x01(\tR\aorderId\x12\x16\n" +
+	"\x06symbol\x18\x04 \x01(\tR\x06symbol\x12\x12\n" +
+	"\x04side\x18\x05 \x01(\tR\x04side\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\tR\x05price\x12'\n" +
+	"\x0fsource_sequence\x18\a \x01(\x03R\x0esourceSequence\x12+\n" +
+	"\x12source_event_at_ms\x18\b \x01(\x03R\x0fsourceEventAtMs\x121\n" +
+	"\x15source_received_at_ms\x18\t \x01(\x03R\x12sourceReceivedAtMs\x12@\n" +
+	"\x1dsource_snapshot_started_at_ms\x18\n" +
+	" \x01(\x03R\x19sourceSnapshotStartedAtMs\x121\n" +
+	"\x15source_valid_until_ms\x18\v \x01(\x03R\x12sourceValidUntilMs\x121\n" +
+	"\x15proposed_at_unix_nano\x18\f \x01(\x03R\x12proposedAtUnixNano\x121\n" +
+	"\x15accepted_at_unix_nano\x18\r \x01(\x03R\x12acceptedAtUnixNano\x128\n" +
+	"\x19turn_started_at_unix_nano\x18\x0e \x01(\x03R\x15turnStartedAtUnixNano\x122\n" +
+	"\x15preparation_wait_nano\x18\x0f \x01(\x03R\x13preparationWaitNano\x126\n" +
+	"\x18sdk_started_at_unix_nano\x18\x10 \x01(\x03R\x14sdkStartedAtUnixNano\x128\n" +
+	"\x19sdk_finished_at_unix_nano\x18\x11 \x01(\x03R\x15sdkFinishedAtUnixNano\x12\"\n" +
+	"\facknowledged\x18\x12 \x01(\bR\facknowledged\x12\x16\n" +
+	"\x06reason\x18\x13 \x01(\tR\x06reason\x120\n" +
+	"\x14strategy_instance_id\x18\x14 \x01(\x03R\x12strategyInstanceId\x12\x16\n" +
+	"\x06source\x18\x15 \x01(\tR\x06source\x12\x18\n" +
+	"\asegment\x18\x16 \x01(\tR\asegment\"u\n" +
 	"\vQuoteResult\x12\x16\n" +
 	"\x06placed\x18\x01 \x01(\rR\x06placed\x12\x1c\n" +
 	"\tcancelled\x18\x02 \x01(\rR\tcancelled\x12\x1a\n" +
@@ -885,7 +1187,8 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\x14AccountPolicyDisable\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x123\n" +
 	"\x16expected_updated_at_ms\x18\x02 \x01(\x03R\x13expectedUpdatedAtMs\x124\n" +
-	"\x05scope\x18\x03 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope2\x9a\t\n" +
+	"\x05scope\x18\x03 \x01(\v2\x1e.muskdeer.common.v1.VenueScopeR\x05scope2\x8a\n" +
+	"\n" +
 	"\tExecution\x12r\n" +
 	"\x11DescribeInstances\x121.muskdeer.common.v1.VenueInstanceInventoryRequest\x1a*.muskdeer.common.v1.VenueInstanceInventory\x12P\n" +
 	"\vGetSnapshot\x12\x1e.muskdeer.common.v1.VenueScope\x1a!.muskdeer.common.v1.VenueSnapshot\x12S\n" +
@@ -893,7 +1196,8 @@ const file_deer_proto_execution_venue_v1_runtime_proto_rawDesc = "" +
 	"\x14DisableAccountPolicy\x121.muskdeer.execution.venue.v1.AccountPolicyDisable\x1a0.muskdeer.execution.venue.v1.AccountPolicyResult\x12y\n" +
 	"\x13UpdateAccountPolicy\x120.muskdeer.execution.venue.v1.AccountPolicyUpdate\x1a0.muskdeer.execution.venue.v1.AccountPolicyResult\x12t\n" +
 	"\x14CancelInstanceOrders\x122.muskdeer.execution.venue.v1.CancelInstanceRequest\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12]\n" +
-	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12b\n" +
+	"\tReconcile\x12&.muskdeer.execution.venue.v1.QuotePlan\x1a(.muskdeer.execution.venue.v1.QuoteResult\x12n\n" +
+	"\x13SubscribeQuoteFlows\x12-.muskdeer.execution.venue.v1.QuoteFlowRequest\x1a&.muskdeer.execution.venue.v1.QuoteFlow0\x01\x12b\n" +
 	"\x10PublishSynthetic\x12%.muskdeer.common.v1.SyntheticTapePlan\x1a'.muskdeer.common.v1.SyntheticTapeResult\x12m\n" +
 	"\x10EvaluateLongGrid\x12,.muskdeer.execution.venue.v1.LongGridRequest\x1a+.muskdeer.execution.venue.v1.LongGridResult\x12m\n" +
 	"\rGetWashMarket\x12..muskdeer.execution.venue.v1.WashMarketRequest\x1a,.muskdeer.execution.venue.v1.WashMarketRules\x12c\n" +
@@ -911,68 +1215,72 @@ func file_deer_proto_execution_venue_v1_runtime_proto_rawDescGZIP() []byte {
 	return file_deer_proto_execution_venue_v1_runtime_proto_rawDescData
 }
 
-var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_deer_proto_execution_venue_v1_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_deer_proto_execution_venue_v1_runtime_proto_goTypes = []any{
 	(*WashTradeRequest)(nil),                 // 0: muskdeer.execution.venue.v1.WashTradeRequest
 	(*QuotePlan)(nil),                        // 1: muskdeer.execution.venue.v1.QuotePlan
-	(*QuoteResult)(nil),                      // 2: muskdeer.execution.venue.v1.QuoteResult
-	(*CancelInstanceRequest)(nil),            // 3: muskdeer.execution.venue.v1.CancelInstanceRequest
-	(*LongGridRequest)(nil),                  // 4: muskdeer.execution.venue.v1.LongGridRequest
-	(*LongGridResult)(nil),                   // 5: muskdeer.execution.venue.v1.LongGridResult
-	(*AccountPolicyUpdate)(nil),              // 6: muskdeer.execution.venue.v1.AccountPolicyUpdate
-	(*AccountPolicyResult)(nil),              // 7: muskdeer.execution.venue.v1.AccountPolicyResult
-	(*WashMarketRequest)(nil),                // 8: muskdeer.execution.venue.v1.WashMarketRequest
-	(*WashMarketRules)(nil),                  // 9: muskdeer.execution.venue.v1.WashMarketRules
-	(*AccountPolicyDisable)(nil),             // 10: muskdeer.execution.venue.v1.AccountPolicyDisable
-	(*v1.VenueTrade)(nil),                    // 11: muskdeer.common.v1.VenueTrade
-	(*v1.VenueBook)(nil),                     // 12: muskdeer.common.v1.VenueBook
-	(*v1.VenueScope)(nil),                    // 13: muskdeer.common.v1.VenueScope
-	(*v1.VenueAuthority)(nil),                // 14: muskdeer.common.v1.VenueAuthority
-	(*v1.VenueTarget)(nil),                   // 15: muskdeer.common.v1.VenueTarget
-	(*v1.VenueProfilePolicy)(nil),            // 16: muskdeer.common.v1.VenueProfilePolicy
-	(*v1.VenueMarket)(nil),                   // 17: muskdeer.common.v1.VenueMarket
-	(*v1.VenueInstanceInventoryRequest)(nil), // 18: muskdeer.common.v1.VenueInstanceInventoryRequest
-	(*v1.SyntheticTapePlan)(nil),             // 19: muskdeer.common.v1.SyntheticTapePlan
-	(*v1.VenueInstanceInventory)(nil),        // 20: muskdeer.common.v1.VenueInstanceInventory
-	(*v1.VenueSnapshot)(nil),                 // 21: muskdeer.common.v1.VenueSnapshot
-	(*v1.SyntheticTapeResult)(nil),           // 22: muskdeer.common.v1.SyntheticTapeResult
+	(*QuoteFlowRequest)(nil),                 // 2: muskdeer.execution.venue.v1.QuoteFlowRequest
+	(*QuoteFlow)(nil),                        // 3: muskdeer.execution.venue.v1.QuoteFlow
+	(*QuoteResult)(nil),                      // 4: muskdeer.execution.venue.v1.QuoteResult
+	(*CancelInstanceRequest)(nil),            // 5: muskdeer.execution.venue.v1.CancelInstanceRequest
+	(*LongGridRequest)(nil),                  // 6: muskdeer.execution.venue.v1.LongGridRequest
+	(*LongGridResult)(nil),                   // 7: muskdeer.execution.venue.v1.LongGridResult
+	(*AccountPolicyUpdate)(nil),              // 8: muskdeer.execution.venue.v1.AccountPolicyUpdate
+	(*AccountPolicyResult)(nil),              // 9: muskdeer.execution.venue.v1.AccountPolicyResult
+	(*WashMarketRequest)(nil),                // 10: muskdeer.execution.venue.v1.WashMarketRequest
+	(*WashMarketRules)(nil),                  // 11: muskdeer.execution.venue.v1.WashMarketRules
+	(*AccountPolicyDisable)(nil),             // 12: muskdeer.execution.venue.v1.AccountPolicyDisable
+	(*v1.VenueTrade)(nil),                    // 13: muskdeer.common.v1.VenueTrade
+	(*v1.VenueBook)(nil),                     // 14: muskdeer.common.v1.VenueBook
+	(*v1.VenueScope)(nil),                    // 15: muskdeer.common.v1.VenueScope
+	(*v1.VenueAuthority)(nil),                // 16: muskdeer.common.v1.VenueAuthority
+	(*v1.VenueTarget)(nil),                   // 17: muskdeer.common.v1.VenueTarget
+	(*v1.VenueProfilePolicy)(nil),            // 18: muskdeer.common.v1.VenueProfilePolicy
+	(*v1.VenueMarket)(nil),                   // 19: muskdeer.common.v1.VenueMarket
+	(*v1.VenueInstanceInventoryRequest)(nil), // 20: muskdeer.common.v1.VenueInstanceInventoryRequest
+	(*v1.SyntheticTapePlan)(nil),             // 21: muskdeer.common.v1.SyntheticTapePlan
+	(*v1.VenueInstanceInventory)(nil),        // 22: muskdeer.common.v1.VenueInstanceInventory
+	(*v1.VenueSnapshot)(nil),                 // 23: muskdeer.common.v1.VenueSnapshot
+	(*v1.SyntheticTapeResult)(nil),           // 24: muskdeer.common.v1.SyntheticTapeResult
 }
 var file_deer_proto_execution_venue_v1_runtime_proto_depIdxs = []int32{
-	11, // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
-	12, // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
-	13, // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
-	12, // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
-	14, // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
-	15, // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
-	12, // 6: muskdeer.execution.venue.v1.LongGridRequest.book:type_name -> muskdeer.common.v1.VenueBook
-	13, // 7: muskdeer.execution.venue.v1.AccountPolicyUpdate.scope:type_name -> muskdeer.common.v1.VenueScope
-	16, // 8: muskdeer.execution.venue.v1.AccountPolicyResult.profile:type_name -> muskdeer.common.v1.VenueProfilePolicy
-	17, // 9: muskdeer.execution.venue.v1.WashMarketRules.market:type_name -> muskdeer.common.v1.VenueMarket
-	13, // 10: muskdeer.execution.venue.v1.AccountPolicyDisable.scope:type_name -> muskdeer.common.v1.VenueScope
-	18, // 11: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
-	13, // 12: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
-	13, // 13: muskdeer.execution.venue.v1.Execution.InspectAccount:input_type -> muskdeer.common.v1.VenueScope
-	10, // 14: muskdeer.execution.venue.v1.Execution.DisableAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyDisable
-	6,  // 15: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyUpdate
-	3,  // 16: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
+	13, // 0: muskdeer.execution.venue.v1.WashTradeRequest.trade:type_name -> muskdeer.common.v1.VenueTrade
+	14, // 1: muskdeer.execution.venue.v1.WashTradeRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	15, // 2: muskdeer.execution.venue.v1.QuotePlan.scope:type_name -> muskdeer.common.v1.VenueScope
+	14, // 3: muskdeer.execution.venue.v1.QuotePlan.book:type_name -> muskdeer.common.v1.VenueBook
+	16, // 4: muskdeer.execution.venue.v1.QuotePlan.strategy:type_name -> muskdeer.common.v1.VenueAuthority
+	17, // 5: muskdeer.execution.venue.v1.QuotePlan.targets:type_name -> muskdeer.common.v1.VenueTarget
+	14, // 6: muskdeer.execution.venue.v1.LongGridRequest.book:type_name -> muskdeer.common.v1.VenueBook
+	15, // 7: muskdeer.execution.venue.v1.AccountPolicyUpdate.scope:type_name -> muskdeer.common.v1.VenueScope
+	18, // 8: muskdeer.execution.venue.v1.AccountPolicyResult.profile:type_name -> muskdeer.common.v1.VenueProfilePolicy
+	19, // 9: muskdeer.execution.venue.v1.WashMarketRules.market:type_name -> muskdeer.common.v1.VenueMarket
+	15, // 10: muskdeer.execution.venue.v1.AccountPolicyDisable.scope:type_name -> muskdeer.common.v1.VenueScope
+	20, // 11: muskdeer.execution.venue.v1.Execution.DescribeInstances:input_type -> muskdeer.common.v1.VenueInstanceInventoryRequest
+	15, // 12: muskdeer.execution.venue.v1.Execution.GetSnapshot:input_type -> muskdeer.common.v1.VenueScope
+	15, // 13: muskdeer.execution.venue.v1.Execution.InspectAccount:input_type -> muskdeer.common.v1.VenueScope
+	12, // 14: muskdeer.execution.venue.v1.Execution.DisableAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyDisable
+	8,  // 15: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:input_type -> muskdeer.execution.venue.v1.AccountPolicyUpdate
+	5,  // 16: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:input_type -> muskdeer.execution.venue.v1.CancelInstanceRequest
 	1,  // 17: muskdeer.execution.venue.v1.Execution.Reconcile:input_type -> muskdeer.execution.venue.v1.QuotePlan
-	19, // 18: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
-	4,  // 19: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:input_type -> muskdeer.execution.venue.v1.LongGridRequest
-	8,  // 20: muskdeer.execution.venue.v1.Execution.GetWashMarket:input_type -> muskdeer.execution.venue.v1.WashMarketRequest
-	0,  // 21: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
-	20, // 22: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
-	21, // 23: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
-	21, // 24: muskdeer.execution.venue.v1.Execution.InspectAccount:output_type -> muskdeer.common.v1.VenueSnapshot
-	7,  // 25: muskdeer.execution.venue.v1.Execution.DisableAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
-	7,  // 26: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
-	2,  // 27: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	2,  // 28: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
-	22, // 29: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	5,  // 30: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:output_type -> muskdeer.execution.venue.v1.LongGridResult
-	9,  // 31: muskdeer.execution.venue.v1.Execution.GetWashMarket:output_type -> muskdeer.execution.venue.v1.WashMarketRules
-	22, // 32: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
-	22, // [22:33] is the sub-list for method output_type
-	11, // [11:22] is the sub-list for method input_type
+	2,  // 18: muskdeer.execution.venue.v1.Execution.SubscribeQuoteFlows:input_type -> muskdeer.execution.venue.v1.QuoteFlowRequest
+	21, // 19: muskdeer.execution.venue.v1.Execution.PublishSynthetic:input_type -> muskdeer.common.v1.SyntheticTapePlan
+	6,  // 20: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:input_type -> muskdeer.execution.venue.v1.LongGridRequest
+	10, // 21: muskdeer.execution.venue.v1.Execution.GetWashMarket:input_type -> muskdeer.execution.venue.v1.WashMarketRequest
+	0,  // 22: muskdeer.execution.venue.v1.Execution.WashTrade:input_type -> muskdeer.execution.venue.v1.WashTradeRequest
+	22, // 23: muskdeer.execution.venue.v1.Execution.DescribeInstances:output_type -> muskdeer.common.v1.VenueInstanceInventory
+	23, // 24: muskdeer.execution.venue.v1.Execution.GetSnapshot:output_type -> muskdeer.common.v1.VenueSnapshot
+	23, // 25: muskdeer.execution.venue.v1.Execution.InspectAccount:output_type -> muskdeer.common.v1.VenueSnapshot
+	9,  // 26: muskdeer.execution.venue.v1.Execution.DisableAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
+	9,  // 27: muskdeer.execution.venue.v1.Execution.UpdateAccountPolicy:output_type -> muskdeer.execution.venue.v1.AccountPolicyResult
+	4,  // 28: muskdeer.execution.venue.v1.Execution.CancelInstanceOrders:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	4,  // 29: muskdeer.execution.venue.v1.Execution.Reconcile:output_type -> muskdeer.execution.venue.v1.QuoteResult
+	3,  // 30: muskdeer.execution.venue.v1.Execution.SubscribeQuoteFlows:output_type -> muskdeer.execution.venue.v1.QuoteFlow
+	24, // 31: muskdeer.execution.venue.v1.Execution.PublishSynthetic:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	7,  // 32: muskdeer.execution.venue.v1.Execution.EvaluateLongGrid:output_type -> muskdeer.execution.venue.v1.LongGridResult
+	11, // 33: muskdeer.execution.venue.v1.Execution.GetWashMarket:output_type -> muskdeer.execution.venue.v1.WashMarketRules
+	24, // 34: muskdeer.execution.venue.v1.Execution.WashTrade:output_type -> muskdeer.common.v1.SyntheticTapeResult
+	23, // [23:35] is the sub-list for method output_type
+	11, // [11:23] is the sub-list for method input_type
 	11, // [11:11] is the sub-list for extension type_name
 	11, // [11:11] is the sub-list for extension extendee
 	0,  // [0:11] is the sub-list for field type_name
@@ -993,7 +1301,7 @@ func file_deer_proto_execution_venue_v1_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc), len(file_deer_proto_execution_venue_v1_runtime_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

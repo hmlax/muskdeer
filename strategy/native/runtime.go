@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 
@@ -175,7 +176,7 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 	if err != nil {
 		return err
 	}
-	_, err = executionvenuev1.NewExecutionClient(execution).Reconcile(ctx, &executionvenuev1.QuotePlan{
+	plan := &executionvenuev1.QuotePlan{
 		Scope:              values.Scope(profile),
 		Book:               book,
 		Strategy:           descriptor,
@@ -183,6 +184,9 @@ func tick(ctx context.Context, db *gorm.DB, leases domain.LeaseRepository, facto
 		RequestId:          rand.Text(),
 		StrategyInstanceId: cfg.InstanceID,
 		StrategyRevision:   cfg.Revision,
-	})
+		ProposedAtUnixNano: time.Now().UnixNano(),
+	}
+	span.SetAttributes(attribute.String("quote.target.id", plan.RequestId), attribute.Int64("market.source.sequence", book.Sequence))
+	_, err = executionvenuev1.NewExecutionClient(execution).Reconcile(ctx, plan)
 	return err
 }
