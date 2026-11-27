@@ -63,7 +63,7 @@ func NewInstances(ctx context.Context, instances []*instanceconfig.Instance, dep
 	gates := make(map[string]chan struct{})
 	quoteSlots := make(chan struct{}, maximumConcurrentQuoteSends)
 	quoteBudget := newQuoteSendBudget(maximumConcurrentQuoteSends)
-	quoteTurns := newQuoteSendBudget(maximumConcurrentQuoteSends)
+	quoteTurns := newQuoteSendBudget(maximumConcurrentQuotePreparations)
 	quoteRefreshSlots := make(chan struct{}, maximumOptionalQuoteSends)
 	for _, instance := range instances {
 		result.inventory = append(result.inventory, &commonv1.VenueInstanceRevision{

@@ -16,9 +16,10 @@ import (
 
 // These bounds limit concurrent transport operations, never configured instances.
 const (
-	maximumQuoteWave            = 4
-	maximumConcurrentQuoteSends = 16
-	maximumOptionalQuoteSends   = maximumQuoteWave
+	maximumQuoteWave                   = 8
+	maximumConcurrentQuoteSends        = 64
+	maximumConcurrentQuotePreparations = 16
+	maximumOptionalQuoteSends          = 4
 )
 
 var errQuoteRefreshBusy = errors.New("quote refresh transport busy")

@@ -57,7 +57,7 @@ func (c *blockedQuoteClient) SubmitQuote(ctx context.Context, request gateway.Qu
 }
 
 func TestMakerDepthRefillDoesNotWaitForEachAcknowledgement(t *testing.T) {
-	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 16)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 	done := make(chan error, 1)
@@ -65,7 +65,7 @@ func TestMakerDepthRefillDoesNotWaitForEachAcknowledgement(t *testing.T) {
 	seen := make(map[string]bool)
 	timer := time.NewTimer(500 * time.Millisecond)
 	defer timer.Stop()
-	for range 4 {
+	for range 8 {
 		select {
 		case request := <-client.started:
 			seen[request.ClientID] = true
@@ -87,7 +87,7 @@ func TestMakerDepthRefillDoesNotWaitForEachAcknowledgement(t *testing.T) {
 		}
 		seen[request.ClientID] = true
 	}
-	if cycle.result.Placed != 8 || len(seen) != 8 || client.maximum.Load() != 4 || client.active.Load() != 0 {
+	if cycle.result.Placed != 16 || len(seen) != 16 || client.maximum.Load() != 8 || client.active.Load() != 0 {
 		t.Fatalf("refill placed=%d identities=%d concurrent=%d active=%d", cycle.result.Placed, len(seen), client.maximum.Load(), client.active.Load())
 	}
 }
@@ -107,12 +107,12 @@ func TestMakerQuoteWaveReservesAggregateBudgetBeforeSending(t *testing.T) {
 }
 
 func TestMakerQuoteWaveJoinsCancelledSiblings(t *testing.T) {
-	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 4)
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 	done := make(chan error, 1)
 	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
-	for range 4 {
+	for range 8 {
 		select {
 		case <-client.started:
 		case <-ctx.Done():
@@ -121,20 +121,20 @@ func TestMakerQuoteWaveJoinsCancelledSiblings(t *testing.T) {
 		}
 	}
 	cancel()
-	if err := <-done; !errors.Is(err, context.Canceled) || client.active.Load() != 0 || cycle.result.Placed != 0 || client.calls.Load() != 4 {
+	if err := <-done; !errors.Is(err, context.Canceled) || client.active.Load() != 0 || cycle.result.Placed != 0 || client.calls.Load() != 8 {
 		t.Fatalf("cancelled wave err=%v active=%d placed=%d calls=%d", err, client.active.Load(), cycle.result.Placed, client.calls.Load())
 	}
 }
 
 func TestMakerQuoteWaveJoinsPartialFailureWithoutRetry(t *testing.T) {
-	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 8)
+	runtime, cycle, client, _ := batchQuoteSetup(t.Context(), t, 16)
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 	failed := errors.New("ambiguous SDK outcome")
 	client.firstError = failed
 	done := make(chan error, 1)
 	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
-	for range 4 {
+	for range 8 {
 		select {
 		case <-client.started:
 		case <-ctx.Done():
@@ -149,7 +149,7 @@ func TestMakerQuoteWaveJoinsPartialFailureWithoutRetry(t *testing.T) {
 	default:
 	}
 	close(client.release)
-	if err := <-done; !errors.Is(err, failed) || cycle.result.Placed != 3 || client.calls.Load() != 4 || client.active.Load() != 0 {
+	if err := <-done; !errors.Is(err, failed) || cycle.result.Placed != 7 || client.calls.Load() != 8 || client.active.Load() != 0 {
 		t.Fatalf("partial wave err=%v placed=%d calls=%d active=%d", err, cycle.result.Placed, client.calls.Load(), client.active.Load())
 	}
 }

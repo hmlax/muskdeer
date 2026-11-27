@@ -167,9 +167,11 @@ func quoteBestTargets(targets []*commonv1.VenueTarget) map[domain.Side]*commonv1
 }
 
 func quoteMaintenanceSide(queues map[domain.Side][]*commonv1.VenueTarget, depth map[domain.Side]int, touch map[domain.Side]*commonv1.VenueTarget, selected int) domain.Side {
+	const shallowProposalsBeforeOppositeTouch = 2
+
 	// Two proposals cover the shallow side's outer edge and its best price.
 	// An outer-covered opposite side need not wait for an entire depth rebuild.
-	if selected == maximumQuoteWave/2 {
+	if selected == shallowProposalsBeforeOppositeTouch {
 		for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
 			if len(queues[side]) > 0 && queues[side][0] == touch[side] {
 				return side

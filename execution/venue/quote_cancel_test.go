@@ -61,7 +61,7 @@ func TestMakerCancellationsAreBoundedAndJoinWithoutReplay(t *testing.T) {
 			ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 			defer cancel()
 			client := &heldCancelClient{
-				started: make(chan uint64, 8),
+				started: make(chan uint64, 16),
 				release: make(chan struct{}),
 			}
 			if kind == "partial_failure" {
@@ -77,7 +77,7 @@ func TestMakerCancellationsAreBoundedAndJoinWithoutReplay(t *testing.T) {
 			}
 			runtime.client.Store(&gatewaySession{Client: client})
 			var orders []*common.VenueOrder
-			for id := 1; id <= 8; id++ {
+			for id := 1; id <= 16; id++ {
 				orders = append(orders, &common.VenueOrder{OrderId: strconv.Itoa(id)})
 			}
 			result := &pb.QuoteResult{}
@@ -88,7 +88,7 @@ func TestMakerCancellationsAreBoundedAndJoinWithoutReplay(t *testing.T) {
 			seen := make(map[uint64]bool)
 			timer := time.NewTimer(500 * time.Millisecond)
 			defer timer.Stop()
-			for range 4 {
+			for range 8 {
 				select {
 				case id := <-client.started:
 					seen[id] = true
@@ -109,15 +109,15 @@ func TestMakerCancellationsAreBoundedAndJoinWithoutReplay(t *testing.T) {
 				close(client.release)
 			}
 			err := <-done
-			wantCalls, wantSuccess := int64(8), uint32(8)
+			wantCalls, wantSuccess := int64(16), uint32(16)
 			switch kind {
 			case "partial_failure":
-				wantCalls, wantSuccess = 4, 3
+				wantCalls, wantSuccess = 8, 7
 				if !errors.Is(err, client.failure) {
 					t.Fatal(err)
 				}
 			case "cancelled":
-				wantCalls, wantSuccess = 4, 0
+				wantCalls, wantSuccess = 8, 0
 				if !errors.Is(err, context.Canceled) {
 					t.Fatal(err)
 				}

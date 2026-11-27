@@ -18,7 +18,7 @@ import (
 func TestMakerNewBestPricePreemptsObsoleteDeepWave(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
-	runtime, cycle, client, setup := batchQuoteSetup(ctx, t, 8)
+	runtime, cycle, client, setup := batchQuoteSetup(ctx, t, 16)
 	runtime.mailbox = newQuoteMailbox()
 	runtime.closing = &atomic.Bool{}
 	cycle.plan = &pb.QuotePlan{
@@ -32,11 +32,11 @@ func TestMakerNewBestPricePreemptsObsoleteDeepWave(t *testing.T) {
 	cycle.plan.Book.Sequence = 10
 	cycle.plan.Book.Symbol, cycle.plan.Book.Source, cycle.plan.Book.Segment = setup.profile.Symbol, native.Source, native.Segment
 	cycle.plan.Book.Publisher = &common.VenueAuthority{AccountId: native.MarketKey(setup.profile.Symbol)}
-	cycle.plan.Book.Bids = []*common.VenueLevel{{Price: "99"}, {Price: "98.4"}}
-	cycle.plan.Book.Asks = []*common.VenueLevel{{Price: "101.1"}, {Price: "101.7"}}
+	cycle.plan.Book.Bids = []*common.VenueLevel{{Price: "99"}, {Price: "97.6"}}
+	cycle.plan.Book.Asks = []*common.VenueLevel{{Price: "101.1"}, {Price: "102.5"}}
 	done := make(chan error, 1)
 	go func() { done <- runtime.fillQuoteDepth(ctx, cycle) }()
-	for range 4 {
+	for range 8 {
 		select {
 		case <-client.started:
 		case <-ctx.Done():
@@ -57,7 +57,7 @@ func TestMakerNewBestPricePreemptsObsoleteDeepWave(t *testing.T) {
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
-	if client.calls.Load() != 4 || cycle.result.Placed != 4 || !cycle.retained.pending || client.active.Load() != 0 {
+	if client.calls.Load() != 8 || cycle.result.Placed != 8 || !cycle.retained.pending || client.active.Load() != 0 {
 		t.Fatalf("obsolete wave continued: calls=%d placed=%d pending=%t active=%d", client.calls.Load(), cycle.result.Placed, cycle.retained.pending, client.active.Load())
 	}
 	if runtime.mailbox.pending.Load().Targets[0].Price != "99.1" || len(runtime.mailbox.wake) != 1 {

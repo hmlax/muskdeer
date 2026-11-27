@@ -23,7 +23,7 @@ func TestNewPriceStopsRetirementAfterTheJoinedWave(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Second)
 	defer cancel()
 	client := &heldCancelClient{
-		started: make(chan uint64, 8),
+		started: make(chan uint64, 16),
 		release: make(chan struct{}),
 	}
 	runtime := &Runtime{
@@ -45,7 +45,7 @@ func TestNewPriceStopsRetirementAfterTheJoinedWave(t *testing.T) {
 		result:   &pb.QuoteResult{},
 	}
 	var orders []*common.VenueOrder
-	for id := 1; id <= 8; id++ {
+	for id := 1; id <= 16; id++ {
 		orders = append(orders, &common.VenueOrder{OrderId: strconv.Itoa(id)})
 	}
 	done := make(chan error, 1)

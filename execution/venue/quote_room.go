@@ -37,6 +37,8 @@ func (r *Runtime) makeQuoteRoom(ctx context.Context, cycle *quoteCycle, wanted m
 }
 
 func quoteRoomRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest) ([]*common.VenueOrder, error) {
+	const maximumRoomRetirementsPerSide = 2
+
 	levels, best := quoteTargetDepths(wanted)
 	limit, err := native.Value(cycle.profile.MaximumOrderNotional, false, false)
 	if err != nil {
@@ -59,7 +61,7 @@ func quoteRoomRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest) (
 		side := domain.Side(order.Side)
 		if !native.Active(order.Status) || !strings.HasPrefix(order.ClientId, native.InstanceClientPrefix(cycle.profile)) ||
 			levels[side] == 0 || active[side] < levels[side]+int(cycle.bridgeSlots) ||
-			selected[side] >= min(maximumQuoteWave/2, active[side]-1) {
+			selected[side] >= min(maximumRoomRetirementsPerSide, active[side]-1) {
 			continue
 		}
 		if _, safe := bridgePrice(order, best, limit); safe && !cycle.cancelling[order.OrderId] {
