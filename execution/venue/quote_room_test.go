@@ -28,6 +28,9 @@ func TestQuoteRoomOnlyRetiresOwnUnsafeOrdersAtCapacity(t *testing.T) {
 			case "bridge_free":
 				cycle.snapshot.Orders = cycle.snapshot.Orders[:40]
 			case "safe":
+				// Duplicate safe orders at capacity can yield one physical slot
+				// without losing visible depth, allowing the missing best price.
+				want = 1
 				for _, order := range cycle.snapshot.Orders {
 					if order.Side == string(domain.SideBuy) {
 						order.Price = "99"

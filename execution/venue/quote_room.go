@@ -74,5 +74,13 @@ func quoteRoomRetirements(cycle *quoteCycle, wanted map[string]*SubmitRequest) (
 			retiring[side]++
 		}
 	}
+	for _, side := range []domain.Side{domain.SideBuy, domain.SideSell} {
+		if levels[side] == 0 || selected[side] > 0 || active[side] < levels[side]+int(cycle.bridgeSlots) {
+			continue
+		}
+		if order := quoteTouchRoomOrder(cycle, wanted, side, levels[side], best, limit); order != nil {
+			orders = append(orders, order)
+		}
+	}
 	return orders, nil
 }
