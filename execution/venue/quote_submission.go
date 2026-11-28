@@ -7,6 +7,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	commonmodelv1 "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	commonv1 "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	executionvenuev1 "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
@@ -28,6 +29,10 @@ type quoteCycle struct {
 	retained    *quoteRetention
 	result      *executionvenuev1.QuoteResult
 	admitted    []*commonv1.VenueTarget
+	// budget is the account policy read by this round while its writer holds
+	// the fund gate. Policy updates and account disabling take the same gate,
+	// so it is the current policy for every send of this round.
+	budget *commonmodelv1.TradingAccountPolicy
 }
 
 func (r *Runtime) submitQuote(ctx context.Context, cycle *quoteCycle, target *commonv1.VenueTarget) error {

@@ -143,6 +143,14 @@ func (r *Runtime) sendQuoteWave(ctx context.Context, cycle *quoteCycle, requests
 			return err
 		}
 		batch := requests[cursor:min(cursor+width, len(requests))]
+		// Instance stop is not serialized by the fund gate. Read the current
+		// configuration once, immediately before this wave's siblings start;
+		// a refusal sends nothing from the wave.
+		if err := r.checkDirectQuoteConfig(work, cycle.profile); err != nil {
+			release()
+			return err
+		}
+		work = withQuoteConfigChecked(work)
 		results := make([]error, len(batch))
 		var group sync.WaitGroup
 		for index, request := range batch {

@@ -119,7 +119,13 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 		defer func() { <-r.quoteSlots }()
 	}
 	finishAdmission(nil)
-	if err := r.checkDirectQuoteConfig(ctx, cycle.profile); err != nil {
+	if !quoteConfigCheckedFrom(ctx) {
+		if err := r.checkDirectQuoteConfig(ctx, cycle.profile); err != nil {
+			return err
+		}
+	}
+	// A wave-checked sibling admitted after cancellation never reaches the SDK.
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if deadline, ok := ctx.Deadline(); !ok || min(time.Until(deadline), time.Until(until)) < minimumLiveSDKWindow {
@@ -135,6 +141,19 @@ func (r *Runtime) sendDirectQuote(ctx context.Context, cycle *quoteCycle, reques
 		return err
 	}
 	return nil
+}
+
+type quoteConfigCheckedKey struct{}
+
+// withQuoteConfigChecked marks a wave whose current configuration was read
+// immediately before its siblings are dispatched together.
+func withQuoteConfigChecked(ctx context.Context) context.Context {
+	return context.WithValue(ctx, quoteConfigCheckedKey{}, true)
+}
+
+func quoteConfigCheckedFrom(ctx context.Context) bool {
+	checked, _ := ctx.Value(quoteConfigCheckedKey{}).(bool)
+	return checked
 }
 
 // Read current configuration only. No order transaction, lease or journal is
@@ -158,9 +177,12 @@ func (r *Runtime) checkDirectQuoteConfig(ctx context.Context, profile *common.Ve
 }
 
 func (r *Runtime) checkDirectQuoteBudget(ctx context.Context, cycle *quoteCycle, request gateway.QuoteRequest) error {
-	budget, err := r.store.Budget(ctx, AccountID(request.Scope.UserID, request.Scope.FundID))
-	if err != nil {
-		return err
+	budget := cycle.budget
+	if budget == nil {
+		var err error
+		if budget, err = r.store.Budget(ctx, AccountID(request.Scope.UserID, request.Scope.FundID)); err != nil {
+			return err
+		}
 	}
 	if !budget.Enabled || cycle.snapshot.GetMarket() == nil || budget.UserId != request.Scope.UserID || budget.FundId != request.Scope.FundID || budget.Symbol != request.Scope.Symbol ||
 		cycle.snapshot.GetScope().GetUserId() != request.Scope.UserID || cycle.snapshot.GetScope().GetFundId() != request.Scope.FundID || cycle.snapshot.GetScope().GetSymbol() != request.Scope.Symbol {

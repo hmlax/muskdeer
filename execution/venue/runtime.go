@@ -406,6 +406,7 @@ func (r *Runtime) reconcile(ctx context.Context, profile *commonv1.VenueProfileP
 		cancelling: cancelling,
 		retained:   retained,
 		result:     result,
+		budget:     budget,
 	}
 	if r.cfg.InstanceID > 0 {
 		return r.maintainCurrentDepth(ctx, cycle, wanted, cutover)
