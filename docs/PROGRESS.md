@@ -1,5 +1,12 @@
 # 当前进度
 
+## 2026-11-28 推送驱动 + order-service 128 owner 复采
+
+- 外部 order-service 已由他方切到 owner-pool-20261128（ORDER_SERVICE_OWNER_WORKERS=128、队列128，03:30 UTC 启动）；本项目四核心未改动，strategy 仍为 60a13c9 推送驱动，execution 仍 64/8。12:35 JST 起 600 秒自然流量，采集完整、无流错误、窗口内容器身份/状态不变。
+- 中位数（11-27 轮询64/8 → 推送+16 owner → 推送+128 owner）：本机收到→SDK回执 BTC 785→555→312、ETH 786→527→312、HYPE 762→505→343ms；接收→发单 BTC 379→265→142ms；SDK调用 BTC 191→144→87ms；收到→确认可见上界 BTC 1168→872→570、ETH 1092→926→588、HYPE 1129→841→663ms。可见上界 P95 BTC/ETH 降至 2.7/3.9s，HYPE 升至 7.0s。UNKNOWN 0/1/7。
+- 全品种 order-service 指标：owner.wait 均值 66.7→47.4→约0ms，owner.execute 81→65→74ms，matching.place 17→11→13ms，处理量较前窗增约30%。下游 owner 排队已消失，execution 发单前约 150ms 成为主要剩余耗时。
+- 本窗 BTC 源帧与下单数少于前两窗（帧 1007、尝试 654），回执后在已发布10档内未见该价格 134 笔（前窗 33），确认可见比例降至 0.53；ETH 未出现同样变化。可能与行情走势或限价单成交有关，未确认原因，不以中位数改善掩盖这一差异。
+
 ## 2026-11-28 铺单策略改为行情推送驱动
 
 - 用户要求在重新排查瓶颈后先把铺单策略由定时轮询改为行情推送驱动。strategy 当前 market_maker 实例订阅 SubscribeBooks，新源序列到达即计算并提交目标；启停/账户政策/portfolio 规则由独立读取者按原 PollInterval 刷新，观察失败撤回、超过 PollInterval+OperationTimeout 不再使用；一个 PollInterval 无提案时回退 GetBook，订阅断开按原间隔重连。execution 的接收、写入者、每笔配置/预算检查及 SDK 合同不变；网格、长网格、旧路径与 WashTrade 不变。说明见[铺单不落库](DIRECT_MAKER_QUOTES.md)。
