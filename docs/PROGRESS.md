@@ -4,7 +4,8 @@
 
 - 用户要求在重新排查瓶颈后先把铺单策略由定时轮询改为行情推送驱动。strategy 当前 market_maker 实例订阅 SubscribeBooks，新源序列到达即计算并提交目标；启停/账户政策/portfolio 规则由独立读取者按原 PollInterval 刷新，观察失败撤回、超过 PollInterval+OperationTimeout 不再使用；一个 PollInterval 无提案时回退 GetBook，订阅断开按原间隔重连。execution 的接收、写入者、每笔配置/预算检查及 SDK 合同不变；网格、长网格、旧路径与 WashTrade 不变。说明见[铺单不落库](DIRECT_MAKER_QUOTES.md)。
 - 新增 synctest 回归：推送帧不等待轮询即提案、重复/倒退/过期帧不提案、无帧时按间隔回退轮询、停止或观察失败不提案、观察读取停滞后到期停止、待处理帧只保留最新。strategy 全部单元与 race、make contract-check、make lint（0 新增）及 make build 通过。
-- 尚未部署到运行中的四核心，也未重新采样端到端耗时；不能把单元测试当作盘口延迟改善的实测结果。
+- 部署：从 60a13c9 的干净导出构建 strategy 镜像（不含主目录未提交修改），只重建 strategy；market/portfolio/execution/后台及外部服务容器未重启，实例/账户政策/配置历史/schema/商户绑定摘要前后一致，无迁移、无人工业务写入。execution 仍为 64/8。启动后少量 `RECOVERING step=propose`：推送触发失败约 0.4%，兜底轮询失败主要为冷门品种行情过期时 execution GetBook Unavailable，与原轮询同类。
+- 2026-11-28 12:03 JST 起 600 秒自然流量（预热60秒）对比 11-27 64/8 轮询窗口，中位数：本机收到→提案 BTC 61.6→10.5、ETH 62.3→16.6、HYPE 64.1→6.7ms；收到→SDK回执 BTC 785→555、ETH 786→527、HYPE 762→505ms（P95 约 1.19–1.23s→1.00–1.03s）；收到→确认可见上界 BTC 1168→872、ETH 1092→926、HYPE 1129→841ms。可见上界 P95 变差（3.4–5.1s→4.5–5.5s），回执后确认可见的长尾仍在撮合/盘口发布侧。接收→发单与 SDK 调用也下降，但外部 order-service 在部署前 12 分钟由他方重启，自然流量不受控，这两段不全归因本次改动。UNKNOWN 12/5/7（前 8/27/5）。采集完整、无流错误，期间各容器身份/状态不变；market/portfolio/execution 的重启计数 1 来自 11-27，非本窗口。
 
 ## 2026-11-27 主目录编译与验证结果：一项并发迁移检查未通过
 
