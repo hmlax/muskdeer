@@ -80,6 +80,9 @@ func configuredWorkers(db *gorm.DB, owner string, cfg *venueconfig.RuntimeConfig
 		workers = append(workers, deer.Worker{
 			Name: "strategy.native." + values.WorkerSymbol(strings.ToLower(profile.Symbol)),
 			Run: func(ctx context.Context) error {
+				if directMakerWorker(cfg) {
+					return runDirectMaker(ctx, db, factory, cfg, profile, rules, logger)
+				}
 				failed := false
 				for ctx.Err() == nil {
 					op, cancel := context.WithTimeout(ctx, cfg.OperationTimeout)
