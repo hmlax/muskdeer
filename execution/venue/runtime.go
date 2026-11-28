@@ -321,7 +321,10 @@ func (r *Runtime) Reconcile(ctx context.Context, plan *executionvenuev1.QuotePla
 	}
 
 	profile, err := native.Profile(r.cfg.Venue, plan.GetScope())
-	if err == nil && r.cfg.InstanceID > 0 {
+	// The direct maker reads the current account policy during admission,
+	// concurrently with its other reads; the identity checks below use only
+	// fields that the current policy must keep equal to the loaded profile.
+	if err == nil && r.cfg.InstanceID > 0 && !r.directMaker() {
 		profile, err = venueconfig.CurrentProfile(ctx, r.db, profile)
 	}
 	if err != nil || len(plan.GetTargets()) == 0 || len(plan.Targets) > r.maximumTargets() || plan.GetStrategy().GetAccountId() != native.StrategyKey(profile.GetUserId(), profile.GetFundId()) {

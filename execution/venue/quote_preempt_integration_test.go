@@ -48,7 +48,7 @@ func TestMakerNewBestPricePreemptsObsoleteDeepWave(t *testing.T) {
 	next.Book.Sequence++
 	next.Targets[0].Price = "99.1"
 	next.Book.Bids[0].Price = "99.1"
-	if err := runtime.admitMakerIntent(ctx, setup.profile, next, next.Book); err != nil {
+	if err := runtime.admitMakerIntent(ctx, setup.profile, next, fixedBook(next.Book)); err != nil {
 		cancel()
 		joined := <-done
 		t.Fatalf("new target was not admitted: %v (joined: %v)", err, joined)

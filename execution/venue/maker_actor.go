@@ -10,22 +10,26 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"golang.org/x/sync/errgroup"
+
+	commonmodel "github.com/hmlax/muskdeer/deer/pb/common/model/v1"
 	common "github.com/hmlax/muskdeer/deer/pb/common/v1"
 	pb "github.com/hmlax/muskdeer/deer/pb/execution/venue/v1"
 	"github.com/hmlax/muskdeer/deer/tracing"
 	"github.com/hmlax/muskdeer/deer/trading/domain"
 	"github.com/hmlax/muskdeer/deer/trading/native"
+	"github.com/hmlax/muskdeer/deer/trading/venueconfig"
 )
 
-func (r *Runtime) queueMakerQuote(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan) (*pb.QuoteResult, error) {
+func (r *Runtime) queueMakerQuote(ctx context.Context, startup *common.VenueProfilePolicy, plan *pb.QuotePlan) (*pb.QuoteResult, error) {
 	if r.mailbox == nil || r.closing.Load() || r.client.Load() == nil {
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
-	book, err := r.book(ctx, profile.Symbol)
-	if err != nil {
-		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
-	}
-	if err := r.admitMakerIntent(ctx, profile, plan, book); err != nil {
+	source := func(ctx context.Context) (*common.VenueBook, error) { return r.book(ctx, startup.Symbol) }
+	if err := r.admitMakerIntent(ctx, startup, plan, source); err != nil {
+		if errors.Is(err, errMakerProfile) {
+			return nil, status.Error(codes.InvalidArgument, native.MessageInvalid)
+		}
 		return nil, status.Error(codes.Unavailable, native.MessageInvalid)
 	}
 	// Accepted targets are pending work, never a reported SDK success. Actual
@@ -33,8 +37,48 @@ func (r *Runtime) queueMakerQuote(ctx context.Context, profile *common.VenueProf
 	return &pb.QuoteResult{State: native.StateRecovering}, nil
 }
 
-func (r *Runtime) admitMakerIntent(ctx context.Context, profile *common.VenueProfilePolicy, plan *pb.QuotePlan, book *common.VenueBook) error {
-	if err := r.validateMakerIntent(ctx, profile, plan, book); err != nil {
+// errMakerProfile marks a current account policy that cannot be read or no
+// longer matches the loaded instance identity and trading rules.
+var errMakerProfile = errors.New("maker profile unavailable")
+
+// admitMakerIntent reads the current account policy once and overlaps it with
+// the current instance configuration check and the execution-side source read.
+// Every check of the sequential admission remains and all of them complete
+// before the plan renews retention or reaches the fund's single writer.
+func (r *Runtime) admitMakerIntent(ctx context.Context, startup *common.VenueProfilePolicy, plan *pb.QuotePlan, source func(context.Context) (*common.VenueBook, error)) error {
+	var (
+		policy *commonmodel.TradingAccountPolicy
+		book   *common.VenueBook
+	)
+	group, reads := errgroup.WithContext(ctx)
+	group.Go(func() error {
+		current, err := r.store.Budget(reads, AccountID(startup.UserId, startup.FundId))
+		if err != nil {
+			return errors.Join(errMakerProfile, err)
+		}
+		policy = current
+		return nil
+	})
+	group.Go(func() error {
+		current, err := source(reads)
+		if err != nil {
+			return err
+		}
+		if current == nil {
+			return native.ErrInvalid
+		}
+		book = current
+		return nil
+	})
+	group.Go(func() error { return r.checkDirectQuoteConfig(reads, startup) })
+	if err := group.Wait(); err != nil {
+		return err
+	}
+	profile, err := venueconfig.ProfileWithPolicy(startup, policy)
+	if err != nil {
+		return errors.Join(errMakerProfile, err)
+	}
+	if err := r.validateMakerIntent(ctx, profile, policy, plan, book); err != nil {
 		return err
 	}
 	if err := ctx.Err(); err != nil {

@@ -35,7 +35,7 @@ func TestFreshPlanRetainsQuotesWhileFundWriterIsBusy(t *testing.T) {
 	old := time.Now().Add(-time.Millisecond).UnixMilli()
 	runtime.plans[setup.budget.AccountId].Store(old)
 	book, plan := retentionAdmissionPlan(setup)
-	if err := runtime.admitMakerIntent(ctx, setup.profile, plan, book); err != nil {
+	if err := runtime.admitMakerIntent(ctx, setup.profile, plan, fixedBook(book)); err != nil {
 		t.Fatal(err)
 	}
 	if !runtime.currentQuotePlan(ctx, book, setup.budget.AccountId) || len(gate) != 1 || runtime.mailbox.pending.Load() == nil || setup.client.submissions.Load() != 0 || setup.client.cancellations.Load() != 0 {
@@ -87,7 +87,7 @@ func TestRetentionCannotBypassConfigurationSourceOrAccountFreshness(t *testing.T
 				runtime.closing.Store(true)
 			}
 			before := runtime.plans[setup.budget.AccountId].Load()
-			err := runtime.admitMakerIntent(ctx, setup.profile, plan, book)
+			err := runtime.admitMakerIntent(ctx, setup.profile, plan, fixedBook(book))
 			if kind != "stale_account" && kind != "closing" && err == nil {
 				t.Fatal("invalid retention authorization was accepted")
 			}

@@ -371,12 +371,13 @@ func newCurrentStateTest(ctx context.Context, t *testing.T) *currentStateTest {
 	}
 	runtime.client.Store(&gatewaySession{Client: client})
 	profile := &common.VenueProfilePolicy{
-		UserId:       10001,
-		FundId:       10001,
-		Symbol:       budget.Symbol,
-		PriceTick:    "0.1",
-		QuantityStep: "0.001",
-		Leverage:     10,
+		UserId:           10001,
+		FundId:           10001,
+		Symbol:           budget.Symbol,
+		MarketDataSource: native.Source,
+		PriceTick:        "0.1",
+		QuantityStep:     "0.001",
+		Leverage:         10,
 	}
 	return &currentStateTest{
 		db:            db,
